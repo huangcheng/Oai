@@ -1,0 +1,68 @@
+{
+  "command": {
+    "SessionStart": {
+      "command": "clippy-gateway --source claude-code --event session.start",
+      "async": true
+    },
+    "SessionEnd": {
+      "command": "clippy-gateway --source claude-code --event session.end",
+      "async": true
+    },
+    "Stop": {
+      "command": "clippy-gateway --source claude-code --event session.idle",
+      "async": true
+    },
+    "StopFailure": {
+      "command": "clippy-gateway --source claude-code --event session.error",
+      "async": true
+    },
+    "UserPromptSubmit": {
+      "command": "clippy-gateway --source claude-code --event prompt.submitted",
+      "async": true
+    },
+    "PreToolUse": {
+      "command": "clippy-gateway --source claude-code --event tool.before",
+      "async": true
+    },
+    "PostToolUse": {
+      "command": "clippy-gateway --source claude-code --event tool.after",
+      "async": true
+    },
+    "PostToolUseFailure": {
+      "command": "clippy-gateway --source claude-code --event tool.failed",
+      "async": true
+    },
+    "PermissionRequest": {
+      "command": "clippy-gateway --source claude-code --event permission.requested",
+      "async": true
+    },
+    "PermissionDenied": {
+      "command": "clippy-gateway --source claude-code --event permission.denied",
+      "async": true
+    },
+    "SubagentStart": {
+      "command": "clippy-gateway --source claude-code --event subagent.started",
+      "async": true
+    },
+    "SubagentStop": {
+      "command": "clippy-gateway --source claude-code --event subagent.stopped",
+      "async": true
+    },
+    "Notification": {
+      "command": "clippy-gateway --source claude-code --event notification.sent",
+      "async": true
+    },
+    "FileChanged": {
+      "command": "clippy-gateway --source claude-code --event file.edited",
+      "async": true
+    },
+    "TaskCreated": {
+      "command": "clippy-gateway --source claude-code --event todo.updated",
+      "async": true
+    },
+    "TaskCompleted": {
+      "command": "clippy-gateway --source claude-code --event todo.updated",
+      "async": true
+    }
+  }
+}

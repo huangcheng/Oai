@@ -1,0 +1,7 @@
+{
+  "name": "@clippy/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared IPC transport for Clippy desktop pet gateways"
+}
