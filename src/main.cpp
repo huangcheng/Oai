@@ -5,6 +5,7 @@
 #include "SpriteAnimationEngine.h"
 #include "LottieEffectOverlay.h"
 #include "SpeechBubble.h"
+#include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
 
@@ -112,14 +113,14 @@ int main(int argc, char *argv[])
     QObject::connect(&ipcServer, &IpcServer::eventReceived,
                      &eventRouter, &EventRouter::routeEvent);
 
-    // IPC tips → SpeechBubble directly
+    // IPC tips → TipBubbleWidget directly
     QObject::connect(&ipcServer, &IpcServer::tipReceived,
                      &w, [&w](const QJsonObject &tip) {
         const QString title = tip.value("title").toString("Tip");
         const QString body = tip.value("body").toString();
         const QString anim = tip.value("animation").toString();
 
-        w.speechBubble()->showMessage(title, body, SpeechBubble::TipBubble);
+        w.tipBubbleWidget()->showBubble(title, body, TipBubbleWidget::TipBubble);
 
         if (!anim.isEmpty()) {
             w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
