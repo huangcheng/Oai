@@ -42,6 +42,10 @@ qt_add_executable(Clippy
     src/ConfigManager.h
     src/SystemTray.cpp
     src/SystemTray.h
+    src/TipBubbleWidget.cpp
+    src/TipBubbleWidget.h
+    src/SettingsPanelWidget.cpp
+    src/SettingsPanelWidget.h
 )
 
 target_include_directories(Clippy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

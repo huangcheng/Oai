@@ -3,6 +3,8 @@
 #include "SpeechBubble.h"
 #include "LottieEffectOverlay.h"
 #include "ConfigManager.h"
+#include "TipBubbleWidget.h"
+#include "SettingsPanelWidget.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -23,11 +25,26 @@ MainWindow::MainWindow(ConfigManager *config, QWidget *parent)
     m_bubble = new SpeechBubble(this);
     m_effects = new LottieEffectOverlay(this);
 
+    // Create floating widgets
+    m_tipBubble = new TipBubbleWidget(nullptr); // no parent — separate top-level widget
+    m_tipBubble->anchorTo(this);
+
+    m_settingsPanel = new SettingsPanelWidget(m_config, nullptr);
+    m_settingsPanel->hide();
+
     // Set fixed size to match sprite frame dimensions (124x93)
     setFixedSize(124, 93);
 
     // Connect position change for config persistence
     connect(this, &MainWindow::positionChanged, m_config, &ConfigManager::setWindowPosition);
+
+    // Reposition floating widgets when pet moves
+    connect(this, &MainWindow::positionChanged, this, [this](const QPoint &) {
+        m_tipBubble->anchorTo(this);
+        if (m_settingsPanel->isVisible()) {
+            m_settingsPanel->anchorTo(this);
+        }
+    });
 
     // Connect effect triggers from animation engine
     connect(m_engine, &SpriteAnimationEngine::effectRequested,
@@ -135,8 +152,13 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        m_bubble->showMessage(tr("About"), tr("Clippy Desktop Pet\nv1.0.0"), SpeechBubble::TipBubble);
+        m_tipBubble->showBubble(tr("About"), tr("Clippy Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
     });
+
+    menu.addSeparator();
+
+    QAction *settingsAction = menu.addAction(tr("Settings"));
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettings);
 
     menu.addSeparator();
 
@@ -154,5 +176,14 @@ void MainWindow::toggleVisibility()
         m_engine->playAnimation("wave", SpriteAnimationEngine::HighPriority);
     } else {
         hide();
+        m_tipBubble->hideBubble();
+        m_settingsPanel->hide();
     }
+}
+
+void MainWindow::openSettings()
+{
+    m_settingsPanel->anchorTo(this);
+    m_settingsPanel->show();
+    m_settingsPanel->raise();
 }
