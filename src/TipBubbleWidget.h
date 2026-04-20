@@ -1,0 +1,77 @@
+#ifndef TIPBUBBLEWIDGET_H
+#define TIPBUBBLEWIDGET_H
+
+#include <QWidget>
+#include <QString>
+#include <QTimer>
+#include <QPropertyAnimation>
+#include <QRect>
+#include <QPolygon>
+
+class TipBubbleWidget : public QWidget
+{
+    Q_OBJECT
+    Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
+
+public:
+    enum BubbleType { StatusBubble = 0, TipBubble = 1 };
+
+    explicit TipBubbleWidget(QWidget *parent = nullptr);
+    ~TipBubbleWidget();
+
+    // Position relative to the pet widget
+    void anchorTo(const QWidget *petWidget);
+
+    // Show bubble with title + message
+    void showBubble(const QString &title, const QString &message, BubbleType type = TipBubble);
+
+    // Hide with exit animation
+    void hideBubble();
+
+    qreal opacity() const { return m_opacity; }
+    void setOpacity(qreal o);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    void positionRelativeTo(const QWidget *pet);
+    void startEnterAnimation();
+    void startExitAnimation();
+    void calculateTextLayout();
+    void updateBubblePath();
+
+    QString m_title;
+    QString m_message;
+    BubbleType m_type = TipBubble;
+
+    // Layout
+    QRect m_bubbleRect;      // The rounded rectangle part (excludes tail)
+    QRect m_titleRect;       // Where title text is drawn
+    QRect m_messageRect;      // Where message text is drawn
+    QPolygon m_tailPoly;      // Tail triangle
+    bool m_tailDown = true;   // true = tail points down (bubble above pet)
+
+    // Animation
+    qreal m_opacity = 1.0;
+    QPropertyAnimation *m_opacityAnim = nullptr;
+
+    // Auto-dismiss
+    QTimer m_dismissTimer;
+    static constexpr int STATUS_DISMISS_MS = 4000;
+    static constexpr int TIP_DISMISS_MS = 8000;
+
+    // Styling
+    static constexpr int PADDING_H = 8;       // horizontal padding
+    static constexpr int PADDING_V = 6;        // vertical padding
+    static constexpr int CORNER_RADIUS = 2;    // rounded corner radius
+    static constexpr int TAIL_WIDTH = 16;       // base of tail triangle
+    static constexpr int TAIL_HEIGHT = 12;      // height of tail triangle
+    static constexpr int TAIL_OFFSET_FROM_RIGHT = 25; // tail position from right edge
+    static constexpr int MAX_BUBBLE_WIDTH = 200;
+    static constexpr int SHADOW_OFFSET = 1;     // hard shadow offset
+
+    const QWidget *m_anchoredPet = nullptr;
+};
+
+#endif // TIPBUBBLEWIDGET_H
