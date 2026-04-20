@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": {
+      "command": "clippy-gateway --source codex --event tool.before",
+      "async": true
+    },
+    "PostToolUse": {
+      "command": "clippy-gateway --source codex --event tool.after",
+      "async": true
+    },
+    "SessionStart": {
+      "command": "clippy-gateway --source codex --event session.start",
+      "async": true
+    },
+    "Stop": {
+      "command": "clippy-gateway --source codex --event session.idle",
+      "async": true
+    },
+    "UserPromptSubmit": {
+      "command": "clippy-gateway --source codex --event prompt.submitted",
+      "async": true
+    },
+    "PermissionRequest": {
+      "command": "clippy-gateway --source codex --event permission.requested",
+      "async": true
+    }
+  }
+}
