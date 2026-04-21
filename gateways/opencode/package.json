@@ -1,6 +1,6 @@
 {
   "name": "@eastlake/clippy-opencode",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenCode plugin for Clippy desktop pet",
   "main": "./plugin.mjs",
   "type": "module",
@@ -14,7 +14,7 @@
     "plugin"
   ],
   "license": "MIT",
-  "peerDependencies": {
+  "dependencies": {
     "@eastlake/clippy-gateway": "^1.0.0"
   }
 }

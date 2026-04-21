@@ -1,13 +1,5 @@
-// Clippy plugin for OpenCode — maps OpenCode bus events to unified event names
-// and sends them to the Clippy desktop pet via IPC.
-//
-// Platform transport:
-//   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
-//   Windows       → Named pipe          (\\.\pipe\clippy)
-
 import { sendToClippy } from '@eastlake/clippy-gateway/lib/ipc.mjs';
 
-// Unified event mapping from OpenCode bus events (D10 table)
 const EVENT_MAP = {
   'session.created': 'session.start',
   'session.deleted': 'session.end',
@@ -23,12 +15,10 @@ const EVENT_MAP = {
   'todo.updated': 'todo.updated',
 };
 
-export default function clippyPlugin() {
+export const clippy = async () => {
   return {
-    name: 'clippy',
-
-    onEvent(event) {
-      const unified = EVENT_MAP[event.name];
+    event: async ({ event }) => {
+      const unified = EVENT_MAP[event.type];
       if (!unified) return;
 
       const message = {
@@ -44,10 +34,7 @@ export default function clippyPlugin() {
         message.filePath = event.data.filePath;
       }
 
-      // Fire-and-forget — don't block the OpenCode event bus
-      sendToClippy(message).catch(() => {
-        // Silently fail — Clippy might not be running
-      });
+      sendToClippy(message).catch(() => {});
     },
   };
-}
+};
