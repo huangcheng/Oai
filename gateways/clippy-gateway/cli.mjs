@@ -13,7 +13,7 @@
  */
 
 import { platform } from 'node:process';
-import { getEndpoint, sendToClippy } from '../shared/ipc.mjs';
+import { getEndpoint, sendToClippy } from './lib/ipc.mjs';
 
 // --- Argument parsing -------------------------------------------------------
 

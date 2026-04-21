@@ -1,11 +1,27 @@
 {
   "name": "clippy-gateway",
   "version": "1.0.0",
-  "description": "CLI gateway for sending events to Clippy desktop pet",
+  "description": "CLI gateway for sending events to the Clippy desktop pet",
+  "main": "./cli.mjs",
   "bin": {
     "clippy-gateway": "./cli.mjs"
   },
   "type": "module",
+  "files": [
+    "cli.mjs",
+    "lib/"
+  ],
+  "keywords": [
+    "clippy",
+    "desktop-pet",
+    "ai",
+    "codex",
+    "claude",
+    "opencode",
+    "ipc"
+  ],
+  "author": "",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   }

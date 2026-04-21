@@ -13,7 +13,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import { sendToClippy, getEndpoint } from '../shared/ipc.mjs';
+import { sendToClippy, getEndpoint } from './ipc.mjs';
 
 // Codex JSONL event → unified event mapping (D10 table)
 const EVENT_MAP = {
