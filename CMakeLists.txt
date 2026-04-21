@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(Clippy LANGUAGES CXX)
+project(Qlippy LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -82,9 +82,15 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
 endif()
 
 # --- Executable --------------------------------------------------------------
-qt_add_executable(Clippy
+if(WIN32)
+    set(PLATFORM_SOURCES assets/qlippy.rc)
+endif()
+
+qt_add_executable(Qlippy
     WIN32 MACOSX_BUNDLE
     src/main.cpp
+    ${PLATFORM_SOURCES}
+    assets/icons.qrc
     src/mainwindow.cpp
     src/mainwindow.h
     src/SpriteAnimationEngine.cpp
@@ -107,11 +113,11 @@ qt_add_executable(Clippy
     src/SettingsPanelWidget.h
 )
 
-target_include_directories(Clippy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(Qlippy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # --- Lottie effect resources -------------------------------------------------
 # Only effects are Lottie — character animations use sprite sheets at runtime
-qt_add_resources(Clippy "lottie_effects"
+qt_add_resources(Qlippy "lottie_effects"
     PREFIX "/lottie"
     BASE "assets/lottie"
     FILES
@@ -125,12 +131,12 @@ qt_add_resources(Clippy "lottie_effects"
 
 # --- Translations ------------------------------------------------------------
 qt_add_translations(
-    TARGETS Clippy
-    TS_FILES Clippy_zh_CN.ts
+    TARGETS Qlippy
+    TS_FILES Qlippy_zh_CN.ts
 )
 
 # --- Link libraries ----------------------------------------------------------
-target_link_libraries(Clippy
+target_link_libraries(Qlippy
     PRIVATE
         Qt::Core
         Qt::Gui
@@ -140,14 +146,14 @@ target_link_libraries(Clippy
 )
 
 # rlottie header path (FetchContent puts it in build/_deps)
-target_include_directories(Clippy PRIVATE
+target_include_directories(Qlippy PRIVATE
     ${rlottie_SOURCE_DIR}/inc
 )
 
 # --- Install -----------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS Clippy
+install(TARGETS Qlippy
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -158,18 +164,26 @@ install(DIRECTORY assets/
     DESTINATION assets
 )
 
-# --- macOS: hide Dock icon ---------------------------------------------------
+# --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
-    add_custom_command(TARGET Clippy POST_BUILD
+    set_target_properties(Qlippy PROPERTIES
+        MACOSX_BUNDLE_ICON_FILE "qlippy.icns"
+    )
+    set_source_files_properties(assets/qlippy.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources"
+    )
+    target_sources(Qlippy PRIVATE assets/qlippy.icns)
+
+    add_custom_command(TARGET Qlippy POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/hide_dock_icon.py"
-            "$<TARGET_BUNDLE_DIR:Clippy>/Contents/Info.plist"
-        COMMENT "Hiding Clippy from Dock (LSUIElement)"
+            "$<TARGET_BUNDLE_DIR:Qlippy>/Contents/Info.plist"
+        COMMENT "Hiding Qlippy from Dock (LSUIElement)"
     )
 endif()
 
 qt_generate_deploy_app_script(
-    TARGET Clippy
+    TARGET Qlippy
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )

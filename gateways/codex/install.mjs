@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * install.mjs — Auto-install Codex hooks for Clippy
+ * install.mjs — Auto-install Codex hooks for Qlippy
  *
  * Usage:
- *   npx @clippy/codex
+ *   npx @qlippy/codex
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -34,7 +34,7 @@ function installHooks() {
   };
 
   writeFileSync(hooksPath, JSON.stringify(merged, null, 2) + '\n');
-  console.log(`Clippy hooks installed to ${hooksPath}`);
+  console.log(`Qlippy hooks installed to ${hooksPath}`);
 }
 
 installHooks();

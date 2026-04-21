@@ -2,18 +2,18 @@
 
 /**
  * codex-jsonl-parser — Reads `codex exec --json` JSONL output and maps
- * events to unified names, forwarding them to Clippy's IPC endpoint.
+ * events to unified names, forwarding them to Qlippy's IPC endpoint.
  *
  * Usage:
  *   codex exec --json "prompt" | node parser.mjs [--endpoint <path>]
  *
  * Platform transport:
- *   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
- *   Windows       → Named pipe          (\\.\pipe\clippy)
+ *   Linux / macOS → Unix domain socket  (~/.qlippy/qlippy.sock)
+ *   Windows       → Named pipe          (\\.\pipe\qlippy)
  */
 
 import { createInterface } from 'node:readline';
-import { sendToClippy, getEndpoint, pingClippy } from '@eastlake/clippy-gateway/lib/ipc.mjs';
+import { sendToQlippy, getEndpoint, pingQlippy } from '@eastlake/qlippy-gateway/lib/ipc.mjs';
 
 // Codex JSONL event → unified event mapping (D10 table)
 const EVENT_MAP = {
@@ -36,7 +36,7 @@ const endpointArg = process.argv.includes('--endpoint')
   : undefined;
 
 function send(message) {
-  sendToClippy(message, { endpoint: endpointArg, retries: 2 }).catch(() => {});
+  sendToQlippy(message, { endpoint: endpointArg, retries: 2 }).catch(() => {});
 }
 
 function processLine(line) {

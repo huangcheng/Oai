@@ -1,11 +1,11 @@
 ## Context
 
-The current `TipsEngine` drives all Clippy speech through pattern matching on IPC events. There is no mechanism for spontaneous, idle-time speech. `MainWindow` owns an `m_idleTimer` (via `SpriteAnimationEngine`) that fires after a period of inactivity, but it only triggers animations. The `TipBubbleWidget` already provides the UI for showing speech bubbles with title, message, and auto-dismiss.
+The current `TipsEngine` drives all Qlippy speech through pattern matching on IPC events. There is no mechanism for spontaneous, idle-time speech. `MainWindow` owns an `m_idleTimer` (via `SpriteAnimationEngine`) that fires after a period of inactivity, but it only triggers animations. The `TipBubbleWidget` already provides the UI for showing speech bubbles with title, message, and auto-dismiss.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Introduce spontaneous idle-time sayings that make Clippy feel alive
+- Introduce spontaneous idle-time sayings that make Qlippy feel alive
 - Keep saying frequency user-controllable
 - Reuse existing `TipBubbleWidget` for presentation
 

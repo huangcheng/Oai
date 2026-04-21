@@ -1,13 +1,13 @@
-# @clippy/opencode
+# @qlippy/opencode
 
-OpenCode plugin for the Clippy desktop pet.
+OpenCode plugin for the Qlippy desktop pet.
 
 ## Install
 
 ```bash
-npm install -g @eastlake/clippy-gateway
+npm install -g @eastlake/qlippy-gateway
 cd ~/.config/opencode
-npm install @eastlake/clippy-opencode
+npm install @eastlake/qlippy-opencode
 ```
 
 Then add to your `opencode.json`:
@@ -15,7 +15,7 @@ Then add to your `opencode.json`:
 ```json
 {
   "plugin": [
-    "@clippy/opencode"
+    "@qlippy/opencode"
   ]
 }
 ```

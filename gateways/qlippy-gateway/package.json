@@ -1,0 +1,28 @@
+{
+  "name": "@eastlake/qlippy-gateway",
+  "version": "1.1.0",
+  "description": "CLI gateway for sending events to the Qlippy desktop pet",
+  "main": "./cli.mjs",
+  "bin": {
+    "qlippy-gateway": "cli.mjs"
+  },
+  "type": "module",
+  "files": [
+    "cli.mjs",
+    "lib/"
+  ],
+  "keywords": [
+    "qlippy",
+    "desktop-pet",
+    "ai",
+    "codex",
+    "claude",
+    "opencode",
+    "ipc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

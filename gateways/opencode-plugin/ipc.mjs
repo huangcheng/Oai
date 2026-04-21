@@ -1,15 +1,15 @@
 /**
- * ipc.mjs — Platform-aware IPC transport for Clippy desktop pet.
+ * ipc.mjs — Platform-aware IPC transport for Qlippy desktop pet.
  *
  *   Linux / macOS → Unix domain socket
  *   Windows       → Named pipe
  *
  * Usage:
- *   import { getEndpoint, sendToClippy } from './ipc.mjs';
+ *   import { getEndpoint, sendToQlippy } from './ipc.mjs';
  *
  *   const endpoint = getEndpoint();                      // auto-detect
  *   const endpoint = getEndpoint('/custom/sock/path');   // override
- *   await sendToClippy({ type: 'event', source: 'opencode', event: 'session.start' });
+ *   await sendToQlippy({ type: 'event', source: 'opencode', event: 'session.start' });
  */
 
 import { createConnection } from 'node:net';
@@ -18,8 +18,8 @@ import { platform } from 'node:process';
 
 // ── Default endpoints per platform ──────────────────────────────────────────
 
-const UNIX_SOCKET = () => `${homedir()}/.clippy/clippy.sock`;
-const NAMED_PIPE  = '\\\\.\\pipe\\im.cheng.clippy';
+const UNIX_SOCKET = () => `${homedir()}/.qlippy/qlippy.sock`;
+const NAMED_PIPE  = '\\\\.\\pipe\\im.cheng.qlippy';
 
 /**
  * Return the default IPC endpoint for the current platform.
@@ -33,7 +33,7 @@ export function getEndpoint(override) {
 // ── Send a message ─────────────────────────────────────────────────────────
 
 /**
- * Send a JSON message to the Clippy desktop pet via IPC.
+ * Send a JSON message to the Qlippy desktop pet via IPC.
  *
  * @param {object} message  Must have at least `type` field.
  * @param {object} [opts]
@@ -41,7 +41,7 @@ export function getEndpoint(override) {
  * @param {number} [opts.timeout]   Connection timeout in ms (default 3000)
  * @returns {Promise<void>}
  */
-export function sendToClippy(message, opts = {}) {
+export function sendToQlippy(message, opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const timeout  = opts.timeout ?? 3000;
 
@@ -57,7 +57,7 @@ export function sendToClippy(message, opts = {}) {
 
     client.on('error', (err) => {
       if (err.code === 'ENOENT') {
-        reject(new Error(`Clippy IPC endpoint not found: ${endpoint}\nIs the Clippy desktop pet running?`));
+        reject(new Error(`Qlippy IPC endpoint not found: ${endpoint}\nIs the Qlippy desktop pet running?`));
       } else {
         reject(new Error(`IPC error (${endpoint}): ${err.message}`));
       }
@@ -65,7 +65,7 @@ export function sendToClippy(message, opts = {}) {
 
     const timer = setTimeout(() => {
       client.destroy();
-      reject(new Error(`Timeout connecting to Clippy IPC endpoint: ${endpoint}`));
+      reject(new Error(`Timeout connecting to Qlippy IPC endpoint: ${endpoint}`));
     }, timeout);
 
     client.on('close', () => clearTimeout(timer));

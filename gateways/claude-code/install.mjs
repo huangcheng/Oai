@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * install.mjs — Auto-install Claude Code hooks for Clippy
+ * install.mjs — Auto-install Claude Code hooks for Qlippy
  *
  * Usage:
- *   npx @clippy/claude-code
+ *   npx @qlippy/claude-code
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -34,7 +34,7 @@ function mergeSettings() {
   };
 
   writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
-  console.log(`Clippy hooks installed to ${settingsPath}`);
+  console.log(`Qlippy hooks installed to ${settingsPath}`);
 }
 
 mergeSettings();

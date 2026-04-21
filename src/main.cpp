@@ -18,23 +18,24 @@
 #include <QDebug>
 
 static QString configDir() {
-    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Clippy";
+    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Qlippy";
 }
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    a.setApplicationName("Clippy");
-    a.setOrganizationName("Clippy");
+    a.setApplicationName("Qlippy");
+    a.setOrganizationName("Qlippy");
+    a.setWindowIcon(QIcon(":/icons/icons/clippy.png"));
     a.setQuitOnLastWindowClosed(false); // system tray keeps it alive
 
     // --- Single instance enforcement -----------------------------------------
     const QString lockDir = configDir();
     QDir().mkpath(lockDir);
-    QLockFile lockFile(lockDir + "/Clippy.lock");
+    QLockFile lockFile(lockDir + "/Qlippy.lock");
     lockFile.setStaleLockTime(30000); // 30s stale timeout
     if (!lockFile.tryLock(100)) {
-        qInfo() << "Clippy is already running. Bringing existing instance to front.";
+        qInfo() << "Qlippy is already running. Bringing existing instance to front.";
         return 0;
     }
 
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
     QTranslator translator;
     QString lang = config.language();
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Clippy_" + lang;
+        const QString baseName = "Qlippy_" + lang;
         if (translator.load(":/i18n/" + baseName)) {
             a.installTranslator(&translator);
         }
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
         // Fall back to system locale
         const QStringList uiLanguages = QLocale::system().uiLanguages();
         for (const QString &locale : uiLanguages) {
-            const QString baseName = "Clippy_" + QLocale(locale).name();
+            const QString baseName = "Qlippy_" + QLocale(locale).name();
             if (translator.load(":/i18n/" + baseName)) {
                 a.installTranslator(&translator);
                 break;
@@ -152,7 +153,7 @@ int main(int argc, char *argv[])
     w.activateWindow();
 #endif
 
-    qDebug() << "Clippy started — window at" << w.pos() << "size" << w.size();
+    qDebug() << "Qlippy started — window at" << w.pos() << "size" << w.size();
 
     return a.exec();
 }

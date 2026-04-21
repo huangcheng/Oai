@@ -108,7 +108,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing, false);
 
     // Asymmetric tail: right edge nearly vertical, left edge sharply sloped
-    // This makes the tail "point" diagonally toward Clippy like a real speech bubble
+    // This makes the tail "point" diagonally toward Qlippy like a real speech bubble
     int tailRightX = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT;
     int tailTipX = tailRightX + 2;  // tip just slightly right of the vertical edge
     int tailLeftX = tailRightX - TAIL_WIDTH; // left edge is far left, creating the slope

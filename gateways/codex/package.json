@@ -1,10 +1,10 @@
 {
-  "name": "@eastlake/clippy-codex",
+  "name": "@eastlake/qlippy-codex",
   "version": "1.1.0",
-  "description": "Codex hooks and JSONL parser for Clippy desktop pet",
+  "description": "Codex hooks and JSONL parser for Qlippy desktop pet",
   "type": "module",
   "bin": {
-    "clippy-codex-parser": "./parser.mjs"
+    "qlippy-codex-parser": "./parser.mjs"
   },
   "files": [
     "hooks.json",
@@ -15,7 +15,7 @@
     "install-hooks": "node install.mjs"
   },
   "keywords": [
-    "clippy",
+    "qlippy",
     "codex",
     "openai",
     "hooks",
@@ -23,6 +23,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@eastlake/clippy-gateway": "^1.1.0"
+    "@eastlake/qlippy-gateway": "^1.1.0"
   }
 }
