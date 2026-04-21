@@ -86,13 +86,13 @@ void SettingsPanelWidget::setupUi()
     QHBoxLayout *titleRow = new QHBoxLayout();
     titleRow->setSpacing(4);
 
-    m_titleLabel = new QLabel("Settings", m_contentWidget);
+    m_titleLabel = new QLabel(tr("Settings"), m_contentWidget);
     QFont titleFont("Tahoma", 10, QFont::Bold);
     m_titleLabel->setFont(titleFont);
     m_titleLabel->setStyleSheet("color: black; background: transparent;");
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_closeButton = new QPushButton("×", m_contentWidget);
+    m_closeButton = new QPushButton(tr("×"), m_contentWidget);
     m_closeButton->setFont(QFont("Tahoma", 12, QFont::Bold));
     m_closeButton->setFixedSize(20, 20);
     m_closeButton->setCursor(Qt::PointingHandCursor);
@@ -123,14 +123,14 @@ void SettingsPanelWidget::setupUi()
     QHBoxLayout *langRow = new QHBoxLayout();
     langRow->setSpacing(8);
 
-    m_langLabel = new QLabel("Language", m_contentWidget);
+    m_langLabel = new QLabel(tr("Language"), m_contentWidget);
     m_langLabel->setFont(QFont("Tahoma", 9));
     m_langLabel->setStyleSheet("color: black; background: transparent;");
     m_langLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_langCombo = new QComboBox(m_contentWidget);
-    m_langCombo->addItem("English", "en");
-    m_langCombo->addItem("简体中文", "zh_CN");
+    m_langCombo->addItem(tr("English"), "en");
+    m_langCombo->addItem(tr("简体中文"), "zh_CN");
     m_langCombo->setFont(QFont("Tahoma", 9));
     m_langCombo->setFixedHeight(20);
     m_langCombo->setStyleSheet(R"(
@@ -162,7 +162,7 @@ void SettingsPanelWidget::setupUi()
     QHBoxLayout *autoStartRow = new QHBoxLayout();
     autoStartRow->setSpacing(8);
 
-    m_autoStartLabel = new QLabel("Launch at Login", m_contentWidget);
+    m_autoStartLabel = new QLabel(tr("Launch at Login"), m_contentWidget);
     m_autoStartLabel->setFont(QFont("Tahoma", 9));
     m_autoStartLabel->setStyleSheet("color: black; background: transparent;");
     m_autoStartLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -246,4 +246,14 @@ void SettingsPanelWidget::onAutoStartToggled(bool checked)
 {
     m_config->setAutoStart(checked);
     m_config->save();
+}
+
+void SettingsPanelWidget::retranslateUi()
+{
+    m_titleLabel->setText(tr("Settings"));
+    m_closeButton->setText(tr("×"));
+    m_langLabel->setText(tr("Language"));
+    m_langCombo->setItemText(0, tr("English"));
+    m_langCombo->setItemText(1, tr("简体中文"));
+    m_autoStartLabel->setText(tr("Launch at Login"));
 }

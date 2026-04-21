@@ -22,6 +22,9 @@ public:
     // Position relative to the pet widget
     void anchorTo(const QWidget *petWidget);
 
+    // Retranslate UI when language changes at runtime
+    void retranslateUi();
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 

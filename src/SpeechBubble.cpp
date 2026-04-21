@@ -39,6 +39,7 @@ void SpeechBubble::showMessage(const QString &title, const QString &message, Bub
     int bubbleHeight = textHeight + 2 * BUBBLE_PADDING + TAIL_SIZE;
 
     m_textRect = QRect(BUBBLE_PADDING, BUBBLE_PADDING, textWidth, textHeight);
+    m_bubbleRect = QRect(0, 0, bubbleWidth, bubbleHeight);
 
     startEnterAnimation();
 

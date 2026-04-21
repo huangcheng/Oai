@@ -65,7 +65,8 @@ void LottieEffectOverlay::triggerEffect(const QString &effectName)
 
     effect.width = 200;
     effect.height = 200;
-    effect.buffer.resize(effect.width * effect.height);
+    // Align buffer to 32 bytes for SIMD compatibility
+    effect.buffer.resize(effect.width * effect.height + 8);
     std::fill(effect.buffer.begin(), effect.buffer.end(), 0);
 
     // Stop any existing instance of this effect
@@ -91,21 +92,27 @@ void LottieEffectOverlay::paint(QPainter *painter, const QRect &petBounds)
 {
     for (const ActiveEffect &effect : m_activeEffects) {
         if (effect.animation) {
+            qDebug() << "LottieEffectOverlay: rendering" << effect.name << "frame" << effect.currentFrame;
             rlottie::Surface surface(
                 const_cast<uint32_t*>(effect.buffer.data()),
                 effect.width, effect.height,
                 effect.width * sizeof(uint32_t));
+            qDebug() << "LottieEffectOverlay: surface created, buffer=" << effect.buffer.data();
+            qDebug() << "LottieEffectOverlay: animation ptr=" << effect.animation.get();
             effect.animation->renderSync(effect.currentFrame, surface);
+            qDebug() << "LottieEffectOverlay: renderSync done";
 
             QImage image(reinterpret_cast<const uchar*>(effect.buffer.data()),
                         effect.width, effect.height,
                         effect.width * sizeof(uint32_t),
                         QImage::Format_ARGB32_Premultiplied);
+            qDebug() << "LottieEffectOverlay: image created";
 
             // Position effect relative to pet
             QRect effectRect = petBounds;
             effectRect.translate(effect.offset.toPoint());
             painter->drawImage(effectRect, image);
+            qDebug() << "LottieEffectOverlay: drawImage done";
         }
     }
 }

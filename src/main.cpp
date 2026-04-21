@@ -39,23 +39,32 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // --- Translations --------------------------------------------------------
-    QTranslator translator;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
-        const QString baseName = "Clippy_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
-            a.installTranslator(&translator);
-            break;
-        }
-    }
-
     // --- Config --------------------------------------------------------------
     ConfigManager config;
     config.load();
 
+    // --- Translations --------------------------------------------------------
+    QTranslator translator;
+    QString lang = config.language();
+    if (!lang.isEmpty() && lang != "en") {
+        const QString baseName = "Clippy_" + lang;
+        if (translator.load(":/i18n/" + baseName)) {
+            a.installTranslator(&translator);
+        }
+    } else {
+        // Fall back to system locale
+        const QStringList uiLanguages = QLocale::system().uiLanguages();
+        for (const QString &locale : uiLanguages) {
+            const QString baseName = "Clippy_" + QLocale(locale).name();
+            if (translator.load(":/i18n/" + baseName)) {
+                a.installTranslator(&translator);
+                break;
+            }
+        }
+    }
+
     // --- Main window ---------------------------------------------------------
-    MainWindow w(&config);
+    MainWindow w(&config, &translator);
 
     // Restore saved position (or default to center of primary screen)
     QPoint savedPos = config.windowPosition();
@@ -67,7 +76,7 @@ int main(int argc, char *argv[])
     }
 
     // --- Load assets ---------------------------------------------------------
-    // Character animations: sprite sheet from old opencode-clippy
+    // Character animations: sprite sheet from previous Electron-based version
     const QString assetsDir = QApplication::applicationDirPath() + "/../assets";
     const QString altAssetsDir = QApplication::applicationDirPath() + "/assets";
 
@@ -132,9 +141,17 @@ int main(int argc, char *argv[])
     // --- System tray ---------------------------------------------------------
     SystemTray tray(&w);
     tray.show();
+    w.setSystemTray(&tray);
+
+    // --- Language switching --------------------------------------------------
+    QObject::connect(&config, &ConfigManager::languageChanged,
+                     &w, &MainWindow::onLanguageChanged);
 
     w.show();
     w.raise();
+#ifdef Q_OS_MAC
+    w.activateWindow();
+#endif
 
     qDebug() << "Clippy started — window at" << w.pos() << "size" << w.size();
 

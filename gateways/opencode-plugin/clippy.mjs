@@ -2,8 +2,8 @@
 // and sends them to the Clippy desktop pet via IPC.
 //
 // Platform transport:
-//   Linux / macOS → Unix domain socket  (~/.opencode-clippy/clippy.sock)
-//   Windows       → Named pipe          (\\.\pipe\opencode-clippy)
+//   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
+//   Windows       → Named pipe          (\\.\pipe\clippy)
 
 import { sendToClippy } from '../shared/ipc.mjs';
 

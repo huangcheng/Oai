@@ -14,7 +14,7 @@ QString ConfigManager::defaultEndpoint()
     return QStringLiteral("\\\\.\\pipe\\im.cheng.clippy");
 #else
     // Linux / macOS: Unix domain socket in user home
-    return QDir::homePath() + "/.opencode-clippy/clippy.sock";
+    return QDir::homePath() + "/.clippy/clippy.sock";
 #endif
 }
 
@@ -124,6 +124,7 @@ void ConfigManager::setLanguage(const QString &lang)
     if (m_language != lang) {
         m_language = lang;
         save();
+        emit languageChanged(lang);
     }
 }
 

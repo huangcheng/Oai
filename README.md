@@ -1,6 +1,6 @@
 # Clippy Desktop Pet
 
-A native Qt6/C++ desktop pet that reacts to AI coding tool events. Replaces the Electron-based opencode-clippy with a lightweight (<10MB RAM) native application.
+A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application.
 
 ## Features
 
@@ -109,9 +109,9 @@ Clippy accepts IPC messages over a platform-appropriate transport:
 
 | Platform | Transport | Default Endpoint |
 |---|---|---|
-| **Linux** | Unix domain socket | `~/.opencode-clippy/clippy.sock` |
-| **macOS** | Unix domain socket | `~/.opencode-clippy/clippy.sock` |
-| **Windows** | Named pipe | `\\.\pipe\opencode-clippy` |
+| **Linux** | Unix domain socket | `~/.clippy/clippy.sock` |
+| **macOS** | Unix domain socket | `~/.clippy/clippy.sock` |
+| **Windows** | Named pipe | `\\.\pipe\clippy` |
 
 The desktop app and gateway adapters auto-detect the platform. All Node.js gateways use the shared `gateways/shared/ipc.mjs` module which connects to the correct endpoint. Override with `--endpoint <path>` on any gateway CLI command.
 
@@ -207,10 +207,10 @@ codex exec --json "your prompt" | node gateways/codex-jsonl-parser/parser.mjs
 
 ```bash
 # Send a test event
-echo '{"type":"event","source":"opencode","event":"session.start"}' | nc -U ~/.opencode-clippy/clippy.sock
+echo '{"type":"event","source":"opencode","event":"session.start"}' | nc -U ~/.clippy/clippy.sock
 
 # Send a test tip
-echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | nc -U ~/.opencode-clippy/clippy.sock
+echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | nc -U ~/.clippy/clippy.sock
 ```
 
 ## Project Structure
@@ -254,7 +254,7 @@ Config file: `~/.config/Clippy/config.json`
   "windowY": 500,
   "language": "en",
   "autoStart": false,
-  "ipcEndpoint": "~/.opencode-clippy/clippy.sock"
+  "ipcEndpoint": "~/.clippy/clippy.sock"
 }
 ```
 
@@ -263,7 +263,7 @@ The `ipcEndpoint` field auto-detects the platform default (Unix socket on Linux/
 ## Asset Attribution
 
 - Character animations: Placeholder Lottie files (to be replaced with production assets)
-- Visual effects: Reused from [opencode-clippy](https://github.com/your-org/opencode-clippy) (MIT license)
+- Visual effects: Custom-designed Lottie effect animations (MIT license)
 - Animation engine: [Samsung rlottie](https://github.com/Samsung/rlottie) (MIT license)
 
 ## License
