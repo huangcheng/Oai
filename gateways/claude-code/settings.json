@@ -1,67 +1,67 @@
 {
   "command": {
     "SessionStart": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event session.start",
+      "command": "@eastlake/clippy-gateway --source claude-code --event session.start",
       "async": true
     },
     "SessionEnd": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event session.end",
+      "command": "@eastlake/clippy-gateway --source claude-code --event session.end",
       "async": true
     },
     "Stop": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event session.idle",
+      "command": "@eastlake/clippy-gateway --source claude-code --event session.idle",
       "async": true
     },
     "StopFailure": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event session.error",
+      "command": "@eastlake/clippy-gateway --source claude-code --event session.error",
       "async": true
     },
     "UserPromptSubmit": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event prompt.submitted",
+      "command": "@eastlake/clippy-gateway --source claude-code --event prompt.submitted",
       "async": true
     },
     "PreToolUse": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event tool.before",
+      "command": "@eastlake/clippy-gateway --source claude-code --event tool.before",
       "async": true
     },
     "PostToolUse": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event tool.after",
+      "command": "@eastlake/clippy-gateway --source claude-code --event tool.after",
       "async": true
     },
     "PostToolUseFailure": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event tool.failed",
+      "command": "@eastlake/clippy-gateway --source claude-code --event tool.failed",
       "async": true
     },
     "PermissionRequest": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event permission.requested",
+      "command": "@eastlake/clippy-gateway --source claude-code --event permission.requested",
       "async": true
     },
     "PermissionDenied": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event permission.denied",
+      "command": "@eastlake/clippy-gateway --source claude-code --event permission.denied",
       "async": true
     },
     "SubagentStart": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event subagent.started",
+      "command": "@eastlake/clippy-gateway --source claude-code --event subagent.started",
       "async": true
     },
     "SubagentStop": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event subagent.stopped",
+      "command": "@eastlake/clippy-gateway --source claude-code --event subagent.stopped",
       "async": true
     },
     "Notification": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event notification.sent",
+      "command": "@eastlake/clippy-gateway --source claude-code --event notification.sent",
       "async": true
     },
     "FileChanged": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event file.edited",
+      "command": "@eastlake/clippy-gateway --source claude-code --event file.edited",
       "async": true
     },
     "TaskCreated": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event todo.updated",
+      "command": "@eastlake/clippy-gateway --source claude-code --event todo.updated",
       "async": true
     },
     "TaskCompleted": {
-      "command": "@eastlate/clippy-gateway --source claude-code --event todo.updated",
+      "command": "@eastlake/clippy-gateway --source claude-code --event todo.updated",
       "async": true
     }
   }

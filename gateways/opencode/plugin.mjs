@@ -5,7 +5,7 @@
 //   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
 //   Windows       → Named pipe          (\\.\pipe\clippy)
 
-import { sendToClippy } from '@eastlate/clippy-gateway/lib/ipc.mjs';
+import { sendToClippy } from '@eastlake/clippy-gateway/lib/ipc.mjs';
 
 // Unified event mapping from OpenCode bus events (D10 table)
 const EVENT_MAP = {

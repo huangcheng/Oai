@@ -22,6 +22,9 @@ TipBubbleWidget::TipBubbleWidget(QWidget *parent)
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
+#ifdef Q_OS_MAC
+    setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
+#endif
 
     m_opacity = 1.0;
 

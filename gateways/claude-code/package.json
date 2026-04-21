@@ -1,5 +1,5 @@
 {
-  "name": "@eastlate/clippy-claude-code",
+  "name": "@eastlake/clippy-claude-code",
   "version": "1.0.0",
   "description": "Claude Code hooks for Clippy desktop pet",
   "type": "module",
@@ -17,6 +17,6 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@eastlate/clippy-gateway": "^1.0.0"
+    "@eastlake/clippy-gateway": "^1.0.0"
   }
 }

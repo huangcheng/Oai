@@ -1,27 +1,27 @@
 {
   "hooks": {
     "PreToolUse": {
-      "command": "@eastlate/clippy-gateway --source codex --event tool.before",
+      "command": "@eastlake/clippy-gateway --source codex --event tool.before",
       "async": true
     },
     "PostToolUse": {
-      "command": "@eastlate/clippy-gateway --source codex --event tool.after",
+      "command": "@eastlake/clippy-gateway --source codex --event tool.after",
       "async": true
     },
     "SessionStart": {
-      "command": "@eastlate/clippy-gateway --source codex --event session.start",
+      "command": "@eastlake/clippy-gateway --source codex --event session.start",
       "async": true
     },
     "Stop": {
-      "command": "@eastlate/clippy-gateway --source codex --event session.idle",
+      "command": "@eastlake/clippy-gateway --source codex --event session.idle",
       "async": true
     },
     "UserPromptSubmit": {
-      "command": "@eastlate/clippy-gateway --source codex --event prompt.submitted",
+      "command": "@eastlake/clippy-gateway --source codex --event prompt.submitted",
       "async": true
     },
     "PermissionRequest": {
-      "command": "@eastlate/clippy-gateway --source codex --event permission.requested",
+      "command": "@eastlake/clippy-gateway --source codex --event permission.requested",
       "async": true
     }
   }

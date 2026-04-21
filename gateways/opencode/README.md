@@ -5,9 +5,9 @@ OpenCode plugin for the Clippy desktop pet.
 ## Install
 
 ```bash
-npm install -g @eastlate/clippy-gateway
+npm install -g @eastlake/clippy-gateway
 cd ~/.config/opencode
-npm install @eastlate/clippy-opencode
+npm install @eastlake/clippy-opencode
 ```
 
 Then add to your `opencode.json`:
