@@ -1,6 +1,6 @@
 {
   "name": "@eastlake/clippy-opencode",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "OpenCode plugin for Clippy desktop pet",
   "main": "./plugin.mjs",
   "type": "module",

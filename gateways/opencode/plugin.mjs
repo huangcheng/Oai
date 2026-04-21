@@ -15,7 +15,7 @@ const EVENT_MAP = {
   'todo.updated': 'todo.updated',
 };
 
-export const clippy = async ({ client }) => {
+export default async ({ client }) => {
   // Health check on startup
   const alive = await pingClippy();
   if (!alive) {
