@@ -20,11 +20,11 @@ public:
      * Start listening on the given endpoint.
      *
      * Linux/macOS — endpoint is a Unix domain socket path
-     *   (e.g. "~/.opencode-clippy/clippy.sock").
+     *   (e.g. "~/.clippy/clippy.sock").
      *   Stale socket files are cleaned up automatically.
      *
      * Windows — endpoint is a named pipe path
-     *   (e.g. "\\.\pipe\opencode-clippy").
+     *   (e.g. "\\.\pipe\clippy").
      *   QLocalServer creates the pipe directly; no file is written.
      *
      * @param endpoint     Platform IPC path

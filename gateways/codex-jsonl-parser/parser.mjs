@@ -8,8 +8,8 @@
  *   codex exec --json "prompt" | node parser.mjs [--endpoint <path>]
  *
  * Platform transport:
- *   Linux / macOS → Unix domain socket  (~/.opencode-clippy/clippy.sock)
- *   Windows       → Named pipe          (\\.\pipe\opencode-clippy)
+ *   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
+ *   Windows       → Named pipe          (\\.\pipe\clippy)
  */
 
 import { createInterface } from 'node:readline';

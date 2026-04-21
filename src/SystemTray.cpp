@@ -63,8 +63,8 @@ void SystemTray::setupMenu()
 {
     m_trayMenu = new QMenu();
 
-    QAction *toggleAction = m_trayMenu->addAction(tr("Show/Hide"));
-    connect(toggleAction, &QAction::triggered, this, [this]() {
+    m_toggleAction = m_trayMenu->addAction(tr("Show/Hide"));
+    connect(m_toggleAction, &QAction::triggered, this, [this]() {
         if (m_mainWindow) {
             if (m_mainWindow->isVisible()) {
                 m_mainWindow->hide();
@@ -77,8 +77,19 @@ void SystemTray::setupMenu()
 
     m_trayMenu->addSeparator();
 
-    QAction *quitAction = m_trayMenu->addAction(tr("Quit"));
-    connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
+    m_quitAction = m_trayMenu->addAction(tr("Quit"));
+    connect(m_quitAction, &QAction::triggered, qApp, &QApplication::quit);
 
     m_trayIcon->setContextMenu(m_trayMenu);
+}
+
+void SystemTray::retranslateUi()
+{
+    m_trayIcon->setToolTip(tr("Clippy Desktop Pet"));
+    if (m_toggleAction) {
+        m_toggleAction->setText(tr("Show/Hide"));
+    }
+    if (m_quitAction) {
+        m_quitAction->setText(tr("Quit"));
+    }
 }

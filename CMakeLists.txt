@@ -18,7 +18,68 @@ FetchContent_Declare(
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(RLOTTIE_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
 set(RLOTTIE_BUILD_TEST OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(rlottie)
+# rlottie declares cmake_minimum_required(3.3) which is incompatible with CMake 4.x
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE INTERNAL "" FORCE)
+
+# Patch rlottie before building: its ARMv7 NEON assembly is incompatible with Apple Silicon (ARM64)
+FetchContent_GetProperties(rlottie)
+if(NOT rlottie_POPULATED)
+    FetchContent_Populate(rlottie)
+    if(APPLE)
+        # rlottie's ARMv7 NEON assembly is incompatible with Apple Silicon (ARM64/AArch64).
+        # Provide C++ fallback implementations for the missing assembly symbols.
+        set(NEON_PATCH_FILE "${rlottie_SOURCE_DIR}/src/vector/vdrawhelper_neon.cpp")
+        file(READ "${NEON_PATCH_FILE}" NEON_PATCH_CONTENT)
+        if(NOT NEON_PATCH_CONTENT MATCHES "pixman_composite_src_n_8888_asm_neon.*fallback")
+            file(APPEND "${NEON_PATCH_FILE}" "
+
+/* macOS fallback for missing ARMv7 NEON assembly symbols */
+#if defined(__APPLE__)
+extern \"C\" void pixman_composite_src_n_8888_asm_neon(int32_t w, int32_t h,
+                                                     uint32_t *dst,
+                                                     int32_t   dst_stride,
+                                                     uint32_t  src)
+{
+    for (int32_t y = 0; y < h; ++y) {
+        for (int32_t x = 0; x < w; ++x) {
+            dst[y * dst_stride + x] = src;
+        }
+    }
+}
+
+extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
+                                                      uint32_t *dst,
+                                                      int32_t   dst_stride,
+                                                      uint32_t  src)
+{
+    uint8_t src_a = src >> 24;
+    if (src_a == 0) return;
+    for (int32_t y = 0; y < h; ++y) {
+        for (int32_t x = 0; x < w; ++x) {
+            uint32_t d = dst[y * dst_stride + x];
+            uint8_t da = d >> 24;
+            uint8_t dr = (d >> 16) & 0xFF;
+            uint8_t dg = (d >> 8) & 0xFF;
+            uint8_t db = d & 0xFF;
+            uint8_t sa = src >> 24;
+            uint8_t sr = (src >> 16) & 0xFF;
+            uint8_t sg = (src >> 8) & 0xFF;
+            uint8_t sb = src & 0xFF;
+            uint16_t inv_sa = 255 - sa;
+            uint8_t a = sa + (da * inv_sa / 255);
+            uint8_t r = sr + (dr * inv_sa / 255);
+            uint8_t g = sg + (dg * inv_sa / 255);
+            uint8_t b = sb + (db * inv_sa / 255);
+            dst[y * dst_stride + x] = (a << 24) | (r << 16) | (g << 8) | b;
+        }
+    }
+}
+#endif
+")
+        endif()
+    endif()
+    add_subdirectory(${rlottie_SOURCE_DIR} ${rlottie_BINARY_DIR})
+endif()
 
 # --- Executable --------------------------------------------------------------
 qt_add_executable(Clippy
@@ -98,6 +159,16 @@ install(TARGETS Clippy
 install(DIRECTORY assets/
     DESTINATION assets
 )
+
+# --- macOS: hide Dock icon ---------------------------------------------------
+if(APPLE)
+    add_custom_command(TARGET Clippy POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E env python3
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/hide_dock_icon.py"
+            "$<TARGET_BUNDLE_DIR:Clippy>/Contents/Info.plist"
+        COMMENT "Hiding Clippy from Dock (LSUIElement)"
+    )
+endif()
 
 qt_generate_deploy_app_script(
     TARGET Clippy

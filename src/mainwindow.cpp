@@ -5,6 +5,7 @@
 #include "ConfigManager.h"
 #include "TipBubbleWidget.h"
 #include "SettingsPanelWidget.h"
+#include "SystemTray.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -13,10 +14,12 @@
 #include <QAction>
 #include <QApplication>
 #include <QRandomGenerator>
+#include <QTranslator>
 
-MainWindow::MainWindow(ConfigManager *config, QWidget *parent)
+MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent)
     : QWidget(parent)
     , m_config(config)
+    , m_translator(translator)
 {
     setupWindowFlags();
 
@@ -69,6 +72,13 @@ void MainWindow::setupWindowFlags()
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
+#ifdef Q_OS_MAC
+    // macOS: tool windows are hidden when the app is not active.
+    // This keeps the pet visible at all times.
+    setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
+    // Ensure the frameless translucent window composites correctly.
+    setAttribute(Qt::WA_NoSystemBackground, true);
+#endif
 }
 
 void MainWindow::paintEvent(QPaintEvent * /*event*/)
@@ -84,6 +94,11 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
     // Draw visual effects on top (Lottie)
     if (m_effects) {
         m_effects->paint(&painter, rect());
+    }
+
+    // Draw speech bubble (Win98-style tip)
+    if (m_bubble) {
+        m_bubble->paint(&painter, rect());
     }
 }
 
@@ -186,4 +201,38 @@ void MainWindow::openSettings()
     m_settingsPanel->anchorTo(this);
     m_settingsPanel->show();
     m_settingsPanel->raise();
+}
+
+void MainWindow::setSystemTray(SystemTray *tray)
+{
+    m_systemTray = tray;
+}
+
+void MainWindow::retranslateUi()
+{
+    // Context menu is ephemeral — it will pick up translations on next show.
+    // Nothing persistent to update here except the About bubble text which is also ephemeral.
+}
+
+void MainWindow::reloadTranslator(const QString &lang)
+{
+    QApplication *app = qApp;
+    app->removeTranslator(m_translator);
+
+    if (!lang.isEmpty() && lang != "en") {
+        const QString baseName = "Clippy_" + lang;
+        if (m_translator->load(":/i18n/" + baseName)) {
+            app->installTranslator(m_translator);
+        }
+    }
+}
+
+void MainWindow::onLanguageChanged(const QString &lang)
+{
+    reloadTranslator(lang);
+    retranslateUi();
+    m_settingsPanel->retranslateUi();
+    if (m_systemTray) {
+        m_systemTray->retranslateUi();
+    }
 }

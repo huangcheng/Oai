@@ -7,6 +7,7 @@
 class QSystemTrayIcon;
 class QMenu;
 class QWidget;
+class QAction;
 
 class SystemTray : public QObject
 {
@@ -17,6 +18,7 @@ public:
     ~SystemTray() override;
 
     void show();
+    void retranslateUi();
 
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
@@ -27,6 +29,8 @@ private:
     QSystemTrayIcon *m_trayIcon = nullptr;
     QMenu *m_trayMenu = nullptr;
     QWidget *m_mainWindow = nullptr;
+    QAction *m_toggleAction = nullptr;
+    QAction *m_quitAction = nullptr;
 };
 
 #endif // SYSTEMTRAY_H

@@ -26,8 +26,8 @@ public:
 
     /**
      * Returns the platform-appropriate IPC endpoint:
-     *   - Linux/macOS: Unix domain socket path, e.g. "~/.opencode-clippy/clippy.sock"
-     *   - Windows:     Named pipe, e.g. "\\.\pipe\opencode-clippy"
+     *   - Linux/macOS: Unix domain socket path, e.g. "~/.clippy/clippy.sock"
+     *   - Windows:     Named pipe, e.g. "\\.\pipe\clippy"
      */
     QString ipcEndpoint() const { return m_ipcEndpoint; }
 
@@ -36,6 +36,9 @@ public:
 
     /** Platform default endpoint (used when config has no override). */
     static QString defaultEndpoint();
+
+signals:
+    void languageChanged(const QString &lang);
 
 private:
     QString configFilePath() const;

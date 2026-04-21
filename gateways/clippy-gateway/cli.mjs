@@ -7,8 +7,8 @@
  *   clippy-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
  *
  * Platform transport:
- *   Linux / macOS → Unix domain socket  (~/.opencode-clippy/clippy.sock)
- *   Windows       → Named pipe          (\\.\pipe\opencode-clippy)
+ *   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
+ *   Windows       → Named pipe          (\\.\pipe\clippy)
  *   Override      → --endpoint <path>
  */
 

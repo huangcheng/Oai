@@ -18,7 +18,7 @@ import { platform } from 'node:process';
 
 // ── Default endpoints per platform ──────────────────────────────────────────
 
-const UNIX_SOCKET = () => `${homedir()}/.opencode-clippy/clippy.sock`;
+const UNIX_SOCKET = () => `${homedir()}/.clippy/clippy.sock`;
 const NAMED_PIPE  = '\\\\.\\pipe\\im.cheng.clippy';
 
 /**

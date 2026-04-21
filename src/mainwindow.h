@@ -13,18 +13,23 @@ class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
 
+class QTranslator;
+class SystemTray;
+
 class MainWindow : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(ConfigManager *config, QWidget *parent = nullptr);
+    explicit MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent = nullptr);
     ~MainWindow() override;
 
     SpriteAnimationEngine *animationEngine() const { return m_engine; }
     SpeechBubble *speechBubble() const { return m_bubble; }
     LottieEffectOverlay *effectOverlay() const { return m_effects; }
     TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
+
+    void setSystemTray(SystemTray *tray);
 
 signals:
     void positionChanged(const QPoint &pos);
@@ -37,12 +42,17 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
 
+public slots:
+    void retranslateUi();
+    void onLanguageChanged(const QString &lang);
+
 private slots:
     void toggleVisibility();
     void openSettings();
 
 private:
     void setupWindowFlags();
+    void reloadTranslator(const QString &lang);
 
     SpriteAnimationEngine *m_engine;
     SpeechBubble *m_bubble;
@@ -50,6 +60,8 @@ private:
     ConfigManager *m_config;
     TipBubbleWidget *m_tipBubble;
     SettingsPanelWidget *m_settingsPanel;
+    QTranslator *m_translator;
+    SystemTray *m_systemTray = nullptr;
 
     // Drag state
     QPoint m_dragStartPos;
