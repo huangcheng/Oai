@@ -169,7 +169,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_title.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont titleFont("Tahoma", 9, QFont::Bold);
+        QFont titleFont("Tahoma", 11, QFont::Bold);
         painter.setFont(titleFont);
         painter.setPen(Qt::black);
         painter.drawText(m_titleRect, Qt::AlignLeft | Qt::AlignVCenter, m_title);
@@ -180,7 +180,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_message.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont msgFont("Tahoma", 9);
+        QFont msgFont("Tahoma", 11);
         painter.setFont(msgFont);
         painter.setPen(Qt::black);
 
@@ -196,9 +196,10 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
     if (!pet)
         return;
 
-    QPoint petCenter = pet->mapToGlobal(QPoint(pet->width() / 2, pet->height() / 2));
-    int petTop = pet->mapToGlobal(QPoint(0, 0)).y();
-    int petBottom = pet->mapToGlobal(QPoint(0, pet->height())).y();
+    QRect anchor = m_anchorRect.isValid() ? m_anchorRect : QRect(0, 0, pet->width(), pet->height());
+    QPoint petCenter = pet->mapToGlobal(anchor.center());
+    int petTop = pet->mapToGlobal(anchor.topLeft()).y();
+    int petBottom = pet->mapToGlobal(QPoint(anchor.left(), anchor.bottom())).y();
     int petCenterX = petCenter.x();
 
     // Calculate bubble position: align tail tip with pet center, not bubble center
@@ -265,8 +266,8 @@ void TipBubbleWidget::startExitAnimation()
 
 void TipBubbleWidget::calculateTextLayout()
 {
-    QFont titleFont("Tahoma", 9, QFont::Bold);
-    QFont msgFont("Tahoma", 9);
+    QFont titleFont("Tahoma", 11, QFont::Bold);
+    QFont msgFont("Tahoma", 11);
 
     QFontMetrics titleFm(titleFont);
     QFontMetrics msgFm(msgFont);

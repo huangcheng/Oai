@@ -6,7 +6,7 @@
 #include <QSet>
 
 class SpriteAnimationEngine;
-class SpeechBubble;
+class TipBubbleWidget;
 class LottieEffectOverlay;
 class TipsEngine;
 
@@ -18,7 +18,7 @@ public:
     explicit EventRouter(QObject *parent = nullptr);
 
     void setAnimationEngine(SpriteAnimationEngine *engine) { m_engine = engine; }
-    void setSpeechBubble(SpeechBubble *bubble) { m_bubble = bubble; }
+    void setTipBubble(TipBubbleWidget *bubble) { m_tipBubble = bubble; }
     void setEffectOverlay(LottieEffectOverlay *effects) { m_effects = effects; }
     void setTipsEngine(TipsEngine *tips) { m_tips = tips; }
 
@@ -39,7 +39,7 @@ private:
     QMap<QString, EventAction> m_eventMap;
 
     SpriteAnimationEngine *m_engine = nullptr;
-    SpeechBubble *m_bubble = nullptr;
+    TipBubbleWidget *m_tipBubble = nullptr;
     LottieEffectOverlay *m_effects = nullptr;
     TipsEngine *m_tips = nullptr;
 

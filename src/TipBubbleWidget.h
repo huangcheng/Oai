@@ -21,6 +21,7 @@ public:
 
     // Position relative to the pet widget
     void anchorTo(const QWidget *petWidget);
+    void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
 
     // Show bubble with title + message
     void showBubble(const QString &title, const QString &message, BubbleType type = TipBubble);
@@ -72,6 +73,7 @@ private:
     static constexpr int SHADOW_OFFSET = 1;     // hard shadow offset
 
     const QWidget *m_anchoredPet = nullptr;
+    QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)
 };
 
 #endif // TIPBUBBLEWIDGET_H

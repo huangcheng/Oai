@@ -21,6 +21,7 @@ public:
 
     // Position relative to the pet widget
     void anchorTo(const QWidget *petWidget);
+    void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
 
     // Retranslate UI when language changes at runtime
     void retranslateUi();
@@ -50,6 +51,7 @@ private:
 
     // Layout container
     QWidget *m_contentWidget = nullptr;
+    QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)
 
     // Styling constants
     static constexpr int PADDING = 12;
