@@ -1,5 +1,5 @@
 {
-  "name": "@eastlate/clippy-gateway",
+  "name": "@eastlake/clippy-gateway",
   "version": "1.0.0",
   "description": "CLI gateway for sending events to the Clippy desktop pet",
   "main": "./cli.mjs",

@@ -5,9 +5,9 @@ Claude Code hooks for the Clippy desktop pet.
 ## Install
 
 ```bash
-npm install -g @eastlate/clippy-gateway
+npm install -g @eastlake/clippy-gateway
 npm install -g @clippy/claude-code
-npx @eastlate/clippy-claude-code
+npx @eastlake/clippy-claude-code
 ```
 
 The last command merges the hooks into `~/.claude/settings.json`.

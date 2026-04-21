@@ -26,6 +26,9 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
+#ifdef Q_OS_MAC
+    setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
+#endif
 
     setFixedSize(PANEL_WIDTH + SHADOW_OFFSET, PANEL_HEIGHT + SHADOW_OFFSET);
 

@@ -184,34 +184,34 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 
 ```bash
 cd ~/.config/opencode
-npm install @eastlate/clippy-opencode
+npm install @eastlake/clippy-opencode
 ```
 
-Then add `"@eastlate/clippy-opencode"` to the `plugin` array in `opencode.json`.
+Then add `"@eastlake/clippy-opencode"` to the `plugin` array in `opencode.json`.
 
 ### Claude Code
 
 First, install `clippy-gateway` globally:
 
 ```bash
-npm install -g @eastlate/clippy-gateway
+npm install -g @eastlake/clippy-gateway
 ```
 
 ```bash
-npm install -g @eastlate/clippy-claude-code
-npx @eastlate/clippy-claude-code
+npm install -g @eastlake/clippy-claude-code
+npx @eastlake/clippy-claude-code
 ```
 
 ### Codex
 
 ```bash
-npm install -g @eastlate/clippy-codex
-npx @eastlate/clippy-codex
+npm install -g @eastlake/clippy-codex
+npx @eastlake/clippy-codex
 ```
 
 For non-interactive mode:
 ```bash
-codex exec --json "your prompt" | npx @eastlate/clippy-codex parser.mjs
+codex exec --json "your prompt" | npx @eastlake/clippy-codex parser.mjs
 ```
 
 ### Manual Testing
@@ -220,10 +220,10 @@ Use the gateway CLI (works on all platforms):
 
 ```bash
 # Send a test event
-npx @eastlate/clippy-gateway --source opencode --event session.start
+npx @eastlake/clippy-gateway --source opencode --event session.start
 
 # Send a custom tip
-echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | npx @eastlate/clippy-gateway
+echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | npx @eastlake/clippy-gateway
 ```
 
 Or send raw JSON directly to the IPC socket (Linux/macOS with GNU netcat or socat):
