@@ -182,29 +182,36 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 
 ### OpenCode
 
-Copy `gateways/opencode-plugin/clippy.mjs` to `~/.config/opencode/plugins/`.
+```bash
+cd ~/.config/opencode
+npm install @eastlate/clippy-opencode
+```
+
+Then add `"@eastlate/clippy-opencode"` to the `plugin` array in `opencode.json`.
 
 ### Claude Code
 
 First, install `clippy-gateway` globally:
 
 ```bash
-npm install -g clippy-gateway
+npm install -g @eastlate/clippy-gateway
 ```
 
-Then merge `gateways/claude-code-hooks/settings.json` into `~/.claude/settings.json`.
+```bash
+npm install -g @eastlate/clippy-claude-code
+npx @eastlate/clippy-claude-code
+```
 
 ### Codex
 
-Make sure `clippy-gateway` is installed globally (`npm install -g clippy-gateway`), then copy the hooks config:
-
 ```bash
-cp gateways/codex-hooks/hooks.json ~/.codex/hooks.json
+npm install -g @eastlate/clippy-codex
+npx @eastlate/clippy-codex
 ```
 
-For non-interactive mode, pipe `codex exec --json` output through the parser:
+For non-interactive mode:
 ```bash
-codex exec --json "your prompt" | node gateways/codex-jsonl-parser/parser.mjs
+codex exec --json "your prompt" | npx @eastlate/clippy-codex parser.mjs
 ```
 
 ### Manual Testing
