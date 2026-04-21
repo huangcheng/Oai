@@ -89,8 +89,6 @@ qt_add_executable(Clippy
     src/mainwindow.h
     src/SpriteAnimationEngine.cpp
     src/SpriteAnimationEngine.h
-    src/SpeechBubble.cpp
-    src/SpeechBubble.h
     src/LottieEffectOverlay.cpp
     src/LottieEffectOverlay.h
     src/IpcServer.cpp

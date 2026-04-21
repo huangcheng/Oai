@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "SpriteAnimationEngine.h"
-#include "SpeechBubble.h"
 #include "LottieEffectOverlay.h"
 #include "ConfigManager.h"
 #include "TipBubbleWidget.h"
@@ -23,28 +22,31 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 {
     setupWindowFlags();
 
+    // Window is taller than the pet so the speech bubble fits above it
+    setFixedSize(124, 200);
+
     // Initialize subsystems
     m_engine = new SpriteAnimationEngine(this);
-    m_bubble = new SpeechBubble(this);
     m_effects = new LottieEffectOverlay(this);
 
     // Create floating widgets
     m_tipBubble = new TipBubbleWidget(nullptr); // no parent — separate top-level widget
+    m_tipBubble->setAnchorRect(petRect());
     m_tipBubble->anchorTo(this);
 
     m_settingsPanel = new SettingsPanelWidget(m_config, nullptr);
+    m_settingsPanel->setAnchorRect(petRect());
     m_settingsPanel->hide();
-
-    // Set fixed size to match sprite frame dimensions (124x93)
-    setFixedSize(124, 93);
 
     // Connect position change for config persistence
     connect(this, &MainWindow::positionChanged, m_config, &ConfigManager::setWindowPosition);
 
     // Reposition floating widgets when pet moves
     connect(this, &MainWindow::positionChanged, this, [this](const QPoint &) {
+        m_tipBubble->setAnchorRect(petRect());
         m_tipBubble->anchorTo(this);
         if (m_settingsPanel->isVisible()) {
+            m_settingsPanel->setAnchorRect(petRect());
             m_settingsPanel->anchorTo(this);
         }
     });
@@ -86,30 +88,39 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
+    const QRect pet = petRect();
+
     // Draw character animation (sprite sheet)
     if (m_engine) {
-        m_engine->paint(&painter, rect());
+        m_engine->paint(&painter, pet);
     }
 
     // Draw visual effects on top (Lottie)
     if (m_effects) {
-        m_effects->paint(&painter, rect());
+        m_effects->paint(&painter, pet);
     }
 
-    // Draw speech bubble (Win98-style tip)
-    if (m_bubble) {
-        m_bubble->paint(&painter, rect());
-    }
+    // (Speech bubbles are now shown via TipBubbleWidget)
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
         m_dragStartPos = event->globalPosition().toPoint();
         m_dragWindowPos = pos();
         m_dragging = false;
     }
     QWidget::mousePressEvent(event);
+}
+
+QRect MainWindow::petRect() const
+{
+    return QRect(0, height() - 93, 124, 93);
+}
+
+bool MainWindow::isInPetRect(const QPoint &pos) const
+{
+    return petRect().contains(pos);
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
@@ -137,10 +148,11 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
             m_engine->playAnimation("lookdown", SpriteAnimationEngine::HighPriority);
             m_engine->playAnimation("rest", SpriteAnimationEngine::NormalPriority);
             emit positionChanged(pos());
-        } else {
+        } else if (isInPetRect(event->pos())) {
             const QStringList clickAnims = {"click1", "click2"};
             const QString anim = clickAnims.at(QRandomGenerator::global()->bounded(clickAnims.size()));
             m_engine->playAnimation(anim, SpriteAnimationEngine::HighPriority);
+            showRandomGreeting();
         }
     }
     QWidget::mouseReleaseEvent(event);
@@ -148,10 +160,11 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
         const QStringList dblAnims = {"doubleclick1", "doubleclick2"};
         const QString anim = dblAnims.at(QRandomGenerator::global()->bounded(dblAnims.size()));
         m_engine->playAnimation(anim, SpriteAnimationEngine::HighPriority);
+        showRandomGreeting();
     }
     QWidget::mouseDoubleClickEvent(event);
 }
@@ -198,6 +211,7 @@ void MainWindow::toggleVisibility()
 
 void MainWindow::openSettings()
 {
+    m_settingsPanel->setAnchorRect(petRect());
     m_settingsPanel->anchorTo(this);
     m_settingsPanel->show();
     m_settingsPanel->raise();
@@ -235,4 +249,29 @@ void MainWindow::onLanguageChanged(const QString &lang)
     if (m_systemTray) {
         m_systemTray->retranslateUi();
     }
+}
+
+void MainWindow::showRandomGreeting()
+{
+    if (!m_tipBubble) return;
+
+    struct Greeting {
+        const char *title;
+        const char *message;
+    };
+    static const Greeting greetings[] = {
+        {QT_TR_NOOP("Hi there!"), QT_TR_NOOP("Need any help today?")},
+        {QT_TR_NOOP("Hey!"), QT_TR_NOOP("I'm watching you code. Don't mess up!")},
+        {QT_TR_NOOP("Hello!"), QT_TR_NOOP("Ready to build something amazing?")},
+        {QT_TR_NOOP("Psst..."), QT_TR_NOOP("Remember to save your work often!")},
+        {QT_TR_NOOP("Yo!"), QT_TR_NOOP("That code looks pretty good. Keep it up!")},
+        {QT_TR_NOOP("Hi!"), QT_TR_NOOP("Let me know if you need a second pair of eyes.")},
+        {QT_TR_NOOP("Hey there!"), QT_TR_NOOP("Don't forget to take breaks and stretch!")},
+        {QT_TR_NOOP("Hiya!"), QT_TR_NOOP("Coffee break? I'm just a click away.")},
+        {QT_TR_NOOP("Oh hello!"), QT_TR_NOOP("I see you're coding. Want a tip?")},
+        {QT_TR_NOOP("Greetings!"), QT_TR_NOOP("The code is strong with this one.")},
+    };
+
+    const int idx = QRandomGenerator::global()->bounded(static_cast<int>(sizeof(greetings) / sizeof(greetings[0])));
+    m_tipBubble->showBubble(tr(greetings[idx].title), tr(greetings[idx].message), TipBubbleWidget::TipBubble);
 }

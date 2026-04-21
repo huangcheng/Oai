@@ -4,7 +4,6 @@
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieEffectOverlay.h"
-#include "SpeechBubble.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
@@ -106,12 +105,12 @@ int main(int argc, char *argv[])
     // --- Tips engine ---------------------------------------------------------
     TipsEngine tipsEngine;
     tipsEngine.setAnimationEngine(w.animationEngine());
-    tipsEngine.setSpeechBubble(w.speechBubble());
+    tipsEngine.setTipBubble(w.tipBubbleWidget());
 
     // --- Event router --------------------------------------------------------
     EventRouter eventRouter;
     eventRouter.setAnimationEngine(w.animationEngine());
-    eventRouter.setSpeechBubble(w.speechBubble());
+    eventRouter.setTipBubble(w.tipBubbleWidget());
     eventRouter.setEffectOverlay(w.effectOverlay());
     eventRouter.setTipsEngine(&tipsEngine);
 

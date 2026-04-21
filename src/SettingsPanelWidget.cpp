@@ -202,10 +202,11 @@ void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
     if (!pet)
         return;
 
-    QPoint petTopLeft = pet->mapToGlobal(QPoint(0, 0));
-    int petCenterX = petTopLeft.x() + pet->width() / 2;
+    QRect anchor = m_anchorRect.isValid() ? m_anchorRect : QRect(0, 0, pet->width(), pet->height());
+    QPoint petTopLeft = pet->mapToGlobal(anchor.topLeft());
+    int petCenterX = petTopLeft.x() + anchor.width() / 2;
     int petTop = petTopLeft.y();
-    int petBottom = petTop + pet->height();
+    int petBottom = petTop + anchor.height();
 
     // Default position: above the pet
     int panelX = petCenterX - PANEL_WIDTH / 2;

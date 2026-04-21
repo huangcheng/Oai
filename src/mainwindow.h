@@ -7,7 +7,6 @@
 #include <QMenu>
 
 class SpriteAnimationEngine;
-class SpeechBubble;
 class LottieEffectOverlay;
 class ConfigManager;
 class TipBubbleWidget;
@@ -25,7 +24,6 @@ public:
     ~MainWindow() override;
 
     SpriteAnimationEngine *animationEngine() const { return m_engine; }
-    SpeechBubble *speechBubble() const { return m_bubble; }
     LottieEffectOverlay *effectOverlay() const { return m_effects; }
     TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
 
@@ -53,9 +51,12 @@ private slots:
 private:
     void setupWindowFlags();
     void reloadTranslator(const QString &lang);
+    void showRandomGreeting();
+
+    QRect petRect() const;
+    bool isInPetRect(const QPoint &pos) const;
 
     SpriteAnimationEngine *m_engine;
-    SpeechBubble *m_bubble;
     LottieEffectOverlay *m_effects;
     ConfigManager *m_config;
     TipBubbleWidget *m_tipBubble;
@@ -68,6 +69,8 @@ private:
     QPoint m_dragWindowPos;
     bool m_dragging = false;
     static constexpr int DRAG_THRESHOLD = 5;
+
+
 
     // Visibility
     bool m_visible = true;

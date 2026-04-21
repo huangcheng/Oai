@@ -1,6 +1,6 @@
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
-#include "SpeechBubble.h"
+#include "TipBubbleWidget.h"
 #include "LottieEffectOverlay.h"
 #include "TipsEngine.h"
 
@@ -64,45 +64,45 @@ void EventRouter::routeEvent(const QJsonObject &event)
     }
 
     // Show tip
-    if (!action.tipTitle.isEmpty() && m_bubble) {
-        m_bubble->showMessage(action.tipTitle, action.tipBody, SpeechBubble::TipBubble);
+    if (!action.tipTitle.isEmpty() && m_tipBubble) {
+        m_tipBubble->showBubble(action.tipTitle, action.tipBody, TipBubbleWidget::TipBubble);
     }
 }
 
 void EventRouter::initEventMap()
 {
     // Session events
-    m_eventMap["session.start"] = {"wave", "", "", ""};
-    m_eventMap["session.end"] = {"rest", "", "", ""};
+    m_eventMap["session.start"] = {"wave", "", tr("Session started"), tr("Let's get to work!")};
+    m_eventMap["session.end"] = {"rest", "", tr("Session ended"), tr("Good job today!")};
     m_eventMap["session.idle"] = {"rest", "", "", ""};
-    m_eventMap["session.error"] = {"alert", "alert-pulse", "", ""};
+    m_eventMap["session.error"] = {"alert", "alert-pulse", tr("Oops!"), tr("Something went wrong. Check the logs!")};
 
     // Prompt
-    m_eventMap["prompt.submitted"] = {"thinking", "thinking-dots", "", ""};
+    m_eventMap["prompt.submitted"] = {"thinking", "thinking-dots", tr("Thinking..."), tr("Give me a moment to process that.")};
 
     // Tool events
-    m_eventMap["tool.before"] = {"explain", "", "", ""};
-    m_eventMap["tool.after"] = {"", "sparkles", "", ""};
-    m_eventMap["tool.failed"] = {"alert", "alert-pulse", "", ""};
+    m_eventMap["tool.before"] = {"explain", "", tr("Tool running"), tr("Executing command...")};
+    m_eventMap["tool.after"] = {"", "sparkles", tr("Done!"), tr("Command completed successfully.")};
+    m_eventMap["tool.failed"] = {"alert", "alert-pulse", tr("Tool failed"), tr("The command didn't work. Try again?")};
 
     // Permission events
-    m_eventMap["permission.requested"] = {"getattentionyawn", "alert-pulse", "", ""};
-    m_eventMap["permission.denied"] = {"alert", "", "", ""};
+    m_eventMap["permission.requested"] = {"getattentionyawn", "alert-pulse", tr("Permission needed"), tr("Please approve the requested action.")};
+    m_eventMap["permission.denied"] = {"alert", "", tr("Denied"), tr("Permission was denied.")};
     m_eventMap["permission.response"] = {"", "", "", ""};
 
     // Subagent events
-    m_eventMap["subagent.started"] = {"explain", "", "", ""};
-    m_eventMap["subagent.stopped"] = {"", "sparkles", "", ""};
+    m_eventMap["subagent.started"] = {"explain", "", tr("Subagent started"), tr("A helper is working on a task.")};
+    m_eventMap["subagent.stopped"] = {"", "sparkles", tr("Subagent done"), tr("The helper has finished.")};
 
     // Notification
-    m_eventMap["notification.sent"] = {"", "speech-pop", "", ""};
+    m_eventMap["notification.sent"] = {"", "speech-pop", tr("Notification"), tr("You have a new message!")};
 
     // File events
-    m_eventMap["file.edited"] = {"sendmail", "sparkles", "", ""};
+    m_eventMap["file.edited"] = {"sendmail", "sparkles", tr("File saved"), tr("Your changes have been saved.")};
     m_eventMap["file.watched"] = {"", "", "", ""};
 
     // Todo
-    m_eventMap["todo.updated"] = {"congratulate", "confetti", "", ""};
+    m_eventMap["todo.updated"] = {"congratulate", "confetti", tr("Task complete!"), tr("Nice work checking off that todo!")};
 }
 
 bool EventRouter::validateEvent(const QJsonObject &event) const
