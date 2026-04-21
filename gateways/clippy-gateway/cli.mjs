@@ -5,6 +5,7 @@
  *
  * Usage:
  *   clippy-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
+ *   clippy-gateway --ping [--endpoint <path>]
  *
  * Platform transport:
  *   Linux / macOS → Unix domain socket  (~/.clippy/clippy.sock)
@@ -13,7 +14,7 @@
  */
 
 import { platform } from 'node:process';
-import { getEndpoint, sendToClippy } from './lib/ipc.mjs';
+import { getEndpoint, sendToClippy, pingClippy } from './lib/ipc.mjs';
 
 // --- Argument parsing -------------------------------------------------------
 
@@ -37,8 +38,24 @@ function parseArgs(argv) {
 
 const args = parseArgs(process.argv);
 
+// --- Ping mode -------------------------------------------------------------
+
+if (args.ping) {
+  const alive = await pingClippy({ endpoint: args.endpoint });
+  if (alive) {
+    console.log('Clippy is alive');
+    process.exit(0);
+  } else {
+    console.error('Clippy is not responding');
+    process.exit(1);
+  }
+}
+
+// --- Event mode ------------------------------------------------------------
+
 if (!args.source || !args.event) {
   console.error('Usage: clippy-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
+  console.error('       clippy-gateway --ping [--endpoint <path>]');
   console.error('');
   console.error('Sources: opencode, claude-code, codex');
   console.error('Events: session.start, session.end, session.idle, session.error,');
@@ -69,7 +86,7 @@ if (args['file-path']) {
 // --- Connect and send -------------------------------------------------------
 
 try {
-  await sendToClippy(message, { endpoint: args.endpoint });
+  await sendToClippy(message, { endpoint: args.endpoint, retries: 2 });
 } catch (err) {
   console.error(err.message);
   process.exit(1);

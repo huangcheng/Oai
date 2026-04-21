@@ -1,4 +1,4 @@
-import { sendToClippy } from '@eastlake/clippy-gateway/lib/ipc.mjs';
+import { sendToClippy, pingClippy } from '@eastlake/clippy-gateway/lib/ipc.mjs';
 
 const EVENT_MAP = {
   'session.created': 'session.start',
@@ -15,7 +15,19 @@ const EVENT_MAP = {
   'todo.updated': 'todo.updated',
 };
 
-export const clippy = async () => {
+export const clippy = async ({ client }) => {
+  // Health check on startup
+  const alive = await pingClippy();
+  if (!alive) {
+    await client.app.log({
+      body: {
+        service: 'clippy',
+        level: 'warn',
+        message: 'Clippy desktop pet is not running — events will be lost until it starts',
+      },
+    });
+  }
+
   return {
     event: async ({ event }) => {
       const unified = EVENT_MAP[event.type];
@@ -34,7 +46,7 @@ export const clippy = async () => {
         message.filePath = event.data.filePath;
       }
 
-      sendToClippy(message).catch(() => {});
+      sendToClippy(message, { retries: 2 }).catch(() => {});
     },
   };
 };
