@@ -216,12 +216,24 @@ codex exec --json "your prompt" | npx @eastlate/clippy-codex parser.mjs
 
 ### Manual Testing
 
+Use the gateway CLI (works on all platforms):
+
 ```bash
 # Send a test event
+npx @eastlate/clippy-gateway --source opencode --event session.start
+
+# Send a custom tip
+echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | npx @eastlate/clippy-gateway
+```
+
+Or send raw JSON directly to the IPC socket (Linux/macOS with GNU netcat or socat):
+
+```bash
+# Linux / GNU netcat
 echo '{"type":"event","source":"opencode","event":"session.start"}' | nc -U ~/.clippy/clippy.sock
 
-# Send a test tip
-echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | nc -U ~/.clippy/clippy.sock
+# macOS (BSD nc does not support -U; use socat instead)
+echo '{"type":"event","source":"opencode","event":"session.start"}' | socat - UNIX-CONNECT:~/.clippy/clippy.sock
 ```
 
 ## Project Structure
