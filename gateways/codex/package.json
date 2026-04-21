@@ -1,0 +1,28 @@
+{
+  "name": "@eastlate/clippy-codex",
+  "version": "1.0.0",
+  "description": "Codex hooks and JSONL parser for Clippy desktop pet",
+  "type": "module",
+  "bin": {
+    "clippy-codex-parser": "./parser.mjs"
+  },
+  "files": [
+    "hooks.json",
+    "parser.mjs",
+    "README.md"
+  ],
+  "scripts": {
+    "install-hooks": "node install.mjs"
+  },
+  "keywords": [
+    "clippy",
+    "codex",
+    "openai",
+    "hooks",
+    "jsonl"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@eastlate/clippy-gateway": "^1.0.0"
+  }
+}

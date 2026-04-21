@@ -1,0 +1,20 @@
+{
+  "name": "@eastlate/clippy-opencode",
+  "version": "1.0.0",
+  "description": "OpenCode plugin for Clippy desktop pet",
+  "main": "./plugin.mjs",
+  "type": "module",
+  "files": [
+    "plugin.mjs",
+    "README.md"
+  ],
+  "keywords": [
+    "clippy",
+    "opencode",
+    "plugin"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@eastlate/clippy-gateway": "^1.0.0"
+  }
+}

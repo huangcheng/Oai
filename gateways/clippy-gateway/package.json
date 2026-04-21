@@ -1,10 +1,10 @@
 {
-  "name": "clippy-gateway",
+  "name": "@eastlate/clippy-gateway",
   "version": "1.0.0",
   "description": "CLI gateway for sending events to the Clippy desktop pet",
   "main": "./cli.mjs",
   "bin": {
-    "clippy-gateway": "./cli.mjs"
+    "clippy-gateway": "cli.mjs"
   },
   "type": "module",
   "files": [
