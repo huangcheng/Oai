@@ -1,67 +1,67 @@
 {
   "command": {
     "SessionStart": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event session.start",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event session.start",
       "async": true
     },
     "SessionEnd": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event session.end",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event session.end",
       "async": true
     },
     "Stop": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event session.idle",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event session.idle",
       "async": true
     },
     "StopFailure": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event session.error",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event session.error",
       "async": true
     },
     "UserPromptSubmit": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event prompt.submitted",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event prompt.submitted",
       "async": true
     },
     "PreToolUse": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event tool.before",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event tool.before",
       "async": true
     },
     "PostToolUse": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event tool.after",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event tool.after",
       "async": true
     },
     "PostToolUseFailure": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event tool.failed",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event tool.failed",
       "async": true
     },
     "PermissionRequest": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event permission.requested",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event permission.requested",
       "async": true
     },
     "PermissionDenied": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event permission.denied",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event permission.denied",
       "async": true
     },
     "SubagentStart": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event subagent.started",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event subagent.started",
       "async": true
     },
     "SubagentStop": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event subagent.stopped",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event subagent.stopped",
       "async": true
     },
     "Notification": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event notification.sent",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event notification.sent",
       "async": true
     },
     "FileChanged": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event file.edited",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event file.edited",
       "async": true
     },
     "TaskCreated": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event todo.updated",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event todo.updated",
       "async": true
     },
     "TaskCompleted": {
-      "command": "@eastlake/clippy-gateway --source claude-code --event todo.updated",
+      "command": "@eastlake/qlippy-gateway --source claude-code --event todo.updated",
       "async": true
     }
   }

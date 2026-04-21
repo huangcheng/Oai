@@ -1,13 +1,13 @@
-# @clippy/claude-code
+# @qlippy/claude-code
 
-Claude Code hooks for the Clippy desktop pet.
+Claude Code hooks for the Qlippy desktop pet.
 
 ## Install
 
 ```bash
-npm install -g @eastlake/clippy-gateway
-npm install -g @clippy/claude-code
-npx @eastlake/clippy-claude-code
+npm install -g @eastlake/qlippy-gateway
+npm install -g @qlippy/claude-code
+npx @eastlake/qlippy-claude-code
 ```
 
 The last command merges the hooks into `~/.claude/settings.json`.

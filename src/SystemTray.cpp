@@ -13,11 +13,10 @@ SystemTray::SystemTray(QWidget *mainWindow, QObject *parent)
     , m_mainWindow(mainWindow)
 {
     m_trayIcon = new QSystemTrayIcon(this);
-    m_trayIcon->setToolTip(tr("Clippy Desktop Pet"));
+    m_trayIcon->setToolTip(tr("Qlippy Desktop Pet"));
 
-    // Use a simple icon — in production, use a proper Clippy icon
-    // For now, use the application icon or a fallback
-    QIcon icon(":/icons/clippy.png");
+    // Use the application icon for the tray
+    QIcon icon = qApp->windowIcon();
     if (icon.isNull()) {
         // Create a simple colored circle as fallback
         QPixmap pixmap(64, 64);
@@ -85,7 +84,7 @@ void SystemTray::setupMenu()
 
 void SystemTray::retranslateUi()
 {
-    m_trayIcon->setToolTip(tr("Clippy Desktop Pet"));
+    m_trayIcon->setToolTip(tr("Qlippy Desktop Pet"));
     if (m_toggleAction) {
         m_toggleAction->setText(tr("Show/Hide"));
     }

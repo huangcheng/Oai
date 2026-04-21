@@ -1,6 +1,6 @@
 ## Why
 
-Clippy currently only speaks when the `TipsEngine` detects a specific coding pattern (repeated errors, rapid edits, etc.). This makes the pet feel reactive rather than alive. Adding random idle sayings — humorous, encouraging, or contextual quips that appear when Clippy is idle — will make the desktop pet feel more like a companion and less like a notification system.
+Qlippy currently only speaks when the `TipsEngine` detects a specific coding pattern (repeated errors, rapid edits, etc.). This makes the pet feel reactive rather than alive. Adding random idle sayings — humorous, encouraging, or contextual quips that appear when Qlippy is idle — will make the desktop pet feel more like a companion and less like a notification system.
 
 ## What Changes
 

@@ -1,10 +1,10 @@
-# Clippy Desktop Pet
+# Qlippy Desktop Pet
 
 A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application.
 
 ## Features
 
-- **Transparent, frameless, always-on-top** window with Clippy animations
+- **Transparent, frameless, always-on-top** window with Qlippy animations
 - **Lottie animations** via Samsung's rlottie library — smooth 60fps playback
 - **Windows 98-style speech bubble** with auto-dismiss tips
 - **Visual effects** — sparkles, confetti, alert-pulse, thinking-dots, wave-lines, speech-pop
@@ -33,10 +33,10 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Create .app bundle
-macdeployqt Clippy.app
+macdeployqt Qlippy.app
 
 # Run
-open Clippy.app
+open Qlippy.app
 ```
 
 ### Windows (MSVC)
@@ -52,10 +52,10 @@ cmake .. -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\msvc2022_64"
 cmake --build . --config Release
 
 # Bundle Qt DLLs
-windeployqt Release\Clippy.exe
+windeployqt Release\Qlippy.exe
 
 # Run
-Release\Clippy.exe
+Release\Qlippy.exe
 ```
 
 ### Windows (MinGW)
@@ -70,10 +70,10 @@ cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\mingw_64"
 cmake --build .
 
 # Bundle Qt DLLs
-windeployqt Clippy.exe
+windeployqt Qlippy.exe
 
 # Run
-Clippy.exe
+Qlippy.exe
 ```
 
 ### Linux
@@ -92,7 +92,7 @@ cmake ..
 cmake --build .
 
 # Run
-./Clippy
+./Qlippy
 ```
 
 ### AppImage (Linux)
@@ -100,18 +100,18 @@ cmake --build .
 ```bash
 # After building
 linuxdeploy --appdir AppDir --plugin qt
-appimagetool AppDir Clippy-x86_64.AppImage
+appimagetool AppDir Qlippy-x86_64.AppImage
 ```
 
 ## IPC Protocol
 
-Clippy accepts IPC messages over a platform-appropriate transport:
+Qlippy accepts IPC messages over a platform-appropriate transport:
 
 | Platform | Transport | Default Endpoint |
 |---|---|---|
-| **Linux** | Unix domain socket | `~/.clippy/clippy.sock` |
-| **macOS** | Unix domain socket | `~/.clippy/clippy.sock` |
-| **Windows** | Named pipe | `\\.\pipe\clippy` |
+| **Linux** | Unix domain socket | `~/.qlippy/qlippy.sock` |
+| **macOS** | Unix domain socket | `~/.qlippy/qlippy.sock` |
+| **Windows** | Named pipe | `\\.\pipe\qlippy` |
 
 The desktop app and gateway adapters auto-detect the platform. All Node.js gateways use the shared `gateways/shared/ipc.mjs` module which connects to the correct endpoint. Override with `--endpoint <path>` on any gateway CLI command.
 
@@ -184,57 +184,57 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 
 ```bash
 cd ~/.config/opencode
-npm install @eastlake/clippy-opencode
+npm install @eastlake/qlippy-opencode
 ```
 
-Then add `"@eastlake/clippy-opencode"` to the `plugin` array in `opencode.json`.
+Then add `"@eastlake/qlippy-opencode"` to the `plugin` array in `opencode.json`.
 
 ### Claude Code
 
-First, install `clippy-gateway` globally:
+First, install `qlippy-gateway` globally:
 
 ```bash
-npm install -g @eastlake/clippy-gateway
+npm install -g @eastlake/qlippy-gateway
 ```
 
 ```bash
-npm install -g @eastlake/clippy-claude-code
-npx @eastlake/clippy-claude-code
+npm install -g @eastlake/qlippy-claude-code
+npx @eastlake/qlippy-claude-code
 ```
 
 ### Codex
 
 ```bash
-npm install -g @eastlake/clippy-codex
-npx @eastlake/clippy-codex
+npm install -g @eastlake/qlippy-codex
+npx @eastlake/qlippy-codex
 ```
 
 For non-interactive mode:
 ```bash
-codex exec --json "your prompt" | npx @eastlake/clippy-codex parser.mjs
+codex exec --json "your prompt" | npx @eastlake/qlippy-codex parser.mjs
 ```
 
 ### Health Check
 
-Check if Clippy is running:
+Check if Qlippy is running:
 
 ```bash
-npx @eastlake/clippy-gateway --ping
+npx @eastlake/qlippy-gateway --ping
 # Exit code 0 = alive, 1 = not responding
 ```
 
 ### Manual Testing
 
-Send a test event (auto-retries up to 2 times if Clippy is temporarily unreachable):
+Send a test event (auto-retries up to 2 times if Qlippy is temporarily unreachable):
 
 ```bash
-npx @eastlake/clippy-gateway --source opencode --event session.start
+npx @eastlake/qlippy-gateway --source opencode --event session.start
 ```
 
 ## Project Structure
 
 ```
-clippy/
+qlippy/
 ├── CMakeLists.txt              # Build configuration
 ├── src/
 │   ├── main.cpp                # Application entry point
@@ -254,17 +254,17 @@ clippy/
 ├── gateways/
 │   ├── shared/                 # Platform-aware IPC transport (Node.js)
 │   │   └── ipc.mjs             # Auto-detects Unix socket vs named pipe
-│   ├── clippy-gateway/         # CLI gateway tool (Node.js)
+│   ├── qlippy-gateway/         # CLI gateway tool (Node.js)
 │   ├── opencode-plugin/        # OpenCode plugin
 │   ├── claude-code-hooks/      # Claude Code hooks config
 │   ├── codex-hooks/            # Codex hooks config
 │   └── codex-jsonl-parser/     # Codex JSONL stream parser
-└── Clippy_zh_CN.ts             # Simplified Chinese translations
+└── Qlippy_zh_CN.ts             # Simplified Chinese translations
 ```
 
 ## Configuration
 
-Config file: `~/.config/Clippy/config.json`
+Config file: `~/.config/Qlippy/config.json`
 
 ```json
 {
@@ -272,7 +272,7 @@ Config file: `~/.config/Clippy/config.json`
   "windowY": 500,
   "language": "en",
   "autoStart": false,
-  "ipcEndpoint": "~/.clippy/clippy.sock"
+  "ipcEndpoint": "~/.qlippy/qlippy.sock"
 }
 ```
 

@@ -1,7 +1,7 @@
 {
-  "name": "@eastlake/clippy-claude-code",
+  "name": "@eastlake/qlippy-claude-code",
   "version": "1.0.0",
-  "description": "Claude Code hooks for Clippy desktop pet",
+  "description": "Claude Code hooks for Qlippy desktop pet",
   "type": "module",
   "files": [
     "settings.json",
@@ -11,12 +11,12 @@
     "install-hooks": "node install.mjs"
   },
   "keywords": [
-    "clippy",
+    "qlippy",
     "claude-code",
     "hooks"
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@eastlake/clippy-gateway": "^1.0.0"
+    "@eastlake/qlippy-gateway": "^1.0.0"
   }
 }

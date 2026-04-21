@@ -24,8 +24,8 @@
 
 ## 5. Translation File
 
-- [x] 5.1 Build the project to trigger `lupdate` and populate `Clippy_zh_CN.ts` with source strings
-- [x] 5.2 Add Chinese translations for all extracted strings in `Clippy_zh_CN.ts`
+- [x] 5.1 Build the project to trigger `lupdate` and populate `Qlippy_zh_CN.ts` with source strings
+- [x] 5.2 Add Chinese translations for all extracted strings in `Qlippy_zh_CN.ts`
 - [x] 5.3 Verify `.qm` file is generated and embedded under `:/i18n/` prefix
 
 ## 6. Verification

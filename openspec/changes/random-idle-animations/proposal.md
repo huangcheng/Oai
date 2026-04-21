@@ -1,6 +1,6 @@
 ## Why
 
-The current animation system only exposes ~25 of the 43 available sprite animations through `buildNameMap()`, leaving 12 animations inaccessible (including idle variants like `IdleHeadScratch`, directional looks like `LookUpRight`, and personality animations like `Hearing_1`). Additionally, the idle rotation uses a fixed 3-second timer with a simple weighted random pick, which feels repetitive and predictable. Exposing all available animations and improving the idle rotation will make Clippy feel more alive and expressive.
+The current animation system only exposes ~25 of the 43 available sprite animations through `buildNameMap()`, leaving 12 animations inaccessible (including idle variants like `IdleHeadScratch`, directional looks like `LookUpRight`, and personality animations like `Hearing_1`). Additionally, the idle rotation uses a fixed 3-second timer with a simple weighted random pick, which feels repetitive and predictable. Exposing all available animations and improving the idle rotation will make Qlippy feel more alive and expressive.
 
 ## What Changes
 

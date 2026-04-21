@@ -11,10 +11,10 @@ QString ConfigManager::defaultEndpoint()
 {
 #ifdef Q_OS_WIN
     // Windows: named pipe — no file on disk, lives in kernel namespace
-    return QStringLiteral("\\\\.\\pipe\\im.cheng.clippy");
+    return QStringLiteral("\\\\.\\pipe\\im.cheng.qlippy");
 #else
     // Linux / macOS: Unix domain socket in user home
-    return QDir::homePath() + "/.clippy/clippy.sock";
+    return QDir::homePath() + "/.qlippy/qlippy.sock";
 #endif
 }
 
@@ -139,5 +139,5 @@ void ConfigManager::setAutoStart(bool enabled)
 QString ConfigManager::configFilePath() const
 {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
-           + "/Clippy/config.json";
+           + "/Qlippy/config.json";
 }

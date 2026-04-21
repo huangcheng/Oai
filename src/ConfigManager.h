@@ -26,8 +26,8 @@ public:
 
     /**
      * Returns the platform-appropriate IPC endpoint:
-     *   - Linux/macOS: Unix domain socket path, e.g. "~/.clippy/clippy.sock"
-     *   - Windows:     Named pipe, e.g. "\\.\pipe\clippy"
+     *   - Linux/macOS: Unix domain socket path, e.g. "~/.qlippy/qlippy.sock"
+     *   - Windows:     Named pipe, e.g. "\\.\pipe\qlippy"
      */
     QString ipcEndpoint() const { return m_ipcEndpoint; }
 

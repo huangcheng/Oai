@@ -1,7 +1,7 @@
 ## Context
 
 The project has i18n scaffolding (`QTranslator`, `qt_add_translations`, a `.ts` file, `ConfigManager::language()`) but it is incomplete:
-- `Clippy_zh_CN.ts` is empty — `lupdate` has never populated it
+- `Qlippy_zh_CN.ts` is empty — `lupdate` has never populated it
 - `SettingsPanelWidget.cpp` contains hardcoded English strings without `tr()`
 - `main.cpp` loads translations based on system locale, ignoring the user's config preference
 - Changing language in settings requires an app restart, and even then main.cpp doesn't read the saved value
@@ -36,7 +36,7 @@ The project has i18n scaffolding (`QTranslator`, `qt_add_translations`, a `.ts` 
 **Rationale:** `SettingsPanelWidget` creates labels and combo box items in its constructor. For runtime switching, it needs a `retranslateUi()` method that updates all visible text. This mirrors the pattern Qt Designer generates.
 
 ### Decision 4: Run `lupdate` via CMake / build step
-**Rationale:** `qt_add_translations` in CMakeLists.txt already wires up `lupdate` and `lrelease`. After adding `tr()` to `SettingsPanelWidget`, a clean build will auto-update the `.ts` file. The developer then edits `Clippy_zh_CN.ts` to add translations.
+**Rationale:** `qt_add_translations` in CMakeLists.txt already wires up `lupdate` and `lrelease`. After adding `tr()` to `SettingsPanelWidget`, a clean build will auto-update the `.ts` file. The developer then edits `Qlippy_zh_CN.ts` to add translations.
 
 ### Decision 5: `main.cpp` reads config language first, falls back to system locale
 **Rationale:** User preference should override system default. If config language is "en" or empty, fall back to `QLocale::system()`.
@@ -49,7 +49,7 @@ if (lang.isEmpty() || lang == "en") {
     ...
 } else {
     // Load user preference
-    translator.load(":/i18n/Clippy_" + lang);
+    translator.load(":/i18n/Qlippy_" + lang);
     a.installTranslator(&translator);
 }
 ```
