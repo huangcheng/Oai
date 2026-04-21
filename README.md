@@ -186,17 +186,21 @@ Copy `gateways/opencode-plugin/clippy.mjs` to `~/.config/opencode/plugins/`.
 
 ### Claude Code
 
-Merge `gateways/claude-code-hooks/settings.json` into `~/.claude/settings.json`.
+First, install `clippy-gateway` globally:
 
-First, install `clippy-gateway`:
 ```bash
-cd gateways/clippy-gateway
-npm link
+npm install -g clippy-gateway
 ```
+
+Then merge `gateways/claude-code-hooks/settings.json` into `~/.claude/settings.json`.
 
 ### Codex
 
-Copy `gateways/codex-hooks/hooks.json` to `~/.codex/hooks.json`.
+Make sure `clippy-gateway` is installed globally (`npm install -g clippy-gateway`), then copy the hooks config:
+
+```bash
+cp gateways/codex-hooks/hooks.json ~/.codex/hooks.json
+```
 
 For non-interactive mode, pipe `codex exec --json` output through the parser:
 ```bash
