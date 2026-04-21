@@ -5,11 +5,12 @@
  *   Windows       → Named pipe
  *
  * Usage:
- *   import { getEndpoint, sendToClippy } from './ipc.mjs';
+ *   import { getEndpoint, sendToClippy, pingClippy } from './ipc.mjs';
  *
  *   const endpoint = getEndpoint();                      // auto-detect
  *   const endpoint = getEndpoint('/custom/sock/path');   // override
  *   await sendToClippy({ type: 'event', source: 'opencode', event: 'session.start' });
+ *   const alive = await pingClippy();                    // health check
  */
 
 import { createConnection } from 'node:net';
@@ -39,36 +40,113 @@ export function getEndpoint(override) {
  * @param {object} [opts]
  * @param {string} [opts.endpoint]  Custom endpoint (auto-detected if omitted)
  * @param {number} [opts.timeout]   Connection timeout in ms (default 3000)
+ * @param {number} [opts.retries]   Number of retries on failure (default 0)
  * @returns {Promise<void>}
  */
 export function sendToClippy(message, opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const timeout  = opts.timeout ?? 3000;
+  const retries  = opts.retries ?? 0;
 
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(message) + '\n';
+    let attempts = 0;
 
-    const client = createConnection(endpoint, () => {
-      client.write(payload, () => {
-        client.end();
-        resolve();
+    function trySend() {
+      attempts++;
+      const client = createConnection(endpoint, () => {
+        client.write(payload, () => {
+          client.end();
+          resolve();
+        });
       });
+
+      client.on('error', (err) => {
+        if (attempts <= retries) {
+          setTimeout(trySend, 500 * attempts); // exponential backoff
+          return;
+        }
+        if (err.code === 'ENOENT') {
+          reject(new Error(`Clippy IPC endpoint not found: ${endpoint}\nIs the Clippy desktop pet running?`));
+        } else {
+          reject(new Error(`IPC error (${endpoint}): ${err.message}`));
+        }
+      });
+
+      const timer = setTimeout(() => {
+        client.destroy();
+        if (attempts <= retries) {
+          setTimeout(trySend, 500 * attempts);
+        } else {
+          reject(new Error(`Timeout connecting to Clippy IPC endpoint: ${endpoint}`));
+        }
+      }, timeout);
+
+      client.on('close', () => clearTimeout(timer));
+    }
+
+    trySend();
+  });
+}
+
+// ── Heartbeat / health check ───────────────────────────────────────────────
+
+/**
+ * Send a ping to Clippy and wait for a pong response.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.endpoint]  Custom endpoint (auto-detected if omitted)
+ * @param {number} [opts.timeout]   Response timeout in ms (default 2000)
+ * @returns {Promise<boolean>}  true if Clippy responded, false otherwise
+ */
+export function pingClippy(opts = {}) {
+  const endpoint = getEndpoint(opts.endpoint);
+  const timeout  = opts.timeout ?? 2000;
+
+  return new Promise((resolve) => {
+    const client = createConnection(endpoint, () => {
+      client.write('{"type":"ping"}\n');
     });
 
-    client.on('error', (err) => {
-      if (err.code === 'ENOENT') {
-        reject(new Error(`Clippy IPC endpoint not found: ${endpoint}\nIs the Clippy desktop pet running?`));
-      } else {
-        reject(new Error(`IPC error (${endpoint}): ${err.message}`));
+    let resolved = false;
+
+    client.on('data', (data) => {
+      const lines = data.toString().trim().split('\n');
+      for (const line of lines) {
+        try {
+          const msg = JSON.parse(line);
+          if (msg.type === 'pong' && !resolved) {
+            resolved = true;
+            client.end();
+            resolve(true);
+          }
+        } catch {
+          // ignore malformed lines
+        }
       }
     });
 
-    const timer = setTimeout(() => {
-      client.destroy();
-      reject(new Error(`Timeout connecting to Clippy IPC endpoint: ${endpoint}`));
-    }, timeout);
+    client.on('error', () => {
+      if (!resolved) {
+        resolved = true;
+        resolve(false);
+      }
+    });
 
-    client.on('close', () => clearTimeout(timer));
+    client.on('close', () => {
+      if (!resolved) {
+        resolved = true;
+        resolve(false);
+      }
+    });
+
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        client.destroy();
+        resolve(false);
+      }
+    }, timeout);
   });
 }
 

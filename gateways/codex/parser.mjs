@@ -13,7 +13,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import { sendToClippy, getEndpoint } from '@eastlake/clippy-gateway/lib/ipc.mjs';
+import { sendToClippy, getEndpoint, pingClippy } from '@eastlake/clippy-gateway/lib/ipc.mjs';
 
 // Codex JSONL event → unified event mapping (D10 table)
 const EVENT_MAP = {
@@ -36,7 +36,7 @@ const endpointArg = process.argv.includes('--endpoint')
   : undefined;
 
 function send(message) {
-  sendToClippy(message, { endpoint: endpointArg }).catch(() => {});
+  sendToClippy(message, { endpoint: endpointArg, retries: 2 }).catch(() => {});
 }
 
 function processLine(line) {

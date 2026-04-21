@@ -214,26 +214,21 @@ For non-interactive mode:
 codex exec --json "your prompt" | npx @eastlake/clippy-codex parser.mjs
 ```
 
-### Manual Testing
+### Health Check
 
-Use the gateway CLI (works on all platforms):
+Check if Clippy is running:
 
 ```bash
-# Send a test event
-npx @eastlake/clippy-gateway --source opencode --event session.start
-
-# Send a custom tip
-echo '{"type":"tip","title":"Hello!","body":"I am Clippy.","animation":"wave"}' | npx @eastlake/clippy-gateway
+npx @eastlake/clippy-gateway --ping
+# Exit code 0 = alive, 1 = not responding
 ```
 
-Or send raw JSON directly to the IPC socket (Linux/macOS with GNU netcat or socat):
+### Manual Testing
+
+Send a test event (auto-retries up to 2 times if Clippy is temporarily unreachable):
 
 ```bash
-# Linux / GNU netcat
-echo '{"type":"event","source":"opencode","event":"session.start"}' | nc -U ~/.clippy/clippy.sock
-
-# macOS (BSD nc does not support -U; use socat instead)
-echo '{"type":"event","source":"opencode","event":"session.start"}' | socat - UNIX-CONNECT:~/.clippy/clippy.sock
+npx @eastlake/clippy-gateway --source opencode --event session.start
 ```
 
 ## Project Structure

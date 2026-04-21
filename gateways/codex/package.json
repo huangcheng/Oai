@@ -1,6 +1,6 @@
 {
   "name": "@eastlake/clippy-codex",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Codex hooks and JSONL parser for Clippy desktop pet",
   "type": "module",
   "bin": {
@@ -23,6 +23,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@eastlake/clippy-gateway": "^1.0.0"
+    "@eastlake/clippy-gateway": "^1.1.0"
   }
 }
