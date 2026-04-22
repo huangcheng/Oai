@@ -16,6 +16,7 @@
 #include <QStandardPaths>
 #include <QScreen>
 #include <QDebug>
+#include <QFontDatabase>
 
 static QString configDir() {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Qlippy";
@@ -63,20 +64,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    // --- Main window ---------------------------------------------------------
-    MainWindow w(&config, &translator);
-
-    // Restore saved position (or default to center of primary screen)
-    QPoint savedPos = config.windowPosition();
-    if (!savedPos.isNull()) {
-        w.move(savedPos);
-    } else {
-        const QRect screen = QApplication::primaryScreen()->availableGeometry();
-        w.move(screen.right() - 220, screen.bottom() - 220);
-    }
-
-    // --- Load assets ---------------------------------------------------------
-    // Character animations: sprite sheet from previous Electron-based version
+    // --- Locate assets directory ----------------------------------------------
     // Searches upward from the executable to find the assets folder,
     // handling macOS app bundles, various build dir layouts, and source-tree runs.
     auto findAssetsDir = []() -> QString {
@@ -91,16 +79,63 @@ int main(int argc, char *argv[])
         return QString();
     };
 
-    QString spritePath, animJsonPath, effectsDir;
     const QString assetsDir = findAssetsDir();
+    if (!assetsDir.isEmpty()) {
+        qDebug() << "Assets loaded from:" << assetsDir;
+    } else {
+        qWarning() << "Assets not found. Searched from:" << QApplication::applicationDirPath();
+    }
 
+    // --- Font loading (HarmonyOS Sans SC) ------------------------------------
+    // Load from filesystem (assets/fonts/) for cross-platform consistency.
+    // Must run before MainWindow creation so QApplication::setFont() propagates.
+    {
+        const QStringList fontFiles = {
+            (!assetsDir.isEmpty()) ? assetsDir + "/fonts/HarmonyOS_Sans_SC_Bold.ttf" : QString(),
+            (!assetsDir.isEmpty()) ? assetsDir + "/fonts/HarmonyOS_Sans_SC_Regular.ttf" : QString(),
+        };
+        QString registeredFamily;
+        for (const QString &path : fontFiles) {
+            if (path.isEmpty() || !QFile::exists(path)) continue;
+            int id = QFontDatabase::addApplicationFont(path);
+            if (id >= 0) {
+                QStringList families = QFontDatabase::applicationFontFamilies(id);
+                if (!families.isEmpty() && registeredFamily.isEmpty()) {
+                    registeredFamily = families.first();
+                    qDebug() << "Font loaded:" << path << "→" << registeredFamily;
+                }
+            } else {
+                qWarning() << "Failed to load font:" << path;
+            }
+        }
+        if (!registeredFamily.isEmpty()) {
+            QFont appFont(registeredFamily, 9);
+            appFont.setStyleStrategy(QFont::PreferAntialias);
+            QApplication::setFont(appFont);
+            qDebug() << "Global app font set to:" << registeredFamily;
+        } else {
+            qWarning() << "HarmonyOS Sans SC not loaded — using system default font";
+        }
+    }
+
+    // --- Main window ---------------------------------------------------------
+    MainWindow w(&config, &translator);
+
+    // Restore saved position (or default to center of primary screen)
+    QPoint savedPos = config.windowPosition();
+    if (!savedPos.isNull()) {
+        w.move(savedPos);
+    } else {
+        const QRect screen = QApplication::primaryScreen()->availableGeometry();
+        w.move(screen.right() - 220, screen.bottom() - 220);
+    }
+
+    // --- Load animation assets ------------------------------------------------
+    QString spritePath, animJsonPath, effectsDir;
     if (!assetsDir.isEmpty()) {
         spritePath = assetsDir + "/map.png";
         animJsonPath = assetsDir + "/animations.json";
         effectsDir = assetsDir + "/lottie/effects";
-        qDebug() << "Assets loaded from:" << assetsDir;
-    } else {
-        qWarning() << "Assets not found. Searched from:" << QApplication::applicationDirPath();
     }
 
     if (!spritePath.isEmpty()) {
