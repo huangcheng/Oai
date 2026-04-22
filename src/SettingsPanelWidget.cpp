@@ -97,13 +97,13 @@ void SettingsPanelWidget::setupUi()
     titleRow->setSpacing(4);
 
     m_titleLabel = new QLabel(tr("Settings"), m_contentWidget);
-    QFont titleFont("Tahoma", 10, QFont::Bold);
+    QFont titleFont("HarmonyOS Sans SC", 10, QFont::Bold);
     m_titleLabel->setFont(titleFont);
     m_titleLabel->setStyleSheet("color: black; background: transparent;");
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_closeButton = new QPushButton(tr("×"), m_contentWidget);
-    m_closeButton->setFont(QFont("Tahoma", 12, QFont::Bold));
+    m_closeButton->setFont(QFont("HarmonyOS Sans SC", 12, QFont::Bold));
     m_closeButton->setFixedSize(20, 20);
     m_closeButton->setCursor(Qt::PointingHandCursor);
     m_closeButton->setStyleSheet(R"(
@@ -134,18 +134,18 @@ void SettingsPanelWidget::setupUi()
     langRow->setSpacing(8);
 
     m_langLabel = new QLabel(tr("Language"), m_contentWidget);
-    m_langLabel->setFont(QFont("Tahoma", 9));
+    m_langLabel->setFont(QFont("HarmonyOS Sans SC", 9));
     m_langLabel->setStyleSheet("color: black; background: transparent;");
     m_langLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_langCombo = new QComboBox(m_contentWidget);
     // Force Qt-drawn popup instead of native macOS popup (native ignores stylesheets)
     auto *listView = new QListView(m_langCombo);
-    listView->setFont(QFont("Tahoma", 9));
+    listView->setFont(QFont("HarmonyOS Sans SC", 9));
     m_langCombo->setView(listView);
     m_langCombo->addItem(tr("English"), "en");
     m_langCombo->addItem(tr("简体中文"), "zh_CN");
-    m_langCombo->setFont(QFont("Tahoma", 9));
+    m_langCombo->setFont(QFont("HarmonyOS Sans SC", 9));
     m_langCombo->setFixedHeight(20);
 
     // Generate a small down-arrow pixmap (Qt stylesheets can't do CSS border-triangles)
@@ -211,7 +211,7 @@ void SettingsPanelWidget::setupUi()
     autoStartRow->setSpacing(8);
 
     m_autoStartLabel = new QLabel(tr("Launch at Login"), m_contentWidget);
-    m_autoStartLabel->setFont(QFont("Tahoma", 9));
+    m_autoStartLabel->setFont(QFont("HarmonyOS Sans SC", 9));
     m_autoStartLabel->setStyleSheet("color: black; background: transparent;");
     m_autoStartLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
