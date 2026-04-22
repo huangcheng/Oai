@@ -79,6 +79,15 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
         endif()
     endif()
 
+    # Patch rlottie vrle.cpp: GCC 13+ requires explicit <limits> include
+    set(VRLE_FILE "${rlottie_SOURCE_DIR}/src/vector/vrle.cpp")
+    file(READ "${VRLE_FILE}" VRLE_CONTENT)
+    if(NOT VRLE_CONTENT MATCHES "#include <limits>")
+        string(REPLACE "#include <vector>" "#include <vector>\n#include <limits>"
+               VRLE_PATCHED "${VRLE_CONTENT}")
+        file(WRITE "${VRLE_FILE}" "${VRLE_PATCHED}")
+    endif()
+
     # Patch out the example directory — rlottie v0.2 unconditionally builds
     # lottie2gif which Qt Creator auto-detects as a run target.
     set(RLOTTIE_CMAKELISTS "${rlottie_SOURCE_DIR}/CMakeLists.txt")
