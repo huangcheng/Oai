@@ -1,5 +1,5 @@
 {
-  "name": "@eastlake/qlippy-gateway",
+  "name": "@huangcheng/qlippy-gateway",
   "version": "1.1.0",
   "description": "CLI gateway for sending events to the Qlippy desktop pet",
   "main": "./cli.mjs",
@@ -24,5 +24,13 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huangcheng/clippy.git",
+    "directory": "gateways/qlippy-gateway"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }

@@ -1,7 +1,12 @@
 {
-  "name": "@qlippy/shared",
+  "name": "@huangcheng/qlippy-shared",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared IPC transport for Qlippy desktop pet gateways"
+  "description": "Shared IPC transport for Qlippy desktop pet gateways",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huangcheng/clippy.git",
+    "directory": "gateways/shared"
+  }
 }

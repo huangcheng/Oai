@@ -1,0 +1,50 @@
+name: Publish npm packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gateways/*/package.json'
+      - 'gateways/qlippy-gateway/**'
+      - 'gateways/claude-code/**'
+      - 'gateways/codex/**'
+      - 'gateways/opencode/**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@huangcheng'
+
+      - name: Publish @huangcheng/qlippy-gateway
+        working-directory: gateways/qlippy-gateway
+        run: npm publish --access public || echo "Already published or unchanged"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @huangcheng/qlippy-claude-code
+        working-directory: gateways/claude-code
+        run: npm publish --access public || echo "Already published or unchanged"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @huangcheng/qlippy-codex
+        working-directory: gateways/codex
+        run: npm publish --access public || echo "Already published or unchanged"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @huangcheng/qlippy-opencode
+        working-directory: gateways/opencode
+        run: npm publish --access public || echo "Already published or unchanged"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
