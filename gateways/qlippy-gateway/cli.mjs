@@ -14,6 +14,9 @@
  */
 
 import { platform } from 'node:process';
+import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { getEndpoint, sendToQlippy, pingQlippy } from './lib/ipc.mjs';
 
 // --- Argument parsing -------------------------------------------------------
@@ -68,6 +71,32 @@ if (!args.source || !args.event) {
   process.exit(1);
 }
 
+// --- Auto-detect session name ------------------------------------------------
+
+function detectSessionName(source) {
+  try {
+    if (source === 'claude-code') {
+      // Claude Code stores session info in ~/.claude/sessions/<ppid>.json
+      const ppid = process.ppid;
+      const sessionFile = join(homedir(), '.claude', 'sessions', `${ppid}.json`);
+      const data = JSON.parse(readFileSync(sessionFile, 'utf8'));
+      return data.name || '';
+    }
+    if (source === 'codex') {
+      // Codex stores session meta in ~/.codex/session_index.jsonl
+      // Read last line for current session ID
+      const indexFile = join(homedir(), '.codex', 'session_index.jsonl');
+      const lines = readFileSync(indexFile, 'utf8').trim().split('\n');
+      const last = JSON.parse(lines[lines.length - 1]);
+      return last.id ? last.id.slice(0, 8) : '';
+    }
+    // OpenCode: no known session file — use --session flag
+  } catch {
+    // Silently fail — session name is optional
+  }
+  return '';
+}
+
 // --- Build message ----------------------------------------------------------
 
 const message = {
@@ -76,9 +105,8 @@ const message = {
   event: args.event,
 };
 
-if (args.session) {
-  message.session = args.session;
-}
+// Session: explicit --session flag, or auto-detect from tool
+message.session = args.session || detectSessionName(args.source) || '';
 if (args['tool-name']) {
   message.toolName = args['tool-name'];
 }
