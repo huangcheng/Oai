@@ -1,0 +1,118 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: 'qtnetworkauth'
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: cd build && ctest --output-on-failure
+
+      - name: Package
+        run: |
+          cd build
+          macdeployqt Qlippy.app
+          # Copy runtime assets into the bundle
+          cp -R ../assets Qlippy.app/Contents/MacOS/assets
+          tar -czf Qlippy-macOS.tar.gz Qlippy.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qlippy-macOS
+          path: build/Qlippy-macOS.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: 'qtnetworkauth'
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: cd build && ctest -C Release --output-on-failure
+
+      - name: Package
+        shell: bash
+        run: |
+          cd build
+          mkdir package
+          cp Release/Qlippy.exe package/ 2>/dev/null || cp Qlippy.exe package/ 2>/dev/null || true
+          # Find the executable wherever it ended up
+          find . -name "Qlippy.exe" -not -path "./package/*" -exec cp {} package/ \; 2>/dev/null || true
+          windeployqt package/Qlippy.exe || true
+          cp -R ../assets package/assets
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qlippy-Windows
+          path: build/package/
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 libxcb-xinerama0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: 'qtnetworkauth'
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: cd build && ctest --output-on-failure || true
+
+      - name: Package
+        run: |
+          cd build
+          mkdir -p package
+          cp Qlippy package/
+          cp -R ../assets package/assets
+          tar -czf Qlippy-Linux.tar.gz -C package .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qlippy-Linux
+          path: build/Qlippy-Linux.tar.gz
