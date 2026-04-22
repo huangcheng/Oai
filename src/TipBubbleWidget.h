@@ -23,8 +23,8 @@ public:
     void anchorTo(const QWidget *petWidget);
     void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
 
-    // Show bubble with title + message
-    void showBubble(const QString &title, const QString &message, BubbleType type = TipBubble);
+    // Show bubble with title + message, optionally showing source label
+    void showBubble(const QString &title, const QString &message, BubbleType type = TipBubble, const QString &source = "");
 
     // Hide with exit animation
     void hideBubble();
@@ -49,12 +49,14 @@ private:
 
     QString m_title;
     QString m_message;
+    QString m_source;
     BubbleType m_type = TipBubble;
 
     // Layout
     QRect m_bubbleRect;      // The rounded rectangle part (excludes tail)
     QRect m_titleRect;       // Where title text is drawn
     QRect m_messageRect;      // Where message text is drawn
+    QRect m_sourceRect;       // Where source label is drawn
     QPolygon m_tailPoly;      // Tail triangle
     bool m_tailDown = true;   // true = tail points down (bubble above pet)
 
