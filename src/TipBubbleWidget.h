@@ -32,6 +32,11 @@ public:
     qreal opacity() const { return m_opacity; }
     void setOpacity(qreal o);
 
+    // --- Test accessors ------------------------------------------------------
+    QString title() const { return m_title; }
+    QString message() const { return m_message; }
+    BubbleType bubbleType() const { return m_type; }
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
@@ -59,8 +64,8 @@ private:
 
     // Auto-dismiss
     QTimer m_dismissTimer;
-    static constexpr int STATUS_DISMISS_MS = 4000;
-    static constexpr int TIP_DISMISS_MS = 8000;
+    static constexpr int STATUS_DISMISS_MS = 6000;
+    static constexpr int TIP_DISMISS_MS = 12000;
 
     // Styling
     static constexpr int PADDING_H = 8;       // horizontal padding

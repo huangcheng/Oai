@@ -24,6 +24,7 @@ public:
 
 public slots:
     void routeEvent(const QJsonObject &event);
+    void retranslateUi();
 
 private:
     void initEventMap();

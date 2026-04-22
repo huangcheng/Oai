@@ -32,6 +32,14 @@ public:
     // Render all active effects
     void paint(QPainter *painter, const QRect &petBounds);
 
+    // --- Test accessors ------------------------------------------------------
+    int activeEffectCount() const { return m_activeEffects.size(); }
+    bool hasEffect(const QString &name) const {
+        for (const auto &e : m_activeEffects)
+            if (e.name == name) return true;
+        return false;
+    }
+
 private slots:
     void tick();
 

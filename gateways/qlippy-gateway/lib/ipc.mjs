@@ -1,34 +1,29 @@
 /**
- * ipc.mjs — Platform-aware IPC transport for Qlippy desktop pet.
+ * ipc.mjs — IPC transport for Qlippy desktop pet.
  *
- *   Linux / macOS → Unix domain socket
- *   Windows       → Named pipe
+ * Uses TCP localhost (127.0.0.1:52847) for cross-platform compatibility.
  *
  * Usage:
  *   import { getEndpoint, sendToQlippy, pingQlippy } from './ipc.mjs';
  *
- *   const endpoint = getEndpoint();                      // auto-detect
- *   const endpoint = getEndpoint('/custom/sock/path');   // override
+ *   const endpoint = getEndpoint();                        // auto-detect
+ *   const endpoint = getEndpoint('127.0.0.1:99999');       // override
  *   await sendToQlippy({ type: 'event', source: 'opencode', event: 'session.start' });
- *   const alive = await pingQlippy();                    // health check
+ *   const alive = await pingQlippy();                      // health check
  */
 
 import { createConnection } from 'node:net';
-import { homedir } from 'node:os';
-import { platform } from 'node:process';
 
-// ── Default endpoints per platform ──────────────────────────────────────────
+// ── Default endpoint ────────────────────────────────────────────────────────
 
-const UNIX_SOCKET = () => `${homedir()}/.qlippy/qlippy.sock`;
-const NAMED_PIPE  = '\\\\.\\pipe\\im.cheng.qlippy';
+const DEFAULT_ENDPOINT = '127.0.0.1:52847';
 
 /**
- * Return the default IPC endpoint for the current platform.
- * Pass an explicit path to override.
+ * Return the default IPC endpoint.
+ * Pass an explicit "host:port" string to override.
  */
 export function getEndpoint(override) {
-  if (override) return override;
-  return platform === 'win32' ? NAMED_PIPE : UNIX_SOCKET();
+  return override || DEFAULT_ENDPOINT;
 }
 
 // ── Send a message ─────────────────────────────────────────────────────────
@@ -38,7 +33,7 @@ export function getEndpoint(override) {
  *
  * @param {object} message  Must have at least `type` field.
  * @param {object} [opts]
- * @param {string} [opts.endpoint]  Custom endpoint (auto-detected if omitted)
+ * @param {string} [opts.endpoint]  Custom endpoint "host:port" (auto-detected if omitted)
  * @param {number} [opts.timeout]   Connection timeout in ms (default 3000)
  * @param {number} [opts.retries]   Number of retries on failure (default 0)
  * @returns {Promise<void>}
@@ -66,8 +61,8 @@ export function sendToQlippy(message, opts = {}) {
           setTimeout(trySend, 500 * attempts); // exponential backoff
           return;
         }
-        if (err.code === 'ENOENT') {
-          reject(new Error(`Qlippy IPC endpoint not found: ${endpoint}\nIs the Qlippy desktop pet running?`));
+        if (err.code === 'ECONNREFUSED') {
+          reject(new Error(`Qlippy IPC endpoint not reachable: ${endpoint}\nIs the Qlippy desktop pet running?`));
         } else {
           reject(new Error(`IPC error (${endpoint}): ${err.message}`));
         }
@@ -95,7 +90,7 @@ export function sendToQlippy(message, opts = {}) {
  * Send a ping to Qlippy and wait for a pong response.
  *
  * @param {object} [opts]
- * @param {string} [opts.endpoint]  Custom endpoint (auto-detected if omitted)
+ * @param {string} [opts.endpoint]  Custom endpoint "host:port" (auto-detected if omitted)
  * @param {number} [opts.timeout]   Response timeout in ms (default 2000)
  * @returns {Promise<boolean>}  true if Qlippy responded, false otherwise
  */
@@ -152,4 +147,4 @@ export function pingQlippy(opts = {}) {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-export { NAMED_PIPE, UNIX_SOCKET };
+export { DEFAULT_ENDPOINT };

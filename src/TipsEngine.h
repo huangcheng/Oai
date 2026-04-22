@@ -22,6 +22,7 @@ public:
 
 public slots:
     void processEvent(const QString &eventName, const QJsonObject &eventData);
+    void retranslateUi();
 
 private:
     struct PatternMatcher {

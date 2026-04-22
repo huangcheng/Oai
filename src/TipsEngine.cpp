@@ -197,6 +197,12 @@ void TipsEngine::initMatchers()
     });
 }
 
+void TipsEngine::retranslateUi()
+{
+    m_matchers.clear();
+    initMatchers();
+}
+
 bool TipsEngine::isInCooldown(const QString &patternName) const
 {
     if (!m_lastTriggered.contains(patternName)) {

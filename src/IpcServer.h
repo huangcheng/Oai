@@ -5,8 +5,8 @@
 #include <QJsonDocument>
 #include <QMap>
 
-class QLocalServer;
-class QLocalSocket;
+class QTcpServer;
+class QTcpSocket;
 
 class IpcServer : public QObject
 {
@@ -17,26 +17,17 @@ public:
     ~IpcServer() override;
 
     /**
-     * Start listening on the given endpoint.
+     * Start listening on the given TCP endpoint.
      *
-     * Linux/macOS — endpoint is a Unix domain socket path
-     *   (e.g. "~/.qlippy/qlippy.sock").
-     *   Stale socket files are cleaned up automatically.
-     *
-     * Windows — endpoint is a named pipe path
-     *   (e.g. "\\.\pipe\qlippy").
-     *   QLocalServer creates the pipe directly; no file is written.
-     *
-     * @param endpoint     Platform IPC path
-     * @param isNamedPipe  True when endpoint is a Windows named pipe
+     * @param endpoint  "host:port" string, e.g. "127.0.0.1:52847"
      */
-    bool start(const QString &endpoint, bool isNamedPipe = false);
+    bool start(const QString &endpoint);
     void stop();
 
 signals:
     void eventReceived(const QJsonObject &event);
     void tipReceived(const QJsonObject &tip);
-    void pingReceived(QLocalSocket *socket);
+    void pingReceived(QTcpSocket *socket);
 
 private slots:
     void onNewConnection();
@@ -44,10 +35,10 @@ private slots:
     void onDisconnected();
 
 private:
-    void parseMessage(const QByteArray &data, QLocalSocket *socket);
+    void parseMessage(const QByteArray &data, QTcpSocket *socket);
 
-    QLocalServer *m_server = nullptr;
-    QMap<QLocalSocket*, QByteArray> m_buffers;
+    QTcpServer *m_server = nullptr;
+    QMap<QTcpSocket*, QByteArray> m_buffers;
 };
 
 #endif // IPCSERVER_H
