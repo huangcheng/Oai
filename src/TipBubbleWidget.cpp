@@ -48,11 +48,23 @@ void TipBubbleWidget::anchorTo(const QWidget *petWidget)
     }
 }
 
-void TipBubbleWidget::showBubble(const QString &title, const QString &message, BubbleType type)
+void TipBubbleWidget::showBubble(const QString &title, const QString &message, BubbleType type, const QString &source)
 {
+    bool alreadyVisible = isVisible() && m_opacity > 0.5;
+    bool sameContent = (m_title == title && m_message == message && m_source == source);
+
     m_title = title;
     m_message = message;
+    m_source = source;
     m_type = type;
+
+    // If already showing the same content, just reset the dismiss timer
+    if (alreadyVisible && sameContent) {
+        m_dismissTimer.stop();
+        int dismissMs = (type == StatusBubble) ? STATUS_DISMISS_MS : TIP_DISMISS_MS;
+        m_dismissTimer.start(dismissMs);
+        return;
+    }
 
     // Calculate text layout and bubble dimensions
     calculateTextLayout();
@@ -75,14 +87,17 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
     // Update bubble path for painting
     updateBubblePath();
 
-    // Reset and start enter animation
-    m_opacity = 0.0;
-    startEnterAnimation();
+    if (alreadyVisible) {
+        // Content changed while visible — update text without re-fading
+        update();
+    } else {
+        // First show — fade in
+        m_opacity = 0.0;
+        startEnterAnimation();
+        QWidget::show();
+    }
 
-    // Show widget
-    QWidget::show();
-
-    // Start dismiss timer
+    // Reset dismiss timer
     m_dismissTimer.stop();
     int dismissMs = (type == StatusBubble) ? STATUS_DISMISS_MS : TIP_DISMISS_MS;
     m_dismissTimer.start(dismissMs);
@@ -193,6 +208,17 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
         painter.drawText(m_messageRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, wrappedText);
         painter.restore();
     }
+
+    // Draw source label (small gray text)
+    if (!m_source.isEmpty()) {
+        painter.save();
+        painter.setOpacity(m_opacity);
+        QFont sourceFont("Tahoma", 9);
+        painter.setFont(sourceFont);
+        painter.setPen(QColor(120, 120, 120));
+        painter.drawText(m_sourceRect, Qt::AlignLeft | Qt::AlignVCenter, m_source);
+        painter.restore();
+    }
 }
 
 void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
@@ -286,9 +312,11 @@ void TipBubbleWidget::calculateTextLayout()
 {
     QFont titleFont("Tahoma", 11, QFont::Bold);
     QFont msgFont("Tahoma", 11);
+    QFont sourceFont("Tahoma", 9);
 
     QFontMetrics titleFm(titleFont);
     QFontMetrics msgFm(msgFont);
+    QFontMetrics sourceFm(sourceFont);
 
     // Calculate title height
     int titleHeight = m_title.isEmpty() ? 0 : titleFm.height();
@@ -303,13 +331,23 @@ void TipBubbleWidget::calculateTextLayout()
                                             wrappedMsg);
     int msgHeight = msgBounding.height();
 
+    // Calculate source label height
+    int sourceHeight = m_source.isEmpty() ? 0 : sourceFm.height();
+
     // Calculate total bubble dimensions
-    int bubbleWidth = qMin(MAX_BUBBLE_WIDTH, qMax(titleFm.horizontalAdvance(m_title), msgFm.horizontalAdvance(wrappedMsg)) + PADDING_H * 2);
-    int bubbleHeight = titleHeight + msgHeight + PADDING_V * 2;
+    int contentWidth = qMax(titleFm.horizontalAdvance(m_title), msgFm.horizontalAdvance(wrappedMsg));
+    if (!m_source.isEmpty()) {
+        contentWidth = qMax(contentWidth, sourceFm.horizontalAdvance(m_source));
+    }
+    int bubbleWidth = qMin(MAX_BUBBLE_WIDTH, contentWidth + PADDING_H * 2);
+    int bubbleHeight = titleHeight + msgHeight + sourceHeight + PADDING_V * 2;
 
     // Ensure minimum height
     if (!m_title.isEmpty() && msgHeight > 0) {
         bubbleHeight += 2; // Small spacing between title and message
+    }
+    if (sourceHeight > 0) {
+        bubbleHeight += 2; // Small spacing before source label
     }
 
     m_bubbleRect.setWidth(bubbleWidth);
@@ -329,8 +367,18 @@ void TipBubbleWidget::calculateTextLayout()
     if (!m_message.isEmpty()) {
         m_messageRect = QRect(PADDING_H, currentY,
                               bubbleWidth - PADDING_H * 2, msgHeight);
+        currentY += msgHeight;
     } else {
         m_messageRect = QRect();
+    }
+
+    // Calculate source rect
+    if (!m_source.isEmpty()) {
+        currentY += 2; // spacing
+        m_sourceRect = QRect(PADDING_H, currentY,
+                             bubbleWidth - PADDING_H * 2, sourceHeight);
+    } else {
+        m_sourceRect = QRect();
     }
 }
 
