@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -69,12 +70,13 @@ jobs:
           find . -name "Qlippy.exe" -not -path "./package/*" -exec cp {} package/ \; 2>/dev/null || true
           windeployqt package/Qlippy.exe || true
           cp -R ../assets package/assets
+          cd package && 7z a ../Qlippy-Windows.zip . && cd ..
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Qlippy-Windows
-          path: build/package/
+          path: build/Qlippy-Windows.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -114,3 +116,23 @@ jobs:
         with:
           name: Qlippy-Linux
           path: build/Qlippy-Linux.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/Qlippy-macOS/Qlippy-macOS.tar.gz
+            artifacts/Qlippy-Windows/Qlippy-Windows.zip
+            artifacts/Qlippy-Linux/Qlippy-Linux.tar.gz
