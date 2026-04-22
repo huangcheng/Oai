@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QRect>
 #include <QPainterPath>
+#include <QWindow>
 
 TipBubbleWidget::TipBubbleWidget(QWidget *parent)
     : QWidget(parent)
@@ -200,16 +201,30 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
         return;
 
     QRect anchor = m_anchorRect.isValid() ? m_anchorRect : QRect(0, 0, pet->width(), pet->height());
-    QPoint petCenter = pet->mapToGlobal(anchor.center());
-    int petTop = pet->mapToGlobal(anchor.topLeft()).y();
-    int petBottom = pet->mapToGlobal(QPoint(anchor.left(), anchor.bottom())).y();
+
+    // On macOS with Qt::Tool frameless windows, both mapToGlobal() and pos()
+    // can return stale/incorrect coordinates. Use the native QWindow position
+    // which tracks the actual OS window frame.
+    QPoint petGlobalPos;
+    if (QWindow *w = pet->windowHandle()) {
+        petGlobalPos = w->position();
+    } else {
+        petGlobalPos = pet->pos();
+    }
+    QPoint petCenter(petGlobalPos.x() + anchor.x() + anchor.width() / 2,
+                     petGlobalPos.y() + anchor.y() + anchor.height() / 2);
     int petCenterX = petCenter.x();
+    int petTop      = petGlobalPos.y() + anchor.y();
+    int petBottom   = petGlobalPos.y() + anchor.y() + anchor.height();
 
     // Calculate bubble position: align tail tip with pet center, not bubble center
     // Tail tip X in widget coords = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT + 2
     int tailTipLocalX = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT + 2;
     int bubbleX = petCenterX - tailTipLocalX;
-    int bubbleY = petTop - m_bubbleRect.height() - TAIL_HEIGHT;
+
+    // Overlap the pet slightly so the tail feels attached, not floating
+    constexpr int PET_OVERLAP = 6;
+    int bubbleY = petTop - m_bubbleRect.height() - TAIL_HEIGHT + PET_OVERLAP;
 
     m_tailDown = true; // default: tail points down
 
@@ -218,8 +233,8 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
     if (screen) {
         QRect screenRect = screen->availableGeometry();
         if (bubbleY < screenRect.top()) {
-            // Not enough room above — place below pet
-            bubbleY = petBottom + TAIL_HEIGHT;
+            // Not enough room above — place below pet with same overlap
+            bubbleY = petBottom + TAIL_HEIGHT - PET_OVERLAP;
             m_tailDown = false;
         }
     }
@@ -244,7 +259,7 @@ void TipBubbleWidget::startEnterAnimation()
     }
 
     m_opacityAnim = new QPropertyAnimation(this, "opacity", this);
-    m_opacityAnim->setDuration(200);
+    m_opacityAnim->setDuration(400);
     m_opacityAnim->setStartValue(0.0);
     m_opacityAnim->setEndValue(1.0);
     m_opacityAnim->setEasingCurve(QEasingCurve::OutQuad);
@@ -258,7 +273,7 @@ void TipBubbleWidget::startExitAnimation()
     }
 
     m_opacityAnim = new QPropertyAnimation(this, "opacity", this);
-    m_opacityAnim->setDuration(150);
+    m_opacityAnim->setDuration(300);
     m_opacityAnim->setStartValue(m_opacity);
     m_opacityAnim->setEndValue(0.0);
     m_opacityAnim->setEasingCurve(QEasingCurve::InQuad);

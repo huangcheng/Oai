@@ -36,6 +36,11 @@ public:
     // Render current frame onto painter
     void paint(QPainter *painter, const QRect &bounds);
 
+    // --- Test accessors ------------------------------------------------------
+    QString currentAnimation() const { return m_current.name; }
+    bool isPlaying() const { return m_playing; }
+    int queueSize() const { return m_queue.size(); }
+
 signals:
     void effectRequested(const QString &effectName);
     void frameChanged();

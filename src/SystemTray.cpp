@@ -7,6 +7,8 @@
 #include <QApplication>
 #include <QPainter>
 #include <QDebug>
+#include <QPixmap>
+#include <QImage>
 
 SystemTray::SystemTray(QWidget *mainWindow, QObject *parent)
     : QObject(parent)
@@ -15,20 +17,26 @@ SystemTray::SystemTray(QWidget *mainWindow, QObject *parent)
     m_trayIcon = new QSystemTrayIcon(this);
     m_trayIcon->setToolTip(tr("Qlippy Desktop Pet"));
 
-    // Use the application icon for the tray
-    QIcon icon = qApp->windowIcon();
-    if (icon.isNull()) {
-        // Create a simple colored circle as fallback
+    // Use the application icon scaled for the system tray
+    QIcon appIcon = qApp->windowIcon();
+    if (!appIcon.isNull()) {
+        // macOS menu bar expects ~22px icons; scale from app icon
+        QPixmap trayPix = appIcon.pixmap(128, 128)
+                              .scaled(44, 44, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QIcon trayIcon;
+        trayIcon.addPixmap(trayPix);
+        m_trayIcon->setIcon(trayIcon);
+    } else {
+        // Fallback: simple colored circle
         QPixmap pixmap(64, 64);
         pixmap.fill(Qt::transparent);
         QPainter painter(&pixmap);
         painter.setRenderHint(QPainter::Antialiasing);
-        painter.setBrush(QColor(0, 120, 215)); // Windows accent blue
+        painter.setBrush(QColor(0, 120, 215));
         painter.setPen(Qt::NoPen);
         painter.drawEllipse(8, 8, 48, 48);
-        icon = QIcon(pixmap);
+        m_trayIcon->setIcon(QIcon(pixmap));
     }
-    m_trayIcon->setIcon(icon);
 
     setupMenu();
 

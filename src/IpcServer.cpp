@@ -1,18 +1,17 @@
 #include "IpcServer.h"
 
-#include <QLocalServer>
-#include <QLocalSocket>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QDir>
-#include <QFile>
+#include <QHostAddress>
 #include <QDebug>
 
 IpcServer::IpcServer(QObject *parent)
     : QObject(parent)
-    , m_server(new QLocalServer(this))
+    , m_server(new QTcpServer(this))
 {
-    connect(m_server, &QLocalServer::newConnection,
+    connect(m_server, &QTcpServer::newConnection,
             this, &IpcServer::onNewConnection);
 }
 
@@ -21,62 +20,61 @@ IpcServer::~IpcServer()
     stop();
 }
 
-bool IpcServer::start(const QString &endpoint, bool isNamedPipe)
+bool IpcServer::start(const QString &endpoint)
 {
-    if (isNamedPipe) {
-        // ── Windows named pipe ──────────────────────────────────────────
-        // QLocalServer::listen() accepts the pipe name directly.
-        // Pass just the pipe name (without the \\.\pipe\ prefix) or the
-        // full path — Qt normalises it internally.
-        if (!m_server->listen(endpoint)) {
-            qWarning() << "IPC: Failed to listen on named pipe:" << endpoint
-                        << m_server->errorString();
-            return false;
-        }
-        qDebug() << "IPC: Named pipe listening on:" << endpoint;
-    } else {
-        // ── Unix domain socket (Linux / macOS) ─────────────────────────
-        // Remove any stale socket file left by a previous crash.
-        QFile::remove(endpoint);
-
-        // Ensure parent directory exists.
-        const QString dir = QFileInfo(endpoint).absolutePath();
-        QDir().mkpath(dir);
-
-        if (!m_server->listen(endpoint)) {
-            qWarning() << "IPC: Failed to listen on Unix socket:" << endpoint
-                        << m_server->errorString();
-            return false;
-        }
-        qDebug() << "IPC: Unix socket listening on:" << endpoint;
+    // Parse "host:port"
+    int colonPos = endpoint.lastIndexOf(':');
+    if (colonPos <= 0) {
+        qWarning() << "IPC: Invalid endpoint format (expected host:port):" << endpoint;
+        return false;
     }
 
+    QString host = endpoint.left(colonPos);
+    quint16 port = static_cast<quint16>(endpoint.mid(colonPos + 1).toUInt());
+
+    QHostAddress address;
+    if (!address.setAddress(host)) {
+        qWarning() << "IPC: Invalid host address:" << host;
+        return false;
+    }
+
+    if (!m_server->listen(address, port)) {
+        qWarning() << "IPC: Failed to listen on" << endpoint
+                   << m_server->errorString();
+        return false;
+    }
+    qDebug() << "IPC: TCP server listening on:" << endpoint;
     return true;
 }
 
 void IpcServer::stop()
 {
-    m_server->close();
+    // Close active connections first
+    const auto sockets = m_buffers.keys();
+    for (QTcpSocket *socket : sockets) {
+        socket->close();
+    }
     m_buffers.clear();
+    m_server->close();
 }
 
 void IpcServer::onNewConnection()
 {
-    while (QLocalSocket *socket = m_server->nextPendingConnection()) {
+    while (QTcpSocket *socket = m_server->nextPendingConnection()) {
         m_buffers.insert(socket, QByteArray());
 
-        connect(socket, &QLocalSocket::readyRead,
+        connect(socket, &QTcpSocket::readyRead,
                 this, &IpcServer::onReadyRead);
-        connect(socket, &QLocalSocket::disconnected,
+        connect(socket, &QTcpSocket::disconnected,
                 this, &IpcServer::onDisconnected);
 
-        qDebug() << "IPC client connected";
+        qDebug() << "IPC client connected from" << socket->peerAddress().toString();
     }
 }
 
 void IpcServer::onReadyRead()
 {
-    QLocalSocket *socket = qobject_cast<QLocalSocket*>(sender());
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     if (!socket) return;
 
     QByteArray &buffer = m_buffers[socket];
@@ -96,7 +94,7 @@ void IpcServer::onReadyRead()
 
 void IpcServer::onDisconnected()
 {
-    QLocalSocket *socket = qobject_cast<QLocalSocket*>(sender());
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     if (!socket) return;
 
     m_buffers.remove(socket);
@@ -105,7 +103,7 @@ void IpcServer::onDisconnected()
     qDebug() << "IPC client disconnected";
 }
 
-void IpcServer::parseMessage(const QByteArray &data, QLocalSocket *socket)
+void IpcServer::parseMessage(const QByteArray &data, QTcpSocket *socket)
 {
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);

@@ -9,25 +9,15 @@
 
 QString ConfigManager::defaultEndpoint()
 {
-#ifdef Q_OS_WIN
-    // Windows: named pipe — no file on disk, lives in kernel namespace
-    return QStringLiteral("\\\\.\\pipe\\im.cheng.qlippy");
-#else
-    // Linux / macOS: Unix domain socket in user home
-    return QDir::homePath() + "/.qlippy/qlippy.sock";
-#endif
+    // TCP localhost — same on all platforms. Port 52847 is chosen from the
+    // IANA dynamic/private range (49152-65535) to avoid conflicts with
+    // registered services.
+    return QStringLiteral("127.0.0.1:52847");
 }
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
     , m_ipcEndpoint(defaultEndpoint())
-    , m_isNamedPipe(
-#ifdef Q_OS_WIN
-          true
-#else
-          false
-#endif
-      )
 {
 }
 
@@ -75,11 +65,9 @@ void ConfigManager::load()
     // IPC endpoint override
     if (obj.contains("ipcEndpoint")) {
         m_ipcEndpoint = obj["ipcEndpoint"].toString();
-        m_isNamedPipe = m_ipcEndpoint.startsWith("\\\\.\\pipe\\");
     } else if (obj.contains("ipcSocketPath")) {
         // Backward compat with old config field name
         m_ipcEndpoint = obj["ipcSocketPath"].toString();
-        m_isNamedPipe = m_ipcEndpoint.startsWith("\\\\.\\pipe\\");
     }
 
     qDebug() << "Config loaded from:" << path;

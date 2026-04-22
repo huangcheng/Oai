@@ -105,6 +105,11 @@ void EventRouter::initEventMap()
     m_eventMap["todo.updated"] = {"congratulate", "confetti", tr("Task complete!"), tr("Nice work checking off that todo!")};
 }
 
+void EventRouter::retranslateUi()
+{
+    initEventMap();
+}
+
 bool EventRouter::validateEvent(const QJsonObject &event) const
 {
     // Check message type
@@ -113,11 +118,14 @@ bool EventRouter::validateEvent(const QJsonObject &event) const
         return false;
     }
 
-    // Check source field
+    // Check source field (accept any non-empty source for extensibility)
     const QString source = event.value("source").toString();
-    if (!s_validSources.contains(source)) {
-        qWarning() << "EventRouter: Invalid or missing source:" << source;
+    if (source.isEmpty()) {
+        qWarning() << "EventRouter: Missing source field";
         return false;
+    }
+    if (!s_validSources.contains(source)) {
+        qDebug() << "EventRouter: Unknown source (accepted):" << source;
     }
 
     // Check event name

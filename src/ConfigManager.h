@@ -25,16 +25,12 @@ public:
     void setAutoStart(bool enabled);
 
     /**
-     * Returns the platform-appropriate IPC endpoint:
-     *   - Linux/macOS: Unix domain socket path, e.g. "~/.qlippy/qlippy.sock"
-     *   - Windows:     Named pipe, e.g. "\\.\pipe\qlippy"
+     * Returns the TCP endpoint for IPC.
+     * Format: "host:port", e.g. "127.0.0.1:52847"
      */
     QString ipcEndpoint() const { return m_ipcEndpoint; }
 
-    /** True when the endpoint is a Windows named pipe, false for Unix socket. */
-    bool isNamedPipe() const { return m_isNamedPipe; }
-
-    /** Platform default endpoint (used when config has no override). */
+    /** Default IPC endpoint (used when config has no override). */
     static QString defaultEndpoint();
 
 signals:
@@ -47,7 +43,6 @@ private:
     QString m_language = "en";
     bool m_autoStart = false;
     QString m_ipcEndpoint;
-    bool m_isNamedPipe = false;
 };
 
 #endif // CONFIGMANAGER_H

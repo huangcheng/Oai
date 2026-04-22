@@ -4,7 +4,7 @@ project(Qlippy LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools Test)
 
 qt_standard_project_setup()
 
@@ -16,8 +16,8 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(RLOTTIE_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
-set(RLOTTIE_BUILD_TEST OFF CACHE BOOL "" FORCE)
+# NOTE: rlottie v0.2 does NOT have a RLOTTIE_BUILD_EXAMPLE option.
+# We patch out the example directory below after FetchContent populates it.
 # rlottie declares cmake_minimum_required(3.3) which is incompatible with CMake 4.x
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE INTERNAL "" FORCE)
 
@@ -78,6 +78,18 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
 ")
         endif()
     endif()
+
+    # Patch out the example directory — rlottie v0.2 unconditionally builds
+    # lottie2gif which Qt Creator auto-detects as a run target.
+    set(RLOTTIE_CMAKELISTS "${rlottie_SOURCE_DIR}/CMakeLists.txt")
+    file(READ "${RLOTTIE_CMAKELISTS}" RLOTTIE_CMAKE_CONTENT)
+    string(REPLACE "add_subdirectory(example)"
+                    "# add_subdirectory(example)  # disabled by Qlippy"
+                    RLOTTIE_CMAKE_PACHED "${RLOTTIE_CMAKE_CONTENT}")
+    if(NOT RLOTTIE_CMAKE_CONTENT STREQUAL RLOTTIE_CMAKE_PACHED)
+        file(WRITE "${RLOTTIE_CMAKELISTS}" "${RLOTTIE_CMAKE_PACHED}")
+    endif()
+
     add_subdirectory(${rlottie_SOURCE_DIR} ${rlottie_BINARY_DIR})
 endif()
 
@@ -90,7 +102,6 @@ qt_add_executable(Qlippy
     WIN32 MACOSX_BUNDLE
     src/main.cpp
     ${PLATFORM_SOURCES}
-    assets/icons.qrc
     src/mainwindow.cpp
     src/mainwindow.h
     src/SpriteAnimationEngine.cpp
@@ -114,6 +125,14 @@ qt_add_executable(Qlippy
 )
 
 target_include_directories(Qlippy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# --- Icon resource -----------------------------------------------------------
+qt_add_resources(Qlippy "icons"
+    PREFIX "/icons"
+    BASE "assets/icons"
+    FILES
+        assets/icons/clippy.png
+)
 
 # --- Lottie effect resources -------------------------------------------------
 # Only effects are Lottie — character animations use sprite sheets at runtime
@@ -188,3 +207,7 @@ qt_generate_deploy_app_script(
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
+
+# --- Tests -------------------------------------------------------------------
+enable_testing()
+add_subdirectory(tests)

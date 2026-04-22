@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setApplicationName("Qlippy");
     a.setOrganizationName("Qlippy");
-    a.setWindowIcon(QIcon(":/icons/icons/clippy.png"));
+    a.setWindowIcon(QIcon(":/icons/clippy.png"));
     a.setQuitOnLastWindowClosed(false); // system tray keeps it alive
 
     // --- Single instance enforcement -----------------------------------------
@@ -77,21 +77,30 @@ int main(int argc, char *argv[])
 
     // --- Load assets ---------------------------------------------------------
     // Character animations: sprite sheet from previous Electron-based version
-    const QString assetsDir = QApplication::applicationDirPath() + "/../assets";
-    const QString altAssetsDir = QApplication::applicationDirPath() + "/assets";
+    // Searches upward from the executable to find the assets folder,
+    // handling macOS app bundles, various build dir layouts, and source-tree runs.
+    auto findAssetsDir = []() -> QString {
+        QDir dir(QApplication::applicationDirPath());
+        for (int i = 0; i < 6; ++i) {
+            QString candidate = dir.absoluteFilePath("assets");
+            if (QFile::exists(candidate + "/map.png")) {
+                return candidate;
+            }
+            if (!dir.cdUp()) break;
+        }
+        return QString();
+    };
 
     QString spritePath, animJsonPath, effectsDir;
+    const QString assetsDir = findAssetsDir();
 
-    if (QFile::exists(assetsDir + "/map.png")) {
+    if (!assetsDir.isEmpty()) {
         spritePath = assetsDir + "/map.png";
         animJsonPath = assetsDir + "/animations.json";
         effectsDir = assetsDir + "/lottie/effects";
-    } else if (QFile::exists(altAssetsDir + "/map.png")) {
-        spritePath = altAssetsDir + "/map.png";
-        animJsonPath = altAssetsDir + "/animations.json";
-        effectsDir = altAssetsDir + "/lottie/effects";
+        qDebug() << "Assets loaded from:" << assetsDir;
     } else {
-        qWarning() << "Assets not found in" << assetsDir << "or" << altAssetsDir;
+        qWarning() << "Assets not found. Searched from:" << QApplication::applicationDirPath();
     }
 
     if (!spritePath.isEmpty()) {
@@ -136,7 +145,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    ipcServer.start(config.ipcEndpoint(), config.isNamedPipe());
+    ipcServer.start(config.ipcEndpoint());
 
     // --- System tray ---------------------------------------------------------
     SystemTray tray(&w);
@@ -146,6 +155,10 @@ int main(int argc, char *argv[])
     // --- Language switching --------------------------------------------------
     QObject::connect(&config, &ConfigManager::languageChanged,
                      &w, &MainWindow::onLanguageChanged);
+    QObject::connect(&config, &ConfigManager::languageChanged,
+                     &eventRouter, &EventRouter::retranslateUi);
+    QObject::connect(&config, &ConfigManager::languageChanged,
+                     &tipsEngine, &TipsEngine::retranslateUi);
 
     w.show();
     w.raise();

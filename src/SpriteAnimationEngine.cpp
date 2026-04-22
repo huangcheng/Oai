@@ -133,14 +133,39 @@ void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
     qDebug() << "Loaded" << m_animations.size() << "animations";
 
     // Build idle pool from idle-type animations
-    const QStringList idleNames = {"Idle1_1", "IdleAtom", "IdleSideToSide",
-                                    "IdleRopePile", "IdleHeadScratch",
-                                    "IdleFingerTap", "IdleEyeBrowRaise",
-                                    "IdleSnooze"};
-    for (const QString &name : idleNames) {
+    // {name, weight} — higher weight = more frequent
+    const QVector<QPair<QString, int>> idlePool = {
+        // Classic idle animations
+        {"Idle1_1",           4},
+        {"IdleAtom",          3},
+        {"IdleSideToSide",    3},
+        {"IdleRopePile",      2},
+        {"IdleHeadScratch",   3},
+        {"IdleFingerTap",     3},
+        {"IdleEyeBrowRaise",  3},
+        {"IdleSnooze",        1},
+        // Look-around animations
+        {"LookLeft",          2},
+        {"LookRight",         2},
+        {"LookUp",            2},
+        {"LookDown",          2},
+        {"LookUpLeft",        1},
+        {"LookUpRight",       1},
+        {"LookDownLeft",      1},
+        {"LookDownRight",     1},
+        // Personality animations
+        {"GetArtsy",          1},
+        {"GetTechy",          1},
+        {"GetWizardy",        1},
+        {"Hearing_1",         1},
+        {"CheckingSomething", 1},
+        {"Writing",           1},
+        {"Searching",         1},
+    };
+    for (const auto &[name, weight] : idlePool) {
         if (m_animations.contains(name)) {
             m_idleAnims.append(name);
-            m_idleWeights.append(3);
+            m_idleWeights.append(weight);
         }
     }
 
@@ -167,13 +192,19 @@ void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority
 
     m_idleTimer.stop();
 
-    if (priority == HighPriority) {
+    // Idle and RestPose animations should always be interruptible by events
+    bool currentIsIdle = m_idleAnims.contains(m_current.name)
+                         || m_current.name == "RestPose";
+
+    if (priority == HighPriority || currentIsIdle) {
         m_current = m_animations.value(actualName);
         m_currentFrameIndex = 0;
         m_currentFrameElapsed = 0;
         m_playing = true;
         m_looping = false;  // No animation loops — idle timer handles cycling
-        m_queue.clear();
+        if (priority == HighPriority) {
+            m_queue.clear();
+        }
     } else {
         if (!m_playing) {
             m_current = m_animations.value(actualName);

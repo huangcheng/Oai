@@ -178,15 +178,13 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 
     menu.addSeparator();
 
+    QAction *settingsAction = menu.addAction(tr("Settings"));
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettings);
+
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
         m_tipBubble->showBubble(tr("About"), tr("Qlippy Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
     });
-
-    menu.addSeparator();
-
-    QAction *settingsAction = menu.addAction(tr("Settings"));
-    connect(settingsAction, &QAction::triggered, this, &MainWindow::openSettings);
 
     menu.addSeparator();
 
