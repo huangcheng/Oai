@@ -26,6 +26,22 @@ export function getEndpoint(override) {
   return override || DEFAULT_ENDPOINT;
 }
 
+/**
+ * Parse "host:port" into { host, port } for net.createConnection.
+ */
+function parseEndpoint(endpoint) {
+  const idx = endpoint.lastIndexOf(':');
+  if (idx > 0) {
+    const host = endpoint.slice(0, idx);
+    const port = parseInt(endpoint.slice(idx + 1), 10);
+    if (!isNaN(port)) {
+      return { host, port };
+    }
+  }
+  // Fallback: treat as Unix socket path
+  return { path: endpoint };
+}
+
 // ── Send a message ─────────────────────────────────────────────────────────
 
 /**
@@ -49,7 +65,7 @@ export function sendToQlippy(message, opts = {}) {
 
     function trySend() {
       attempts++;
-      const client = createConnection(endpoint, () => {
+      const client = createConnection(parseEndpoint(endpoint), () => {
         client.write(payload, () => {
           client.end();
           resolve();
@@ -99,7 +115,7 @@ export function pingQlippy(opts = {}) {
   const timeout  = opts.timeout ?? 2000;
 
   return new Promise((resolve) => {
-    const client = createConnection(endpoint, () => {
+    const client = createConnection(parseEndpoint(endpoint), () => {
       client.write('{"type":"ping"}\n');
     });
 
