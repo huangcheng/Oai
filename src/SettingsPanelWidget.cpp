@@ -13,6 +13,13 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QFont>
+#include <QPixmap>
+#include <QTemporaryDir>
+#include <QDir>
+#include <QStandardPaths>
+#include <QPolygon>
+#include <QFile>
+#include <QListView>
 
 SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     : QWidget(parent)
@@ -132,11 +139,33 @@ void SettingsPanelWidget::setupUi()
     m_langLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_langCombo = new QComboBox(m_contentWidget);
+    // Force Qt-drawn popup instead of native macOS popup (native ignores stylesheets)
+    auto *listView = new QListView(m_langCombo);
+    listView->setFont(QFont("Tahoma", 9));
+    m_langCombo->setView(listView);
     m_langCombo->addItem(tr("English"), "en");
     m_langCombo->addItem(tr("简体中文"), "zh_CN");
     m_langCombo->setFont(QFont("Tahoma", 9));
     m_langCombo->setFixedHeight(20);
-    m_langCombo->setStyleSheet(R"(
+
+    // Generate a small down-arrow pixmap (Qt stylesheets can't do CSS border-triangles)
+    QString arrowPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
+                        + "/qlippy_combo_arrow.png";
+    if (!QFile::exists(arrowPath)) {
+        QPixmap arrow(8, 5);
+        arrow.fill(Qt::transparent);
+        QPainter p(&arrow);
+        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setBrush(Qt::black);
+        p.setPen(Qt::NoPen);
+        QPolygon tri;
+        tri << QPoint(0, 0) << QPoint(8, 0) << QPoint(4, 5);
+        p.drawPolygon(tri);
+        p.end();
+        arrow.save(arrowPath);
+    }
+
+    m_langCombo->setStyleSheet(QStringLiteral(R"(
         QComboBox {
             background: white;
             border: 1px solid black;
@@ -146,15 +175,31 @@ void SettingsPanelWidget::setupUi()
         QComboBox::drop-down {
             border-left: 1px solid black;
             width: 18px;
+            subcontrol-origin: padding;
+            subcontrol-position: center right;
         }
         QComboBox::down-arrow {
-            image: none;
-            border-left: 3px solid transparent;
-            border-right: 3px solid transparent;
-            border-top: 5px solid black;
-            margin-right: 4px;
+            image: url(%1);
+            width: 8px;
+            height: 5px;
         }
-    )");
+        QComboBox QAbstractItemView {
+            background: white;
+            color: black;
+            border: 1px solid black;
+            selection-background-color: #000080;
+            selection-color: white;
+            outline: none;
+        }
+        QComboBox QAbstractItemView::item {
+            color: black;
+            padding: 2px 4px;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            background: #000080;
+            color: white;
+        }
+    )").arg(arrowPath));
     connect(m_langCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsPanelWidget::onLanguageChanged);
 

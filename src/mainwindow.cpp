@@ -212,8 +212,8 @@ void MainWindow::toggleVisibility()
 void MainWindow::openSettings()
 {
     m_settingsPanel->setAnchorRect(petRect());
-    m_settingsPanel->anchorTo(this);
     m_settingsPanel->show();
+    m_settingsPanel->anchorTo(this);
     m_settingsPanel->raise();
 }
 
