@@ -100,6 +100,14 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
     endif()
 
     add_subdirectory(${rlottie_SOURCE_DIR} ${rlottie_BINARY_DIR})
+
+    # rlottie's CMake adds a version script linker flag with a relative path
+    # that breaks when rlottie is consumed via FetchContent. Remove it.
+    get_target_property(_rlottie_link_opts rlottie LINK_OPTIONS)
+    if(_rlottie_link_opts)
+        list(FILTER _rlottie_link_opts EXCLUDE REGEX "expmap")
+        set_target_properties(rlottie PROPERTIES LINK_OPTIONS "${_rlottie_link_opts}")
+    endif()
 endif()
 
 # --- Executable --------------------------------------------------------------
