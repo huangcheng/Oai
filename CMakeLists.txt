@@ -89,10 +89,11 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
     endif()
 
     # Patch rlottie CMakeLists.txt to remove version script linker flag.
-    # It uses a relative path to rlottie.expmap that breaks with FetchContent.
+    # It uses ${CMAKE_SOURCE_DIR}/rlottie.expmap which resolves to the
+    # top-level project dir (not rlottie's) when used via FetchContent.
     set(RLOTTIE_CMAKELISTS "${rlottie_SOURCE_DIR}/CMakeLists.txt")
     file(READ "${RLOTTIE_CMAKELISTS}" RLOTTIE_CMAKE_CONTENT)
-    string(REGEX REPLACE "-Wl,--version-script,[^ \t\n\r\"]*rlottie\\.expmap" ""
+    string(REGEX REPLACE "\"-Wl,--version-script=[^\"]*rlottie\\.expmap\"" "\"\""
            RLOTTIE_CMAKE_CONTENT "${RLOTTIE_CMAKE_CONTENT}")
 
     # Also patch out the example directory — rlottie v0.2 unconditionally builds
