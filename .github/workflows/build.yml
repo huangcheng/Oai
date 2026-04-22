@@ -33,6 +33,10 @@ jobs:
           cd build
           macdeployqt Qlippy.app
           cp -R ../assets Qlippy.app/Contents/MacOS/assets
+          # Ad-hoc sign so Gatekeeper doesn't flag it as damaged
+          codesign --force --deep --sign - Qlippy.app
+          # Remove quarantine attribute
+          xattr -cr Qlippy.app
           tar -czf Qlippy-darwin-arm64.tar.gz Qlippy.app
 
       - name: Upload artifact
