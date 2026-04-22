@@ -188,7 +188,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_title.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont titleFont("Tahoma", 11, QFont::Bold);
+        QFont titleFont("HarmonyOS Sans SC", 11, QFont::Bold);
         painter.setFont(titleFont);
         painter.setPen(Qt::black);
         painter.drawText(m_titleRect, Qt::AlignLeft | Qt::AlignVCenter, m_title);
@@ -199,7 +199,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_message.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont msgFont("Tahoma", 11);
+        QFont msgFont("HarmonyOS Sans SC", 11);
         painter.setFont(msgFont);
         painter.setPen(Qt::black);
 
@@ -213,7 +213,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_source.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont sourceFont("Tahoma", 9);
+        QFont sourceFont("HarmonyOS Sans SC", 9);
         painter.setFont(sourceFont);
         painter.setPen(QColor(120, 120, 120));
         painter.drawText(m_sourceRect, Qt::AlignLeft | Qt::AlignVCenter, m_source);
@@ -310,9 +310,9 @@ void TipBubbleWidget::startExitAnimation()
 
 void TipBubbleWidget::calculateTextLayout()
 {
-    QFont titleFont("Tahoma", 11, QFont::Bold);
-    QFont msgFont("Tahoma", 11);
-    QFont sourceFont("Tahoma", 9);
+    QFont titleFont("HarmonyOS Sans SC", 11, QFont::Bold);
+    QFont msgFont("HarmonyOS Sans SC", 11);
+    QFont sourceFont("HarmonyOS Sans SC", 9);
 
     QFontMetrics titleFm(titleFont);
     QFontMetrics msgFm(msgFont);
