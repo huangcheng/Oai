@@ -76,6 +76,9 @@ const message = {
   event: args.event,
 };
 
+if (args.session) {
+  message.session = args.session;
+}
 if (args['tool-name']) {
   message.toolName = args['tool-name'];
 }

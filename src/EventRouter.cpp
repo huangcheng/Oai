@@ -37,6 +37,8 @@ void EventRouter::routeEvent(const QJsonObject &event)
 
     const QString eventName = event.value("event").toString();
     const QString source = event.value("source").toString();
+    const QString session = event.value("session").toString();
+    const QString sourceLabel = session.isEmpty() ? source : source + " · " + session;
 
     // Feed to tips engine
     if (m_tips) {
@@ -64,7 +66,7 @@ void EventRouter::routeEvent(const QJsonObject &event)
 
     // Show tip with source label
     if (!action.tipTitle.isEmpty() && m_tipBubble) {
-        m_tipBubble->showBubble(action.tipTitle, action.tipBody, TipBubbleWidget::TipBubble, source);
+        m_tipBubble->showBubble(action.tipTitle, action.tipBody, TipBubbleWidget::TipBubble, sourceLabel);
     }
 }
 
