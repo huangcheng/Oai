@@ -190,6 +190,13 @@ void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority
         return;
     }
 
+    // If the same animation is already playing, let it finish — don't restart.
+    // This prevents janky re-playback when the same event fires repeatedly
+    // (e.g. multiple tool.before events triggering "thinking" back-to-back).
+    if (m_playing && m_current.name == actualName) {
+        return;
+    }
+
     m_idleTimer.stop();
 
     // Idle and RestPose animations should always be interruptible by events

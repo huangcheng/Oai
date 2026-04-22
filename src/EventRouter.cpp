@@ -50,12 +50,10 @@ void EventRouter::routeEvent(const QJsonObject &event)
 
     const EventAction action = m_eventMap.value(eventName);
 
-    // Trigger animation
+    // Trigger animation — always use HighPriority so event animations
+    // immediately interrupt idle/previous animations
     if (!action.animation.isEmpty() && m_engine) {
-        m_engine->playAnimation(action.animation,
-            eventName.contains("permission") || eventName.contains("error")
-            ? SpriteAnimationEngine::HighPriority
-            : SpriteAnimationEngine::NormalPriority);
+        m_engine->playAnimation(action.animation, SpriteAnimationEngine::HighPriority);
     }
 
     // Trigger visual effect
