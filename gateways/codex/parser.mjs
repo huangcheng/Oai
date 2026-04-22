@@ -13,7 +13,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import { sendToQlippy, getEndpoint, pingQlippy } from '@eastlake/qlippy-gateway/lib/ipc.mjs';
+import { sendToQlippy, getEndpoint, pingQlippy } from '@huangcheng/qlippy-gateway/lib/ipc.mjs';
 
 // Codex JSONL event → unified event mapping (D10 table)
 const EVENT_MAP = {

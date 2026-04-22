@@ -1,5 +1,5 @@
 {
-  "name": "@eastlake/qlippy-claude-code",
+  "name": "@huangcheng/qlippy-claude-code",
   "version": "1.0.0",
   "description": "Claude Code hooks for Qlippy desktop pet",
   "type": "module",
@@ -17,6 +17,14 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@eastlake/qlippy-gateway": "^1.0.0"
+    "@huangcheng/qlippy-gateway": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huangcheng/clippy.git",
+    "directory": "gateways/claude-code"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }

@@ -1,4 +1,4 @@
-import { sendToQlippy, pingQlippy } from '@eastlake/qlippy-gateway/lib/ipc.mjs';
+import { sendToQlippy, pingQlippy } from '@huangcheng/qlippy-gateway/lib/ipc.mjs';
 
 const EVENT_MAP = {
   'session.created': 'session.start',

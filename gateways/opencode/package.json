@@ -1,5 +1,5 @@
 {
-  "name": "@eastlake/qlippy-opencode",
+  "name": "@huangcheng/qlippy-opencode",
   "version": "1.1.1",
   "description": "OpenCode plugin for Qlippy desktop pet",
   "main": "./plugin.mjs",
@@ -15,6 +15,14 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@eastlake/qlippy-gateway": "^1.1.0"
+    "@huangcheng/qlippy-gateway": "^1.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huangcheng/clippy.git",
+    "directory": "gateways/opencode"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }

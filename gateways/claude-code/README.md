@@ -5,9 +5,9 @@ Claude Code hooks for the Qlippy desktop pet.
 ## Install
 
 ```bash
-npm install -g @eastlake/qlippy-gateway
+npm install -g @huangcheng/qlippy-gateway
 npm install -g @qlippy/claude-code
-npx @eastlake/qlippy-claude-code
+npx @huangcheng/qlippy-claude-code
 ```
 
 The last command merges the hooks into `~/.claude/settings.json`.

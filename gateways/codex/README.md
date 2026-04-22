@@ -5,9 +5,9 @@ Codex hooks and JSONL parser for the Qlippy desktop pet.
 ## Install
 
 ```bash
-npm install -g @eastlake/qlippy-gateway
+npm install -g @huangcheng/qlippy-gateway
 npm install -g @qlippy/codex
-npx @eastlake/qlippy-codex
+npx @huangcheng/qlippy-codex
 ```
 
 The last command copies the hooks to `~/.codex/hooks.json`.

@@ -22,7 +22,7 @@ open build/Qlippy.app          # macOS
 cd build && ctest
 
 # Gateway CLI
-npm install -g @eastlake/qlippy-gateway
+npm install -g @huangcheng/qlippy-gateway
 qlippy-gateway send session.start    # send test event
 qlippy-gateway health                # check IPC server
 ```
@@ -49,7 +49,7 @@ Each gateway adapter normalizes tool-specific events into the 17 canonical event
 
 - **shared/** (`@qlippy/shared`) — Platform-agnostic TCP client used by all gateways.
 - **qlippy-gateway/** — CLI tool for sending events and health checks.
-- **claude-code/** — 14 hook definitions for Claude Code's `settings.json`. Install: `npx @eastlake/qlippy-claude-code`.
+- **claude-code/** — 14 hook definitions for Claude Code's `settings.json`. Install: `npx @huangcheng/qlippy-claude-code`.
 - **codex/** — JSONL stream parser + 6 hook definitions for Codex.
 - **opencode/** — Dynamic plugin that auto-loads in OpenCode.
 

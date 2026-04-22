@@ -5,9 +5,9 @@ OpenCode plugin for the Qlippy desktop pet.
 ## Install
 
 ```bash
-npm install -g @eastlake/qlippy-gateway
+npm install -g @huangcheng/qlippy-gateway
 cd ~/.config/opencode
-npm install @eastlake/qlippy-opencode
+npm install @huangcheng/qlippy-opencode
 ```
 
 Then add to your `opencode.json`:

@@ -184,34 +184,34 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 
 ```bash
 cd ~/.config/opencode
-npm install @eastlake/qlippy-opencode
+npm install @huangcheng/qlippy-opencode
 ```
 
-Then add `"@eastlake/qlippy-opencode"` to the `plugin` array in `opencode.json`.
+Then add `"@huangcheng/qlippy-opencode"` to the `plugin` array in `opencode.json`.
 
 ### Claude Code
 
 First, install `qlippy-gateway` globally:
 
 ```bash
-npm install -g @eastlake/qlippy-gateway
+npm install -g @huangcheng/qlippy-gateway
 ```
 
 ```bash
-npm install -g @eastlake/qlippy-claude-code
-npx @eastlake/qlippy-claude-code
+npm install -g @huangcheng/qlippy-claude-code
+npx @huangcheng/qlippy-claude-code
 ```
 
 ### Codex
 
 ```bash
-npm install -g @eastlake/qlippy-codex
-npx @eastlake/qlippy-codex
+npm install -g @huangcheng/qlippy-codex
+npx @huangcheng/qlippy-codex
 ```
 
 For non-interactive mode:
 ```bash
-codex exec --json "your prompt" | npx @eastlake/qlippy-codex parser.mjs
+codex exec --json "your prompt" | npx @huangcheng/qlippy-codex parser.mjs
 ```
 
 ### Health Check
@@ -219,7 +219,7 @@ codex exec --json "your prompt" | npx @eastlake/qlippy-codex parser.mjs
 Check if Qlippy is running:
 
 ```bash
-npx @eastlake/qlippy-gateway --ping
+npx @huangcheng/qlippy-gateway --ping
 # Exit code 0 = alive, 1 = not responding
 ```
 
@@ -228,7 +228,7 @@ npx @eastlake/qlippy-gateway --ping
 Send a test event (auto-retries up to 2 times if Qlippy is temporarily unreachable):
 
 ```bash
-npx @eastlake/qlippy-gateway --source opencode --event session.start
+npx @huangcheng/qlippy-gateway --source opencode --event session.start
 ```
 
 ## Project Structure

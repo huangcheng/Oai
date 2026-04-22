@@ -1,27 +1,27 @@
 {
   "hooks": {
     "PreToolUse": {
-      "command": "@eastlake/qlippy-gateway --source codex --event tool.before",
+      "command": "@huangcheng/qlippy-gateway --source codex --event tool.before",
       "async": true
     },
     "PostToolUse": {
-      "command": "@eastlake/qlippy-gateway --source codex --event tool.after",
+      "command": "@huangcheng/qlippy-gateway --source codex --event tool.after",
       "async": true
     },
     "SessionStart": {
-      "command": "@eastlake/qlippy-gateway --source codex --event session.start",
+      "command": "@huangcheng/qlippy-gateway --source codex --event session.start",
       "async": true
     },
     "Stop": {
-      "command": "@eastlake/qlippy-gateway --source codex --event session.idle",
+      "command": "@huangcheng/qlippy-gateway --source codex --event session.idle",
       "async": true
     },
     "UserPromptSubmit": {
-      "command": "@eastlake/qlippy-gateway --source codex --event prompt.submitted",
+      "command": "@huangcheng/qlippy-gateway --source codex --event prompt.submitted",
       "async": true
     },
     "PermissionRequest": {
-      "command": "@eastlake/qlippy-gateway --source codex --event permission.requested",
+      "command": "@huangcheng/qlippy-gateway --source codex --event permission.requested",
       "async": true
     }
   }
