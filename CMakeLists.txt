@@ -129,6 +129,8 @@ qt_add_executable(Orai
     src/SpritePack.h
     src/SpritePackManager.cpp
     src/SpritePackManager.h
+    src/UpdateChecker.cpp
+    src/UpdateChecker.h
     src/IpcServer.cpp
     src/IpcServer.h
     src/EventRouter.cpp
@@ -146,6 +148,9 @@ qt_add_executable(Orai
 )
 
 target_include_directories(Orai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Pass version to C++ code
+target_compile_definitions(Orai PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
 # --- Icon resource -----------------------------------------------------------
 qt_add_resources(Orai "icons"

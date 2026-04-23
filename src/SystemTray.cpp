@@ -2,6 +2,7 @@
 #include "mainwindow.h"
 #include "SpritePackManager.h"
 #include "SpritePack.h"
+#include "UpdateChecker.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -101,6 +102,16 @@ void SystemTray::setupMenu()
 
     m_trayMenu->addSeparator();
 
+    // Check for updates
+    m_checkUpdateAction = m_trayMenu->addAction(tr("Check for Updates"));
+    connect(m_checkUpdateAction, &QAction::triggered, this, [this]() {
+        if (m_updateChecker) {
+            m_updateChecker->checkForUpdates();
+        }
+    });
+
+    m_trayMenu->addSeparator();
+
     m_quitAction = m_trayMenu->addAction(tr("Quit"));
     connect(m_quitAction, &QAction::triggered, qApp, &QApplication::quit);
 
@@ -115,6 +126,50 @@ void SystemTray::setSpritePackManager(SpritePackManager *manager)
                 this, &SystemTray::refreshPackMenu);
         refreshPackMenu();
     }
+}
+
+void SystemTray::setUpdateChecker(UpdateChecker *checker)
+{
+    m_updateChecker = checker;
+    if (m_updateChecker) {
+        connect(m_updateChecker, &UpdateChecker::updateAvailable,
+                this, &SystemTray::onUpdateAvailable);
+        connect(m_updateChecker, &UpdateChecker::noUpdateAvailable,
+                this, &SystemTray::onNoUpdateAvailable);
+        connect(m_updateChecker, &UpdateChecker::checkFailed,
+                this, &SystemTray::onUpdateCheckFailed);
+    }
+}
+
+void SystemTray::onUpdateAvailable(const QString &current, const QString &latest, const QString &url)
+{
+    Q_UNUSED(url);
+    m_trayIcon->showMessage(
+        tr("Update Available"),
+        tr("Version %1 is available (current: %2)").arg(latest, current),
+        QSystemTrayIcon::Information,
+        5000
+    );
+}
+
+void SystemTray::onNoUpdateAvailable(const QString &current)
+{
+    m_trayIcon->showMessage(
+        tr("No Updates"),
+        tr("You are running the latest version (%1)").arg(current),
+        QSystemTrayIcon::Information,
+        3000
+    );
+}
+
+void SystemTray::onUpdateCheckFailed(const QString &error)
+{
+    m_trayIcon->showMessage(
+        tr("Update Check Failed"),
+        tr("Could not check for updates: %1").arg(error),
+        QSystemTrayIcon::Warning,
+        5000
+    );
 }
 
 void SystemTray::onPackActionTriggered()
