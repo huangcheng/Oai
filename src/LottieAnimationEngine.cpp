@@ -1,4 +1,5 @@
 #include "LottieAnimationEngine.h"
+#include "SpritePack.h"
 
 #include <QPainter>
 #include <QImage>
@@ -64,6 +65,87 @@ void LottieAnimationEngine::loadAnimations(const QString &characterDir)
     }
 
     m_timer.start();
+}
+
+bool LottieAnimationEngine::loadFromSpritePack(const SpritePack *pack)
+{
+    if (!pack || !pack->isValid()) {
+        qWarning() << "LottieAnimationEngine: Invalid sprite pack";
+        return false;
+    }
+
+    // Check if pack uses Lottie engine
+    if (pack->characterConfig().engineType != SpritePack::EngineType::Lottie) {
+        qWarning() << "LottieAnimationEngine: Pack does not use Lottie engine";
+        return false;
+    }
+
+    // Clear existing animations
+    m_animations.clear();
+    m_idleAnims.clear();
+    m_idleWeights.clear();
+
+    // Load animations from pack
+    const auto &animations = pack->animations();
+    for (auto it = animations.begin(); it != animations.end(); ++it) {
+        const QString name = it.key();
+        const SpritePack::AnimationDef &animDef = it.value();
+
+        // Only load Lottie animations
+        if (animDef.type != SpritePack::EngineType::Lottie) {
+            continue;
+        }
+
+        // Get absolute path to Lottie file
+        const QString lottiePath = pack->lottieAnimationPath(name);
+        if (lottiePath.isEmpty()) {
+            qWarning() << "LottieAnimationEngine: Lottie file not found for animation:" << name;
+            continue;
+        }
+
+        // Load Lottie animation
+        auto anim = rlottie::Animation::loadFromFile(lottiePath.toStdString());
+        if (!anim) {
+            qWarning() << "LottieAnimationEngine: Failed to load Lottie animation:" << lottiePath;
+            continue;
+        }
+
+        // Create animation state
+        AnimationState state;
+        state.animation = std::move(anim);
+        state.name = name;
+        state.totalFrames = static_cast<int>(state.animation->totalFrame());
+        state.frameRate = state.animation->frameRate();
+        state.loop = animDef.loop;
+        state.effect = animDef.effect;
+        state.sound = animDef.sound;
+
+        m_animations.insert(name, state);
+        qDebug() << "LottieAnimationEngine: Loaded animation:" << name << "frames:" << state.totalFrames;
+
+        // Add to idle pool if in pack's idle pool
+        const auto &idlePool = pack->idlePool();
+        for (const auto &entry : idlePool) {
+            if (entry.animationName == name) {
+                m_idleAnims.append(name);
+                m_idleWeights.append(entry.weight);
+                break;
+            }
+        }
+    }
+
+    // Start with rest pose if available
+    if (m_animations.contains("rest")) {
+        playAnimation("rest", HighPriority);
+    } else if (!m_animations.isEmpty()) {
+        // Fall back to first animation
+        playAnimation(m_animations.firstKey(), HighPriority);
+    }
+
+    m_timer.start();
+
+    qDebug() << "LottieAnimationEngine: Loaded" << m_animations.size() << "animations from sprite pack";
+    return true;
 }
 
 void LottieAnimationEngine::playAnimation(const QString &name, Priority priority)
@@ -155,19 +237,11 @@ void LottieAnimationEngine::startNextAnimation()
         m_currentFrame = 0;
         m_elapsedMs = 0.0;
         m_playing = true;
-        m_looping = false;
+        m_looping = m_current.loop;
 
-        // Check if this animation should trigger an effect
-        const QStringList effectTriggers = {"congratulate", "alert", "sendmail"};
-        if (effectTriggers.contains(nextName)) {
-            QString effectName;
-            if (nextName == "congratulate") effectName = "confetti";
-            else if (nextName == "alert") effectName = "alert-pulse";
-            else if (nextName == "sendmail") effectName = "sparkles";
-
-            if (!effectName.isEmpty()) {
-                emit effectRequested(effectName);
-            }
+        // Trigger effect if defined
+        if (!m_current.effect.isEmpty()) {
+            emit effectRequested(m_current.effect);
         }
     } else {
         // No more animations — go to rest pose

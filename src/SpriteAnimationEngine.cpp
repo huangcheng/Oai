@@ -1,4 +1,5 @@
 #include "SpriteAnimationEngine.h"
+#include "SpritePack.h"
 
 #include <QPainter>
 #include <QJsonDocument>
@@ -178,6 +179,106 @@ void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
     m_timer.start();
     // Start idle timer — first idle animation plays after 3 seconds
     m_idleTimer.start();
+}
+
+bool SpriteAnimationEngine::loadFromSpritePack(const SpritePack *pack)
+{
+    if (!pack || !pack->isValid()) {
+        qWarning() << "SpriteAnimationEngine: Invalid sprite pack";
+        return false;
+    }
+
+    // Check if pack uses sprite sheet engine
+    if (pack->characterConfig().engineType != SpritePack::EngineType::SpriteSheet) {
+        qWarning() << "SpriteAnimationEngine: Pack does not use sprite sheet engine";
+        return false;
+    }
+
+    // Clear existing animations
+    m_animations.clear();
+    m_idleAnims.clear();
+    m_idleWeights.clear();
+
+    // Load sprite sheet
+    const QString spriteSheetPath = pack->assetPath(pack->characterConfig().spriteSheet);
+    qDebug() << "SpriteAnimationEngine: Loading sprite sheet from:" << spriteSheetPath;
+    qDebug() << "SpriteAnimationEngine: File exists:" << QFile::exists(spriteSheetPath);
+    if (!m_spriteSheet.load(spriteSheetPath)) {
+        qWarning() << "SpriteAnimationEngine: Failed to load sprite sheet:" << spriteSheetPath;
+        return false;
+    }
+    qDebug() << "SpriteAnimationEngine: Sprite sheet loaded successfully, size:" << m_spriteSheet.size();
+
+    // Set frame dimensions from pack
+    m_frameWidth = pack->characterConfig().frameWidth;
+    m_frameHeight = pack->characterConfig().frameHeight;
+
+    qDebug() << "SpriteAnimationEngine: Loaded sprite sheet:" << spriteSheetPath
+             << "frame size:" << m_frameWidth << "x" << m_frameHeight;
+
+    // Load animations from pack
+    const auto &animations = pack->animations();
+    for (auto it = animations.begin(); it != animations.end(); ++it) {
+        const QString name = it.key();
+        const SpritePack::AnimationDef &animDef = it.value();
+
+        // Only load sprite sheet animations
+        if (animDef.type != SpritePack::EngineType::SpriteSheet) {
+            continue;
+        }
+
+        AnimationDef def;
+        def.name = name;
+        def.loop = animDef.loop;
+        def.effect = animDef.effect;
+        def.sound = animDef.sound;
+
+        // Convert pack frames to engine frames
+        for (const auto &packFrame : animDef.frames) {
+            FrameDef frame;
+            frame.durationMs = packFrame.durationMs;
+
+            if (packFrame.isGridMode()) {
+                // Grid mode: use col/row with frame dimensions
+                frame.sourceRect = QRect(packFrame.col * m_frameWidth,
+                                         packFrame.row * m_frameHeight,
+                                         m_frameWidth, m_frameHeight);
+            } else {
+                // Atlas mode: use explicit x/y/w/h
+                frame.sourceRect = QRect(packFrame.x, packFrame.y,
+                                         packFrame.w, packFrame.h);
+            }
+
+            def.frames.append(frame);
+            def.totalDurationMs += frame.durationMs;
+        }
+
+        m_animations.insert(name, def);
+        qDebug() << "SpriteAnimationEngine: Loaded animation:" << name
+                 << "frames:" << def.frames.size();
+    }
+
+    // Build idle pool from pack
+    const auto &idlePool = pack->idlePool();
+    for (const auto &entry : idlePool) {
+        if (m_animations.contains(entry.animationName)) {
+            m_idleAnims.append(entry.animationName);
+            m_idleWeights.append(entry.weight);
+        }
+    }
+
+    // Start with rest pose if available
+    if (m_animations.contains("RestPose")) {
+        playAnimation("RestPose", HighPriority);
+    } else if (!m_animations.isEmpty()) {
+        playAnimation(m_animations.firstKey(), HighPriority);
+    }
+
+    m_timer.start();
+    m_idleTimer.start();
+
+    qDebug() << "SpriteAnimationEngine: Loaded" << m_animations.size() << "animations from sprite pack";
+    return true;
 }
 
 void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority)

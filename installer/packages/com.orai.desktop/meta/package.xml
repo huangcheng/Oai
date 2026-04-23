@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Orai Desktop Pet</DisplayName>
+    <Description>A native Qt6/C++ desktop pet that reacts to AI coding tool events</Description>
+    <Version>1.1.0</Version>
+    <ReleaseDate>2026-04-24</ReleaseDate>
+    <Default>true</Default>
+    <Essential>true</Essential>
+    <ForcedInstallation>true</ForcedInstallation>
+    <Licenses>
+        <License name="MIT License" file="license.txt" />
+    </Licenses>
+    <Script>installscript.qs</Script>
+    <UserInterfaces>
+        <UserInterface>@TargetDir@/installer/pages/page.ui</UserInterface>
+    </UserInterfaces>
+</Package>

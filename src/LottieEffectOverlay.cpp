@@ -1,4 +1,5 @@
 #include "LottieEffectOverlay.h"
+#include "SpritePack.h"
 
 #include <QPainter>
 #include <QImage>
@@ -42,6 +43,56 @@ void LottieEffectOverlay::loadEffects(const QString &effectsDir)
     if (!m_effectTemplates.isEmpty()) {
         m_timer.start();
     }
+}
+
+bool LottieEffectOverlay::loadFromSpritePack(const SpritePack *pack)
+{
+    if (!pack || !pack->isValid()) {
+        qWarning() << "LottieEffectOverlay: Invalid sprite pack";
+        return false;
+    }
+
+    // Clear existing effects
+    m_effectTemplates.clear();
+    m_configs.clear();
+    m_activeEffects.clear();
+
+    // Get effects directory from pack
+    const QString effectsDir = pack->assetPath("effects");
+    if (effectsDir.isEmpty()) {
+        qDebug() << "LottieEffectOverlay: No effects directory in pack";
+        return true;  // Not an error, just no effects
+    }
+
+    QDir dir(effectsDir);
+    if (!dir.exists()) {
+        qDebug() << "LottieEffectOverlay: Effects directory does not exist:" << effectsDir;
+        return true;  // Not an error, just no effects
+    }
+
+    // Load effect files
+    const QFileInfoList files = dir.entryInfoList({"*.json"}, QDir::Files);
+    for (const QFileInfo &fi : files) {
+        const QString name = fi.baseName();
+        auto anim = rlottie::Animation::loadFromFile(fi.absoluteFilePath().toStdString());
+        if (!anim) {
+            qWarning() << "LottieEffectOverlay: Failed to load effect:" << fi.fileName();
+            continue;
+        }
+
+        m_effectTemplates.insert(name, std::move(anim));
+        qDebug() << "LottieEffectOverlay: Loaded effect:" << name;
+    }
+
+    // Setup default configs (can be extended to load from pack)
+    setupDefaults();
+
+    if (!m_effectTemplates.isEmpty()) {
+        m_timer.start();
+    }
+
+    qDebug() << "LottieEffectOverlay: Loaded" << m_effectTemplates.size() << "effects from sprite pack";
+    return true;
 }
 
 void LottieEffectOverlay::triggerEffect(const QString &effectName)

@@ -3,7 +3,10 @@
 #include "IpcServer.h"
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
+#include "LottieAnimationEngine.h"
 #include "LottieEffectOverlay.h"
+#include "SpritePackManager.h"
+#include "SpritePack.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
@@ -19,24 +22,24 @@
 #include <QFontDatabase>
 
 static QString configDir() {
-    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Qlippy";
+    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Orai";
 }
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    a.setApplicationName("Qlippy");
-    a.setOrganizationName("Qlippy");
+    a.setApplicationName("Orai");
+    a.setOrganizationName("Orai");
     a.setWindowIcon(QIcon(":/icons/clippy.png"));
     a.setQuitOnLastWindowClosed(false); // system tray keeps it alive
 
     // --- Single instance enforcement -----------------------------------------
     const QString lockDir = configDir();
     QDir().mkpath(lockDir);
-    QLockFile lockFile(lockDir + "/Qlippy.lock");
+    QLockFile lockFile(lockDir + "/Orai.lock");
     lockFile.setStaleLockTime(30000); // 30s stale timeout
     if (!lockFile.tryLock(100)) {
-        qInfo() << "Qlippy is already running. Bringing existing instance to front.";
+        qInfo() << "Orai is already running. Bringing existing instance to front.";
         return 0;
     }
 
@@ -48,7 +51,7 @@ int main(int argc, char *argv[])
     QTranslator translator;
     QString lang = config.language();
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Qlippy_" + lang;
+        const QString baseName = "Orai_" + lang;
         if (translator.load(":/i18n/" + baseName)) {
             a.installTranslator(&translator);
         }
@@ -56,7 +59,7 @@ int main(int argc, char *argv[])
         // Fall back to system locale
         const QStringList uiLanguages = QLocale::system().uiLanguages();
         for (const QString &locale : uiLanguages) {
-            const QString baseName = "Qlippy_" + QLocale(locale).name();
+            const QString baseName = "Orai_" + QLocale(locale).name();
             if (translator.load(":/i18n/" + baseName)) {
                 a.installTranslator(&translator);
                 break;
@@ -121,6 +124,13 @@ int main(int argc, char *argv[])
     // --- Main window ---------------------------------------------------------
     MainWindow w(&config, &translator);
 
+    // --- Sprite pack manager -------------------------------------------------
+    SpritePackManager packManager;
+    const QString builtInPacksDir = assetsDir + "/packs";
+    const QString userPacksDir = configDir() + "/packs";
+    packManager.initialize(builtInPacksDir, userPacksDir);
+    w.setSpritePackManager(&packManager);
+
     // Restore saved position (or default to bottom-right of primary screen)
     QPoint savedPos = config.windowPosition();
     if (!savedPos.isNull()) {
@@ -149,21 +159,18 @@ int main(int argc, char *argv[])
         w.move(screen.right() - 220, screen.bottom() - 220);
     }
 
-    // --- Load animation assets ------------------------------------------------
-    QString spritePath, animJsonPath, effectsDir;
-    if (!assetsDir.isEmpty()) {
-        spritePath = assetsDir + "/map.png";
-        animJsonPath = assetsDir + "/animations.json";
-        effectsDir = assetsDir + "/lottie/effects";
-    }
+    // --- Load animation assets (legacy fallback) -----------------------------
+    // If no sprite pack is loaded, fall back to hardcoded assets
+    if (!packManager.activePack()) {
+        QString spritePath, animJsonPath;
+        if (!assetsDir.isEmpty()) {
+            spritePath = assetsDir + "/map.png";
+            animJsonPath = assetsDir + "/animations.json";
+        }
 
-    if (!spritePath.isEmpty()) {
-        w.animationEngine()->loadAssets(spritePath, animJsonPath);
-    }
-
-    // Visual effects: Lottie JSON files
-    if (!effectsDir.isEmpty() && QDir(effectsDir).exists()) {
-        w.effectOverlay()->loadEffects(effectsDir);
+        if (!spritePath.isEmpty()) {
+            w.animationEngine()->loadAssets(spritePath, animJsonPath);
+        }
     }
 
     // --- Tips engine ---------------------------------------------------------
@@ -174,9 +181,14 @@ int main(int argc, char *argv[])
     // --- Event router --------------------------------------------------------
     EventRouter eventRouter;
     eventRouter.setAnimationEngine(w.animationEngine());
+    eventRouter.setLottieEngine(w.lottieEngine());
     eventRouter.setTipBubble(w.tipBubbleWidget());
-    eventRouter.setEffectOverlay(w.effectOverlay());
     eventRouter.setTipsEngine(&tipsEngine);
+
+    // Load event mappings from active sprite pack
+    if (packManager.activePack()) {
+        eventRouter.loadFromSpritePack(packManager.activePack());
+    }
 
     // --- IPC server ----------------------------------------------------------
     IpcServer ipcServer;
@@ -227,7 +239,7 @@ int main(int argc, char *argv[])
     w.activateWindow();
 #endif
 
-    qDebug() << "Qlippy started — window at" << w.pos() << "size" << w.size();
+    qDebug() << "Orai started — window at" << w.pos() << "size" << w.size();
 
     return a.exec();
 }

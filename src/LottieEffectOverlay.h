@@ -11,6 +11,7 @@
 
 class QPainter;
 class QRect;
+class SpritePack;
 
 class LottieEffectOverlay : public QObject
 {
@@ -22,6 +23,13 @@ public:
 
     // Load effect Lottie files from directory
     void loadEffects(const QString &effectsDir);
+
+    /**
+     * @brief Load effects from a sprite pack
+     * @param pack Sprite pack to load from
+     * @return true if loaded successfully
+     */
+    bool loadFromSpritePack(const SpritePack *pack);
 
     // Trigger an effect by name
     void triggerEffect(const QString &effectName);
