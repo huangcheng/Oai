@@ -79,8 +79,9 @@ jobs:
         run: |
           cd build
           mkdir -p installer/packages/com.orai.desktop/data
-          cp Orai.exe installer/packages/com.orai.desktop/data/
-          cp -R packs installer/packages/com.orai.desktop/data/
+          # Find the executable (could be in Release/ subdirectory with MSVC)
+          find . -name "Orai.exe" -not -path "./installer/*" | head -1 | xargs -I{} cp {} installer/packages/com.orai.desktop/data/
+          cp -R packs installer/packages/com.orai.desktop/data/ 2>/dev/null || true
           windeployqt installer/packages/com.orai.desktop/data/Orai.exe || true
 
       - name: Build installer
