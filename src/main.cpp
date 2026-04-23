@@ -10,6 +10,7 @@
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
+#include "UpdateChecker.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -20,6 +21,7 @@
 #include <QScreen>
 #include <QDebug>
 #include <QFontDatabase>
+#include <QTimer>
 
 static QString configDir() {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Orai";
@@ -224,6 +226,13 @@ int main(int argc, char *argv[])
     SystemTray tray(&w);
     tray.show();
     w.setSystemTray(&tray);
+
+    // --- Update checker -------------------------------------------------------
+    UpdateChecker updateChecker;
+    tray.setUpdateChecker(&updateChecker);
+
+    // Check for updates on startup (delayed to not block UI)
+    QTimer::singleShot(5000, &updateChecker, &UpdateChecker::checkForUpdates);
 
     // --- Language switching --------------------------------------------------
     QObject::connect(&config, &ConfigManager::languageChanged,
