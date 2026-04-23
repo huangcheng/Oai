@@ -4,11 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'gateways/*/package.json'
       - 'gateways/qlippy-gateway/**'
-      - 'gateways/claude-code/**'
-      - 'gateways/codex/**'
-      - 'gateways/opencode/**'
 
 jobs:
   publish:
@@ -27,24 +23,6 @@ jobs:
 
       - name: Publish @huangcheng/qlippy-gateway
         working-directory: gateways/qlippy-gateway
-        run: npm publish --access public || echo "Already published or unchanged"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish @huangcheng/qlippy-claude-code
-        working-directory: gateways/claude-code
-        run: npm publish --access public || echo "Already published or unchanged"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish @huangcheng/qlippy-codex
-        working-directory: gateways/codex
-        run: npm publish --access public || echo "Already published or unchanged"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish @huangcheng/qlippy-opencode
-        working-directory: gateways/opencode
         run: npm publish --access public || echo "Already published or unchanged"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
