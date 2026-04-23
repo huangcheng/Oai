@@ -215,8 +215,8 @@ void TestIpcAnimations::testEventTriggersEffect()
 
     QTest::qWait(200);
 
-    // "todo.updated" maps to "congratulate" animation which requests "confetti" effect
-    QVERIFY(m_effects->activeEffectCount() > 0 || m_engine->currentAnimation() == "congratulate");
+    // "todo.updated" maps to "Congratulate" animation which requests "confetti" effect
+    QVERIFY(m_effects->activeEffectCount() > 0 || m_engine->currentAnimation() == "Congratulate");
 
     client.close();
 }

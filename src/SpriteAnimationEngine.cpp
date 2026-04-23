@@ -210,6 +210,7 @@ void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority
         if (priority == HighPriority) {
             m_queue.clear();
         }
+        checkEffectTrigger(actualName);
     } else {
         if (!m_playing) {
             m_current = m_animations.value(actualName);
@@ -274,22 +275,25 @@ void SpriteAnimationEngine::startNextAnimation()
         m_currentFrameElapsed = 0;
         m_playing = true;
         m_looping = false;
-
-        // Check for effect triggers
-        const QStringList effectTriggers = {"Congratulate", "Alert", "SendMail"};
-        if (effectTriggers.contains(nextName)) {
-            QString effectName;
-            if (nextName == "Congratulate") effectName = "confetti";
-            else if (nextName == "Alert") effectName = "alert-pulse";
-            else if (nextName == "SendMail") effectName = "sparkles";
-
-            if (!effectName.isEmpty()) {
-                emit effectRequested(effectName);
-            }
-        }
+        checkEffectTrigger(nextName);
     } else {
         m_playing = false;
         m_idleTimer.start();
+    }
+}
+
+void SpriteAnimationEngine::checkEffectTrigger(const QString &animName)
+{
+    const QStringList effectTriggers = {"Congratulate", "Alert", "SendMail"};
+    if (effectTriggers.contains(animName)) {
+        QString effectName;
+        if (animName == "Congratulate") effectName = "confetti";
+        else if (animName == "Alert") effectName = "alert-pulse";
+        else if (animName == "SendMail") effectName = "sparkles";
+
+        if (!effectName.isEmpty()) {
+            emit effectRequested(effectName);
+        }
     }
 }
 
