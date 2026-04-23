@@ -1,10 +1,10 @@
 {
-  "name": "@huangcheng/qlippy-gateway",
+  "name": "@huangcheng/orai-gateway",
   "version": "1.2.1",
-  "description": "CLI gateway for sending events to the Qlippy desktop pet",
+  "description": "CLI gateway for sending events to the Orai desktop pet",
   "main": "./cli.mjs",
   "bin": {
-    "qlippy-gateway": "cli.mjs"
+    "orai-gateway": "cli.mjs"
   },
   "type": "module",
   "files": [
@@ -12,7 +12,7 @@
     "lib/"
   ],
   "keywords": [
-    "qlippy",
+    "orai",
     "desktop-pet",
     "ai",
     "codex",
@@ -27,8 +27,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/huangcheng/clippy.git",
-    "directory": "gateways/qlippy-gateway"
+    "url": "https://github.com/huangcheng/Orai.git",
+    "directory": "gateways/orai-gateway"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

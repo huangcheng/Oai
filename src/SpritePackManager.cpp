@@ -237,36 +237,56 @@ void SpritePackManager::autoInstallBuiltInPacks()
         return;
     }
 
-    // Look for .opk files in packs/ directory next to the executable
+    // Look for .opk files in multiple locations
+    QStringList searchPaths;
+    
+    // 1. Next to the executable (works for all platforms)
     QString appDir = QCoreApplication::applicationDirPath();
-    QDir packsDir(appDir + "/packs");
-    if (!packsDir.exists()) {
-        qDebug() << "SpritePackManager: No packs directory found next to executable";
-        return;
+    searchPaths.append(appDir + "/packs");
+    
+    // 2. Inside .app bundle on macOS
+    #ifdef Q_OS_MAC
+    QDir bundleDir(appDir);
+    if (bundleDir.cdUp() && bundleDir.cd("Resources")) {
+        searchPaths.append(bundleDir.absoluteFilePath("packs"));
+    }
+    #endif
+    
+    // 3. In the assets directory (for development)
+    QDir assetsDir(appDir);
+    if (assetsDir.cdUp() && assetsDir.cd("assets")) {
+        searchPaths.append(assetsDir.absoluteFilePath("packs"));
     }
 
-    const QFileInfoList opkFiles = packsDir.entryInfoList({"*.opk"}, QDir::Files);
-
-    for (const QFileInfo &opkFile : opkFiles) {
-        // Extract pack ID from the .opk file
-        QString packId = extractPackIdFromOpk(opkFile.absoluteFilePath());
-        if (packId.isEmpty()) {
+    // Search all paths for .opk files
+    for (const QString &packsPath : searchPaths) {
+        QDir packsDir(packsPath);
+        if (!packsDir.exists()) {
             continue;
         }
 
-        // Check if already installed
-        QString installDir = m_userDir + "/" + packId;
-        if (QDir(installDir).exists()) {
-            qDebug() << "SpritePackManager: Pack already installed:" << packId;
-            continue;
-        }
+        const QFileInfoList opkFiles = packsDir.entryInfoList({"*.opk"}, QDir::Files);
+        for (const QFileInfo &opkFile : opkFiles) {
+            // Extract pack ID from the .opk file
+            QString packId = extractPackIdFromOpk(opkFile.absoluteFilePath());
+            if (packId.isEmpty()) {
+                continue;
+            }
 
-        // Install the pack
-        qDebug() << "SpritePackManager: Auto-installing pack:" << opkFile.fileName();
-        if (installPack(opkFile.absoluteFilePath())) {
-            qDebug() << "SpritePackManager: Successfully installed:" << packId;
-        } else {
-            qWarning() << "SpritePackManager: failed to auto-install:" << opkFile.fileName();
+            // Check if already installed
+            QString installDir = m_userDir + "/" + packId;
+            if (QDir(installDir).exists()) {
+                qDebug() << "SpritePackManager: Pack already installed:" << packId;
+                continue;
+            }
+
+            // Install the pack
+            qDebug() << "SpritePackManager: Auto-installing pack:" << opkFile.fileName();
+            if (installPack(opkFile.absoluteFilePath())) {
+                qDebug() << "SpritePackManager: Successfully installed:" << packId;
+            } else {
+                qWarning() << "SpritePackManager: failed to auto-install:" << opkFile.fileName();
+            }
         }
     }
 }

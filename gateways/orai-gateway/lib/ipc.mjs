@@ -1,5 +1,5 @@
 /**
- * ipc.mjs — IPC transport for Qlippy desktop pet.
+ * ipc.mjs — IPC transport for Orai desktop pet.
  *
  * Uses UDP localhost (127.0.0.1:52847) for zero-overhead fire-and-forget.
  */
@@ -28,7 +28,7 @@ function parseEndpoint(endpoint) {
 
 // ── Send a message ─────────────────────────────────────────────────────────
 
-export function sendToQlippy(message, opts = {}) {
+export function sendToOrai(message, opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const { host, port } = parseEndpoint(endpoint);
 
@@ -49,7 +49,7 @@ export function sendToQlippy(message, opts = {}) {
 
 // ── Ping / health check ────────────────────────────────────────────────────
 
-export function pingQlippy(opts = {}) {
+export function pingOrai(opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const { host, port } = parseEndpoint(endpoint);
   const timeout = opts.timeout ?? 2000;

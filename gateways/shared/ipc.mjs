@@ -1,14 +1,14 @@
 /**
- * ipc.mjs — IPC transport for Qlippy desktop pet.
+ * ipc.mjs — IPC transport for Orai desktop pet.
  *
  * Uses TCP localhost (127.0.0.1:52847) for cross-platform compatibility.
  *
  * Usage:
- *   import { getEndpoint, sendToQlippy } from './ipc.mjs';
+ *   import { getEndpoint, sendToOrai } from './ipc.mjs';
  *
  *   const endpoint = getEndpoint();                        // auto-detect
  *   const endpoint = getEndpoint('127.0.0.1:99999');       // override
- *   await sendToQlippy({ type: 'event', source: 'opencode', event: 'session.start' });
+ *   await sendToOrai({ type: 'event', source: 'opencode', event: 'session.start' });
  */
 
 import { createConnection } from 'node:net';
@@ -28,7 +28,7 @@ export function getEndpoint(override) {
 // ── Send a message ─────────────────────────────────────────────────────────
 
 /**
- * Send a JSON message to the Qlippy desktop pet via IPC.
+ * Send a JSON message to the Orai desktop pet via IPC.
  *
  * @param {object} message  Must have at least `type` field.
  * @param {object} [opts]
@@ -36,7 +36,7 @@ export function getEndpoint(override) {
  * @param {number} [opts.timeout]   Connection timeout in ms (default 3000)
  * @returns {Promise<void>}
  */
-export function sendToQlippy(message, opts = {}) {
+export function sendToOrai(message, opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const timeout  = opts.timeout ?? 3000;
 
@@ -52,7 +52,7 @@ export function sendToQlippy(message, opts = {}) {
 
     client.on('error', (err) => {
       if (err.code === 'ECONNREFUSED') {
-        reject(new Error(`Qlippy IPC endpoint not reachable: ${endpoint}\nIs the Qlippy desktop pet running?`));
+        reject(new Error(`Orai IPC endpoint not reachable: ${endpoint}\nIs the Orai desktop pet running?`));
       } else {
         reject(new Error(`IPC error (${endpoint}): ${err.message}`));
       }
@@ -60,7 +60,7 @@ export function sendToQlippy(message, opts = {}) {
 
     const timer = setTimeout(() => {
       client.destroy();
-      reject(new Error(`Timeout connecting to Qlippy IPC endpoint: ${endpoint}`));
+      reject(new Error(`Timeout connecting to Orai IPC endpoint: ${endpoint}`));
     }, timeout);
 
     client.on('close', () => clearTimeout(timer));

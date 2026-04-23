@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * qlippy-gateway — CLI tool for sending events to Qlippy desktop pet.
+ * orai-gateway — CLI tool for sending events to Orai desktop pet.
  *
  * Usage:
- *   clippy-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
- *   clippy-gateway --ping [--endpoint <path>]
+ *   orai-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
+ *   orai-gateway --ping [--endpoint <path>]
  *
  * Platform transport:
- *   Linux / macOS → Unix domain socket  (~/.qlippy/qlippy.sock)
- *   Windows       → Named pipe          (\\.\pipe\qlippy)
+ *   Linux / macOS → Unix domain socket  (~/.orai/orai.sock)
+ *   Windows       → Named pipe          (\\.\pipe\orai)
  *   Override      → --endpoint <path>
  */
 
@@ -17,7 +17,7 @@ import { platform } from 'node:process';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { getEndpoint, sendToQlippy, pingQlippy } from './lib/ipc.mjs';
+import { getEndpoint, sendToOrai, pingOrai } from './lib/ipc.mjs';
 
 // --- Argument parsing -------------------------------------------------------
 
@@ -44,21 +44,35 @@ const args = parseArgs(process.argv);
 // --- Ping mode -------------------------------------------------------------
 
 if (args.ping) {
-  const alive = await pingQlippy({ endpoint: args.endpoint });
+  const alive = await pingOrai({ endpoint: args.endpoint });
   if (alive) {
-    console.log('Qlippy is alive');
+    console.log('Orai is alive');
     process.exit(0);
   } else {
-    console.error('Qlippy is not responding');
+    console.log('Orai is not responding');
     process.exit(1);
   }
+}
+
+// --- Health check mode -------------------------------------------------------
+
+if (args.health) {
+  const alive = await pingOrai({ endpoint: args.endpoint });
+  if (alive) {
+    console.log('Orai IPC server is healthy');
+    process.exit(0);
+  } else {
+    console.log('Orai IPC server is not responding');
+    process.exit(1);
+  }
+}
 }
 
 // --- Event mode ------------------------------------------------------------
 
 if (!args.source || !args.event) {
-  console.error('Usage: qlippy-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
-  console.error('       qlippy-gateway --ping [--endpoint <path>]');
+  console.error('Usage: orai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
+  console.error('       orai-gateway --ping [--endpoint <path>]');
   console.error('');
   console.error('Sources: opencode, claude-code, codex');
   console.error('Events: session.start, session.end, session.idle, session.error,');
