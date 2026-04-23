@@ -172,6 +172,7 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
+    menu.setFont(QFont("HarmonyOS Sans SC", 13));
 
     QAction *toggleAction = menu.addAction(m_visible ? tr("Hide") : tr("Show"));
     connect(toggleAction, &QAction::triggered, this, &MainWindow::toggleVisibility);
