@@ -121,10 +121,29 @@ int main(int argc, char *argv[])
     // --- Main window ---------------------------------------------------------
     MainWindow w(&config, &translator);
 
-    // Restore saved position (or default to center of primary screen)
+    // Restore saved position (or default to bottom-right of primary screen)
     QPoint savedPos = config.windowPosition();
     if (!savedPos.isNull()) {
-        w.move(savedPos);
+        // Ensure pet is visible on at least one screen
+        bool onScreen = false;
+        const auto screens = QApplication::screens();
+        for (const QScreen *screen : screens) {
+            QRect geo = screen->availableGeometry();
+            // Check if pet (124x93) is at least partially visible
+            if (geo.intersects(QRect(savedPos, QSize(124, 93)))) {
+                onScreen = true;
+                break;
+            }
+        }
+        if (onScreen) {
+            w.move(savedPos);
+        } else {
+            // Saved position is off-screen, clamp to primary screen
+            const QRect screen = QApplication::primaryScreen()->availableGeometry();
+            int x = qBound(screen.left(), savedPos.x(), screen.right() - 124);
+            int y = qBound(screen.top(), savedPos.y(), screen.bottom() - 93);
+            w.move(x, y);
+        }
     } else {
         const QRect screen = QApplication::primaryScreen()->availableGeometry();
         w.move(screen.right() - 220, screen.bottom() - 220);
