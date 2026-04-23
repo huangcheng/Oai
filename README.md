@@ -105,17 +105,13 @@ appimagetool AppDir Qlippy-x86_64.AppImage
 
 ## IPC Protocol
 
-Qlippy accepts IPC messages over a platform-appropriate transport:
+Qlippy accepts IPC messages over TCP localhost:
 
-| Platform | Transport | Default Endpoint |
-|---|---|---|
-| **Linux** | Unix domain socket | `~/.qlippy/qlippy.sock` |
-| **macOS** | Unix domain socket | `~/.qlippy/qlippy.sock` |
-| **Windows** | Named pipe | `\\.\pipe\qlippy` |
+| Transport | Default Endpoint |
+|---|---|
+| **TCP** | `127.0.0.1:52847` |
 
-The desktop app and gateway adapters auto-detect the platform. All Node.js gateways use the shared `gateways/shared/ipc.mjs` module which connects to the correct endpoint. Override with `--endpoint <path>` on any gateway CLI command.
-
-The C++ IpcServer uses Qt's `QLocalServer`, which abstracts Unix sockets and named pipes behind a single cross-platform API.
+All Node.js gateways connect to this endpoint automatically. Override with `--endpoint <host:port>` on any gateway CLI command.
 
 ### Message Format
 
@@ -178,40 +174,61 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 | `file.watched` | Watched file changed |
 | `todo.updated` | Todo list updated |
 
-## Gateway Adapters
+## Gateway
 
-### OpenCode
+Install the CLI gateway globally from GitHub Packages:
 
 ```bash
-cd ~/.config/opencode
-npm install @huangcheng/qlippy-opencode
+npm install -g @huangcheng/qlippy-gateway --registry=https://npm.pkg.github.com
 ```
 
-Then add `"@huangcheng/qlippy-opencode"` to the `plugin` array in `opencode.json`.
+Configure your npm to use GitHub Packages for `@huangcheng` scope (one-time setup):
+
+```bash
+echo "@huangcheng:registry=https://npm.pkg.github.com" >> ~/.npmrc
+```
 
 ### Claude Code
 
-First, install `qlippy-gateway` globally:
+Add hooks to `~/.claude/settings.json`:
 
-```bash
-npm install -g @huangcheng/qlippy-gateway
-```
-
-```bash
-npm install -g @huangcheng/qlippy-claude-code
-npx @huangcheng/qlippy-claude-code
-```
-
-### Codex
-
-```bash
-npm install -g @huangcheng/qlippy-codex
-npx @huangcheng/qlippy-codex
-```
-
-For non-interactive mode:
-```bash
-codex exec --json "your prompt" | npx @huangcheng/qlippy-codex parser.mjs
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "qlippy-gateway --source claude-code --event session.start",
+        "timeout": 3,
+        "async": true
+      }]
+    }],
+    "Stop": [{
+      "hooks": [{
+        "type": "command",
+        "command": "qlippy-gateway --source claude-code --event session.idle",
+        "timeout": 3,
+        "async": true
+      }]
+    }],
+    "PreToolUse": [{
+      "hooks": [{
+        "type": "command",
+        "command": "qlippy-gateway --source claude-code --event tool.before",
+        "timeout": 5,
+        "async": true
+      }]
+    }],
+    "PostToolUse": [{
+      "hooks": [{
+        "type": "command",
+        "command": "qlippy-gateway --source claude-code --event tool.after",
+        "timeout": 3,
+        "async": true
+      }]
+    }]
+  }
+}
 ```
 
 ### Health Check
@@ -219,16 +236,16 @@ codex exec --json "your prompt" | npx @huangcheng/qlippy-codex parser.mjs
 Check if Qlippy is running:
 
 ```bash
-npx @huangcheng/qlippy-gateway --ping
+qlippy-gateway --ping
 # Exit code 0 = alive, 1 = not responding
 ```
 
 ### Manual Testing
 
-Send a test event (auto-retries up to 2 times if Qlippy is temporarily unreachable):
+Send a test event:
 
 ```bash
-npx @huangcheng/qlippy-gateway --source opencode --event session.start
+qlippy-gateway --source claude-code --event session.start
 ```
 
 ## Project Structure
@@ -242,7 +259,7 @@ qlippy/
 │   ├── LottieAnimationEngine.h/cpp  # rlottie animation playback
 │   ├── SpeechBubble.h/cpp      # Win98-style speech bubble
 │   ├── LottieEffectOverlay.h/cpp    # Visual effects overlay
-│   ├── IpcServer.h/cpp         # QLocalServer IPC bridge
+│   ├── IpcServer.h/cpp         # TCP IPC server
 │   ├── EventRouter.h/cpp       # Event dispatch and validation
 │   ├── TipsEngine.h/cpp        # Pattern-matching tips engine
 │   ├── ConfigManager.h/cpp     # JSON config persistence
@@ -253,12 +270,8 @@ qlippy/
 │       └── effects/            # Visual effects (6 Lottie files)
 ├── gateways/
 │   ├── shared/                 # Platform-aware IPC transport (Node.js)
-│   │   └── ipc.mjs             # Auto-detects Unix socket vs named pipe
-│   ├── qlippy-gateway/         # CLI gateway tool (Node.js)
-│   ├── opencode-plugin/        # OpenCode plugin
-│   ├── claude-code-hooks/      # Claude Code hooks config
-│   ├── codex-hooks/            # Codex hooks config
-│   └── codex-jsonl-parser/     # Codex JSONL stream parser
+│   │   └── ipc.mjs             # TCP client for 127.0.0.1:52847
+│   └── qlippy-gateway/         # CLI gateway tool (published to GitHub Packages)
 └── Qlippy_zh_CN.ts             # Simplified Chinese translations
 ```
 
@@ -272,11 +285,11 @@ Config file: `~/.config/Qlippy/config.json`
   "windowY": 500,
   "language": "en",
   "autoStart": false,
-  "ipcEndpoint": "~/.qlippy/qlippy.sock"
+  "ipcEndpoint": "127.0.0.1:52847"
 }
 ```
 
-The `ipcEndpoint` field auto-detects the platform default (Unix socket on Linux/macOS, named pipe on Windows) and can be overridden.
+The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
 
 ## Asset Attribution
 
