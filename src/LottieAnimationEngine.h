@@ -11,6 +11,7 @@
 class QPainter;
 class QRect;
 class QImage;
+class SpritePack;
 
 class LottieAnimationEngine : public QObject
 {
@@ -28,11 +29,24 @@ public:
     // Load all Lottie JSON files from assets
     void loadAnimations(const QString &characterDir);
 
+    /**
+     * @brief Load animations from a sprite pack
+     * @param pack Sprite pack to load from
+     * @return true if loaded successfully
+     */
+    bool loadFromSpritePack(const SpritePack *pack);
+
     // Play named animation with given priority
     void playAnimation(const QString &name, Priority priority = NormalPriority);
 
     // Render current frame onto painter
     void paint(QPainter *painter, const QRect &bounds);
+
+    // Check if animation is playing
+    bool isPlaying() const { return m_playing; }
+    
+    // Check if engine has any animations loaded
+    bool hasAnimations() const { return !m_animations.isEmpty(); }
 
 signals:
     void effectRequested(const QString &effectName);
@@ -51,6 +65,9 @@ private:
         QString name;
         int totalFrames = 0;
         double frameRate = 30.0;
+        bool loop = false;
+        QString effect;
+        QString sound;
     };
 
     // Loaded animations (name → animation)

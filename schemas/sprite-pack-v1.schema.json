@@ -1,0 +1,358 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://oraipet.dev/schemas/sprite-pack-v1.json",
+  "title": "Oraipet Sprite Pack Manifest",
+  "description": "Manifest format for Oraipet sprite packs (.opk)",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["formatVersion", "id", "name", "author", "version", "character"],
+  "properties": {
+    "formatVersion": {
+      "type": "string",
+      "description": "Semantic version of the pack format",
+      "const": "1.0.0"
+    },
+    "id": {
+      "type": "string",
+      "description": "Unique reverse-domain identifier (e.g., 'com.example.mypet')",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the sprite pack",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "author": {
+      "type": "string",
+      "description": "Creator name",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "version": {
+      "type": "string",
+      "description": "Pack version (semantic versioning)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of the sprite pack",
+      "maxLength": 256
+    },
+    "preview": {
+      "type": "string",
+      "description": "Path to preview image (PNG or JPG)"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Search/discovery tags",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32
+      },
+      "maxItems": 10
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier"
+    },
+    "minAppVersion": {
+      "type": "string",
+      "description": "Minimum Oraipet version required",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "character": {
+      "$ref": "#/definitions/characterDef"
+    },
+    "effects": {
+      "$ref": "#/definitions/effectsDef"
+    },
+    "sounds": {
+      "$ref": "#/definitions/soundsDef"
+    }
+  },
+  "definitions": {
+    "characterDef": {
+      "type": "object",
+      "description": "Character animation definitions",
+      "oneOf": [
+        {
+          "required": ["type", "animations"],
+          "properties": {
+            "type": {
+              "const": "lottie"
+            },
+            "directory": {
+              "type": "string",
+              "description": "Directory containing Lottie JSON files"
+            }
+          }
+        },
+        {
+          "required": ["type", "spriteSheet", "frameWidth", "frameHeight", "animations"],
+          "properties": {
+            "type": {
+              "const": "spriteSheet"
+            },
+            "spriteSheet": {
+              "type": "string",
+              "description": "Path to sprite sheet PNG"
+            },
+            "frameWidth": {
+              "type": "integer",
+              "description": "Frame width in pixels",
+              "minimum": 1
+            },
+            "frameHeight": {
+              "type": "integer",
+              "description": "Frame height in pixels",
+              "minimum": 1
+            }
+          }
+        }
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["lottie", "spriteSheet"],
+          "description": "Animation engine type"
+        },
+        "directory": {
+          "type": "string",
+          "description": "Directory containing Lottie JSON files (for lottie type)"
+        },
+        "spriteSheet": {
+          "type": "string",
+          "description": "Path to sprite sheet PNG (for spriteSheet type)"
+        },
+        "frameWidth": {
+          "type": "integer",
+          "description": "Frame width in pixels (for spriteSheet type)"
+        },
+        "frameHeight": {
+          "type": "integer",
+          "description": "Frame height in pixels (for spriteSheet type)"
+        },
+        "animations": {
+          "$ref": "#/definitions/animationMap"
+        },
+        "idlePool": {
+          "$ref": "#/definitions/idlePool"
+        },
+        "eventMap": {
+          "$ref": "#/definitions/eventMap"
+        },
+        "effectTriggers": {
+          "$ref": "#/definitions/effectTriggers"
+        }
+      }
+    },
+    "animationMap": {
+      "type": "object",
+      "description": "Map of animation name to animation definition",
+      "additionalProperties": {
+        "$ref": "#/definitions/animationDef"
+      }
+    },
+    "animationDef": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "type": {
+              "const": "lottie"
+            },
+            "file": {
+              "type": "string",
+              "description": "Path to Lottie JSON file"
+            }
+          },
+          "required": ["type", "file"]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "sprite"
+            },
+            "frames": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/frameDef"
+              },
+              "minItems": 1
+            }
+          },
+          "required": ["type", "frames"]
+        }
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["lottie", "sprite"]
+        },
+        "file": {
+          "type": "string",
+          "description": "Path to Lottie JSON file (for lottie type)"
+        },
+        "frames": {
+          "type": "array",
+          "description": "Frame definitions (for sprite type)",
+          "items": {
+            "$ref": "#/definitions/frameDef"
+          }
+        },
+        "loop": {
+          "type": "boolean",
+          "description": "Whether animation loops",
+          "default": false
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["high", "normal"],
+          "description": "Animation priority",
+          "default": "normal"
+        },
+        "effect": {
+          "type": "string",
+          "description": "Effect to trigger on animation start"
+        },
+        "sound": {
+          "type": "string",
+          "description": "Sound to play on animation start"
+        }
+      }
+    },
+    "frameDef": {
+      "type": "object",
+      "description": "Single animation frame definition",
+      "oneOf": [
+        {
+          "properties": {
+            "col": {
+              "type": "integer",
+              "description": "Column in sprite sheet grid",
+              "minimum": 0
+            },
+            "row": {
+              "type": "integer",
+              "description": "Row in sprite sheet grid",
+              "minimum": 0
+            }
+          },
+          "required": ["col", "row"]
+        },
+        {
+          "properties": {
+            "x": {
+              "type": "integer",
+              "description": "X position in sprite sheet",
+              "minimum": 0
+            },
+            "y": {
+              "type": "integer",
+              "description": "Y position in sprite sheet",
+              "minimum": 0
+            },
+            "w": {
+              "type": "integer",
+              "description": "Frame width",
+              "minimum": 1
+            },
+            "h": {
+              "type": "integer",
+              "description": "Frame height",
+              "minimum": 1
+            }
+          },
+          "required": ["x", "y", "w", "h"]
+        }
+      ],
+      "properties": {
+        "col": {
+          "type": "integer",
+          "description": "Column in sprite sheet grid"
+        },
+        "row": {
+          "type": "integer",
+          "description": "Row in sprite sheet grid"
+        },
+        "x": {
+          "type": "integer",
+          "description": "X position in sprite sheet"
+        },
+        "y": {
+          "type": "integer",
+          "description": "Y position in sprite sheet"
+        },
+        "w": {
+          "type": "integer",
+          "description": "Frame width"
+        },
+        "h": {
+          "type": "integer",
+          "description": "Frame height"
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Frame duration in milliseconds",
+          "minimum": 1
+        }
+      },
+      "required": ["duration"]
+    },
+    "idlePool": {
+      "type": "array",
+      "description": "Weighted list of idle animations",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Animation name"
+          },
+          "weight": {
+            "type": "integer",
+            "description": "Selection weight (higher = more likely)",
+            "minimum": 1
+          }
+        },
+        "required": ["name", "weight"]
+      }
+    },
+    "eventMap": {
+      "type": "object",
+      "description": "Map of canonical event name to animation name",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "effectTriggers": {
+      "type": "object",
+      "description": "Map of animation name to effect name",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "effectsDef": {
+      "type": "object",
+      "description": "Effects configuration",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "description": "Directory containing Lottie effect files"
+        }
+      }
+    },
+    "soundsDef": {
+      "type": "object",
+      "description": "Sounds configuration",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "description": "Directory containing sound files"
+        }
+      }
+    }
+  }
+}

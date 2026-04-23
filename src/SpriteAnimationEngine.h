@@ -9,6 +9,7 @@
 #include <QRect>
 
 class QPainter;
+class SpritePack;
 
 class SpriteAnimationEngine : public QObject
 {
@@ -29,6 +30,13 @@ public:
      * @param animJson     Path to animations.json (frame region definitions)
      */
     void loadAssets(const QString &spriteSheet, const QString &animJson);
+
+    /**
+     * @brief Load animations from a sprite pack
+     * @param pack Sprite pack to load from
+     * @return true if loaded successfully
+     */
+    bool loadFromSpritePack(const SpritePack *pack);
 
     // Play named animation with given priority
     void playAnimation(const QString &name, Priority priority = NormalPriority);
@@ -63,6 +71,9 @@ private:
         QString name;
         QVector<FrameDef> frames;
         int totalDurationMs = 0;
+        bool loop = false;
+        QString effect;
+        QString sound;
     };
 
     // All loaded animations

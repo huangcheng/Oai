@@ -1,7 +1,8 @@
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
+#include "LottieAnimationEngine.h"
+#include "SpritePack.h"
 #include "TipBubbleWidget.h"
-#include "LottieEffectOverlay.h"
 #include "TipsEngine.h"
 
 #include <QJsonObject>
@@ -55,13 +56,13 @@ void EventRouter::routeEvent(const QJsonObject &event)
 
     // Trigger animation — always use HighPriority so event animations
     // immediately interrupt idle/previous animations
-    if (!action.animation.isEmpty() && m_engine) {
-        m_engine->playAnimation(action.animation, SpriteAnimationEngine::HighPriority);
-    }
-
-    // Trigger visual effect
-    if (!action.effect.isEmpty() && m_effects) {
-        m_effects->triggerEffect(action.effect);
+    if (!action.animation.isEmpty()) {
+        // Use the engine that has animations loaded
+        if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
+            m_lottieEngine->playAnimation(action.animation, LottieAnimationEngine::HighPriority);
+        } else if (m_engine) {
+            m_engine->playAnimation(action.animation, SpriteAnimationEngine::HighPriority);
+        }
     }
 
     // Show tip with source label
@@ -73,42 +74,78 @@ void EventRouter::routeEvent(const QJsonObject &event)
 void EventRouter::initEventMap()
 {
     // Session events
-    m_eventMap["session.start"] = {"wave", "", tr("Session started"), tr("Let's get to work!")};
-    m_eventMap["session.end"] = {"rest", "", tr("Session ended"), tr("Good job today!")};
-    m_eventMap["session.idle"] = {"rest", "", "", ""};
-    m_eventMap["session.error"] = {"alert", "", tr("Oops!"), tr("Something went wrong. Check the logs!")};
+    m_eventMap["session.start"] = {"wave", tr("Session started"), tr("Let's get to work!")};
+    m_eventMap["session.end"] = {"rest", tr("Session ended"), tr("Good job today!")};
+    m_eventMap["session.idle"] = {"rest", "", ""};
+    m_eventMap["session.error"] = {"alert", tr("Oops!"), tr("Something went wrong. Check the logs!")};
 
     // Prompt
-    m_eventMap["prompt.submitted"] = {"thinking", "", tr("Thinking..."), tr("Give me a moment to process that.")};
+    m_eventMap["prompt.submitted"] = {"thinking", tr("Thinking..."), tr("Give me a moment to process that.")};
 
     // Tool events
-    m_eventMap["tool.before"] = {"explain", "", tr("Tool running"), tr("Executing command...")};
-    m_eventMap["tool.after"] = {"", "", tr("Done!"), tr("Command completed successfully.")};
-    m_eventMap["tool.failed"] = {"alert", "", tr("Tool failed"), tr("The command didn't work. Try again?")};
+    m_eventMap["tool.before"] = {"explain", tr("Tool running"), tr("Executing command...")};
+    m_eventMap["tool.after"] = {"", tr("Done!"), tr("Command completed successfully.")};
+    m_eventMap["tool.failed"] = {"alert", tr("Tool failed"), tr("The command didn't work. Try again?")};
 
     // Permission events
-    m_eventMap["permission.requested"] = {"getattentionyawn", "", tr("Permission needed"), tr("Please approve the requested action.")};
-    m_eventMap["permission.denied"] = {"alert", "", tr("Denied"), tr("Permission was denied.")};
-    m_eventMap["permission.response"] = {"", "", "", ""};
+    m_eventMap["permission.requested"] = {"getattentionyawn", tr("Permission needed"), tr("Please approve the requested action.")};
+    m_eventMap["permission.denied"] = {"alert", tr("Denied"), tr("Permission was denied.")};
+    m_eventMap["permission.response"] = {"", "", ""};
 
     // Subagent events
-    m_eventMap["subagent.started"] = {"explain", "", tr("Subagent started"), tr("A helper is working on a task.")};
-    m_eventMap["subagent.stopped"] = {"", "", tr("Subagent done"), tr("The helper has finished.")};
+    m_eventMap["subagent.started"] = {"explain", tr("Subagent started"), tr("A helper is working on a task.")};
+    m_eventMap["subagent.stopped"] = {"", tr("Subagent done"), tr("The helper has finished.")};
 
     // Notification
-    m_eventMap["notification.sent"] = {"", "", tr("Notification"), tr("You have a new message!")};
+    m_eventMap["notification.sent"] = {"", tr("Notification"), tr("You have a new message!")};
 
     // File events
-    m_eventMap["file.edited"] = {"sendmail", "", tr("File saved"), tr("Your changes have been saved.")};
-    m_eventMap["file.watched"] = {"", "", "", ""};
+    m_eventMap["file.edited"] = {"sendmail", tr("File saved"), tr("Your changes have been saved.")};
+    m_eventMap["file.watched"] = {"", "", ""};
 
     // Todo
-    m_eventMap["todo.updated"] = {"congratulate", "", tr("Task complete!"), tr("Nice work checking off that todo!")};
+    m_eventMap["todo.updated"] = {"congratulate", tr("Task complete!"), tr("Nice work checking off that todo!")};
 }
 
 void EventRouter::retranslateUi()
 {
     initEventMap();
+}
+
+void EventRouter::loadFromSpritePack(const SpritePack *pack)
+{
+    if (!pack || !pack->isValid()) {
+        qWarning() << "EventRouter: Invalid sprite pack";
+        return;
+    }
+
+    // Get event map from pack
+    const auto &eventMap = pack->eventMap();
+    if (eventMap.isEmpty()) {
+        qDebug() << "EventRouter: No event map in sprite pack, using defaults";
+        return;
+    }
+
+    // Clear existing event map
+    m_eventMap.clear();
+
+    // Build event map from pack
+    for (auto it = eventMap.begin(); it != eventMap.end(); ++it) {
+        const QString eventName = it.key();
+        const QString animationName = it.value();
+
+        EventAction action;
+        action.animation = animationName;
+
+        // Keep tip text from default map (or could be extended to load from pack)
+        // For now, use empty tips - tips can be added later
+        action.tipTitle = "";
+        action.tipBody = "";
+
+        m_eventMap[eventName] = action;
+    }
+
+    qDebug() << "EventRouter: Loaded" << m_eventMap.size() << "event mappings from sprite pack";
 }
 
 bool EventRouter::validateEvent(const QJsonObject &event) const

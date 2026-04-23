@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "SpriteAnimationEngine.h"
-#include "LottieEffectOverlay.h"
+#include "LottieAnimationEngine.h"
+#include "SpritePackManager.h"
+#include "SpritePack.h"
 #include "ConfigManager.h"
 #include "TipBubbleWidget.h"
 #include "SettingsPanelWidget.h"
@@ -14,6 +16,10 @@
 #include <QApplication>
 #include <QRandomGenerator>
 #include <QTranslator>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 
 MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent)
     : QWidget(parent)
@@ -22,12 +28,15 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 {
     setupWindowFlags();
 
+    // Enable drag-and-drop
+    setAcceptDrops(true);
+
     // Window is taller than the pet so the speech bubble fits above it
     setFixedSize(124, 200);
 
     // Initialize subsystems
     m_engine = new SpriteAnimationEngine(this);
-    m_effects = new LottieEffectOverlay(this);
+    m_lottieEngine = new LottieAnimationEngine(this);
 
     // Create floating widgets
     m_tipBubble = new TipBubbleWidget(nullptr); // no parent — separate top-level widget
@@ -51,12 +60,13 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
         }
     });
 
-    // Connect effect triggers from animation engine
-    connect(m_engine, &SpriteAnimationEngine::effectRequested,
-            m_effects, &LottieEffectOverlay::triggerEffect);
+    // Connect effect triggers from animation engines
+    // (Effects removed - using sprite animations only)
 
     // Repaint widget whenever animation engine advances a frame
     connect(m_engine, &SpriteAnimationEngine::frameChanged,
+            this, QOverload<>::of(&QWidget::update));
+    connect(m_lottieEngine, &LottieAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
 }
 
@@ -90,14 +100,11 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
 
     const QRect pet = petRect();
 
-    // Draw character animation (sprite sheet)
-    if (m_engine) {
+    // Draw character animation (Lottie or sprite sheet)
+    if (m_lottieEngine && m_lottieEngine->isPlaying()) {
+        m_lottieEngine->paint(&painter, pet);
+    } else if (m_engine) {
         m_engine->paint(&painter, pet);
-    }
-
-    // Draw visual effects on top (Lottie)
-    if (m_effects) {
-        m_effects->paint(&painter, pet);
     }
 
     // (Speech bubbles are now shown via TipBubbleWidget)
@@ -172,7 +179,14 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
-    menu.setFont(QFont("HarmonyOS Sans SC", 13));
+    // Platform-specific font size: macOS uses 13, Windows uses 10
+    int menuFontSize = 10;
+#ifdef Q_OS_MAC
+    menuFontSize = 13;
+#endif
+    QFont menuFont("HarmonyOS Sans SC", menuFontSize);
+    menuFont.setStyleStrategy(QFont::PreferAntialias);
+    menu.setFont(menuFont);
 
     QAction *toggleAction = menu.addAction(m_visible ? tr("Hide") : tr("Show"));
     connect(toggleAction, &QAction::triggered, this, &MainWindow::toggleVisibility);
@@ -184,7 +198,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        m_tipBubble->showBubble(tr("About"), tr("Qlippy Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
+        m_tipBubble->showBubble(tr("About"), tr("Orai Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
     });
 
     menu.addSeparator();
@@ -193,6 +207,51 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
     connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
 
     menu.exec(event->globalPos());
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    // Accept drag if it contains .opk files
+    if (event->mimeData()->hasUrls()) {
+        for (const QUrl &url : event->mimeData()->urls()) {
+            if (url.toLocalFile().endsWith(".opk", Qt::CaseInsensitive)) {
+                event->acceptProposedAction();
+                return;
+            }
+        }
+    }
+    event->ignore();
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    if (!m_packManager) {
+        event->ignore();
+        return;
+    }
+
+    const QList<QUrl> urls = event->mimeData()->urls();
+    for (const QUrl &url : urls) {
+        const QString filePath = url.toLocalFile();
+        if (filePath.endsWith(".opk", Qt::CaseInsensitive)) {
+            // Install the pack
+            if (m_packManager->installPack(filePath)) {
+                m_tipBubble->showBubble(
+                    tr("Pack Installed"),
+                    tr("Sprite pack installed successfully!"),
+                    TipBubbleWidget::TipBubble
+                );
+            } else {
+                m_tipBubble->showBubble(
+                    tr("Installation Failed"),
+                    tr("Failed to install sprite pack."),
+                    TipBubbleWidget::TipBubble
+                );
+            }
+        }
+    }
+
+    event->acceptProposedAction();
 }
 
 void MainWindow::toggleVisibility()
@@ -219,6 +278,53 @@ void MainWindow::openSettings()
 void MainWindow::setSystemTray(SystemTray *tray)
 {
     m_systemTray = tray;
+    if (m_systemTray && m_packManager) {
+        m_systemTray->setSpritePackManager(m_packManager);
+    }
+}
+
+void MainWindow::setSpritePackManager(SpritePackManager *manager)
+{
+    m_packManager = manager;
+    if (m_packManager) {
+        connect(m_packManager, &SpritePackManager::activePackChanged,
+                this, &MainWindow::onActivePackChanged);
+
+        // Pass to settings panel
+        if (m_settingsPanel) {
+            m_settingsPanel->setSpritePackManager(manager);
+        }
+
+        // Load active pack immediately (pack may have been loaded before signal was connected)
+        if (m_packManager->activePack()) {
+            onActivePackChanged();
+        }
+    }
+}
+
+void MainWindow::onActivePackChanged()
+{
+    if (!m_packManager) {
+        return;
+    }
+
+    SpritePack *pack = m_packManager->activePack();
+    if (!pack) {
+        return;
+    }
+
+    // Load animations based on pack type
+    if (pack->characterConfig().engineType == SpritePack::EngineType::Lottie) {
+        m_lottieEngine->loadFromSpritePack(pack);
+    } else {
+        m_engine->loadFromSpritePack(pack);
+    }
+
+    // Update window size based on pack
+    // TODO: Add window size configuration to sprite pack
+    // For now, keep default size
+
+    update();  // Trigger repaint
 }
 
 void MainWindow::retranslateUi()
@@ -233,7 +339,7 @@ void MainWindow::reloadTranslator(const QString &lang)
     app->removeTranslator(m_translator);
 
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Qlippy_" + lang;
+        const QString baseName = "Orai_" + lang;
         if (m_translator->load(":/i18n/" + baseName)) {
             app->installTranslator(m_translator);
         }

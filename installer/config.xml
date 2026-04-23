@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>Orai</Name>
+    <Version>1.1.0</Version>
+    <Title>Orai Desktop Pet</Title>
+    <Publisher>Orai</Publisher>
+    <StartMenuDir>Orai</StartMenuDir>
+    <TargetDir>@HomeDir@/Orai</TargetDir>
+    <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
+    <InstallerWindowIcon>clippy</InstallerWindowIcon>
+    <WizardStyle>Modern</WizardStyle>
+    <AllowSpaceInDefaultPath>true</AllowSpaceInDefaultPath>
+</Installer>

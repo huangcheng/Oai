@@ -1,5 +1,7 @@
 #include "SettingsPanelWidget.h"
 #include "ConfigManager.h"
+#include "SpritePackManager.h"
+#include "SpritePack.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -267,12 +269,69 @@ void SettingsPanelWidget::setupUi()
     portRow->addWidget(m_portLabel, 1);
     portRow->addWidget(m_portInput, 0);
 
+    // Pack selection row: label + combo
+    QHBoxLayout *packRow = new QHBoxLayout();
+    packRow->setSpacing(8);
+
+    m_packLabel = new QLabel(tr("Pet"), m_contentWidget);
+    m_packLabel->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_packLabel->setStyleSheet("color: black; background: transparent;");
+    m_packLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_packCombo = new QComboBox(m_contentWidget);
+    auto *packListView = new QListView(m_packCombo);
+    packListView->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_packCombo->setView(packListView);
+    m_packCombo->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_packCombo->setFixedHeight(20);
+    m_packCombo->setStyleSheet(QStringLiteral(R"(
+        QComboBox {
+            background: white;
+            border: 1px solid black;
+            padding: 1px 4px;
+            min-width: 70px;
+        }
+        QComboBox::drop-down {
+            border-left: 1px solid black;
+            width: 18px;
+            subcontrol-origin: padding;
+            subcontrol-position: center right;
+        }
+        QComboBox::down-arrow {
+            image: url(%1);
+            width: 8px;
+            height: 5px;
+        }
+        QComboBox QAbstractItemView {
+            background: white;
+            color: black;
+            border: 1px solid black;
+            selection-background-color: #000080;
+            selection-color: white;
+            outline: none;
+        }
+        QComboBox QAbstractItemView::item {
+            color: black;
+            padding: 2px 4px;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            background: #000080;
+            color: white;
+        }
+    )").arg(arrowPath));
+    connect(m_packCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingsPanelWidget::onPackChanged);
+
+    packRow->addWidget(m_packLabel, 1);
+    packRow->addWidget(m_packCombo, 0);
+
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
     mainLayout->addLayout(langRow);
     mainLayout->addLayout(autoStartRow);
     mainLayout->addLayout(portRow);
+    mainLayout->addLayout(packRow);
     mainLayout->addStretch(1);
 }
 
@@ -341,6 +400,51 @@ void SettingsPanelWidget::onPortEditingFinished()
     }
 }
 
+void SettingsPanelWidget::setSpritePackManager(SpritePackManager *manager)
+{
+    m_packManager = manager;
+    refreshPackList();
+}
+
+void SettingsPanelWidget::onPackChanged(int index)
+{
+    if (!m_packManager || index < 0) {
+        return;
+    }
+
+    QString packId = m_packCombo->itemData(index).toString();
+    if (!packId.isEmpty()) {
+        m_packManager->switchPack(packId);
+    }
+}
+
+void SettingsPanelWidget::refreshPackList()
+{
+    if (!m_packCombo) {
+        return;
+    }
+
+    m_packCombo->clear();
+
+    if (!m_packManager) {
+        return;
+    }
+
+    const auto packs = m_packManager->availablePacks();
+    for (const auto &pack : packs) {
+        m_packCombo->addItem(pack.name, pack.id);
+    }
+
+    // Select active pack
+    QString activeId = m_packManager->activePackId();
+    if (!activeId.isEmpty()) {
+        int index = m_packCombo->findData(activeId);
+        if (index >= 0) {
+            m_packCombo->setCurrentIndex(index);
+        }
+    }
+}
+
 void SettingsPanelWidget::retranslateUi()
 {
     m_titleLabel->setText(tr("Settings"));
@@ -350,4 +454,5 @@ void SettingsPanelWidget::retranslateUi()
     m_langCombo->setItemText(1, tr("简体中文"));
     m_autoStartLabel->setText(tr("Launch at Login"));
     m_portLabel->setText(tr("Port"));
+    m_packLabel->setText(tr("Pet"));
 }

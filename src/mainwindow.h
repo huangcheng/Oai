@@ -7,10 +7,11 @@
 #include <QMenu>
 
 class SpriteAnimationEngine;
-class LottieEffectOverlay;
+class LottieAnimationEngine;
 class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
+class SpritePackManager;
 
 class QTranslator;
 class SystemTray;
@@ -24,10 +25,11 @@ public:
     ~MainWindow() override;
 
     SpriteAnimationEngine *animationEngine() const { return m_engine; }
-    LottieEffectOverlay *effectOverlay() const { return m_effects; }
+    LottieAnimationEngine *lottieEngine() const { return m_lottieEngine; }
     TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
 
     void setSystemTray(SystemTray *tray);
+    void setSpritePackManager(SpritePackManager *manager);
 
 signals:
     void positionChanged(const QPoint &pos);
@@ -39,6 +41,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 
 public slots:
     void retranslateUi();
@@ -47,6 +51,7 @@ public slots:
 private slots:
     void toggleVisibility();
     void openSettings();
+    void onActivePackChanged();
 
 private:
     void setupWindowFlags();
@@ -57,20 +62,19 @@ private:
     bool isInPetRect(const QPoint &pos) const;
 
     SpriteAnimationEngine *m_engine;
-    LottieEffectOverlay *m_effects;
+    LottieAnimationEngine *m_lottieEngine;
     ConfigManager *m_config;
     TipBubbleWidget *m_tipBubble;
     SettingsPanelWidget *m_settingsPanel;
     QTranslator *m_translator;
     SystemTray *m_systemTray = nullptr;
+    SpritePackManager *m_packManager = nullptr;
 
     // Drag state
     QPoint m_dragStartPos;
     QPoint m_dragWindowPos;
     bool m_dragging = false;
     static constexpr int DRAG_THRESHOLD = 5;
-
-
 
     // Visibility
     bool m_visible = true;

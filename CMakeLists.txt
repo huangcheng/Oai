@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(Qlippy VERSION 1.1.0 LANGUAGES CXX)
+project(Orai VERSION 1.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -113,7 +113,7 @@ if(WIN32)
     set(PLATFORM_SOURCES assets/qlippy.rc)
 endif()
 
-qt_add_executable(Qlippy
+qt_add_executable(Orai
     WIN32 MACOSX_BUNDLE
     src/main.cpp
     ${PLATFORM_SOURCES}
@@ -121,8 +121,14 @@ qt_add_executable(Qlippy
     src/mainwindow.h
     src/SpriteAnimationEngine.cpp
     src/SpriteAnimationEngine.h
+    src/LottieAnimationEngine.cpp
+    src/LottieAnimationEngine.h
     src/LottieEffectOverlay.cpp
     src/LottieEffectOverlay.h
+    src/SpritePack.cpp
+    src/SpritePack.h
+    src/SpritePackManager.cpp
+    src/SpritePackManager.h
     src/IpcServer.cpp
     src/IpcServer.h
     src/EventRouter.cpp
@@ -139,38 +145,24 @@ qt_add_executable(Qlippy
     src/SettingsPanelWidget.h
 )
 
-target_include_directories(Qlippy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(Orai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # --- Icon resource -----------------------------------------------------------
-qt_add_resources(Qlippy "icons"
+qt_add_resources(Orai "icons"
     PREFIX "/icons"
     BASE "assets/icons"
     FILES
         assets/icons/clippy.png
 )
 
-# --- Lottie effect resources -------------------------------------------------
-# Only effects are Lottie — character animations use sprite sheets at runtime
-qt_add_resources(Qlippy "lottie_effects"
-    PREFIX "/lottie"
-    BASE "assets/lottie"
-    FILES
-        assets/lottie/effects/sparkles.json
-        assets/lottie/effects/confetti.json
-        assets/lottie/effects/alert-pulse.json
-        assets/lottie/effects/thinking-dots.json
-        assets/lottie/effects/wave-lines.json
-        assets/lottie/effects/speech-pop.json
-)
-
 # --- Translations ------------------------------------------------------------
 qt_add_translations(
-    TARGETS Qlippy
-    TS_FILES Qlippy_zh_CN.ts
+    TARGETS Orai
+    TS_FILES Orai_zh_CN.ts
 )
 
 # --- Link libraries ----------------------------------------------------------
-target_link_libraries(Qlippy
+target_link_libraries(Orai
     PRIVATE
         Qt::Core
         Qt::Gui
@@ -180,51 +172,77 @@ target_link_libraries(Qlippy
 )
 
 # rlottie header path (FetchContent puts it in build/_deps)
-target_include_directories(Qlippy PRIVATE
+target_include_directories(Orai PRIVATE
     ${rlottie_SOURCE_DIR}/inc
 )
 
 # --- Install -----------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS Qlippy
+install(TARGETS Orai
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-# Also install runtime assets (sprite sheet, animations.json, lottie effects)
-install(DIRECTORY assets/
-    DESTINATION assets
+# --- Generate official packs -------------------------------------------------
+# Generate clippy.opk from the pack directory during build
+set(PACKS_DIR ${CMAKE_BINARY_DIR}/packs)
+file(MAKE_DIRECTORY ${PACKS_DIR})
+
+add_custom_command(
+    OUTPUT ${PACKS_DIR}/clippy.opk
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/clippy.opk --format=zip --
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
+        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
+    COMMENT "Generating clippy.opk"
+    WORKING_DIRECTORY ${PACKS_DIR}
+)
+add_custom_target(generate_packs ALL DEPENDS ${PACKS_DIR}/clippy.opk)
+add_dependencies(Orai generate_packs)
+
+# Install the generated packs
+install(DIRECTORY ${PACKS_DIR}/
+    DESTINATION ${CMAKE_INSTALL_BINDIR}/packs
 )
 
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
-    set_target_properties(Qlippy PROPERTIES
+    set_target_properties(Orai PROPERTIES
         MACOSX_BUNDLE_ICON_FILE "qlippy.icns"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.qlippy"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.oraipet"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     )
     set_source_files_properties(assets/qlippy.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
     )
-    target_sources(Qlippy PRIVATE assets/qlippy.icns)
+    target_sources(Orai PRIVATE assets/qlippy.icns)
 
-    add_custom_command(TARGET Qlippy POST_BUILD
+    add_custom_command(TARGET Orai POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/hide_dock_icon.py"
-            "$<TARGET_BUNDLE_DIR:Qlippy>/Contents/Info.plist"
-        COMMENT "Hiding Qlippy from Dock (LSUIElement)"
+            "$<TARGET_BUNDLE_DIR:Orai>/Contents/Info.plist"
+        COMMENT "Hiding Orai from Dock (LSUIElement)"
     )
 endif()
 
 qt_generate_deploy_app_script(
-    TARGET Qlippy
+    TARGET Orai
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
+
+# --- Set Orai as default target for Qt Creator -----------------------------
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Orai)
 
 # --- Tests -------------------------------------------------------------------
 enable_testing()

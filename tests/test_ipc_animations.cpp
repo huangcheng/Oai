@@ -1,10 +1,10 @@
 /**
  * test_ipc_animations.cpp
  *
- * End-to-end UDP IPC tests for Qlippy.
+ * End-to-end UDP IPC tests for Orai.
  *
  * Spins up the real IpcServer, EventRouter, SpriteAnimationEngine,
- * LottieEffectOverlay, and TipBubbleWidget, then drives them via
+ * and TipBubbleWidget, then drives them via
  * raw UDP datagrams (same protocol as the Node.js gateways).
  */
 
@@ -20,7 +20,6 @@
 #include "IpcServer.h"
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
-#include "LottieEffectOverlay.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 
@@ -37,7 +36,6 @@ private slots:
 
     void testPingPong();
     void testEventTriggersAnimation();
-    void testEventTriggersEffect();
     void testTipMessage();
     void testMultipleDatagrams();
     void testMalformedJson();
@@ -52,7 +50,6 @@ private:
     IpcServer *m_ipc = nullptr;
     EventRouter *m_router = nullptr;
     SpriteAnimationEngine *m_engine = nullptr;
-    LottieEffectOverlay *m_effects = nullptr;
     TipBubbleWidget *m_bubble = nullptr;
     TipsEngine *m_tips = nullptr;
 
@@ -85,9 +82,6 @@ void TestIpcAnimations::initTestCase()
     m_engine = new SpriteAnimationEngine(this);
     m_engine->loadAssets(assetsDir + "/map.png", assetsDir + "/animations.json");
 
-    m_effects = new LottieEffectOverlay(this);
-    m_effects->loadEffects(assetsDir + "/lottie/effects");
-
     m_bubble = new TipBubbleWidget(nullptr);
     m_bubble->setAnchorRect(QRect(0, 0, 124, 93));
 
@@ -98,7 +92,6 @@ void TestIpcAnimations::initTestCase()
     m_router = new EventRouter(this);
     m_router->setAnimationEngine(m_engine);
     m_router->setTipBubble(m_bubble);
-    m_router->setEffectOverlay(m_effects);
     m_router->setTipsEngine(m_tips);
 
     m_ipc = new IpcServer(this);
@@ -188,31 +181,8 @@ void TestIpcAnimations::testEventTriggersAnimation()
 }
 
 // ------------------------------------------------------------------
-// 3. Event triggers visual effect via UDP
 // ------------------------------------------------------------------
-void TestIpcAnimations::testEventTriggersEffect()
-{
-    QUdpSocket client;
-    client.bind(QHostAddress::Any, 0);
-
-    QSignalSpy spy(m_engine, &SpriteAnimationEngine::effectRequested);
-
-    QJsonObject event{
-        {"type", "event"},
-        {"source", "codex"},
-        {"event", "todo.updated"}
-    };
-    sendJson(&client, event);
-
-    QTest::qWait(200);
-
-    QVERIFY(m_effects->activeEffectCount() > 0 || m_engine->currentAnimation() == "Congratulate");
-
-    client.close();
-}
-
-// ------------------------------------------------------------------
-// 4. Tip message shows correct title & body via UDP
+// 3. Tip message shows correct title & body via UDP
 // ------------------------------------------------------------------
 void TestIpcAnimations::testTipMessage()
 {

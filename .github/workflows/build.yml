@@ -31,19 +31,20 @@ jobs:
       - name: Package
         run: |
           cd build
-          macdeployqt Qlippy.app
-          cp -R ../assets Qlippy.app/Contents/MacOS/assets
+          macdeployqt Orai.app
+          cp -R ../assets Orai.app/Contents/MacOS/assets
           # Ad-hoc sign so Gatekeeper doesn't flag it as damaged
-          codesign --force --deep --sign - Qlippy.app
+          codesign --force --deep --sign - Orai.app
           # Remove quarantine attribute
-          xattr -cr Qlippy.app
-          tar -czf Qlippy-darwin-arm64.tar.gz Qlippy.app
+          xattr -cr Orai.app
+          # Create DMG
+          hdiutil create -volname "Orai" -srcfolder Orai.app -ov -format UDZO Orai-macos.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Qlippy-darwin-arm64
-          path: build/Qlippy-darwin-arm64.tar.gz
+          name: Orai-macos
+          path: build/Orai-macos.dmg
 
   build-windows:
     runs-on: windows-latest
@@ -56,6 +57,11 @@ jobs:
           version: '6.7.*'
           modules: 'qtnetworkauth'
 
+      - name: Install Qt IFW
+        run: |
+          pip install aqtinstall
+          aqt install-tool windows desktop tools_ifw
+
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
@@ -66,21 +72,25 @@ jobs:
         run: cd build && ctest -C Release --output-on-failure
         continue-on-error: true
 
-      - name: Package
+      - name: Prepare installer files
         shell: bash
         run: |
           cd build
-          mkdir package
-          find . -name "Qlippy.exe" -not -path "./package/*" -exec cp {} package/ \; 2>/dev/null || true
-          windeployqt package/Qlippy.exe || true
-          cp -R ../assets package/assets
-          cd package && 7z a ../Qlippy-windows-x86_64.zip . && cd ..
+          mkdir -p installer/packages/com.orai.desktop/data
+          cp Orai.exe installer/packages/com.orai.desktop/data/
+          cp -R packs installer/packages/com.orai.desktop/data/
+          windeployqt installer/packages/com.orai.desktop/data/Orai.exe || true
+
+      - name: Build installer
+        run: |
+          $IFW_PATH = (Get-ChildItem -Path "C:\Users\*\AppData\Local\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
+          & "$IFW_PATH\bin\binarycreator.exe" -c installer/config.xml -p installer/packages build/Orai-installer.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Qlippy-windows-x86_64
-          path: build/Qlippy-windows-x86_64.zip
+          name: Orai-windows-installer
+          path: build/Orai-installer.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -111,15 +121,15 @@ jobs:
         run: |
           cd build
           mkdir -p package
-          cp Qlippy package/
+          cp Orai package/
           cp -R ../assets package/assets
-          tar -czf Qlippy-linux-x86_64.tar.gz -C package .
+          tar -czf Orai-linux-x86_64.tar.gz -C package .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Qlippy-linux-x86_64
-          path: build/Qlippy-linux-x86_64.tar.gz
+          name: Orai-linux-x86_64
+          path: build/Orai-linux-x86_64.tar.gz
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -137,6 +147,6 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            artifacts/Qlippy-darwin-arm64/Qlippy-darwin-arm64.tar.gz
-            artifacts/Qlippy-windows-x86_64/Qlippy-windows-x86_64.zip
-            artifacts/Qlippy-linux-x86_64/Qlippy-linux-x86_64.tar.gz
+            artifacts/Orai-macos/Orai-macos.dmg
+            artifacts/Orai-windows-installer/Orai-installer.exe
+            artifacts/Orai-linux-x86_64/Orai-linux-x86_64.tar.gz

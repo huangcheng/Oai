@@ -1,5 +1,7 @@
 #include "SystemTray.h"
 #include "mainwindow.h"
+#include "SpritePackManager.h"
+#include "SpritePack.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -15,7 +17,7 @@ SystemTray::SystemTray(QWidget *mainWindow, QObject *parent)
     , m_mainWindow(mainWindow)
 {
     m_trayIcon = new QSystemTrayIcon(this);
-    m_trayIcon->setToolTip(tr("Qlippy Desktop Pet"));
+    m_trayIcon->setToolTip(tr("Orai Desktop Pet"));
 
     // Use the application icon scaled for the system tray
     QIcon appIcon = qApp->windowIcon();
@@ -68,8 +70,16 @@ void SystemTray::onActivated(QSystemTrayIcon::ActivationReason reason)
 
 void SystemTray::setupMenu()
 {
+    // Platform-specific font size: macOS uses 13, Windows uses 10
+    int menuFontSize = 10;
+#ifdef Q_OS_MAC
+    menuFontSize = 13;
+#endif
+    QFont menuFont("HarmonyOS Sans SC", menuFontSize);
+    menuFont.setStyleStrategy(QFont::PreferAntialias);
+
     m_trayMenu = new QMenu();
-    m_trayMenu->setFont(QFont("HarmonyOS Sans SC", 13));
+    m_trayMenu->setFont(menuFont);
 
     m_toggleAction = m_trayMenu->addAction(tr("Show/Hide"));
     connect(m_toggleAction, &QAction::triggered, this, [this]() {
@@ -85,17 +95,73 @@ void SystemTray::setupMenu()
 
     m_trayMenu->addSeparator();
 
+    // Pack submenu
+    m_packMenu = m_trayMenu->addMenu(tr("Pet"));
+    m_packMenu->setFont(menuFont);
+
+    m_trayMenu->addSeparator();
+
     m_quitAction = m_trayMenu->addAction(tr("Quit"));
     connect(m_quitAction, &QAction::triggered, qApp, &QApplication::quit);
 
     m_trayIcon->setContextMenu(m_trayMenu);
 }
 
+void SystemTray::setSpritePackManager(SpritePackManager *manager)
+{
+    m_packManager = manager;
+    if (m_packManager) {
+        connect(m_packManager, &SpritePackManager::packListChanged,
+                this, &SystemTray::refreshPackMenu);
+        refreshPackMenu();
+    }
+}
+
+void SystemTray::onPackActionTriggered()
+{
+    QAction *action = qobject_cast<QAction*>(sender());
+    if (!action || !m_packManager) {
+        return;
+    }
+
+    QString packId = action->data().toString();
+    if (!packId.isEmpty()) {
+        m_packManager->switchPack(packId);
+    }
+}
+
+void SystemTray::refreshPackMenu()
+{
+    if (!m_packMenu) {
+        return;
+    }
+
+    m_packMenu->clear();
+
+    if (!m_packManager) {
+        return;
+    }
+
+    const auto packs = m_packManager->availablePacks();
+    QString activeId = m_packManager->activePackId();
+
+    for (const auto &pack : packs) {
+        QAction *action = m_packMenu->addAction(pack.name);
+        action->setData(pack.id);
+        action->setCheckable(true);
+        action->setChecked(pack.id == activeId);
+        connect(action, &QAction::triggered, this, &SystemTray::onPackActionTriggered);
+    }
+}
+
 void SystemTray::retranslateUi()
 {
-    m_trayIcon->setToolTip(tr("Qlippy Desktop Pet"));
+    m_trayIcon->setToolTip(tr("Orai Desktop Pet"));
     if (m_toggleAction) {
         m_toggleAction->setText(tr("Show/Hide"));
+    }
+    if (m_packMenu) {
+        m_packMenu->setTitle(tr("Pet"));
     }
     if (m_quitAction) {
         m_quitAction->setText(tr("Quit"));

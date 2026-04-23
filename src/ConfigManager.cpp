@@ -146,5 +146,5 @@ void ConfigManager::setIpcPort(quint16 port)
 QString ConfigManager::configFilePath() const
 {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
-           + "/Qlippy/config.json";
+           + "/Orai/config.json";
 }
