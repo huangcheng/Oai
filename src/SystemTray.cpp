@@ -69,6 +69,7 @@ void SystemTray::onActivated(QSystemTrayIcon::ActivationReason reason)
 void SystemTray::setupMenu()
 {
     m_trayMenu = new QMenu();
+    m_trayMenu->setFont(QFont("HarmonyOS Sans SC", 13));
 
     m_toggleAction = m_trayMenu->addAction(tr("Show/Hide"));
     connect(m_toggleAction, &QAction::triggered, this, [this]() {
