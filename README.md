@@ -105,13 +105,13 @@ appimagetool AppDir Qlippy-x86_64.AppImage
 
 ## IPC Protocol
 
-Qlippy accepts IPC messages over TCP localhost:
+Qlippy accepts IPC messages over UDP localhost:
 
 | Transport | Default Endpoint |
 |---|---|
-| **TCP** | `127.0.0.1:52847` |
+| **UDP** | `127.0.0.1:52847` |
 
-All Node.js gateways connect to this endpoint automatically. Override with `--endpoint <host:port>` on any gateway CLI command.
+All Node.js gateways send to this endpoint automatically. Override with `--endpoint <host:port>` on any gateway CLI command.
 
 ### Message Format
 
@@ -259,7 +259,7 @@ qlippy/
 │   ├── LottieAnimationEngine.h/cpp  # rlottie animation playback
 │   ├── SpeechBubble.h/cpp      # Win98-style speech bubble
 │   ├── LottieEffectOverlay.h/cpp    # Visual effects overlay
-│   ├── IpcServer.h/cpp         # TCP IPC server
+│   ├── IpcServer.h/cpp         # UDP IPC server
 │   ├── EventRouter.h/cpp       # Event dispatch and validation
 │   ├── TipsEngine.h/cpp        # Pattern-matching tips engine
 │   ├── ConfigManager.h/cpp     # JSON config persistence
@@ -270,7 +270,7 @@ qlippy/
 │       └── effects/            # Visual effects (6 Lottie files)
 ├── gateways/
 │   ├── shared/                 # Platform-aware IPC transport (Node.js)
-│   │   └── ipc.mjs             # TCP client for 127.0.0.1:52847
+│   │   └── ipc.mjs             # UDP client for 127.0.0.1:52847
 │   └── qlippy-gateway/         # CLI gateway tool (published to GitHub Packages)
 └── Qlippy_zh_CN.ts             # Simplified Chinese translations
 ```
