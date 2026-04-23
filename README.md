@@ -1,17 +1,35 @@
-# Qlippy Desktop Pet
+# Orai Desktop Pet
 
-A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application.
+A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application with a sprite pack engine for customizable characters.
 
 ## Features
 
-- **Transparent, frameless, always-on-top** window with Qlippy animations
+- **Transparent, frameless, always-on-top** window with character animations
+- **Sprite pack engine** — load custom characters via `.opk` packs
 - **Lottie animations** via Samsung's rlottie library — smooth 60fps playback
 - **Windows 98-style speech bubble** with auto-dismiss tips
-- **Visual effects** — sparkles, confetti, alert-pulse, thinking-dots, wave-lines, speech-pop
 - **Framework-agnostic** — works with OpenCode, Claude Code, Codex, or any tool that can send IPC messages
 - **Proactive tips engine** — detects coding patterns and shows contextual suggestions
 - **Cross-platform** — macOS, Windows, Linux
 - **<10MB RAM** at idle
+
+## Sprite Packs
+
+Orai supports customizable characters through sprite packs (`.opk` files). Each pack contains:
+- Sprite sheet or Lottie animations
+- Animation definitions
+- Event-to-animation mappings
+- Preview image
+
+### Installing Packs
+
+1. **Drag-and-drop**: Drop `.opk` file onto the pet window
+2. **Manual**: Copy `.opk` to `~/.config/Orai/packs/`
+3. **Built-in**: Official packs are generated during build
+
+### Creating Packs
+
+See `schemas/sprite-pack-v1.schema.json` for the pack format specification.
 
 ## Building
 
@@ -33,10 +51,10 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Create .app bundle
-macdeployqt Qlippy.app
+macdeployqt Orai.app
 
 # Run
-open Qlippy.app
+open Orai.app
 ```
 
 ### Windows (MSVC)
@@ -52,10 +70,10 @@ cmake .. -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\msvc2022_64"
 cmake --build . --config Release
 
 # Bundle Qt DLLs
-windeployqt Release\Qlippy.exe
+windeployqt Release\Orai.exe
 
 # Run
-Release\Qlippy.exe
+Release\Orai.exe
 ```
 
 ### Windows (MinGW)
@@ -70,10 +88,10 @@ cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\mingw_64"
 cmake --build .
 
 # Bundle Qt DLLs
-windeployqt Qlippy.exe
+windeployqt Orai.exe
 
 # Run
-Qlippy.exe
+Orai.exe
 ```
 
 ### Linux
@@ -92,20 +110,12 @@ cmake ..
 cmake --build .
 
 # Run
-./Qlippy
-```
-
-### AppImage (Linux)
-
-```bash
-# After building
-linuxdeploy --appdir AppDir --plugin qt
-appimagetool AppDir Qlippy-x86_64.AppImage
+./Orai
 ```
 
 ## IPC Protocol
 
-Qlippy accepts IPC messages over UDP localhost:
+Orai accepts IPC messages over UDP localhost:
 
 | Transport | Default Endpoint |
 |---|---|
@@ -179,7 +189,7 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 Install the CLI gateway globally from GitHub Packages:
 
 ```bash
-npm install -g @huangcheng/qlippy-gateway --registry=https://npm.pkg.github.com
+npm install -g @huangcheng/orai-gateway --registry=https://npm.pkg.github.com
 ```
 
 Configure your npm to use GitHub Packages for `@huangcheng` scope (one-time setup):
@@ -198,7 +208,7 @@ Add hooks to `~/.claude/settings.json`:
     "SessionStart": [{
       "hooks": [{
         "type": "command",
-        "command": "qlippy-gateway --source claude-code --event session.start",
+        "command": "orai-gateway --source claude-code --event session.start",
         "timeout": 3,
         "async": true
       }]
@@ -206,7 +216,7 @@ Add hooks to `~/.claude/settings.json`:
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "qlippy-gateway --source claude-code --event session.idle",
+        "command": "orai-gateway --source claude-code --event session.idle",
         "timeout": 3,
         "async": true
       }]
@@ -214,7 +224,7 @@ Add hooks to `~/.claude/settings.json`:
     "PreToolUse": [{
       "hooks": [{
         "type": "command",
-        "command": "qlippy-gateway --source claude-code --event tool.before",
+        "command": "orai-gateway --source claude-code --event tool.before",
         "timeout": 5,
         "async": true
       }]
@@ -222,7 +232,7 @@ Add hooks to `~/.claude/settings.json`:
     "PostToolUse": [{
       "hooks": [{
         "type": "command",
-        "command": "qlippy-gateway --source claude-code --event tool.after",
+        "command": "orai-gateway --source claude-code --event tool.after",
         "timeout": 3,
         "async": true
       }]
@@ -233,10 +243,10 @@ Add hooks to `~/.claude/settings.json`:
 
 ### Health Check
 
-Check if Qlippy is running:
+Check if Orai is running:
 
 ```bash
-qlippy-gateway --ping
+orai-gateway --ping
 # Exit code 0 = alive, 1 = not responding
 ```
 
@@ -245,39 +255,50 @@ qlippy-gateway --ping
 Send a test event:
 
 ```bash
-qlippy-gateway --source claude-code --event session.start
+orai-gateway --source claude-code --event session.start
 ```
 
 ## Project Structure
 
 ```
-qlippy/
+orai/
 ├── CMakeLists.txt              # Build configuration
 ├── src/
 │   ├── main.cpp                # Application entry point
 │   ├── mainwindow.h/cpp        # Transparent frameless pet window
-│   ├── LottieAnimationEngine.h/cpp  # rlottie animation playback
-│   ├── SpeechBubble.h/cpp      # Win98-style speech bubble
+│   ├── SpriteAnimationEngine.h/cpp  # Sprite sheet animation playback
+│   ├── LottieAnimationEngine.h/cpp  # Lottie animation playback
 │   ├── LottieEffectOverlay.h/cpp    # Visual effects overlay
+│   ├── SpritePack.h/cpp        # Sprite pack data structure
+│   ├── SpritePackManager.h/cpp # Pack discovery and management
 │   ├── IpcServer.h/cpp         # UDP IPC server
 │   ├── EventRouter.h/cpp       # Event dispatch and validation
 │   ├── TipsEngine.h/cpp        # Pattern-matching tips engine
 │   ├── ConfigManager.h/cpp     # JSON config persistence
 │   └── SystemTray.h/cpp        # System tray integration
 ├── assets/
+│   ├── packs/
+│   │   └── clippy/             # Built-in Clippy pack
+│   │       ├── manifest.json
+│   │       ├── sprites/
+│   │       │   ├── map.png     # Sprite sheet
+│   │       │   └── animations.json
+│   │       └── preview.png
 │   └── lottie/
-│       ├── character/          # Character animations (20 Lottie files)
 │       └── effects/            # Visual effects (6 Lottie files)
+├── schemas/
+│   └── sprite-pack-v1.schema.json  # Sprite pack format schema
+├── installer/                  # Qt Installation Framework config
 ├── gateways/
 │   ├── shared/                 # Platform-aware IPC transport (Node.js)
 │   │   └── ipc.mjs             # UDP client for 127.0.0.1:52847
-│   └── qlippy-gateway/         # CLI gateway tool (published to GitHub Packages)
-└── Qlippy_zh_CN.ts             # Simplified Chinese translations
+│   └── orai-gateway/           # CLI gateway tool
+└── Orai_zh_CN.ts               # Simplified Chinese translations
 ```
 
 ## Configuration
 
-Config file: `~/.config/Qlippy/config.json`
+Config file: `~/.config/Orai/config.json`
 
 ```json
 {
@@ -293,10 +314,10 @@ The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
 
 ## Asset Attribution
 
-- Character animations: Placeholder Lottie files (to be replaced with production assets)
+- Character animations: Clippy Classic pack (Microsoft Office Assistant)
 - Visual effects: Custom-designed Lottie effect animations (MIT license)
 - Animation engine: [Samsung rlottie](https://github.com/Samsung/rlottie) (MIT license)
 
 ## License
 
-MIT
+MIT © HUANG Cheng
