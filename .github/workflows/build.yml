@@ -32,7 +32,9 @@ jobs:
         run: |
           cd build
           macdeployqt Orai.app
-          cp -R ../assets Orai.app/Contents/MacOS/assets
+          # Copy packs into Resources
+          mkdir -p Orai.app/Contents/Resources/packs
+          cp packs/*.opk Orai.app/Contents/Resources/packs/ 2>/dev/null || true
           # Ad-hoc sign so Gatekeeper doesn't flag it as damaged
           codesign --force --deep --sign - Orai.app
           # Remove quarantine attribute

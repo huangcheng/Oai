@@ -216,15 +216,21 @@ install(DIRECTORY ${PACKS_DIR}/
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
     set_target_properties(Orai PROPERTIES
-        MACOSX_BUNDLE_ICON_FILE "qlippy.icns"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.oraipet"
+        MACOSX_BUNDLE_ICON_FILE "orai.icns"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.orai"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     )
-    set_source_files_properties(assets/qlippy.icns PROPERTIES
+    set_source_files_properties(assets/orai.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
     )
-    target_sources(Orai PRIVATE assets/qlippy.icns)
+    target_sources(Orai PRIVATE assets/orai.icns)
+
+    # Include packs in the macOS bundle Resources
+    set_source_files_properties(${PACKS_DIR}/clippy.opk PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources/packs"
+    )
+    target_sources(Orai PRIVATE ${PACKS_DIR}/clippy.opk)
 
     add_custom_command(TARGET Orai POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3
