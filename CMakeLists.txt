@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(Qlippy LANGUAGES CXX)
+project(Qlippy VERSION 1.0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -202,6 +202,9 @@ install(DIRECTORY assets/
 if(APPLE)
     set_target_properties(Qlippy PROPERTIES
         MACOSX_BUNDLE_ICON_FILE "qlippy.icns"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.qlippy"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     )
     set_source_files_properties(assets/qlippy.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
