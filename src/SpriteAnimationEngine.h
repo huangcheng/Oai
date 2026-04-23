@@ -52,6 +52,7 @@ private:
     void advanceFrame();
     void startNextAnimation();
     void startIdleAnimation();
+    void checkEffectTrigger(const QString &animName);
 
     struct FrameDef {
         QRect sourceRect;  // Region in the sprite sheet
