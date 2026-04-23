@@ -124,6 +124,25 @@ void ConfigManager::setAutoStart(bool enabled)
     }
 }
 
+quint16 ConfigManager::ipcPort() const
+{
+    int colonPos = m_ipcEndpoint.lastIndexOf(':');
+    if (colonPos > 0) {
+        return static_cast<quint16>(m_ipcEndpoint.mid(colonPos + 1).toUInt());
+    }
+    return 52847;
+}
+
+void ConfigManager::setIpcPort(quint16 port)
+{
+    const QString newEndpoint = QStringLiteral("127.0.0.1:") + QString::number(port);
+    if (m_ipcEndpoint != newEndpoint) {
+        m_ipcEndpoint = newEndpoint;
+        save();
+        emit ipcEndpointChanged(m_ipcEndpoint);
+    }
+}
+
 QString ConfigManager::configFilePath() const
 {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)

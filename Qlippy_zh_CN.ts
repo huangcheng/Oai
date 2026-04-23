@@ -318,6 +318,12 @@ v1.0.0</translation>
         <source>Launch at Login</source>
         <translation>登录时启动</translation>
     </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="234"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="308"/>
+        <source>Port</source>
+        <translation>端口</translation>
+    </message>
 </context>
 <context>
     <name>SystemTray</name>

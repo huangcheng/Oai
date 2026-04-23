@@ -23,6 +23,7 @@ public:
      */
     bool start(const QString &endpoint);
     void stop();
+    bool restart(const QString &endpoint);
 
 signals:
     void eventReceived(const QJsonObject &event);

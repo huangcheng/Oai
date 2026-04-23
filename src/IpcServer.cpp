@@ -58,6 +58,12 @@ void IpcServer::stop()
     m_server->close();
 }
 
+bool IpcServer::restart(const QString &endpoint)
+{
+    stop();
+    return start(endpoint);
+}
+
 void IpcServer::onNewConnection()
 {
     while (QTcpSocket *socket = m_server->nextPendingConnection()) {

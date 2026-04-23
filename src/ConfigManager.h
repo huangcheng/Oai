@@ -30,11 +30,23 @@ public:
      */
     QString ipcEndpoint() const { return m_ipcEndpoint; }
 
+    /**
+     * Extract just the port number from the current endpoint.
+     */
+    quint16 ipcPort() const;
+
+    /**
+     * Set a new IPC port (keeps host as 127.0.0.1).
+     * Saves config and emits ipcEndpointChanged if the value changed.
+     */
+    void setIpcPort(quint16 port);
+
     /** Default IPC endpoint (used when config has no override). */
     static QString defaultEndpoint();
 
 signals:
     void languageChanged(const QString &lang);
+    void ipcEndpointChanged(const QString &endpoint);
 
 private:
     QString configFilePath() const;
