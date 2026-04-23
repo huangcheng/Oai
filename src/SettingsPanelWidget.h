@@ -11,6 +11,7 @@ class QPushButton;
 class QFrame;
 class QComboBox;
 class QCheckBox;
+class QLineEdit;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -33,6 +34,7 @@ private slots:
     void onCloseClicked();
     void onLanguageChanged(int index);
     void onAutoStartToggled(bool checked);
+    void onPortEditingFinished();
 
 private:
     void setupUi();
@@ -48,6 +50,8 @@ private:
     QComboBox *m_langCombo = nullptr;
     QLabel *m_autoStartLabel = nullptr;
     QCheckBox *m_autoStartCheck = nullptr;
+    QLabel *m_portLabel = nullptr;
+    QLineEdit *m_portInput = nullptr;
 
     // Layout container
     QWidget *m_contentWidget = nullptr;
@@ -58,7 +62,7 @@ private:
     static constexpr int VERTICAL_SPACING = 10;
     static constexpr int SHADOW_OFFSET = 4;
     static constexpr int PANEL_WIDTH = 180;
-    static constexpr int PANEL_HEIGHT = 120;
+    static constexpr int PANEL_HEIGHT = 150;
 };
 
 #endif // SETTINGSPANELWIDGET_H

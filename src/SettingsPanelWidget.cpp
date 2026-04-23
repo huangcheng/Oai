@@ -10,6 +10,7 @@
 #include <QFrame>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QLineEdit>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QFont>
@@ -237,11 +238,41 @@ void SettingsPanelWidget::setupUi()
     autoStartRow->addWidget(m_autoStartLabel, 1);
     autoStartRow->addWidget(m_autoStartCheck, 0, Qt::AlignLeft);
 
+    // Port row: label + input
+    QHBoxLayout *portRow = new QHBoxLayout();
+    portRow->setSpacing(8);
+
+    m_portLabel = new QLabel(tr("Port"), m_contentWidget);
+    m_portLabel->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_portLabel->setStyleSheet("color: black; background: transparent;");
+    m_portLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_portInput = new QLineEdit(m_contentWidget);
+    m_portInput->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_portInput->setText(QString::number(m_config->ipcPort()));
+    m_portInput->setMaxLength(5);
+    m_portInput->setFixedWidth(60);
+    m_portInput->setFixedHeight(20);
+    m_portInput->setStyleSheet(R"(
+        QLineEdit {
+            background: white;
+            border: 1px solid black;
+            padding: 1px 4px;
+            color: black;
+        }
+    )");
+    connect(m_portInput, &QLineEdit::editingFinished,
+            this, &SettingsPanelWidget::onPortEditingFinished);
+
+    portRow->addWidget(m_portLabel, 1);
+    portRow->addWidget(m_portInput, 0);
+
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
     mainLayout->addLayout(langRow);
     mainLayout->addLayout(autoStartRow);
+    mainLayout->addLayout(portRow);
     mainLayout->addStretch(1);
 }
 
@@ -297,6 +328,19 @@ void SettingsPanelWidget::onAutoStartToggled(bool checked)
     m_config->save();
 }
 
+void SettingsPanelWidget::onPortEditingFinished()
+{
+    const QString text = m_portInput->text().trimmed();
+    bool ok;
+    int port = text.toInt(&ok);
+    if (ok && port >= 1024 && port <= 65535) {
+        m_config->setIpcPort(static_cast<quint16>(port));
+    } else {
+        // Revert to current config value
+        m_portInput->setText(QString::number(m_config->ipcPort()));
+    }
+}
+
 void SettingsPanelWidget::retranslateUi()
 {
     m_titleLabel->setText(tr("Settings"));
@@ -305,4 +349,5 @@ void SettingsPanelWidget::retranslateUi()
     m_langCombo->setItemText(0, tr("English"));
     m_langCombo->setItemText(1, tr("简体中文"));
     m_autoStartLabel->setText(tr("Launch at Login"));
+    m_portLabel->setText(tr("Port"));
 }

@@ -182,6 +182,13 @@ int main(int argc, char *argv[])
 
     ipcServer.start(config.ipcEndpoint());
 
+    // Restart IPC server when port changes
+    QObject::connect(&config, &ConfigManager::ipcEndpointChanged,
+                     &ipcServer, [&ipcServer](const QString &endpoint) {
+        qDebug() << "IPC: Restarting server on new endpoint:" << endpoint;
+        ipcServer.restart(endpoint);
+    });
+
     // --- System tray ---------------------------------------------------------
     SystemTray tray(&w);
     tray.show();
