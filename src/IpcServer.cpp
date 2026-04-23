@@ -1,7 +1,6 @@
 #include "IpcServer.h"
 
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QUdpSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QHostAddress>
@@ -9,10 +8,10 @@
 
 IpcServer::IpcServer(QObject *parent)
     : QObject(parent)
-    , m_server(new QTcpServer(this))
+    , m_socket(new QUdpSocket(this))
 {
-    connect(m_server, &QTcpServer::newConnection,
-            this, &IpcServer::onNewConnection);
+    connect(m_socket, &QUdpSocket::readyRead,
+            this, &IpcServer::onReadyRead);
 }
 
 IpcServer::~IpcServer()
@@ -22,7 +21,6 @@ IpcServer::~IpcServer()
 
 bool IpcServer::start(const QString &endpoint)
 {
-    // Parse "host:port"
     int colonPos = endpoint.lastIndexOf(':');
     if (colonPos <= 0) {
         qWarning() << "IPC: Invalid endpoint format (expected host:port):" << endpoint;
@@ -38,24 +36,18 @@ bool IpcServer::start(const QString &endpoint)
         return false;
     }
 
-    if (!m_server->listen(address, port)) {
-        qWarning() << "IPC: Failed to listen on" << endpoint
-                   << m_server->errorString();
+    if (!m_socket->bind(address, port)) {
+        qWarning() << "IPC: Failed to bind UDP on" << endpoint
+                   << m_socket->errorString();
         return false;
     }
-    qDebug() << "IPC: TCP server listening on:" << endpoint;
+    qDebug() << "IPC: UDP server listening on:" << endpoint;
     return true;
 }
 
 void IpcServer::stop()
 {
-    // Close active connections first
-    const auto sockets = m_buffers.keys();
-    for (QTcpSocket *socket : sockets) {
-        socket->close();
-    }
-    m_buffers.clear();
-    m_server->close();
+    m_socket->close();
 }
 
 bool IpcServer::restart(const QString &endpoint)
@@ -64,52 +56,24 @@ bool IpcServer::restart(const QString &endpoint)
     return start(endpoint);
 }
 
-void IpcServer::onNewConnection()
-{
-    while (QTcpSocket *socket = m_server->nextPendingConnection()) {
-        m_buffers.insert(socket, QByteArray());
-
-        connect(socket, &QTcpSocket::readyRead,
-                this, &IpcServer::onReadyRead);
-        connect(socket, &QTcpSocket::disconnected,
-                this, &IpcServer::onDisconnected);
-
-        qDebug() << "IPC client connected from" << socket->peerAddress().toString();
-    }
-}
-
 void IpcServer::onReadyRead()
 {
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if (!socket) return;
+    while (m_socket->hasPendingDatagrams()) {
+        QByteArray datagram;
+        datagram.resize(m_socket->pendingDatagramSize());
 
-    QByteArray &buffer = m_buffers[socket];
-    buffer.append(socket->readAll());
+        QHostAddress sender;
+        quint16 senderPort;
 
-    // Parse newline-delimited JSON messages
-    int newlinePos;
-    while ((newlinePos = buffer.indexOf('\n')) != -1) {
-        QByteArray line = buffer.left(newlinePos).trimmed();
-        buffer = buffer.mid(newlinePos + 1);
+        m_socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
 
-        if (!line.isEmpty()) {
-            parseMessage(line, socket);
+        if (!datagram.isEmpty()) {
+            parseMessage(datagram.trimmed(), sender, senderPort);
         }
     }
 }
 
-void IpcServer::onDisconnected()
-{
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if (!socket) return;
-
-    m_buffers.remove(socket);
-    socket->deleteLater();
-
-    qDebug() << "IPC client disconnected";
-}
-
-void IpcServer::parseMessage(const QByteArray &data, QTcpSocket *socket)
+void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
@@ -133,13 +97,12 @@ void IpcServer::parseMessage(const QByteArray &data, QTcpSocket *socket)
     } else if (type == "tip") {
         emit tipReceived(msg);
     } else if (type == "ping") {
-        // Respond with pong
         QJsonObject pong;
         pong["type"] = "pong";
         QJsonDocument pongDoc(pong);
-        socket->write(pongDoc.toJson(QJsonDocument::Compact) + "\n");
-        socket->flush();
-        emit pingReceived(socket);
+        m_socket->writeDatagram(pongDoc.toJson(QJsonDocument::Compact) + "\n",
+                                sender, port);
+        emit pingReceived(sender, port);
     } else {
         qWarning() << "IPC: Unknown message type:" << type;
     }

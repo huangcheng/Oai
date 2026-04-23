@@ -3,10 +3,9 @@
 
 #include <QObject>
 #include <QJsonDocument>
-#include <QMap>
+#include <QHostAddress>
 
-class QTcpServer;
-class QTcpSocket;
+class QUdpSocket;
 
 class IpcServer : public QObject
 {
@@ -16,11 +15,6 @@ public:
     explicit IpcServer(QObject *parent = nullptr);
     ~IpcServer() override;
 
-    /**
-     * Start listening on the given TCP endpoint.
-     *
-     * @param endpoint  "host:port" string, e.g. "127.0.0.1:52847"
-     */
     bool start(const QString &endpoint);
     void stop();
     bool restart(const QString &endpoint);
@@ -28,18 +22,15 @@ public:
 signals:
     void eventReceived(const QJsonObject &event);
     void tipReceived(const QJsonObject &tip);
-    void pingReceived(QTcpSocket *socket);
+    void pingReceived(const QHostAddress &sender, quint16 port);
 
 private slots:
-    void onNewConnection();
     void onReadyRead();
-    void onDisconnected();
 
 private:
-    void parseMessage(const QByteArray &data, QTcpSocket *socket);
+    void parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port);
 
-    QTcpServer *m_server = nullptr;
-    QMap<QTcpSocket*, QByteArray> m_buffers;
+    QUdpSocket *m_socket = nullptr;
 };
 
 #endif // IPCSERVER_H
