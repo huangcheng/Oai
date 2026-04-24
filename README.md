@@ -29,7 +29,7 @@ Oai supports customizable characters through sprite packs (`.opk` files). Each p
 
 ### Creating Packs
 
-See `schemas/sprite-pack-v1.schema.json` for the pack format specification.
+See `schemas/character-pack-v1.schema.json` for the pack format specification.
 
 ## Building
 
@@ -287,7 +287,7 @@ oai/
 │   └── lottie/
 │       └── effects/            # Visual effects (6 Lottie files)
 ├── schemas/
-│   └── sprite-pack-v1.schema.json  # Sprite pack format schema
+│   └── character-pack-v1.schema.json  # Character pack format schema
 ├── installer/                  # Qt Installation Framework config
 ├── gateways/
 │   ├── shared/                 # Platform-aware IPC transport (Node.js)

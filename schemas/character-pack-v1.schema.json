@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://oai.cheng.im/schemas/sprite-pack-v1.json",
-  "title": "Oaipet Sprite Pack Manifest",
-  "description": "Manifest format for Oaipet sprite packs (.opk)",
+  "$id": "https://oai.cheng.im/schemas/character-pack-v1.json",
+  "title": "Oai Character Pack Manifest",
+  "description": "Manifest format for Oai character packs (.opk) — supports Lottie, sprite-sheet, and Live2D characters",
   "version": "1.0.0",
   "type": "object",
   "required": ["formatVersion", "id", "name", "author", "version", "character"],
@@ -19,7 +19,7 @@
     },
     "name": {
       "type": "string",
-      "description": "Display name of the sprite pack",
+      "description": "Display name of the character pack",
       "minLength": 1,
       "maxLength": 64
     },
@@ -36,7 +36,7 @@
     },
     "description": {
       "type": "string",
-      "description": "Short description of the sprite pack",
+      "description": "Short description of the character pack",
       "maxLength": 256
     },
     "preview": {
@@ -59,7 +59,7 @@
     },
     "minAppVersion": {
       "type": "string",
-      "description": "Minimum Oaipet version required",
+      "description": "Minimum Oai version required",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
     "character": {
