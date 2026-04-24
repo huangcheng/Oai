@@ -55,13 +55,6 @@ jobs:
           version: '6.7.*'
           modules: 'qtnetworkauth'
 
-      - name: Install Qt IFW
-        run: |
-          pip install aqtinstall
-          aqt install-tool windows desktop tools_ifw
-          echo "IFW tools installed to: $LOCALAPPDATA\aqt\tools_ifw"
-          ls "$LOCALAPPDATA\aqt\tools_ifw" 2>/dev/null || ls "C:\Users\$env:USERNAME\AppData\Local\aqt\tools_ifw" 2>/dev/null || echo "Checking default locations..."
-
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
@@ -72,30 +65,21 @@ jobs:
         run: cd build && ctest -C Release --output-on-failure
         continue-on-error: true
 
-      - name: Prepare installer files
+      - name: Package
         shell: bash
         run: |
           cd build
-          mkdir -p installer/packages/im.cheng.oai.desktop/data
-          find . -name "Oai.exe" -not -path "./installer/*" | head -1 | xargs -I{} cp {} installer/packages/im.cheng.oai.desktop/data/
-          cp -R packs installer/packages/im.cheng.oai.desktop/data/ 2>/dev/null || true
-          windeployqt installer/packages/im.cheng.oai.desktop/data/Oai.exe || true
-
-      - name: Build installer
-        shell: pwsh
-        run: |
-          $IFW_PATH = (Get-ChildItem -Path "$env:LOCALAPPDATA\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
-          if (-not $IFW_PATH) {
-            $IFW_PATH = (Get-ChildItem -Path "C:\Users\*\AppData\Local\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
-          }
-          Write-Host "IFW_PATH: $IFW_PATH"
-          & "$IFW_PATH\bin\binarycreator.exe" -c installer/config.xml -p installer/packages build/Oai-installer.exe
+          mkdir -p Oai-windows
+          find . -name "Oai.exe" -not -path "./Oai-windows/*" | head -1 | xargs -I{} cp {} Oai-windows/
+          cp -R ../assets Oai-windows/assets
+          cd Oai-windows && windeployqt Oai.exe || true
+          cd .. && zip -r Oai-windows.zip Oai-windows
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Oai-windows-installer
-          path: build/Oai-installer.exe
+          name: Oai-windows
+          path: build/Oai-windows.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -153,5 +137,5 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/Oai-macos/Oai-macos.dmg
-            artifacts/Oai-windows-installer/Oai-installer.exe
+            artifacts/Oai-windows/Oai-windows.zip
             artifacts/Oai-linux-x86_64/Oai-linux-x86_64.tar.gz
