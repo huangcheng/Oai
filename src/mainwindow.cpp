@@ -23,6 +23,7 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QUrl>
+#include <QTimer>
 #include <algorithm>
 
 MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent)
@@ -367,7 +368,30 @@ void MainWindow::onActivePackChanged()
         m_engine->loadFromCharacterPack(pack);
     }
 
-    update();  // Trigger repaint
+#ifdef OAI_LIVE2D_SUPPORT
+    // Crop the window to the character's actual silhouette once the Live2D
+    // engine has produced a few frames (motion settles ~500ms after load).
+    // Without this, Rice / Wanko / etc. render as a small character at the
+    // bottom of a 300×300 frame with a huge empty top margin, and the tip
+    // bubble anchors above that empty space instead of above the character.
+    if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
+        const float displayScale = pack->characterConfig().displayScale;
+        QTimer::singleShot(500, this, [this, displayScale]() {
+            if (!m_live2dEngine) return;
+            const QRect b = m_live2dEngine->characterBounds();
+            if (b.isNull() || b.isEmpty()) return;
+            const int displayW = static_cast<int>(b.width() * displayScale);
+            const int displayH = static_cast<int>(b.height() * displayScale);
+            const int tipSpace = height() - petRect().height();
+            m_petSize = QSize(displayW, displayH);
+            setFixedSize(displayW, displayH + tipSpace);
+            // Re-anchor floating widgets to the newly sized pet rect.
+            m_tipBubble->setAnchorRect(petRect());
+            m_tipBubble->anchorTo(this);
+            update();
+        });
+    }
+#endif
 }
 
 void MainWindow::retranslateUi()

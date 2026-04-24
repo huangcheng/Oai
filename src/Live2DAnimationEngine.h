@@ -65,6 +65,14 @@ public:
     /** @brief Render the current frame into a QPainter target rect. */
     void paint(QPainter *painter, const QRect &bounds);
 
+    /**
+     * @brief Bounding box of the visible character in the FBO's coordinate
+     *        space, derived from the alpha channel of the last rendered frame.
+     *        Returns QRect() until at least one frame with non-transparent
+     *        pixels has been rendered. Cached until the next stop() / load.
+     */
+    QRect characterBounds() const;
+
     bool isPlaying() const { return m_playing; }
     bool hasAnimations() const { return m_modelLoaded; }
 
@@ -100,6 +108,7 @@ private:
     QOffscreenSurface *m_surface = nullptr;
     QOpenGLFramebufferObject *m_fbo = nullptr;
     QImage m_image;
+    mutable QRect m_characterBounds;  // alpha bbox, lazily computed from m_image
     int m_renderWidth = 200;
     int m_renderHeight = 200;
 

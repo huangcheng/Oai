@@ -463,6 +463,7 @@ void Live2DAnimationEngine::releaseModel()
     m_motionGroups.clear();
     m_idleAnims.clear();
     m_idleWeights.clear();
+    m_characterBounds = QRect();
 }
 
 bool Live2DAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
@@ -573,12 +574,42 @@ void Live2DAnimationEngine::stop()
     m_queue.clear();
     m_currentMotion.clear();
     m_image = QImage();  // clear last rendered frame so paint() returns early
+    m_characterBounds = QRect();
+}
+
+QRect Live2DAnimationEngine::characterBounds() const
+{
+    if (!m_characterBounds.isNull() || m_image.isNull()) {
+        return m_characterBounds;
+    }
+    // Alpha bounding box scan over the FBO-readback image.
+    // m_image is Format_ARGB32_Premultiplied: 4 bytes/px, alpha is the top byte of each uint.
+    const int w = m_image.width();
+    const int h = m_image.height();
+    int top = -1, bottom = -1, left = w, right = -1;
+    for (int y = 0; y < h; ++y) {
+        const auto *row = reinterpret_cast<const quint32 *>(m_image.constScanLine(y));
+        for (int x = 0; x < w; ++x) {
+            if ((row[x] >> 24) != 0) {
+                if (top < 0) top = y;
+                bottom = y;
+                if (x < left) left = x;
+                if (x > right) right = x;
+            }
+        }
+    }
+    if (top < 0) return QRect();
+    m_characterBounds = QRect(left, top, right - left + 1, bottom - top + 1);
+    return m_characterBounds;
 }
 
 void Live2DAnimationEngine::paint(QPainter *painter, const QRect &bounds)
 {
     if (!m_modelLoaded || m_image.isNull()) return;
-    painter->drawImage(bounds, m_image);
+    // Only draw the character portion of the FBO (ignore transparent margins).
+    // Fall back to the full image until bounds have been measured.
+    const QRect src = m_characterBounds.isNull() ? m_image.rect() : m_characterBounds;
+    painter->drawImage(bounds, m_image, src);
 }
 
 void Live2DAnimationEngine::tick()
