@@ -1,5 +1,5 @@
 # Source files shared between the app and tests (excluding main.cpp)
-set(ORAIPET_LIB_SOURCES
+set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/IpcServer.cpp
     ${CMAKE_SOURCE_DIR}/src/IpcServer.h
     ${CMAKE_SOURCE_DIR}/src/EventRouter.cpp
@@ -30,7 +30,7 @@ foreach(test_src ${TEST_SOURCES})
     get_filename_component(test_name ${test_src} NAME_WE)
     qt_add_executable(${test_name}
         ${test_src}
-        ${ORAIPET_LIB_SOURCES}
+        ${OAIPET_LIB_SOURCES}
     )
     target_link_libraries(${test_name}
         PRIVATE

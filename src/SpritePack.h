@@ -84,7 +84,7 @@ public:
         QString preview;          ///< Path to preview image
         QStringList tags;         ///< Search/discovery tags
         QString license;          ///< SPDX license identifier
-        QString minAppVersion;    ///< Minimum Orai version required
+        QString minAppVersion;    ///< Minimum Oai version required
     };
 
     /**

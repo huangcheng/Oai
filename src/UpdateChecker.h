@@ -34,7 +34,7 @@ private slots:
 
 private:
     QNetworkAccessManager *m_networkManager;
-    static constexpr const char *GITHUB_API_URL = "https://api.github.com/repos/huangcheng/Orai/releases/latest";
+    static constexpr const char *GITHUB_API_URL = "https://api.github.com/repos/huangcheng/Oai/releases/latest";
 };
 
 #endif // UPDATECHECKER_H

@@ -27,7 +27,7 @@ void UpdateChecker::checkForUpdates()
     QUrl url(GITHUB_API_URL);
     QNetworkRequest request(url);
     request.setRawHeader("Accept", "application/vnd.github.v3+json");
-    request.setRawHeader("User-Agent", "Orai-Desktop-Pet");
+    request.setRawHeader("User-Agent", "Oai-Desktop-Pet");
 
     m_networkManager->get(request);
 }

@@ -198,7 +198,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        m_tipBubble->showBubble(tr("About"), tr("Orai Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
+        m_tipBubble->showBubble(tr("About"), tr("Oai Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
     });
 
     menu.addSeparator();
@@ -339,7 +339,7 @@ void MainWindow::reloadTranslator(const QString &lang)
     app->removeTranslator(m_translator);
 
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Orai_" + lang;
+        const QString baseName = "Oai_" + lang;
         if (m_translator->load(":/i18n/" + baseName)) {
             app->installTranslator(m_translator);
         }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Orai — a native Qt6/C++ desktop pet that reacts to AI coding tool events (Claude Code, Codex, OpenCode). Lightweight, cross-platform (macOS/Windows/Linux), < 10MB RAM. Features a sprite pack engine for customizable characters.
+Oai — a native Qt6/C++ desktop pet that reacts to AI coding tool events (Claude Code, Codex, OpenCode). Lightweight, cross-platform (macOS/Windows/Linux), < 10MB RAM. Features a sprite pack engine for customizable characters.
 
 ## Build Commands
 
@@ -22,9 +22,9 @@ open build/Qlippy.app          # macOS
 cd build && ctest
 
 # Gateway CLI
-npm install -g @huangcheng/orai-gateway
-orai-gateway send session.start    # send test event
-orai-gateway health                # check IPC server
+npm install -g @huangcheng/oai-gateway
+oai-gateway send session.start    # send test event
+oai-gateway health                # check IPC server
 ```
 
 ## Architecture
@@ -42,16 +42,16 @@ The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips →
 - **SpritePackManager** — Discovers, loads, and switches between sprite packs.
 - **TipBubbleWidget** — Win98-style speech bubble with asymmetric tail, fade animations, auto-dismiss (6s status / 12s tips).
 - **TipsEngine** — Pattern matcher on a 30-second event window. Detects behaviors (repeated errors, rapid edits, idle, permission denials) and suggests contextual tips. 5-minute cooldown per tip type.
-- **ConfigManager** — Persists to `~/.config/Orai/config.json` (window position, language, auto-start, IPC endpoint).
+- **ConfigManager** — Persists to `~/.config/Oai/config.json` (window position, language, auto-start, IPC endpoint).
 - **MainWindow** — Frameless, always-on-top, transparent 124×200 window. Owns the animation engine, effects overlay, tip bubble, settings panel, and system tray.
 
 ### Node.js Gateways (gateways/)
 
 Each gateway adapter normalizes tool-specific events into the 17 canonical events and sends them over TCP IPC:
 
-- **shared/** (`@orai/shared`) — Platform-agnostic TCP client used by all gateways.
-- **orai-gateway/** — CLI tool for sending events and health checks.
-- **claude-code/** — 14 hook definitions for Claude Code's `settings.json`. Install: `npx @huangcheng/orai-claude-code`.
+- **shared/** (`@oai/shared`) — Platform-agnostic TCP client used by all gateways.
+- **oai-gateway/** — CLI tool for sending events and health checks.
+- **claude-code/** — 14 hook definitions for Claude Code's `settings.json`. Install: `npx @huangcheng/oai-claude-code`.
 - **codex/** — JSONL stream parser + 6 hook definitions for Codex.
 - **opencode/** — Dynamic plugin that auto-loads in OpenCode.
 

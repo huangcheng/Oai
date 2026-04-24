@@ -44,7 +44,7 @@ void SpritePackManager::initialize(const QString &builtInDir, const QString &use
     // Load default pack (first available, or fallback)
     if (!m_packs.isEmpty()) {
         // Try to load 'clippy' as default, or first available
-        QString defaultPackId = "com.oraipet.clippy";
+        QString defaultPackId = "com.oaipet.clippy";
         if (!m_packs.contains(defaultPackId)) {
             defaultPackId = m_packs.firstKey();
         }

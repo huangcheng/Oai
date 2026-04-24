@@ -1,14 +1,14 @@
 /**
- * ipc.mjs — IPC transport for Orai desktop pet.
+ * ipc.mjs — IPC transport for Oai desktop pet.
  *
  * Uses TCP localhost (127.0.0.1:52847) for cross-platform compatibility.
  *
  * Usage:
- *   import { getEndpoint, sendToOrai } from './ipc.mjs';
+ *   import { getEndpoint, sendToOai } from './ipc.mjs';
  *
  *   const endpoint = getEndpoint();                        // auto-detect
  *   const endpoint = getEndpoint('127.0.0.1:99999');       // override
- *   await sendToOrai({ type: 'event', source: 'opencode', event: 'session.start' });
+ *   await sendToOai({ type: 'event', source: 'opencode', event: 'session.start' });
  */
 
 import { createConnection } from 'node:net';
@@ -28,7 +28,7 @@ export function getEndpoint(override) {
 // ── Send a message ─────────────────────────────────────────────────────────
 
 /**
- * Send a JSON message to the Orai desktop pet via IPC.
+ * Send a JSON message to the Oai desktop pet via IPC.
  *
  * @param {object} message  Must have at least `type` field.
  * @param {object} [opts]
@@ -36,7 +36,7 @@ export function getEndpoint(override) {
  * @param {number} [opts.timeout]   Connection timeout in ms (default 3000)
  * @returns {Promise<void>}
  */
-export function sendToOrai(message, opts = {}) {
+export function sendToOai(message, opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const timeout  = opts.timeout ?? 3000;
 
@@ -52,7 +52,7 @@ export function sendToOrai(message, opts = {}) {
 
     client.on('error', (err) => {
       if (err.code === 'ECONNREFUSED') {
-        reject(new Error(`Orai IPC endpoint not reachable: ${endpoint}\nIs the Orai desktop pet running?`));
+        reject(new Error(`Oai IPC endpoint not reachable: ${endpoint}\nIs the Oai desktop pet running?`));
       } else {
         reject(new Error(`IPC error (${endpoint}): ${err.message}`));
       }
@@ -60,7 +60,7 @@ export function sendToOrai(message, opts = {}) {
 
     const timer = setTimeout(() => {
       client.destroy();
-      reject(new Error(`Timeout connecting to Orai IPC endpoint: ${endpoint}`));
+      reject(new Error(`Timeout connecting to Oai IPC endpoint: ${endpoint}`));
     }, timeout);
 
     client.on('close', () => clearTimeout(timer));

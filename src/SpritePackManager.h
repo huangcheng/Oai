@@ -14,7 +14,7 @@ class SpritePack;
  *
  * SpritePackManager scans multiple directories for sprite packs:
  * - Built-in packs (app directory)
- * - User packs (~/.config/Orai/packs/)
+ * - User packs (~/.config/Oai/packs/)
  *
  * Supports:
  * - Hot-reload via file system watching
