@@ -193,10 +193,11 @@ install(TARGETS Oai
 )
 
 # --- Generate official packs -------------------------------------------------
-# Generate clippy.opk from the pack directory during build
+# Generate .opk packs from pack directories during build
 set(PACKS_DIR ${CMAKE_BINARY_DIR}/packs)
 file(MAKE_DIRECTORY ${PACKS_DIR})
 
+# Clippy pack (has external animations.json definitions file)
 add_custom_command(
     OUTPUT ${PACKS_DIR}/clippy.opk
     COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/clippy.opk --format=zip --
@@ -212,7 +213,29 @@ add_custom_command(
     COMMENT "Generating clippy.opk"
     WORKING_DIRECTORY ${PACKS_DIR}
 )
-add_custom_target(generate_packs ALL DEPENDS ${PACKS_DIR}/clippy.opk)
+
+# ClippyJS agent packs (inline animations in manifest.json, no definitions file)
+set(CLIPPYJS_PACKS bonzi f1 genie genius links merlin peedy rocky rover)
+set(ALL_PACK_OPKS ${PACKS_DIR}/clippy.opk)
+
+foreach(pack ${CLIPPYJS_PACKS})
+    add_custom_command(
+        OUTPUT ${PACKS_DIR}/${pack}.opk
+        COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.opk --format=zip --
+            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
+            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
+            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
+        DEPENDS
+            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
+            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
+            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
+        COMMENT "Generating ${pack}.opk"
+        WORKING_DIRECTORY ${PACKS_DIR}
+    )
+    list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
+endforeach()
+
+add_custom_target(generate_packs ALL DEPENDS ${ALL_PACK_OPKS})
 add_dependencies(Oai generate_packs)
 
 # Install the generated packs
@@ -238,6 +261,13 @@ if(APPLE)
         MACOSX_PACKAGE_LOCATION "Resources/packs"
     )
     target_sources(Oai PRIVATE ${PACKS_DIR}/clippy.opk)
+
+    foreach(pack ${CLIPPYJS_PACKS})
+        set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/packs"
+        )
+        target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
+    endforeach()
 
     add_custom_command(TARGET Oai POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3

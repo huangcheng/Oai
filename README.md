@@ -314,9 +314,15 @@ The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
 
 ## Asset Attribution
 
-- Character animations: Clippy Classic pack (Microsoft Office Assistant)
+- Character sprite sheets & animation data: [clippyjs/clippy.js](https://github.com/clippyjs/clippy.js) (MIT license) — Clippy, Bonzi, F1, Genie, Genius, Links, Merlin, Peedy, Rocky, Rover
 - Visual effects: Custom-designed Lottie effect animations (MIT license)
 - Animation engine: [Samsung rlottie](https://github.com/Samsung/rlottie) (MIT license)
+
+## Acknowledgements
+
+- [clippyjs/clippy.js](https://github.com/clippyjs/clippy.js) — The original JavaScript library that brought Clippy and friends back to the web. All 10 Office Assistant character sprite sheets and animation definitions are sourced from this project.
+- [pi0/clippyjs](https://github.com/pi0/clippyjs) — Modern TypeScript rewrite of ClippyJS.
+- [thebeebs/OfficeAssistant](https://github.com/thebeebs/OfficeAssistant) — The original Microsoft Office Assistant C++ source code.
 
 ## License
 
