@@ -1,17 +1,14 @@
 #include "IpcServer.h"
+#include "UdpWorker.h"
 
-#include <QUdpSocket>
+#include <QThread>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QHostAddress>
 #include <QDebug>
 
 IpcServer::IpcServer(QObject *parent)
     : QObject(parent)
-    , m_socket(new QUdpSocket(this))
 {
-    connect(m_socket, &QUdpSocket::readyRead,
-            this, &IpcServer::onReadyRead);
 }
 
 IpcServer::~IpcServer()
@@ -21,33 +18,47 @@ IpcServer::~IpcServer()
 
 bool IpcServer::start(const QString &endpoint)
 {
-    int colonPos = endpoint.lastIndexOf(':');
-    if (colonPos <= 0) {
-        qWarning() << "IPC: Invalid endpoint format (expected host:port):" << endpoint;
+    if (m_thread) {
+        qWarning() << "IPC: Server already running";
         return false;
     }
 
-    QString host = endpoint.left(colonPos);
-    quint16 port = static_cast<quint16>(endpoint.mid(colonPos + 1).toUInt());
+    m_thread = new QThread(this);
+    m_worker = new UdpWorker();
+    m_worker->moveToThread(m_thread);
 
-    QHostAddress address;
-    if (!address.setAddress(host)) {
-        qWarning() << "IPC: Invalid host address:" << host;
-        return false;
-    }
+    connect(m_thread, &QThread::started, m_worker, [this, endpoint]() {
+        m_worker->start(endpoint);
+    });
 
-    if (!m_socket->bind(address, port)) {
-        qWarning() << "IPC: Failed to bind UDP on" << endpoint
-                   << m_socket->errorString();
-        return false;
-    }
-    qDebug() << "IPC: UDP server listening on:" << endpoint;
+    connect(m_worker, &UdpWorker::started, this, [endpoint]() {
+        qDebug() << "IPC: UDP server listening on:" << endpoint;
+    });
+
+    connect(m_worker, &UdpWorker::stopped, this, []() {
+        qDebug() << "IPC: UDP worker stopped";
+    });
+
+    connect(m_worker, &UdpWorker::errorOccurred, this, &IpcServer::onWorkerError);
+
+    connect(m_worker, &UdpWorker::datagramReceived, this, &IpcServer::onDatagramReceived);
+
+    connect(m_thread, &QThread::finished, m_worker, &QObject::deleteLater);
+
+    m_thread->start();
     return true;
 }
 
 void IpcServer::stop()
 {
-    m_socket->close();
+    if (m_thread) {
+        m_worker->stop();
+        m_thread->quit();
+        m_thread->wait();
+        delete m_thread;
+        m_thread = nullptr;
+        m_worker = nullptr;
+    }
 }
 
 bool IpcServer::restart(const QString &endpoint)
@@ -56,21 +67,14 @@ bool IpcServer::restart(const QString &endpoint)
     return start(endpoint);
 }
 
-void IpcServer::onReadyRead()
+void IpcServer::onDatagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port)
 {
-    while (m_socket->hasPendingDatagrams()) {
-        QByteArray datagram;
-        datagram.resize(m_socket->pendingDatagramSize());
+    parseMessage(data, sender, port);
+}
 
-        QHostAddress sender;
-        quint16 senderPort;
-
-        m_socket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
-
-        if (!datagram.isEmpty()) {
-            parseMessage(datagram.trimmed(), sender, senderPort);
-        }
-    }
+void IpcServer::onWorkerError(const QString &message)
+{
+    qWarning() << "IPC:" << message;
 }
 
 void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port)
@@ -100,8 +104,12 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
         QJsonObject pong;
         pong["type"] = "pong";
         QJsonDocument pongDoc(pong);
-        m_socket->writeDatagram(pongDoc.toJson(QJsonDocument::Compact) + "\n",
-                                sender, port);
+        QByteArray response = pongDoc.toJson(QJsonDocument::Compact) + "\n";
+        QMetaObject::invokeMethod(m_worker, "sendDatagram",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(QByteArray, response),
+                                  Q_ARG(QHostAddress, sender),
+                                  Q_ARG(quint16, port));
         emit pingReceived(sender, port);
     } else {
         qWarning() << "IPC: Unknown message type:" << type;

@@ -133,6 +133,8 @@ qt_add_executable(Oai
     src/UpdateChecker.h
     src/IpcServer.cpp
     src/IpcServer.h
+    src/UdpWorker.cpp
+    src/UdpWorker.h
     src/EventRouter.cpp
     src/EventRouter.h
     src/TipsEngine.cpp
