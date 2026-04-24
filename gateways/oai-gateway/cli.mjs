@@ -63,18 +63,24 @@ if (args.health) {
   }
 }
 
-// --- Tip mode ---------------------------------------------------------------
+// --- Send tip (standalone or appended to event) -----------------------------
 
-if (args.title) {
+async function sendTip(opts = {}) {
   const tipMessage = {
     type: 'tip',
-    title: args.title,
-    body: args.content || '',
-    animation: args.animation || '',
+    title: opts.title || args.title || '',
+    body: opts.content || args.content || '',
+    animation: opts.animation || args.animation || '',
   };
 
+  if (!tipMessage.title) return;
+  await sendToOai(tipMessage, { endpoint: opts.endpoint || args.endpoint, retries: 2 });
+}
+
+// Standalone tip mode (no event args)
+if (args.title && !args.source && !args.event) {
   try {
-    await sendToOai(tipMessage, { endpoint: args.endpoint, retries: 2 });
+    await sendTip();
   } catch (err) {
     console.error(err.message);
     process.exit(1);
@@ -85,24 +91,22 @@ if (args.title) {
 // --- Event mode ------------------------------------------------------------
 
 if (!args.source || !args.event) {
-  if (!args.title) {
-    console.error('Usage: oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
-    console.error('       oai-gateway --title <title> [--content <body>] [--animation <name>] [--endpoint <path>]');
-    console.error('       oai-gateway --ping [--endpoint <path>]');
-    console.error('');
-    console.error('Sources: opencode, claude-code, codex');
-    console.error('Events: session.start, session.end, session.idle, session.error,');
-    console.error('        prompt.submitted, tool.before, tool.after, tool.failed,');
-    console.error('        permission.requested, permission.denied, permission.response,');
-    console.error('        subagent.started, subagent.stopped, notification.sent,');
-    console.error('        file.edited, file.watched, todo.updated');
-    console.error('');
-    console.error('Animations: wave, alert, explain, congratulate, thinking,');
-    console.error('            sendmail, getattentionyawn, rest, etc.');
-    console.error('');
-    console.error(`Platform: ${platform}  →  endpoint: ${getEndpoint()}`);
-    process.exit(1);
-  }
+  console.error('Usage: oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--title <title>] [--content <body>] [--endpoint <path>]');
+  console.error('       oai-gateway --title <title> [--content <body>] [--animation <name>] [--endpoint <path>]');
+  console.error('       oai-gateway --ping [--endpoint <path>]');
+  console.error('');
+  console.error('Sources: opencode, claude-code, codex');
+  console.error('Events: session.start, session.end, session.idle, session.error,');
+  console.error('        prompt.submitted, tool.before, tool.after, tool.failed,');
+  console.error('        permission.requested, permission.denied, permission.response,');
+  console.error('        subagent.started, subagent.stopped, notification.sent,');
+  console.error('        file.edited, file.watched, todo.updated');
+  console.error('');
+  console.error('Animations: wave, alert, explain, congratulate, thinking,');
+  console.error('            sendmail, getattentionyawn, rest, etc.');
+  console.error('');
+  console.error(`Platform: ${platform}  →  endpoint: ${getEndpoint()}`);
+  process.exit(1);
 }
 
 // --- Auto-detect session name ------------------------------------------------
@@ -151,7 +155,12 @@ if (args['file-path']) {
 // --- Connect and send -------------------------------------------------------
 
 try {
+  // Send the event
   await sendToOai(message, { endpoint: args.endpoint, retries: 2 });
+  // Also send a tip if title/content provided alongside event
+  if (args.title) {
+    await sendTip();
+  }
 } catch (err) {
   console.error(err.message);
   process.exit(1);

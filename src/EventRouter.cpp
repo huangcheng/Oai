@@ -130,26 +130,28 @@ void EventRouter::loadFromSpritePack(const SpritePack *pack)
         return;
     }
 
-    // Clear existing event map
-    m_eventMap.clear();
+    // Ensure defaults are initialized so tip text is available
+    if (m_eventMap.isEmpty()) {
+        initEventMap();
+    }
 
-    // Build event map from pack
+    // Merge pack animation names into existing event map, preserving tip text
     for (auto it = eventMap.begin(); it != eventMap.end(); ++it) {
         const QString eventName = it.key();
         const QString animationName = it.value();
 
-        EventAction action;
-        action.animation = animationName;
-
-        // Keep tip text from default map (or could be extended to load from pack)
-        // For now, use empty tips - tips can be added later
-        action.tipTitle = "";
-        action.tipBody = "";
-
-        m_eventMap[eventName] = action;
+        if (m_eventMap.contains(eventName)) {
+            // Update animation but keep existing tip text
+            m_eventMap[eventName].animation = animationName;
+        } else {
+            // New event not in defaults — add with animation only
+            EventAction action;
+            action.animation = animationName;
+            m_eventMap[eventName] = action;
+        }
     }
 
-    qDebug() << "EventRouter: Loaded" << m_eventMap.size() << "event mappings from sprite pack";
+    qDebug() << "EventRouter: Merged" << eventMap.size() << "animation mappings from sprite pack";
 }
 
 bool EventRouter::validateEvent(const QJsonObject &event) const

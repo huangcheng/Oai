@@ -15,16 +15,18 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Run
-open build/Qlippy.app          # macOS
-./build/Qlippy                 # Linux
+open build/Oai.app             # macOS
+./build/Oai                    # Linux
 
-# Tests
+# Tests (all)
 cd build && ctest
 
-# Gateway CLI
-npm install -g @huangcheng/oai-gateway
-oai-gateway send session.start    # send test event
-oai-gateway health                # check IPC server
+# Single test
+cd build && ./tests/test_ipc_animations
+
+# Gateway CLI (uses --flag syntax, not subcommands)
+oai-gateway --source claude-code --event session.start   # send test event
+oai-gateway --ping                                        # health check
 ```
 
 ## Architecture
@@ -33,31 +35,29 @@ oai-gateway health                # check IPC server
 
 The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips → UI**
 
-- **IpcServer** — TCP server on `127.0.0.1:52847`. Accepts newline-delimited JSON messages (`event`, `tip`, `ping`/`pong`).
+- **IpcServer / UdpWorker** — UDP server on `127.0.0.1:52847` (runs UdpWorker on a separate QThread). Accepts newline-delimited JSON messages (`event`, `tip`, `ping`/`pong`).
 - **EventRouter** — Maps 17 canonical event names (e.g. `session.start`, `tool.before`, `file.edited`) to `EventAction` structs containing animation name, effect name, tip title/body. The event set is fixed — gateways normalize tool-specific events into these.
-- **SpriteAnimationEngine** — Plays frame-based animations from sprite sheets using definitions in `animations.json`. Frame dimensions and grid layout are configurable per sprite pack.
 - **LottieAnimationEngine** — Primary animation engine using rlottie to play Lottie JSON character animations from sprite packs.
+- **SpriteAnimationEngine** — Legacy fallback: plays frame-based animations from sprite sheets using definitions in `animations.json`.
 - **LottieEffectOverlay** — Renders visual effects (sparkles, confetti, alert-pulse, etc.) from `assets/lottie/effects/` with offset positioning above the character.
-- **SpritePack** — Data structure for loaded sprite packs with manifest parsing.
-- **SpritePackManager** — Discovers, loads, and switches between sprite packs.
+- **SpritePack / SpritePackManager** — Pack data structure with manifest parsing; discovers, loads, and switches between `.opk` sprite packs.
 - **TipBubbleWidget** — Win98-style speech bubble with asymmetric tail, fade animations, auto-dismiss (6s status / 12s tips).
 - **TipsEngine** — Pattern matcher on a 30-second event window. Detects behaviors (repeated errors, rapid edits, idle, permission denials) and suggests contextual tips. 5-minute cooldown per tip type.
 - **ConfigManager** — Persists to `~/.config/Oai/config.json` (window position, language, auto-start, IPC endpoint).
+- **SettingsPanelWidget** — UI panel for configuring settings (language, sprite pack, endpoint).
+- **UpdateChecker** — Checks for new releases via network.
 - **MainWindow** — Frameless, always-on-top, transparent 124×200 window. Owns the animation engine, effects overlay, tip bubble, settings panel, and system tray.
 
-### Node.js Gateways (gateways/)
+### Node.js Gateway (gateways/)
 
-Each gateway adapter normalizes tool-specific events into the 17 canonical events and sends them over TCP IPC:
+- **oai-gateway/** (`@eastlake/oai-gateway`) — CLI tool for sending events and health checks. Contains `lib/ipc.mjs` for the UDP transport layer.
+- **shared/** — Legacy shared IPC module (package `@oai/shared`).
 
-- **shared/** (`@oai/shared`) — Platform-agnostic TCP client used by all gateways.
-- **oai-gateway/** — CLI tool for sending events and health checks.
-- **claude-code/** — 14 hook definitions for Claude Code's `settings.json`. Install: `npx @huangcheng/oai-claude-code`.
-- **codex/** — JSONL stream parser + 6 hook definitions for Codex.
-- **opencode/** — Dynamic plugin that auto-loads in OpenCode.
+Gateways are pure ES modules (`.mjs`) with zero npm dependencies — only Node.js built-ins. Requires Node.js >= 18.
 
 ### IPC Protocol
 
-Transport: TCP, newline-delimited JSON. Fire-and-forget for events (no response expected). Messages:
+Transport: **UDP**, newline-delimited JSON. Fire-and-forget for events (no response expected). Messages:
 ```json
 {"type":"event","source":"claude-code","event":"tool.before","toolName":"Read"}
 {"type":"tip","title":"Hello","body":"World","animation":"wave"}
@@ -71,8 +71,9 @@ Transport: TCP, newline-delimited JSON. Fire-and-forget for events (no response 
 ## Key Conventions
 
 - C++17 with Qt6 (Core, Gui, Widgets, Network, LinguistTools, Test). Qt signals/slots throughout.
-- rlottie v0.2 fetched via CMake FetchContent (patched for Apple Silicon NEON).
+- rlottie v0.2 fetched via CMake FetchContent (patched for Apple Silicon NEON and GCC 13+ `<limits>` include).
 - Animation names: PascalCase in C++ (`SpriteAnimationEngine`), snake_case over IPC. The engine handles mapping.
-- Gateways are pure ES modules (`.mjs`) with zero npm dependencies — only Node.js built-ins.
-- i18n: Chinese translation in `Qlippy_zh_CN.ts`. All user-visible strings use `tr()`.
-- Tests use Qt Test framework on a separate TCP port (52848).
+- i18n: Chinese translation in `Oai_zh_CN.ts`. All user-visible strings use `tr()`.
+- Tests use Qt Test framework on a separate UDP port (52848) to avoid conflicts with running app.
+- App version set in `CMakeLists.txt` (`project(Oai VERSION x.y.z)`), passed to C++ via `PROJECT_VERSION` compile definition.
+- macOS bundle hides Dock icon via `scripts/hide_dock_icon.py` post-build step.
