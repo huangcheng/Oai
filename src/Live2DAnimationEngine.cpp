@@ -678,9 +678,18 @@ QRect Live2DAnimationEngine::characterBounds() const
 void Live2DAnimationEngine::paint(QPainter *painter, const QRect &bounds)
 {
     if (!m_modelLoaded || m_image.isNull()) return;
-    // Only draw the character portion of the FBO (ignore transparent margins).
-    // Fall back to the full image until bounds have been measured.
-    const QRect src = m_characterBounds.isNull() ? m_image.rect() : m_characterBounds;
+    // Use the full render width (motion can swing arms / hair beyond the
+    // static alpha bbox — cropping horizontally clips those frames) and only
+    // crop the transparent top margin. A small vertical pad keeps head-bob
+    // and arm-raise motions inside the kept region.
+    QRect src = m_image.rect();
+    if (!m_characterBounds.isNull()) {
+        const int padTop = std::max(16, m_characterBounds.height() / 6);
+        const int y = std::max(0, m_characterBounds.y() - padTop);
+        const int h = std::min(m_image.height() - y,
+                               m_characterBounds.height() + padTop);
+        src = QRect(0, y, m_image.width(), h);
+    }
     painter->drawImage(bounds, m_image, src);
 }
 

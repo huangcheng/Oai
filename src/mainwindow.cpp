@@ -420,8 +420,14 @@ void MainWindow::onActivePackChanged()
             if (!m_live2dEngine) return;
             const QRect b = m_live2dEngine->characterBounds();
             if (b.isNull() || b.isEmpty()) return;
-            const int displayW = static_cast<int>(b.width() * displayScale);
-            const int displayH = static_cast<int>(b.height() * displayScale);
+            // Match Live2DAnimationEngine::paint()'s source rect: full frame
+            // width + measured height + vertical pad for motion headroom.
+            // Horizontal crop would clip arm/hair swings during Tap motions.
+            const int padTop = std::max(16, b.height() / 6);
+            const int srcH = std::min(m_live2dEngine->renderHeight() - std::max(0, b.y() - padTop),
+                                      b.height() + padTop);
+            const int displayW = static_cast<int>(m_live2dEngine->renderWidth() * displayScale);
+            const int displayH = static_cast<int>(srcH * displayScale);
             const int tipSpace = height() - petRect().height();
             m_petSize = QSize(displayW, displayH);
             setFixedSize(displayW, displayH + tipSpace);
