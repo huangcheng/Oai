@@ -337,6 +337,17 @@ void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority
     }
 }
 
+void SpriteAnimationEngine::stop()
+{
+    m_timer.stop();
+    m_idleTimer.stop();
+    m_playing = false;
+    m_queue.clear();
+    m_current = AnimationDef{};
+    m_currentFrameIndex = 0;
+    m_currentFrameElapsed = 0;
+}
+
 void SpriteAnimationEngine::paint(QPainter *painter, const QRect &bounds)
 {
     if (m_playing && !m_current.frames.isEmpty()) {

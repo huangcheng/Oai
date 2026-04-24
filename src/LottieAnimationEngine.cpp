@@ -180,6 +180,17 @@ void LottieAnimationEngine::playAnimation(const QString &name, Priority priority
     }
 }
 
+void LottieAnimationEngine::stop()
+{
+    m_timer.stop();
+    m_idleTimer.stop();
+    m_playing = false;
+    m_queue.clear();
+    m_current = AnimationState{};
+    m_currentFrame = 0;
+    m_elapsedMs = 0.0;
+}
+
 void LottieAnimationEngine::paint(QPainter *painter, const QRect &bounds)
 {
     if (!m_playing || !m_current.animation) {

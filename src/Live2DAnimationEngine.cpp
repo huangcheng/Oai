@@ -565,6 +565,16 @@ void Live2DAnimationEngine::playAnimation(const QString &name, Priority priority
     }
 }
 
+void Live2DAnimationEngine::stop()
+{
+    m_timer.stop();
+    m_idleTimer.stop();
+    m_playing = false;
+    m_queue.clear();
+    m_currentMotion.clear();
+    m_image = QImage();  // clear last rendered frame so paint() returns early
+}
+
 void Live2DAnimationEngine::paint(QPainter *painter, const QRect &bounds)
 {
     if (!m_modelLoaded || m_image.isNull()) return;

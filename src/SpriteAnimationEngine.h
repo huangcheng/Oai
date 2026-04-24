@@ -41,6 +41,9 @@ public:
     // Play named animation with given priority
     void playAnimation(const QString &name, Priority priority = NormalPriority);
 
+    // Stop playback and clear state (used when switching to a different engine).
+    void stop();
+
     // Render current frame onto painter
     void paint(QPainter *painter, const QRect &bounds);
 

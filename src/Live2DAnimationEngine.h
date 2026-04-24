@@ -59,6 +59,9 @@ public:
      */
     void playAnimation(const QString &name, Priority priority = NormalPriority);
 
+    /** @brief Stop playback and clear state (used when switching to a different engine). */
+    void stop();
+
     /** @brief Render the current frame into a QPainter target rect. */
     void paint(QPainter *painter, const QRect &bounds);
 

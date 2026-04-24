@@ -23,6 +23,7 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QUrl>
+#include <algorithm>
 
 MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent)
     : QWidget(parent)
@@ -328,16 +329,33 @@ void MainWindow::onActivePackChanged()
         return;
     }
 
-    // Resize window based on pack frame dimensions
+    // Resize window based on pack frame dimensions × the pack's displayScale.
+    // Default displayScale is 1.0 (native resolution). Sprite packs can opt
+    // into a larger rendered size per-manifest to match Live2D's 300×300,
+    // trading sharpness for visual parity — it's a per-pack call, not a
+    // global normalization (which blurs low-res ClippyJS art unconditionally).
     int fw = pack->characterConfig().frameWidth;
     int fh = pack->characterConfig().frameHeight;
+    const float displayScale = pack->characterConfig().displayScale;
     if (fw > 0 && fh > 0) {
+        const int displayW = static_cast<int>(fw * displayScale);
+        const int displayH = static_cast<int>(fh * displayScale);
         int tipSpace = height() - petRect().height();
-        m_petSize = QSize(fw, fh);
-        setFixedSize(fw, fh + tipSpace);
+        m_petSize = QSize(displayW, displayH);
+        setFixedSize(displayW, displayH + tipSpace);
     }
 
-    // Load animations based on pack type
+    // Load animations based on pack type.
+    // Stop every engine first: all three share the paint path, and Live2D
+    // takes priority in paintEvent if isPlaying() is true — without this,
+    // switching from a Live2D pack to a sprite pack would leave the old
+    // Live2D frame squished into the sprite pack's smaller petRect.
+    m_engine->stop();
+    m_lottieEngine->stop();
+#ifdef OAI_LIVE2D_SUPPORT
+    m_live2dEngine->stop();
+#endif
+
 #ifdef OAI_LIVE2D_SUPPORT
     if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
         m_live2dEngine->loadFromCharacterPack(pack);
