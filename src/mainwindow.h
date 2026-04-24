@@ -8,6 +8,9 @@
 
 class SpriteAnimationEngine;
 class LottieAnimationEngine;
+#ifdef OAI_LIVE2D_SUPPORT
+class Live2DAnimationEngine;
+#endif
 class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
@@ -26,6 +29,9 @@ public:
 
     SpriteAnimationEngine *animationEngine() const { return m_engine; }
     LottieAnimationEngine *lottieEngine() const { return m_lottieEngine; }
+#ifdef OAI_LIVE2D_SUPPORT
+    Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
+#endif
     TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
 
     void setSystemTray(SystemTray *tray);
@@ -63,6 +69,9 @@ private:
 
     SpriteAnimationEngine *m_engine;
     LottieAnimationEngine *m_lottieEngine;
+#ifdef OAI_LIVE2D_SUPPORT
+    Live2DAnimationEngine *m_live2dEngine = nullptr;
+#endif
     ConfigManager *m_config;
     TipBubbleWidget *m_tipBubble;
     SettingsPanelWidget *m_settingsPanel;

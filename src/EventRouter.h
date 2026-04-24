@@ -7,6 +7,9 @@
 
 class SpriteAnimationEngine;
 class LottieAnimationEngine;
+#ifdef OAI_LIVE2D_SUPPORT
+class Live2DAnimationEngine;
+#endif
 class TipBubbleWidget;
 class TipsEngine;
 class SpritePack;
@@ -20,6 +23,9 @@ public:
 
     void setAnimationEngine(SpriteAnimationEngine *engine) { m_engine = engine; }
     void setLottieEngine(LottieAnimationEngine *engine) { m_lottieEngine = engine; }
+#ifdef OAI_LIVE2D_SUPPORT
+    void setLive2dEngine(Live2DAnimationEngine *engine) { m_live2dEngine = engine; }
+#endif
     void setTipBubble(TipBubbleWidget *bubble) { m_tipBubble = bubble; }
     void setTipsEngine(TipsEngine *tips) { m_tips = tips; }
 
@@ -47,6 +53,9 @@ private:
 
     SpriteAnimationEngine *m_engine = nullptr;
     LottieAnimationEngine *m_lottieEngine = nullptr;
+#ifdef OAI_LIVE2D_SUPPORT
+    Live2DAnimationEngine *m_live2dEngine = nullptr;
+#endif
     TipBubbleWidget *m_tipBubble = nullptr;
     TipsEngine *m_tips = nullptr;
 

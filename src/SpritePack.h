@@ -30,7 +30,8 @@ public:
      */
     enum class EngineType {
         Lottie,      ///< Lottie JSON vector animations
-        SpriteSheet  ///< Sprite sheet with frame grid
+        SpriteSheet, ///< Sprite sheet with frame grid
+        Live2D       ///< Live2D Cubism model
     };
 
     /**
@@ -93,10 +94,11 @@ public:
     struct CharacterConfig {
         EngineType engineType = EngineType::Lottie;
         QString spriteSheet;      ///< Path to sprite sheet (for SpriteSheet type)
-        int frameWidth = 0;       ///< Frame width (for SpriteSheet type)
-        int frameHeight = 0;      ///< Frame height (for SpriteSheet type)
+        int frameWidth = 0;       ///< Frame/render width
+        int frameHeight = 0;      ///< Frame/render height
         QString animDirectory;    ///< Directory containing Lottie files (for Lottie type)
         QString definitions;      ///< Path to animations.json (for SpriteSheet type, optional)
+        QString modelJson;        ///< Path to .model3.json (for Live2D type)
     };
 
     SpritePack() = default;
@@ -176,6 +178,12 @@ public:
      * @return Absolute path to Lottie JSON, or empty if not found
      */
     QString lottieAnimationPath(const QString &animationName) const;
+
+    /**
+     * @brief Get absolute path to model JSON file (for Live2D type)
+     * @return Absolute path to .model3.json, or empty if not Live2D type
+     */
+    QString modelJsonPath() const;
 
     /**
      * @brief Get absolute path to effect file

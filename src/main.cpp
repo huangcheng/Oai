@@ -4,6 +4,9 @@
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
+#ifdef OAI_LIVE2D_SUPPORT
+#include "Live2DAnimationEngine.h"
+#endif
 #include "LottieEffectOverlay.h"
 #include "SpritePackManager.h"
 #include "SpritePack.h"
@@ -184,6 +187,9 @@ int main(int argc, char *argv[])
     EventRouter eventRouter;
     eventRouter.setAnimationEngine(w.animationEngine());
     eventRouter.setLottieEngine(w.lottieEngine());
+#ifdef OAI_LIVE2D_SUPPORT
+    eventRouter.setLive2dEngine(w.live2dEngine());
+#endif
     eventRouter.setTipBubble(w.tipBubbleWidget());
     eventRouter.setTipsEngine(&tipsEngine);
 

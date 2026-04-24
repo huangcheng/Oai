@@ -1,6 +1,9 @@
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
+#ifdef OAI_LIVE2D_SUPPORT
+#include "Live2DAnimationEngine.h"
+#endif
 #include "SpritePack.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
@@ -57,7 +60,12 @@ void EventRouter::routeEvent(const QJsonObject &event)
     // Trigger animation — always use HighPriority so event animations
     // immediately interrupt idle/previous animations
     if (!action.animation.isEmpty()) {
-        // Use the engine that has animations loaded
+        // Use the engine that has animations loaded (Live2D > Lottie > Sprite)
+#ifdef OAI_LIVE2D_SUPPORT
+        if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+            m_live2dEngine->playAnimation(action.animation, Live2DAnimationEngine::HighPriority);
+        } else
+#endif
         if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
             m_lottieEngine->playAnimation(action.animation, LottieAnimationEngine::HighPriority);
         } else if (m_engine) {

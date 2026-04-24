@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
+#ifdef OAI_LIVE2D_SUPPORT
+#include "Live2DAnimationEngine.h"
+#endif
 #include "SpritePackManager.h"
 #include "SpritePack.h"
 #include "ConfigManager.h"
@@ -37,6 +40,9 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     // Initialize subsystems
     m_engine = new SpriteAnimationEngine(this);
     m_lottieEngine = new LottieAnimationEngine(this);
+#ifdef OAI_LIVE2D_SUPPORT
+    m_live2dEngine = new Live2DAnimationEngine(this);
+#endif
 
     // Create floating widgets
     m_tipBubble = new TipBubbleWidget(nullptr); // no parent — separate top-level widget
@@ -68,6 +74,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             this, QOverload<>::of(&QWidget::update));
     connect(m_lottieEngine, &LottieAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
+#ifdef OAI_LIVE2D_SUPPORT
+    connect(m_live2dEngine, &Live2DAnimationEngine::frameChanged,
+            this, QOverload<>::of(&QWidget::update));
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -100,7 +110,12 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
 
     const QRect pet = petRect();
 
-    // Draw character animation (Lottie or sprite sheet)
+    // Draw character animation (Live2D, Lottie, or sprite sheet)
+#ifdef OAI_LIVE2D_SUPPORT
+    if (m_live2dEngine && m_live2dEngine->isPlaying()) {
+        m_live2dEngine->paint(&painter, pet);
+    } else
+#endif
     if (m_lottieEngine && m_lottieEngine->isPlaying()) {
         m_lottieEngine->paint(&painter, pet);
     } else if (m_engine) {
@@ -313,16 +328,25 @@ void MainWindow::onActivePackChanged()
         return;
     }
 
+    // Resize window based on pack frame dimensions
+    int fw = pack->characterConfig().frameWidth;
+    int fh = pack->characterConfig().frameHeight;
+    if (fw > 0 && fh > 0) {
+        int tipSpace = height() - petRect().height();
+        setFixedSize(fw, fh + tipSpace);
+    }
+
     // Load animations based on pack type
+#ifdef OAI_LIVE2D_SUPPORT
+    if (pack->characterConfig().engineType == SpritePack::EngineType::Live2D) {
+        m_live2dEngine->loadFromSpritePack(pack);
+    } else
+#endif
     if (pack->characterConfig().engineType == SpritePack::EngineType::Lottie) {
         m_lottieEngine->loadFromSpritePack(pack);
     } else {
         m_engine->loadFromSpritePack(pack);
     }
-
-    // Update window size based on pack
-    // TODO: Add window size configuration to sprite pack
-    // For now, keep default size
 
     update();  // Trigger repaint
 }

@@ -1,0 +1,577 @@
+#ifdef OAI_LIVE2D_SUPPORT
+
+// GLEW must be included BEFORE any Qt/OpenGL headers
+#include <GL/glew.h>
+
+#include "Live2DAnimationEngine.h"
+#include "SpritePack.h"
+
+#include <QPainter>
+#include <QDir>
+#include <QFile>
+#include <QElapsedTimer>
+#include <QRandomGenerator>
+#include <QDebug>
+#include <QOpenGLFunctions>
+
+// Live2D Cubism SDK
+#include <CubismFramework.hpp>
+#include <CubismModelSettingJson.hpp>
+#include <Model/CubismUserModel.hpp>
+#include <Motion/CubismMotion.hpp>
+#include <Motion/CubismMotionQueueEntry.hpp>
+#include <Physics/CubismPhysics.hpp>
+#include <Effect/CubismEyeBlink.hpp>
+#include <Effect/CubismBreath.hpp>
+#include <Effect/CubismPose.hpp>
+#include <Rendering/OpenGL/CubismRenderer_OpenGLES2.hpp>
+#include <Id/CubismIdManager.hpp>
+#include <CubismDefaultParameterId.hpp>
+#include <Utils/CubismString.hpp>
+
+using namespace Live2D::Cubism::Framework;
+using namespace Live2D::Cubism::Framework::DefaultParameterId;
+
+// ---------------------------------------------------------------------------
+// CubismAllocator — required by the framework
+// ---------------------------------------------------------------------------
+class OaiCubismAllocator : public Csm::ICubismAllocator
+{
+    void *Allocate(const Csm::csmSizeType size) override { return malloc(size); }
+    void Deallocate(void *addr) override { free(addr); }
+    void *AllocateAligned(const Csm::csmSizeType size, const Csm::csmUint32 align) override
+    {
+        size_t offset = align - 1 + sizeof(void *);
+        void *raw = malloc(size + offset);
+        if (!raw) return nullptr;
+        void **aligned = reinterpret_cast<void **>((reinterpret_cast<size_t>(raw) + offset) & ~(align - 1));
+        aligned[-1] = raw;
+        return aligned;
+    }
+    void DeallocateAligned(void *addr) override
+    {
+        if (addr) free(static_cast<void **>(addr)[-1]);
+    }
+};
+
+static OaiCubismAllocator s_allocator;
+static bool s_frameworkInitialized = false;
+
+static void ensureFrameworkInitialized()
+{
+    if (!s_frameworkInitialized) {
+        CubismFramework::Option opt;
+        opt.LogFunction = [](const char *msg) { qDebug() << "[Live2D]" << msg; };
+        opt.LoggingLevel = CubismFramework::Option::LogLevel_Warning;
+        CubismFramework::StartUp(&s_allocator, &opt);
+        CubismFramework::Initialize();
+        s_frameworkInitialized = true;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Pimpl — wraps CubismUserModel and all SDK objects
+// ---------------------------------------------------------------------------
+class Live2DAnimationEngine::CubismModel : public Csm::CubismUserModel
+{
+public:
+    CubismModel() : Csm::CubismUserModel() {}
+    ~CubismModel() override { release(); }
+
+    bool load(const QString &modelJsonPath, const QString &modelDir)
+    {
+        m_modelDir = modelDir.toStdString();
+        if (!m_modelDir.empty() && m_modelDir.back() != '/') m_modelDir += '/';
+
+        // --- model3.json ---
+        QByteArray jsonBuf = readFile(modelJsonPath);
+        if (jsonBuf.isEmpty()) return false;
+        m_setting = new CubismModelSettingJson(
+            reinterpret_cast<const Csm::csmByte *>(jsonBuf.constData()), jsonBuf.size());
+
+        // --- .moc3 ---
+        {
+            std::string path = m_modelDir + m_setting->GetModelFileName();
+            QByteArray buf = readFile(QString::fromStdString(path));
+            if (buf.isEmpty()) return false;
+            LoadModel(reinterpret_cast<const Csm::csmByte *>(buf.constData()), buf.size());
+        }
+
+        // --- Physics ---
+        if (strcmp(m_setting->GetPhysicsFileName(), "")) {
+            std::string path = m_modelDir + m_setting->GetPhysicsFileName();
+            QByteArray buf = readFile(QString::fromStdString(path));
+            if (!buf.isEmpty())
+                LoadPhysics(reinterpret_cast<const Csm::csmByte *>(buf.constData()), buf.size());
+        }
+
+        // --- Pose ---
+        if (strcmp(m_setting->GetPoseFileName(), "")) {
+            std::string path = m_modelDir + m_setting->GetPoseFileName();
+            QByteArray buf = readFile(QString::fromStdString(path));
+            if (!buf.isEmpty())
+                LoadPose(reinterpret_cast<const Csm::csmByte *>(buf.constData()), buf.size());
+        }
+
+        // --- Eye blink ---
+        if (m_setting->GetEyeBlinkParameterCount() > 0) {
+            _eyeBlink = CubismEyeBlink::Create(m_setting);
+        }
+
+        // --- Breath ---
+        {
+            _breath = CubismBreath::Create();
+            Csm::csmVector<CubismBreath::BreathParameterData> params;
+            params.PushBack(CubismBreath::BreathParameterData(
+                CubismFramework::GetIdManager()->GetId(ParamAngleX), 0.0f, 15.0f, 6.5345f, 0.5f));
+            params.PushBack(CubismBreath::BreathParameterData(
+                CubismFramework::GetIdManager()->GetId(ParamAngleY), 0.0f, 8.0f, 3.5345f, 0.5f));
+            params.PushBack(CubismBreath::BreathParameterData(
+                CubismFramework::GetIdManager()->GetId(ParamAngleZ), 0.0f, 10.0f, 5.5345f, 0.5f));
+            params.PushBack(CubismBreath::BreathParameterData(
+                CubismFramework::GetIdManager()->GetId(ParamBodyAngleX), 0.0f, 4.0f, 15.5345f, 0.5f));
+            _breath->SetParameters(params);
+        }
+
+        // --- Preload motions ---
+        for (Csm::csmInt32 g = 0; g < m_setting->GetMotionGroupCount(); ++g) {
+            const char *group = m_setting->GetMotionGroupName(g);
+            m_motionGroupNames.append(QString::fromUtf8(group));
+            Csm::csmInt32 count = m_setting->GetMotionCount(group);
+            for (Csm::csmInt32 i = 0; i < count; ++i) {
+                std::string motionPath = m_modelDir + m_setting->GetMotionFileName(group, i);
+                QByteArray buf = readFile(QString::fromStdString(motionPath));
+                if (buf.isEmpty()) continue;
+                Csm::csmString name = Csm::Utils::CubismString::GetFormatedString("%s_%d", group, i);
+                CubismMotion *motion = static_cast<CubismMotion *>(
+                    LoadMotion(reinterpret_cast<const Csm::csmByte *>(buf.constData()),
+                               buf.size(), name.GetRawString()));
+                if (motion) {
+                    const Csm::csmFloat32 fadeIn = m_setting->GetMotionFadeInTimeValue(group, i);
+                    const Csm::csmFloat32 fadeOut = m_setting->GetMotionFadeOutTimeValue(group, i);
+                    if (fadeIn >= 0.0f) motion->SetFadeInTime(fadeIn);
+                    if (fadeOut >= 0.0f) motion->SetFadeOutTime(fadeOut);
+                    m_motions[name] = motion;
+                }
+            }
+        }
+
+        // --- Renderer ---
+        // Will be created after GL context is current (in setupRenderer)
+
+        m_modelLoaded = true;
+        return true;
+    }
+
+    void setupRenderer(int width, int height)
+    {
+        if (!_model) return;
+        CreateRenderer(width, height);
+        // Textures
+        for (Csm::csmInt32 t = 0; t < m_setting->GetTextureCount(); ++t) {
+            std::string texPath = m_modelDir + m_setting->GetTextureFileName(t);
+            GLuint texId = loadTexture(QString::fromStdString(texPath));
+            GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->BindTexture(t, texId);
+            m_textures.append(texId);
+        }
+        GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->IsPremultipliedAlpha(false);
+    }
+
+    Csm::CubismMotionQueueEntryHandle startMotion(const QString &group, int no, int priority)
+    {
+        Csm::csmString name = Csm::Utils::CubismString::GetFormatedString(
+            "%s_%d", group.toUtf8().constData(), no);
+        CubismMotion *motion = static_cast<CubismMotion *>(m_motions[name]);
+        if (!motion) return Csm::InvalidMotionQueueEntryHandleValue;
+        return _motionManager->StartMotionPriority(motion, false, priority);
+    }
+
+    bool isMotionFinished() const
+    {
+        return _motionManager ? _motionManager->IsFinished() : true;
+    }
+
+    void update(float deltaSeconds)
+    {
+        if (!_model) return;
+        _model->LoadParameters();
+
+        // Update motions
+        _motionManager->UpdateMotion(_model, deltaSeconds);
+
+        _model->SaveParameters();
+
+        // Eye blink
+        if (_eyeBlink) _eyeBlink->UpdateParameters(_model, deltaSeconds);
+        // Breath
+        if (_breath) _breath->UpdateParameters(_model, deltaSeconds);
+        // Physics
+        if (_physics) _physics->Evaluate(_model, deltaSeconds);
+        // Pose
+        if (_pose) _pose->UpdateParameters(_model, deltaSeconds);
+
+        _model->Update();
+    }
+
+    void draw(int width, int height)
+    {
+        if (!_model) return;
+        CubismMatrix44 proj;
+        proj.LoadIdentity();
+        // Scale model to fit viewport
+        if (_model->GetCanvasWidth() > 1.0f) {
+            float aspect = static_cast<float>(width) / static_cast<float>(height);
+            if (aspect < 1.0f) {
+                proj.Scale(1.0f, aspect);
+            } else {
+                proj.Scale(1.0f / aspect, 1.0f);
+            }
+        }
+        proj.MultiplyByMatrix(_modelMatrix);
+        GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->SetMvpMatrix(&proj);
+        GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->DrawModel();
+    }
+
+    int motionCount(const QString &group) const
+    {
+        return m_setting ? m_setting->GetMotionCount(group.toUtf8().constData()) : 0;
+    }
+
+    QStringList motionGroupNames() const { return m_motionGroupNames; }
+    bool loaded() const { return m_modelLoaded; }
+
+    void release()
+    {
+        for (auto iter = m_motions.Begin(); iter != m_motions.End(); ++iter) {
+            Csm::ACubismMotion::Delete(iter->Second);
+        }
+        m_motions.Clear();
+        for (GLuint tex : m_textures) {
+            glDeleteTextures(1, &tex);
+        }
+        m_textures.clear();
+        delete m_setting;
+        m_setting = nullptr;
+        m_modelLoaded = false;
+    }
+
+private:
+    static QByteArray readFile(const QString &path)
+    {
+        QFile f(path);
+        if (!f.open(QIODevice::ReadOnly)) {
+            qWarning() << "Live2D: Cannot open file:" << path
+                       << "exists:" << QFile::exists(path)
+                       << "error:" << f.errorString();
+            return {};
+        }
+        return f.readAll();
+    }
+
+    static GLuint loadTexture(const QString &path)
+    {
+        QImage img(path);
+        if (img.isNull()) {
+            qWarning() << "Live2D: Cannot load texture:" << path;
+            return 0;
+        }
+        img = img.convertToFormat(QImage::Format_RGBA8888);
+
+        GLuint tex = 0;
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                     img.width(), img.height(), 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, img.constBits());
+        if (__glewGenerateMipmap) __glewGenerateMipmap(GL_TEXTURE_2D);
+        return tex;
+    }
+
+    std::string m_modelDir;
+    CubismModelSettingJson *m_setting = nullptr;
+    Csm::csmMap<Csm::csmString, Csm::ACubismMotion *> m_motions;
+    QStringList m_motionGroupNames;
+    QVector<GLuint> m_textures;
+    bool m_modelLoaded = false;
+};
+
+// ---------------------------------------------------------------------------
+// Live2DAnimationEngine public implementation
+// ---------------------------------------------------------------------------
+
+Live2DAnimationEngine::Live2DAnimationEngine(QObject *parent)
+    : QObject(parent)
+    , m_timer(this)
+    , m_idleTimer(this)
+{
+    ensureFrameworkInitialized();
+
+    m_timer.setInterval(16); // ~60fps
+    connect(&m_timer, &QTimer::timeout, this, &Live2DAnimationEngine::tick);
+
+    m_idleTimer.setSingleShot(true);
+    m_idleTimer.setInterval(m_idleTimeoutMs);
+    connect(&m_idleTimer, &QTimer::timeout, this, &Live2DAnimationEngine::startIdleAnimation);
+}
+
+Live2DAnimationEngine::~Live2DAnimationEngine()
+{
+    m_timer.stop();
+    m_idleTimer.stop();
+
+    // Must make context current to release GL resources
+    if (m_glContext && m_surface) {
+        m_glContext->makeCurrent(m_surface);
+    }
+    releaseModel();
+    releaseOpenGL();
+}
+
+bool Live2DAnimationEngine::initOpenGL()
+{
+    if (m_glContext) return true;
+
+    m_surface = new QOffscreenSurface(nullptr);
+    QSurfaceFormat fmt;
+    fmt.setRenderableType(QSurfaceFormat::OpenGL);
+    fmt.setMajorVersion(2);
+    fmt.setMinorVersion(1);
+    fmt.setProfile(QSurfaceFormat::CompatibilityProfile);
+    fmt.setDepthBufferSize(24);
+    fmt.setStencilBufferSize(8);
+    m_surface->setFormat(fmt);
+    m_surface->create();
+
+    m_glContext = new QOpenGLContext(this);
+    m_glContext->setFormat(fmt);
+    if (!m_glContext->create()) {
+        qWarning() << "Live2D: Failed to create OpenGL context";
+        return false;
+    }
+    if (!m_glContext->makeCurrent(m_surface)) {
+        qWarning() << "Live2D: Failed to make context current";
+        return false;
+    }
+
+    // Initialize GLEW (must be called after context is current)
+    glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        qWarning() << "Live2D: GLEW init failed:" << reinterpret_cast<const char *>(glewGetErrorString(err));
+        return false;
+    }
+
+    // Create FBO
+    m_fbo = new QOpenGLFramebufferObject(m_renderWidth, m_renderHeight,
+                                          QOpenGLFramebufferObject::CombinedDepthStencil);
+    return true;
+}
+
+void Live2DAnimationEngine::releaseOpenGL()
+{
+    delete m_fbo;
+    m_fbo = nullptr;
+    delete m_glContext;
+    m_glContext = nullptr;
+    delete m_surface;
+    m_surface = nullptr;
+}
+
+void Live2DAnimationEngine::releaseModel()
+{
+    delete m_cubismModel;
+    m_cubismModel = nullptr;
+    m_modelLoaded = false;
+    m_motionGroups.clear();
+    m_idleAnims.clear();
+    m_idleWeights.clear();
+}
+
+bool Live2DAnimationEngine::loadFromSpritePack(const SpritePack *pack)
+{
+    if (!pack || !pack->isValid()) return false;
+    if (pack->characterConfig().engineType != SpritePack::EngineType::Live2D) return false;
+
+    // Set render dimensions from pack
+    m_renderWidth = pack->characterConfig().frameWidth;
+    m_renderHeight = pack->characterConfig().frameHeight;
+
+    // Initialize OpenGL
+    if (!initOpenGL()) return false;
+    m_glContext->makeCurrent(m_surface);
+
+    // Recreate FBO if size changed
+    if (m_fbo && (m_fbo->width() != m_renderWidth || m_fbo->height() != m_renderHeight)) {
+        delete m_fbo;
+        m_fbo = new QOpenGLFramebufferObject(m_renderWidth, m_renderHeight,
+                                              QOpenGLFramebufferObject::CombinedDepthStencil);
+    }
+
+    // Release previous model
+    releaseModel();
+
+    // Load model
+    QString modelJsonPath = pack->modelJsonPath();
+    if (modelJsonPath.isEmpty()) {
+        qWarning() << "Live2D: No model JSON path in pack";
+        return false;
+    }
+
+    QString modelDir = QFileInfo(modelJsonPath).absolutePath();
+    m_cubismModel = new CubismModel();
+    if (!m_cubismModel->load(modelJsonPath, modelDir)) {
+        qWarning() << "Live2D: Failed to load model from" << modelJsonPath;
+        releaseModel();
+        return false;
+    }
+
+    // Setup renderer (needs GL context)
+    m_cubismModel->setupRenderer(m_renderWidth, m_renderHeight);
+
+    // Populate motion group list
+    m_motionGroups = m_cubismModel->motionGroupNames();
+    m_modelLoaded = true;
+
+    // Build idle pool from pack
+    const auto &idlePool = pack->idlePool();
+    for (const auto &entry : idlePool) {
+        m_idleAnims.append(entry.animationName);
+        m_idleWeights.append(entry.weight);
+    }
+
+    // If no idle pool defined, use "Idle" group if available
+    if (m_idleAnims.isEmpty() && m_motionGroups.contains("Idle")) {
+        m_idleAnims.append("Idle");
+        m_idleWeights.append(1);
+    }
+
+    // Start idle
+    m_playing = true;
+    m_lastTickMs = 0;
+    m_timer.start();
+    startIdleAnimation();
+
+    qDebug() << "Live2D: Loaded model with" << m_motionGroups.size() << "motion groups:"
+             << m_motionGroups;
+    return true;
+}
+
+void Live2DAnimationEngine::playAnimation(const QString &name, Priority priority)
+{
+    if (!m_modelLoaded || !m_cubismModel) return;
+
+    m_idleTimer.stop();
+
+    int count = m_cubismModel->motionCount(name);
+    if (count <= 0) {
+        qWarning() << "Live2D: Motion group not found:" << name;
+        return;
+    }
+
+    int no = QRandomGenerator::global()->bounded(count);
+    int cubismPriority = (priority == HighPriority) ? 3 : 2;  // Force=3, Normal=2
+
+    m_cubismModel->startMotion(name, no, cubismPriority);
+    m_currentMotion = name;
+    m_playing = true;
+
+    if (priority == HighPriority) {
+        m_queue.clear();
+    }
+}
+
+void Live2DAnimationEngine::paint(QPainter *painter, const QRect &bounds)
+{
+    if (!m_modelLoaded || m_image.isNull()) return;
+    painter->drawImage(bounds, m_image);
+}
+
+void Live2DAnimationEngine::tick()
+{
+    if (!m_modelLoaded || !m_cubismModel || !m_glContext || !m_fbo) return;
+
+    // Calculate delta time
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    float deltaSeconds = 0.016f;  // default 16ms
+    if (m_lastTickMs > 0) {
+        deltaSeconds = (now - m_lastTickMs) / 1000.0f;
+        if (deltaSeconds > 0.1f) deltaSeconds = 0.1f;  // clamp to 100ms max
+    }
+    m_lastTickMs = now;
+
+    // Make GL context current
+    m_glContext->makeCurrent(m_surface);
+
+    // Update model
+    m_cubismModel->update(deltaSeconds);
+
+    // Check if current motion finished → start idle
+    if (m_cubismModel->isMotionFinished()) {
+        if (!m_queue.isEmpty()) {
+            startNextAnimation();
+        } else {
+            m_idleTimer.start();
+        }
+    }
+
+    // Render to FBO
+    renderFrame();
+
+    emit frameChanged();
+}
+
+void Live2DAnimationEngine::renderFrame()
+{
+    if (!m_fbo || !m_cubismModel) return;
+
+    m_fbo->bind();
+
+    glViewport(0, 0, m_renderWidth, m_renderHeight);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);  // transparent background
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_cubismModel->draw(m_renderWidth, m_renderHeight);
+
+    // Read pixels
+    m_image = m_fbo->toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+    m_fbo->release();
+}
+
+void Live2DAnimationEngine::startNextAnimation()
+{
+    if (!m_queue.isEmpty()) {
+        QString next = m_queue.takeFirst();
+        playAnimation(next, NormalPriority);
+    } else {
+        m_idleTimer.start();
+    }
+}
+
+void Live2DAnimationEngine::startIdleAnimation()
+{
+    if (m_idleAnims.isEmpty()) return;
+
+    int totalWeight = 0;
+    for (int w : m_idleWeights) totalWeight += w;
+    if (totalWeight <= 0) return;
+
+    int roll = QRandomGenerator::global()->bounded(totalWeight);
+    int cumulative = 0;
+    for (int i = 0; i < m_idleAnims.size(); ++i) {
+        cumulative += m_idleWeights.at(i);
+        if (roll < cumulative) {
+            playAnimation(m_idleAnims.at(i), NormalPriority);
+            return;
+        }
+    }
+    playAnimation(m_idleAnims.first(), NormalPriority);
+}
+
+#endif // OAI_LIVE2D_SUPPORT

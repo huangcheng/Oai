@@ -1,0 +1,6 @@
+[submodule "thirdparty/CubismNativeFramework"]
+	path = thirdparty/CubismNativeFramework
+	url = https://github.com/Live2D/CubismNativeFramework.git
+[submodule "thirdparty/CubismNativeSamples"]
+	path = thirdparty/CubismNativeSamples
+	url = https://github.com/Live2D/CubismNativeSamples.git

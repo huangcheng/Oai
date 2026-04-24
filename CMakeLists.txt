@@ -108,6 +108,85 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
     add_subdirectory(${rlottie_SOURCE_DIR} ${rlottie_BINARY_DIR})
 endif()
 
+# --- Live2D Cubism SDK -------------------------------------------------------
+set(CUBISM_SDK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeSamples)
+set(CUBISM_FRAMEWORK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeFramework)
+set(CUBISM_CORE_DIR ${CUBISM_SDK_DIR}/Core)
+
+if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
+    message(STATUS "Live2D Cubism SDK found")
+
+    # GLEW (downloaded by Samples/OpenGL/thirdParty/scripts/setup_glew_glfw)
+    set(GLEW_DIR ${CUBISM_SDK_DIR}/Samples/OpenGL/thirdParty/glew)
+    if(NOT EXISTS ${GLEW_DIR}/include)
+        message(FATAL_ERROR "GLEW not found. Run: cd thirdparty/CubismNativeSamples/Samples/OpenGL/thirdParty && bash scripts/setup_glew_glfw")
+    endif()
+
+    # Build GLEW as static library
+    set(BUILD_UTILS OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${GLEW_DIR}/build/cmake ${CMAKE_CURRENT_BINARY_DIR}/glew)
+    target_compile_definitions(glew_s PRIVATE GLEW_NO_GLU)
+    if(APPLE)
+        # Suppress macOS OpenGL deprecation warnings
+        add_compile_definitions(GL_SILENCE_DEPRECATION)
+    endif()
+
+    # Import Cubism Core (pre-built binary) — platform-specific paths
+    add_library(Live2DCubismCore STATIC IMPORTED)
+    if(APPLE)
+        EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
+        set_target_properties(Live2DCubismCore PROPERTIES
+            IMPORTED_LOCATION ${CUBISM_CORE_DIR}/lib/macos/${ARCHITECTURE}/libLive2DCubismCore.a
+            INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
+        )
+    elseif(WIN32)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(_CUBISM_ARCH x86_64)
+        else()
+            set(_CUBISM_ARCH x86)
+        endif()
+        # Detect MSVC toolset version (143 = VS2022, 142 = VS2019, 141 = VS2017)
+        if(MSVC_TOOLSET_VERSION)
+            set(_CUBISM_MSVC ${MSVC_TOOLSET_VERSION})
+        else()
+            set(_CUBISM_MSVC 143)
+        endif()
+        set_target_properties(Live2DCubismCore PROPERTIES
+            IMPORTED_LOCATION ${CUBISM_CORE_DIR}/lib/windows/${_CUBISM_ARCH}/${_CUBISM_MSVC}/Live2DCubismCore_MD.lib
+            IMPORTED_LOCATION_DEBUG ${CUBISM_CORE_DIR}/lib/windows/${_CUBISM_ARCH}/${_CUBISM_MSVC}/Live2DCubismCore_MDd.lib
+            INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
+        )
+    else()
+        # Linux
+        set_target_properties(Live2DCubismCore PROPERTIES
+            IMPORTED_LOCATION ${CUBISM_CORE_DIR}/lib/linux/x86_64/libLive2DCubismCore.a
+            INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
+        )
+    endif()
+
+    # Build Cubism Framework
+    set(FRAMEWORK_SOURCE OpenGL)
+    add_subdirectory(${CUBISM_FRAMEWORK_DIR} ${CMAKE_CURRENT_BINARY_DIR}/Framework)
+    # Platform-specific OpenGL target defines
+    if(APPLE)
+        target_compile_definitions(Framework PUBLIC CSM_TARGET_MAC_GL)
+    elseif(WIN32)
+        target_compile_definitions(Framework PUBLIC CSM_TARGET_WIN_GL)
+    else()
+        target_compile_definitions(Framework PUBLIC CSM_TARGET_LINUX_GL)
+    endif()
+    target_include_directories(Framework PUBLIC ${GLEW_DIR}/include)
+    target_link_libraries(Framework Live2DCubismCore glew_s)
+
+    # OpenGL
+    find_package(OpenGL REQUIRED)
+
+    set(OAI_HAS_LIVE2D TRUE)
+else()
+    message(STATUS "Live2D Cubism SDK not found — building without Live2D support")
+    set(OAI_HAS_LIVE2D FALSE)
+endif()
+
 # --- Executable --------------------------------------------------------------
 if(WIN32)
     set(PLATFORM_SOURCES assets/qlippy.rc)
@@ -125,6 +204,8 @@ qt_add_executable(Oai
     src/LottieAnimationEngine.h
     src/LottieEffectOverlay.cpp
     src/LottieEffectOverlay.h
+    src/Live2DAnimationEngine.cpp
+    src/Live2DAnimationEngine.h
     src/SpritePack.cpp
     src/SpritePack.h
     src/SpritePackManager.cpp
@@ -182,6 +263,32 @@ target_link_libraries(Oai
 target_include_directories(Oai PRIVATE
     ${rlottie_SOURCE_DIR}/inc
 )
+
+# Live2D libraries (conditional)
+if(OAI_HAS_LIVE2D)
+    target_link_libraries(Oai PRIVATE Framework ${OPENGL_LIBRARIES})
+    target_include_directories(Oai PRIVATE
+        ${CUBISM_FRAMEWORK_DIR}/src
+        ${CUBISM_CORE_DIR}/include
+        ${GLEW_DIR}/include
+    )
+    target_compile_definitions(Oai PRIVATE OAI_LIVE2D_SUPPORT)
+    if(APPLE)
+        target_compile_definitions(Oai PRIVATE CSM_TARGET_MAC_GL)
+    elseif(WIN32)
+        target_compile_definitions(Oai PRIVATE CSM_TARGET_WIN_GL)
+    else()
+        target_compile_definitions(Oai PRIVATE CSM_TARGET_LINUX_GL)
+    endif()
+    # Qt OpenGL support
+    find_package(Qt6 COMPONENTS OpenGL OpenGLWidgets QUIET)
+    if(Qt6OpenGL_FOUND)
+        target_link_libraries(Oai PRIVATE Qt::OpenGL)
+    endif()
+    if(Qt6OpenGLWidgets_FOUND)
+        target_link_libraries(Oai PRIVATE Qt::OpenGLWidgets)
+    endif()
+endif()
 
 # --- Install -----------------------------------------------------------------
 include(GNUInstallDirs)

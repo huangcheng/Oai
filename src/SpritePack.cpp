@@ -91,6 +91,14 @@ QString SpritePack::lottieAnimationPath(const QString &animationName) const
     return assetPath(anim->lottieFile);
 }
 
+QString SpritePack::modelJsonPath() const
+{
+    if (m_characterConfig.engineType != EngineType::Live2D || m_characterConfig.modelJson.isEmpty()) {
+        return QString();
+    }
+    return assetPath(m_characterConfig.modelJson);
+}
+
 QString SpritePack::effectPath(const QString &effectName) const
 {
     // Look in effects directory
@@ -240,6 +248,8 @@ bool SpritePack::parseCharacter(const QJsonObject &character)
         m_characterConfig.engineType = EngineType::Lottie;
     } else if (typeStr == "spriteSheet") {
         m_characterConfig.engineType = EngineType::SpriteSheet;
+    } else if (typeStr == "live2d") {
+        m_characterConfig.engineType = EngineType::Live2D;
     } else {
         qWarning() << "SpritePack: Unknown character type:" << typeStr;
         return false;
@@ -248,6 +258,10 @@ bool SpritePack::parseCharacter(const QJsonObject &character)
     // Parse type-specific configuration
     if (m_characterConfig.engineType == EngineType::Lottie) {
         m_characterConfig.animDirectory = character.value("directory").toString("character");
+    } else if (m_characterConfig.engineType == EngineType::Live2D) {
+        m_characterConfig.modelJson = character.value("model").toString();
+        m_characterConfig.frameWidth = character.value("frameWidth").toInt(200);
+        m_characterConfig.frameHeight = character.value("frameHeight").toInt(200);
     } else {
         m_characterConfig.spriteSheet = character.value("spriteSheet").toString();
         m_characterConfig.frameWidth = character.value("frameWidth").toInt();
