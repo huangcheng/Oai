@@ -343,9 +343,9 @@ void SpriteAnimationEngine::paint(QPainter *painter, const QRect &bounds)
         // Draw current animation frame
         const FrameDef &frame = m_current.frames.at(m_currentFrameIndex);
         painter->drawPixmap(bounds, m_spriteSheet, frame.sourceRect);
-    } else if (m_animations.contains("RestPose")) {
-        // Always show RestPose when no animation is playing
-        const FrameDef &frame = m_animations["RestPose"].frames.first();
+    } else if (!m_current.frames.isEmpty()) {
+        // Show last frame of whatever animation just finished
+        const FrameDef &frame = m_current.frames.first();
         painter->drawPixmap(bounds, m_spriteSheet, frame.sourceRect);
     }
 }
@@ -413,8 +413,11 @@ void SpriteAnimationEngine::checkEffectTrigger(const QString &animName)
 void SpriteAnimationEngine::startIdleAnimation()
 {
     if (m_idleAnims.isEmpty()) {
+        // Try RestPose, then resolve "rest" via nameMap, then first animation
         if (m_animations.contains("RestPose")) {
             playAnimation("RestPose", HighPriority);
+        } else if (!m_animations.isEmpty()) {
+            playAnimation(m_animations.firstKey(), HighPriority);
         }
         return;
     }
