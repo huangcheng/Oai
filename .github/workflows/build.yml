@@ -59,6 +59,8 @@ jobs:
         run: |
           pip install aqtinstall
           aqt install-tool windows desktop tools_ifw
+          echo "IFW tools installed to: $LOCALAPPDATA\aqt\tools_ifw"
+          ls "$LOCALAPPDATA\aqt\tools_ifw" 2>/dev/null || ls "C:\Users\$env:USERNAME\AppData\Local\aqt\tools_ifw" 2>/dev/null || echo "Checking default locations..."
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -80,8 +82,13 @@ jobs:
           windeployqt installer/packages/im.cheng.oai.desktop/data/Oai.exe || true
 
       - name: Build installer
+        shell: pwsh
         run: |
-          $IFW_PATH = (Get-ChildItem -Path "C:\Users*\AppData\Local\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
+          $IFW_PATH = (Get-ChildItem -Path "$env:LOCALAPPDATA\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
+          if (-not $IFW_PATH) {
+            $IFW_PATH = (Get-ChildItem -Path "C:\Users\*\AppData\Local\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
+          }
+          Write-Host "IFW_PATH: $IFW_PATH"
           & "$IFW_PATH\bin\binarycreator.exe" -c installer/config.xml -p installer/packages build/Oai-installer.exe
 
       - name: Upload artifact
