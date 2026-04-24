@@ -31,7 +31,6 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     setWindowFlags(
         Qt::FramelessWindowHint |
         Qt::WindowStaysOnTopHint |
-        Qt::Tool |
         Qt::WindowDoesNotAcceptFocus
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
