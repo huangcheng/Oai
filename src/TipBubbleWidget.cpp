@@ -94,6 +94,7 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
         m_opacity = 0.0;
         startEnterAnimation();
         QWidget::show();
+        raise();
     }
 
     // Reset dismiss timer
