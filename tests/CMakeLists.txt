@@ -2,6 +2,8 @@
 set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/IpcServer.cpp
     ${CMAKE_SOURCE_DIR}/src/IpcServer.h
+    ${CMAKE_SOURCE_DIR}/src/UdpWorker.cpp
+    ${CMAKE_SOURCE_DIR}/src/UdpWorker.h
     ${CMAKE_SOURCE_DIR}/src/EventRouter.cpp
     ${CMAKE_SOURCE_DIR}/src/EventRouter.h
     ${CMAKE_SOURCE_DIR}/src/SpriteAnimationEngine.cpp

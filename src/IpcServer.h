@@ -5,7 +5,8 @@
 #include <QJsonDocument>
 #include <QHostAddress>
 
-class QUdpSocket;
+class QThread;
+class UdpWorker;
 
 class IpcServer : public QObject
 {
@@ -25,12 +26,14 @@ signals:
     void pingReceived(const QHostAddress &sender, quint16 port);
 
 private slots:
-    void onReadyRead();
+    void onDatagramReceived(const QByteArray &data, const QHostAddress &sender, quint16 port);
+    void onWorkerError(const QString &message);
 
 private:
     void parseMessage(const QByteArray &data, const QHostAddress &sender, quint16 port);
 
-    QUdpSocket *m_socket = nullptr;
+    QThread *m_thread = nullptr;
+    UdpWorker *m_worker = nullptr;
 };
 
 #endif // IPCSERVER_H
