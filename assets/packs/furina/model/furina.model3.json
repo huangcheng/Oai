@@ -32,7 +32,77 @@
           "FadeOutTime": 0.5
         }
       ]
-    }
+    },
+    "Expressions": [
+      {
+        "Name": "呆毛电风扇",
+        "File": "expressions/exp_01.exp3.json"
+      },
+      {
+        "Name": "哭",
+        "File": "expressions/exp_02.exp3.json"
+      },
+      {
+        "Name": "喝饮料",
+        "File": "expressions/exp_03.exp3.json"
+      },
+      {
+        "Name": "大聪明",
+        "File": "expressions/exp_04.exp3.json"
+      },
+      {
+        "Name": "小脸红",
+        "File": "expressions/exp_05.exp3.json"
+      },
+      {
+        "Name": "帽子",
+        "File": "expressions/exp_06.exp3.json"
+      },
+      {
+        "Name": "托脸",
+        "File": "expressions/exp_07.exp3.json"
+      },
+      {
+        "Name": "拿勺子",
+        "File": "expressions/exp_08.exp3.json"
+      },
+      {
+        "Name": "拿蛋糕",
+        "File": "expressions/exp_09.exp3.json"
+      },
+      {
+        "Name": "捂嘴",
+        "File": "expressions/exp_10.exp3.json"
+      },
+      {
+        "Name": "星星",
+        "File": "expressions/exp_11.exp3.json"
+      },
+      {
+        "Name": "汗",
+        "File": "expressions/exp_12.exp3.json"
+      },
+      {
+        "Name": "牌子",
+        "File": "expressions/exp_13.exp3.json"
+      },
+      {
+        "Name": "猫猫嘴",
+        "File": "expressions/exp_14.exp3.json"
+      },
+      {
+        "Name": "生气",
+        "File": "expressions/exp_15.exp3.json"
+      },
+      {
+        "Name": "走路切换",
+        "File": "expressions/exp_16.exp3.json"
+      },
+      {
+        "Name": "鱼鱼",
+        "File": "expressions/exp_17.exp3.json"
+      }
+    ]
   },
   "Groups": [
     {
