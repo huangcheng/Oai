@@ -1,10 +1,10 @@
 {
   "formatVersion": "1.0.0",
   "id": "im.cheng.oai.hiyori",
-  "name": "Hiyori (Pro)",
+  "name": "Hiyori",
   "author": "Live2D Inc. (Sample Model)",
   "version": "1.0.0",
-  "description": "Hiyori (Pro) — a Live2D Cubism sample character",
+  "description": "Hiyori — a Live2D Cubism sample character",
   "preview": "preview.png",
   "tags": [
     "live2d",
