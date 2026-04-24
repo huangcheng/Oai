@@ -198,7 +198,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        m_tipBubble->showBubble(tr("About"), tr("Oai Desktop Pet\nv1.0.0"), TipBubbleWidget::TipBubble);
+        m_tipBubble->showBubble(tr("About"), tr("Oai Desktop Pet\nv1.2.0"), TipBubbleWidget::TipBubble);
     });
 
     menu.addSeparator();
