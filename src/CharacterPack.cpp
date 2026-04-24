@@ -438,13 +438,15 @@ bool CharacterPack::parseIdlePool(const QJsonArray &pool)
         const QJsonObject entryObj = entryVal.toObject();
         IdleEntry entry;
 
-        entry.animationName = entryObj.value("name").toString();
-        entry.weight = entryObj.value("weight").toInt(1);
-
-        if (entry.animationName.isEmpty()) {
+        // An empty-string name is valid: Cubism models (e.g., kei, haru_greeter)
+        // can group all motions under "". Reject only if the 'name' key is
+        // entirely absent.
+        if (!entryObj.contains("name")) {
             qWarning() << "CharacterPack: Idle pool entry missing 'name'";
             return false;
         }
+        entry.animationName = entryObj.value("name").toString();
+        entry.weight = entryObj.value("weight").toInt(1);
 
         if (entry.weight <= 0) {
             qWarning() << "CharacterPack: Idle pool entry has invalid weight:" << entry.weight;
@@ -461,14 +463,9 @@ bool CharacterPack::parseEventMap(const QJsonObject &map)
 {
     for (auto it = map.begin(); it != map.end(); ++it) {
         const QString eventName = it.key();
-        const QString animationName = it.value().toString();
-
-        if (animationName.isEmpty()) {
-            qWarning() << "CharacterPack: Event map entry has empty animation for event:" << eventName;
-            return false;
-        }
-
-        m_eventMap[eventName] = animationName;
+        // Empty-string animation is valid (Cubism models with an unnamed
+        // motion group); don't reject the whole manifest on that.
+        m_eventMap[eventName] = it.value().toString();
     }
 
     return true;
