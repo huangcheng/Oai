@@ -197,6 +197,14 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
             m_engine->playAnimation("rest", SpriteAnimationEngine::NormalPriority);
             emit positionChanged(pos());
         } else if (isInPetRect(event->pos())) {
+#ifdef OAI_LIVE2D_SUPPORT
+            if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+                m_live2dEngine->tap();
+                showRandomGreeting();
+                QWidget::mouseReleaseEvent(event);
+                return;
+            }
+#endif
             const QStringList clickAnims = {"click1", "click2"};
             const QString anim = clickAnims.at(QRandomGenerator::global()->bounded(clickAnims.size()));
             m_engine->playAnimation(anim, SpriteAnimationEngine::HighPriority);
@@ -209,6 +217,14 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
+#ifdef OAI_LIVE2D_SUPPORT
+        if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+            m_live2dEngine->tap();
+            showRandomGreeting();
+            QWidget::mouseDoubleClickEvent(event);
+            return;
+        }
+#endif
         const QStringList dblAnims = {"doubleclick1", "doubleclick2"};
         const QString anim = dblAnims.at(QRandomGenerator::global()->bounded(dblAnims.size()));
         m_engine->playAnimation(anim, SpriteAnimationEngine::HighPriority);

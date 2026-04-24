@@ -71,6 +71,13 @@ public:
     void setPointerTarget(float x, float y);
 
     /**
+     * @brief Play a tap-style reaction motion. Picks the best available
+     *        active group from the loaded model: TapBody > Tap > Tap@Body >
+     *        first non-Idle group. No-op if the model has no such group.
+     */
+    void tap();
+
+    /**
      * @brief Render the current frame into a QPainter target rect.
      */
     void paint(QPainter *painter, const QRect &bounds);

@@ -631,6 +631,24 @@ void Live2DAnimationEngine::setPointerTarget(float x, float y)
     if (m_cubismModel) m_cubismModel->setDragging(x, y);
 }
 
+void Live2DAnimationEngine::tap()
+{
+    if (!m_modelLoaded || !m_cubismModel) return;
+    // Prefer the canonical tap-style names; fall back to any non-Idle group.
+    QString group;
+    for (const QString &candidate : QStringList{"TapBody", "Tap", "Tap@Body"}) {
+        if (m_motionGroups.contains(candidate)) { group = candidate; break; }
+    }
+    if (group.isEmpty()) {
+        for (const QString &g : m_motionGroups) {
+            if (!g.isEmpty() && g != "Idle") { group = g; break; }
+        }
+    }
+    if (!group.isEmpty()) {
+        playAnimation(group, HighPriority);
+    }
+}
+
 QRect Live2DAnimationEngine::characterBounds() const
 {
     if (!m_characterBounds.isNull() || m_image.isNull()) {
