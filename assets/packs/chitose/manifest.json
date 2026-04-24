@@ -1,0 +1,46 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "im.cheng.oai.chitose",
+  "name": "Chitose",
+  "author": "Live2D Inc. (Sample Model)",
+  "version": "1.0.0",
+  "description": "Chitose — a Live2D Cubism sample character",
+  "preview": "preview.png",
+  "tags": [
+    "live2d",
+    "chitose"
+  ],
+  "license": "Live2D Free Material License",
+  "minAppVersion": "2.0.0",
+  "character": {
+    "type": "live2d",
+    "model": "model/chitose.model3.json",
+    "frameWidth": 300,
+    "frameHeight": 300
+  },
+  "idlePool": [
+    {
+      "name": "Idle",
+      "weight": 5
+    }
+  ],
+  "eventMap": {
+    "session.start": "Tap",
+    "session.end": "Idle",
+    "session.idle": "Idle",
+    "session.error": "Tap",
+    "prompt.submitted": "Idle",
+    "tool.before": "Idle",
+    "tool.after": "Tap",
+    "tool.failed": "Tap",
+    "permission.requested": "Tap",
+    "permission.denied": "Tap",
+    "permission.response": "Idle",
+    "subagent.started": "Idle",
+    "subagent.stopped": "Idle",
+    "notification.sent": "Tap",
+    "file.edited": "Idle",
+    "file.watched": "Idle",
+    "todo.updated": "Tap"
+  }
+}

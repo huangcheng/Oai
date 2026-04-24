@@ -1,115 +1,127 @@
 {
 	"Version": 3,
 	"FileReferences": {
-		"Moc": "Haru.moc3",
+		"Moc": "haru.moc3",
 		"Textures": [
-			"Haru.2048/texture_00.png",
-			"Haru.2048/texture_01.png"
+			"haru.1024/texture_00.png",
+			"haru.1024/texture_01.png",
+			"haru.1024/texture_02.png"
 		],
-		"Physics": "Haru.physics3.json",
-		"Pose": "Haru.pose3.json",
-		"DisplayInfo": "Haru.cdi3.json",
-		"Expressions": [
-			{
-				"Name": "F01",
-				"File": "expressions/F01.exp3.json"
-			},
-			{
-				"Name": "F02",
-				"File": "expressions/F02.exp3.json"
-			},
-			{
-				"Name": "F03",
-				"File": "expressions/F03.exp3.json"
-			},
-			{
-				"Name": "F04",
-				"File": "expressions/F04.exp3.json"
-			},
-			{
-				"Name": "F05",
-				"File": "expressions/F05.exp3.json"
-			},
-			{
-				"Name": "F06",
-				"File": "expressions/F06.exp3.json"
-			},
-			{
-				"Name": "F07",
-				"File": "expressions/F07.exp3.json"
-			},
-			{
-				"Name": "F08",
-				"File": "expressions/F08.exp3.json"
-			}
-		],
+		"Physics": "haru.physics3.json",
+		"Pose": "haru.pose3.json",
+		"DisplayInfo": "haru.cdi3.json",
 		"Motions": {
 			"Idle": [
 				{
-					"File": "motions/haru_g_idle.motion3.json",
-					"FadeInTime": 0.5,
-					"FadeOutTime": 0.5
+					"File": "motion/haru_idle_01.motion3.json"
 				},
 				{
-					"File": "motions/haru_g_m15.motion3.json",
-					"FadeInTime": 0.5,
-					"FadeOutTime": 0.5
+					"File": "motion/haru_idle_02.motion3.json"
+				},
+				{
+					"File": "motion/haru_idle_03.motion3.json"
 				}
 			],
-			"TapBody": [
+			"Flick": [
 				{
-					"File": "motions/haru_g_m26.motion3.json",
-					"FadeInTime": 0.5,
-					"FadeOutTime": 0.5,
-					"Sound": "sounds/haru_talk_13.wav"
+					"File": "motion/haru_m_01.motion3.json"
 				},
 				{
-					"File": "motions/haru_g_m06.motion3.json",
-					"FadeInTime": 0.5,
-					"FadeOutTime": 0.5,
-					"Sound": "sounds/haru_Info_14.wav"
+					"File": "motion/haru_m_03.motion3.json"
 				},
 				{
-					"File": "motions/haru_g_m20.motion3.json",
-					"FadeInTime": 0.5,
-					"FadeOutTime": 0.5,
-					"Sound": "sounds/haru_normal_6.wav"
+					"File": "motion/haru_m_04.motion3.json"
+				}
+			],
+			"Tap": [
+				{
+					"File": "motion/haru_m_02.motion3.json"
 				},
 				{
-					"File": "motions/haru_g_m09.motion3.json",
-					"FadeInTime": 0.5,
-					"FadeOutTime": 0.5,
-					"Sound": "sounds/haru_Info_04.wav"
+					"File": "motion/haru_m_06.motion3.json"
+				},
+				{
+					"File": "motion/haru_m_07.motion3.json"
+				},
+				{
+					"File": "motion/haru_m_10.motion3.json"
+				},
+				{
+					"File": "motion/haru_normal_02.motion3.json",
+					"Sound": "sounds/haru_normal_02.wav"
+				},
+				{
+					"File": "motion/haru_normal_05.motion3.json",
+					"Sound": "sounds/haru_normal_05.wav"
+				}
+			],
+			"FlickRight": [
+				{
+					"File": "motion/haru_m_05.motion3.json"
+				},
+				{
+					"File": "motion/haru_normal_03.motion3.json",
+					"Sound": "sounds/haru_normal_03.wav"
+				},
+				{
+					"File": "motion/haru_normal_04.motion3.json",
+					"Sound": "sounds/haru_normal_04.wav"
+				}
+			],
+			"Flick3": [
+				{
+					"File": "motion/haru_m_08.motion3.json"
+				},
+				{
+					"File": "motion/haru_normal_01.motion3.json",
+					"Sound": "sounds/haru_normal_01.wav"
+				},
+				{
+					"File": "motion/haru_normal_06.motion3.json",
+					"Sound": "sounds/haru_normal_06.wav"
+				}
+			],
+			"FlickLeft": [
+				{
+					"File": "motion/haru_m_09.motion3.json"
+				},
+				{
+					"File": "motion/haru_normal_09.motion3.json",
+					"Sound": "sounds/haru_normal_09.wav"
+				},
+				{
+					"File": "motion/haru_normal_10.motion3.json",
+					"Sound": "sounds/haru_normal_10.wav"
+				}
+			],
+			"Shake": [
+				{
+					"File": "motion/haru_normal_07.motion3.json",
+					"Sound": "sounds/haru_normal_07.wav"
+				},
+				{
+					"File": "motion/haru_normal_08.motion3.json",
+					"Sound": "sounds/haru_normal_08.wav"
 				}
 			]
-		},
-		"UserData": "Haru.userdata3.json"
+		}
 	},
 	"Groups": [
 		{
 			"Target": "Parameter",
-			"Name": "EyeBlink",
+			"Name": "LipSync",
 			"Ids": [
-				"ParamEyeLOpen",
-				"ParamEyeROpen"
+				"PARAM_MOUTH_OPEN_Y"
 			]
 		},
 		{
 			"Target": "Parameter",
-			"Name": "LipSync",
+			"Name": "EyeBlink",
 			"Ids": [
-				"ParamMouthOpenY"
+				"PARAM_EYE_L_OPEN",
+				"PARAM_EYE_R_OPEN"
 			]
 		}
 	],
-	"HitAreas": [
-		{
-			"Id": "HitArea",
-			"Name": "Head"
-		},
-		{
-			"Id": "HitArea2",
-			"Name": "Body"
-		}
-	]
+	"HitAreas": []
 }

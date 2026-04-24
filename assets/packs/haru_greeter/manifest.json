@@ -1,0 +1,46 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "im.cheng.oai.haru_greeter",
+  "name": "Haru Greeter",
+  "author": "Live2D Inc. (Sample Model)",
+  "version": "1.0.0",
+  "description": "Haru Greeter — a Live2D Cubism sample character",
+  "preview": "preview.png",
+  "tags": [
+    "live2d",
+    "haru_greeter"
+  ],
+  "license": "Live2D Free Material License",
+  "minAppVersion": "2.0.0",
+  "character": {
+    "type": "live2d",
+    "model": "model/haru_greeter_t05.model3.json",
+    "frameWidth": 300,
+    "frameHeight": 300
+  },
+  "idlePool": [
+    {
+      "name": "",
+      "weight": 5
+    }
+  ],
+  "eventMap": {
+    "session.start": "",
+    "session.end": "",
+    "session.idle": "",
+    "session.error": "",
+    "prompt.submitted": "",
+    "tool.before": "",
+    "tool.after": "",
+    "tool.failed": "",
+    "permission.requested": "",
+    "permission.denied": "",
+    "permission.response": "",
+    "subagent.started": "",
+    "subagent.stopped": "",
+    "notification.sent": "",
+    "file.edited": "",
+    "file.watched": "",
+    "todo.updated": ""
+  }
+}

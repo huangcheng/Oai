@@ -7,9 +7,9 @@
 		"FadeOutTime": 1.0,
 		"Loop": true,
 		"AreBeziersRestricted": true,
-		"CurveCount": 136,
-		"TotalSegmentCount": 235,
-		"TotalPointCount": 569,
+		"CurveCount": 132,
+		"TotalSegmentCount": 231,
+		"TotalPointCount": 561,
 		"UserDataCount": 0,
 		"TotalUserDataSize": 0
 	},
@@ -1820,7 +1820,40 @@
 		},
 		{
 			"Target": "Parameter",
-			"Id": "ParamRabbitElimination",
+			"Id": "ParamRabbitX",
+			"Segments": [
+				0,
+				0,
+				0,
+				4.4,
+				0
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Id": "ParamRabbitY",
+			"Segments": [
+				0,
+				1,
+				0,
+				4.4,
+				1
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Id": "ParamRabbitRotate",
+			"Segments": [
+				0,
+				0,
+				0,
+				4.4,
+				0
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Id": "ParamRabbitEliminationEffect",
 			"Segments": [
 				0,
 				0,
@@ -1875,7 +1908,7 @@
 		},
 		{
 			"Target": "Parameter",
-			"Id": "ParamRabbitDirection",
+			"Id": "Param5",
 			"Segments": [
 				0,
 				0,
@@ -1898,39 +1931,6 @@
 		{
 			"Target": "Parameter",
 			"Id": "ParamRabbitLightSize",
-			"Segments": [
-				0,
-				0,
-				0,
-				4.4,
-				0
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamRabbitX",
-			"Segments": [
-				0,
-				0,
-				0,
-				4.4,
-				0
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamRabbitY",
-			"Segments": [
-				0,
-				1,
-				0,
-				4.4,
-				1
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamRabbitRotate",
 			"Segments": [
 				0,
 				0,
@@ -2107,50 +2107,6 @@
 		{
 			"Target": "Parameter",
 			"Id": "ParamAllColor2",
-			"Segments": [
-				0,
-				0,
-				0,
-				4.4,
-				0
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamSphereOn",
-			"Segments": [
-				0,
-				0,
-				0,
-				4.4,
-				0
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamSphereMove",
-			"Segments": [
-				0,
-				0,
-				0,
-				4.4,
-				0
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamSphereMultiplyColor",
-			"Segments": [
-				0,
-				0,
-				0,
-				4.4,
-				0
-			]
-		},
-		{
-			"Target": "Parameter",
-			"Id": "ParamSphereScreenColor",
 			"Segments": [
 				0,
 				0,

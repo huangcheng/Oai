@@ -1,47 +1,46 @@
 {
   "formatVersion": "1.0.0",
   "id": "im.cheng.oai.hiyori",
-  "name": "Hiyori",
+  "name": "Hiyori (Pro)",
   "author": "Live2D Inc. (Sample Model)",
   "version": "1.0.0",
-  "description": "Hiyori — a cheerful Live2D character from Live2D Cubism SDK samples",
+  "description": "Hiyori (Pro) — a Live2D Cubism sample character",
   "preview": "preview.png",
-  "tags": ["live2d", "anime", "modern", "hiyori"],
+  "tags": [
+    "live2d",
+    "hiyori"
+  ],
   "license": "Live2D Free Material License",
   "minAppVersion": "2.0.0",
-
   "character": {
     "type": "live2d",
-    "model": "model/Hiyori.model3.json",
+    "model": "model/hiyori_pro_t11.model3.json",
     "frameWidth": 300,
     "frameHeight": 300
   },
-
   "idlePool": [
-    {"name": "Idle", "weight": 5}
+    {
+      "name": "Idle",
+      "weight": 5
+    }
   ],
-
   "eventMap": {
-    "session.start": "TapBody",
+    "session.start": "Tap",
     "session.end": "Idle",
     "session.idle": "Idle",
-    "session.error": "TapBody",
+    "session.error": "Tap",
     "prompt.submitted": "Idle",
     "tool.before": "Idle",
-    "tool.after": "TapBody",
-    "tool.failed": "TapBody",
-    "permission.requested": "TapBody",
-    "permission.denied": "TapBody",
+    "tool.after": "Tap",
+    "tool.failed": "Tap",
+    "permission.requested": "Tap",
+    "permission.denied": "Tap",
     "permission.response": "Idle",
     "subagent.started": "Idle",
     "subagent.stopped": "Idle",
-    "notification.sent": "TapBody",
+    "notification.sent": "Tap",
     "file.edited": "Idle",
     "file.watched": "Idle",
-    "todo.updated": "TapBody"
-  },
-
-  "sounds": {
-    "directory": "sounds"
+    "todo.updated": "Tap"
   }
 }

@@ -1,10 +1,10 @@
 {
   "formatVersion": "1.0.0",
   "id": "im.cheng.oai.mao",
-  "name": "Mao",
+  "name": "Mao (Pro)",
   "author": "Live2D Inc. (Sample Model)",
   "version": "1.0.0",
-  "description": "Mao — a playful Live2D character from Live2D Cubism SDK samples",
+  "description": "Mao (Pro) — a Live2D Cubism sample character",
   "preview": "preview.png",
   "tags": [
     "live2d",
@@ -14,7 +14,7 @@
   "minAppVersion": "2.0.0",
   "character": {
     "type": "live2d",
-    "model": "model/Mao.model3.json",
+    "model": "model/mao_pro.model3.json",
     "frameWidth": 300,
     "frameHeight": 300
   },
@@ -25,22 +25,22 @@
     }
   ],
   "eventMap": {
-    "session.start": "TapBody",
+    "session.start": "Idle",
     "session.end": "Idle",
     "session.idle": "Idle",
-    "session.error": "TapBody",
+    "session.error": "Idle",
     "prompt.submitted": "Idle",
     "tool.before": "Idle",
-    "tool.after": "TapBody",
-    "tool.failed": "TapBody",
-    "permission.requested": "TapBody",
-    "permission.denied": "TapBody",
+    "tool.after": "Idle",
+    "tool.failed": "Idle",
+    "permission.requested": "Idle",
+    "permission.denied": "Idle",
     "permission.response": "Idle",
     "subagent.started": "Idle",
     "subagent.stopped": "Idle",
-    "notification.sent": "TapBody",
+    "notification.sent": "Idle",
     "file.edited": "Idle",
     "file.watched": "Idle",
-    "todo.updated": "TapBody"
+    "todo.updated": "Idle"
   }
 }

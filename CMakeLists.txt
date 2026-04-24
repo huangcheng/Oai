@@ -415,7 +415,9 @@ set(ALL_PACK_OPKS "")
 # Live2D packs (model3.json + moc3 + textures/ + motions/ + optional physics/pose/expressions)
 # These ship the whole pack directory, so we enumerate files with GLOB_RECURSE
 # and archive paths relative to the pack root.
-set(LIVE2D_PACKS hiyori haru mao mark natori ren rice wanko)
+set(LIVE2D_PACKS
+    chitose epsilon gantzert_felixander haru haru_greeter haruto hibiki hiyori
+    izumi kei koharu mao mark miara miku natori ren rice unitychan wanko)
 foreach(pack ${LIVE2D_PACKS})
     file(GLOB_RECURSE _${pack}_FILES RELATIVE
         ${CMAKE_SOURCE_DIR}/assets/packs/${pack}

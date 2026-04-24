@@ -4,7 +4,7 @@
   "name": "Haru",
   "author": "Live2D Inc. (Sample Model)",
   "version": "1.0.0",
-  "description": "Haru — a cheerful Live2D character from Live2D Cubism SDK samples",
+  "description": "Haru — a Live2D Cubism sample character",
   "preview": "preview.png",
   "tags": [
     "live2d",
@@ -14,7 +14,7 @@
   "minAppVersion": "2.0.0",
   "character": {
     "type": "live2d",
-    "model": "model/Haru.model3.json",
+    "model": "model/haru.model3.json",
     "frameWidth": 300,
     "frameHeight": 300
   },
@@ -25,22 +25,22 @@
     }
   ],
   "eventMap": {
-    "session.start": "TapBody",
+    "session.start": "Tap",
     "session.end": "Idle",
     "session.idle": "Idle",
-    "session.error": "TapBody",
+    "session.error": "Tap",
     "prompt.submitted": "Idle",
     "tool.before": "Idle",
-    "tool.after": "TapBody",
-    "tool.failed": "TapBody",
-    "permission.requested": "TapBody",
-    "permission.denied": "TapBody",
+    "tool.after": "Tap",
+    "tool.failed": "Tap",
+    "permission.requested": "Tap",
+    "permission.denied": "Tap",
     "permission.response": "Idle",
     "subagent.started": "Idle",
     "subagent.stopped": "Idle",
-    "notification.sent": "TapBody",
+    "notification.sent": "Tap",
     "file.edited": "Idle",
     "file.watched": "Idle",
-    "todo.updated": "TapBody"
+    "todo.updated": "Tap"
   }
 }

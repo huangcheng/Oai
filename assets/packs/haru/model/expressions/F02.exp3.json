@@ -2,33 +2,88 @@
 	"Type": "Live2D Expression",
 	"Parameters": [
 		{
-			"Id": "ParamBrowLY",
-			"Value": -1,
+			"Id": "PARAM_EYE_L_OPEN",
+			"Value": -0.2,
 			"Blend": "Add"
 		},
 		{
-			"Id": "ParamBrowRY",
-			"Value": -1,
+			"Id": "PARAM_EYE_L_SMILE",
+			"Value": 0,
 			"Blend": "Add"
 		},
 		{
-			"Id": "ParamBrowLForm",
-			"Value": 1,
+			"Id": "PARAM_EYE_R_OPEN",
+			"Value": -0.2,
 			"Blend": "Add"
 		},
 		{
-			"Id": "ParamBrowRForm",
-			"Value": 1,
+			"Id": "PARAM_EYE_R_SMILE",
+			"Value": 0,
 			"Blend": "Add"
 		},
 		{
-			"Id": "ParamMouthOpenY",
-			"Value": 1,
+			"Id": "PARAM_EYE_FORM",
+			"Value": 0,
 			"Blend": "Add"
 		},
 		{
-			"Id": "ParamEyeForm",
-			"Value": 0.54,
+			"Id": "PARAM_EYE_BALL_FORM",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_L_Y",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_R_Y",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_L_X",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_R_X",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_L_ANGLE",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_R_ANGLE",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_L_FORM",
+			"Value": -0.5,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_BROW_R_FORM",
+			"Value": -0.5,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_MOUTH_FORM",
+			"Value": -2,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_MOUTH_OPEN_Y",
+			"Value": 0,
+			"Blend": "Add"
+		},
+		{
+			"Id": "PARAM_TERE",
+			"Value": 0,
 			"Blend": "Add"
 		}
 	]
