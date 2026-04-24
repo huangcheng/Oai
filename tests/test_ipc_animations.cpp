@@ -326,8 +326,12 @@ void TestIpcAnimations::testTipWithAnimation()
 
     QTest::qWait(500);
 
+    // Verify bubble shows
     QCOMPARE(m_bubble->title(), QStringLiteral("Animated Tip"));
-    QVERIFY(m_engine->isPlaying() || !m_engine->currentAnimation().isEmpty());
+    QCOMPARE(m_bubble->message(), QStringLiteral("With animation"));
+
+    // Verify animation is playing (may be wave or previous animation still running)
+    QVERIFY(m_engine->isPlaying());
 
     client.close();
 }
