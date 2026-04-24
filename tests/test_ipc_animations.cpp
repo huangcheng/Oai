@@ -1,7 +1,7 @@
 /**
  * test_ipc_animations.cpp
  *
- * End-to-end UDP IPC tests for Orai.
+ * End-to-end UDP IPC tests for Oai.
  *
  * Spins up the real IpcServer, EventRouter, SpriteAnimationEngine,
  * and TipBubbleWidget, then drives them via

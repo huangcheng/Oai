@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(Orai VERSION 1.1.0 LANGUAGES CXX)
+project(Oai VERSION 1.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -113,7 +113,7 @@ if(WIN32)
     set(PLATFORM_SOURCES assets/qlippy.rc)
 endif()
 
-qt_add_executable(Orai
+qt_add_executable(Oai
     WIN32 MACOSX_BUNDLE
     src/main.cpp
     ${PLATFORM_SOURCES}
@@ -147,13 +147,13 @@ qt_add_executable(Orai
     src/SettingsPanelWidget.h
 )
 
-target_include_directories(Orai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Pass version to C++ code
-target_compile_definitions(Orai PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(Oai PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
 # --- Icon resource -----------------------------------------------------------
-qt_add_resources(Orai "icons"
+qt_add_resources(Oai "icons"
     PREFIX "/icons"
     BASE "assets/icons"
     FILES
@@ -162,12 +162,12 @@ qt_add_resources(Orai "icons"
 
 # --- Translations ------------------------------------------------------------
 qt_add_translations(
-    TARGETS Orai
-    TS_FILES Orai_zh_CN.ts
+    TARGETS Oai
+    TS_FILES Oai_zh_CN.ts
 )
 
 # --- Link libraries ----------------------------------------------------------
-target_link_libraries(Orai
+target_link_libraries(Oai
     PRIVATE
         Qt::Core
         Qt::Gui
@@ -177,14 +177,14 @@ target_link_libraries(Orai
 )
 
 # rlottie header path (FetchContent puts it in build/_deps)
-target_include_directories(Orai PRIVATE
+target_include_directories(Oai PRIVATE
     ${rlottie_SOURCE_DIR}/inc
 )
 
 # --- Install -----------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS Orai
+install(TARGETS Oai
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -211,7 +211,7 @@ add_custom_command(
     WORKING_DIRECTORY ${PACKS_DIR}
 )
 add_custom_target(generate_packs ALL DEPENDS ${PACKS_DIR}/clippy.opk)
-add_dependencies(Orai generate_packs)
+add_dependencies(Oai generate_packs)
 
 # Install the generated packs
 install(DIRECTORY ${PACKS_DIR}/
@@ -220,40 +220,40 @@ install(DIRECTORY ${PACKS_DIR}/
 
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
-    set_target_properties(Orai PROPERTIES
-        MACOSX_BUNDLE_ICON_FILE "orai.icns"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.orai"
+    set_target_properties(Oai PROPERTIES
+        MACOSX_BUNDLE_ICON_FILE "oai.icns"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.oai"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     )
-    set_source_files_properties(assets/orai.icns PROPERTIES
+    set_source_files_properties(assets/oai.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
     )
-    target_sources(Orai PRIVATE assets/orai.icns)
+    target_sources(Oai PRIVATE assets/oai.icns)
 
     # Include packs in the macOS bundle Resources
     set_source_files_properties(${PACKS_DIR}/clippy.opk PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources/packs"
     )
-    target_sources(Orai PRIVATE ${PACKS_DIR}/clippy.opk)
+    target_sources(Oai PRIVATE ${PACKS_DIR}/clippy.opk)
 
-    add_custom_command(TARGET Orai POST_BUILD
+    add_custom_command(TARGET Oai POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/hide_dock_icon.py"
-            "$<TARGET_BUNDLE_DIR:Orai>/Contents/Info.plist"
-        COMMENT "Hiding Orai from Dock (LSUIElement)"
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Info.plist"
+        COMMENT "Hiding Oai from Dock (LSUIElement)"
     )
 endif()
 
 qt_generate_deploy_app_script(
-    TARGET Orai
+    TARGET Oai
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
 
-# --- Set Orai as default target for Qt Creator -----------------------------
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Orai)
+# --- Set Oai as default target for Qt Creator -----------------------------
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Oai)
 
 # --- Tests -------------------------------------------------------------------
 enable_testing()

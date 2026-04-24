@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * orai-gateway — CLI tool for sending events to Orai desktop pet.
+ * oai-gateway — CLI tool for sending events to Oai desktop pet.
  *
  * Usage:
- *   orai-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
- *   orai-gateway --ping [--endpoint <path>]
+ *   oai-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
+ *   oai-gateway --ping [--endpoint <path>]
  *
  * Platform transport:
- *   Linux / macOS → Unix domain socket  (~/.orai/orai.sock)
- *   Windows       → Named pipe          (\\.\pipe\orai)
+ *   Linux / macOS → Unix domain socket  (~/.oai/oai.sock)
+ *   Windows       → Named pipe          (\\.\pipe\oai)
  *   Override      → --endpoint <path>
  */
 
@@ -17,7 +17,7 @@ import { platform } from 'node:process';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { getEndpoint, sendToOrai, pingOrai } from './lib/ipc.mjs';
+import { getEndpoint, sendToOai, pingOai } from './lib/ipc.mjs';
 
 // --- Argument parsing -------------------------------------------------------
 
@@ -44,12 +44,12 @@ const args = parseArgs(process.argv);
 // --- Ping mode -------------------------------------------------------------
 
 if (args.ping) {
-  const alive = await pingOrai({ endpoint: args.endpoint });
+  const alive = await pingOai({ endpoint: args.endpoint });
   if (alive) {
-    console.log('Orai is alive');
+    console.log('Oai is alive');
     process.exit(0);
   } else {
-    console.log('Orai is not responding');
+    console.log('Oai is not responding');
     process.exit(1);
   }
 }
@@ -57,12 +57,12 @@ if (args.ping) {
 // --- Health check mode -------------------------------------------------------
 
 if (args.health) {
-  const alive = await pingOrai({ endpoint: args.endpoint });
+  const alive = await pingOai({ endpoint: args.endpoint });
   if (alive) {
-    console.log('Orai IPC server is healthy');
+    console.log('Oai IPC server is healthy');
     process.exit(0);
   } else {
-    console.log('Orai IPC server is not responding');
+    console.log('Oai IPC server is not responding');
     process.exit(1);
   }
 }
@@ -71,8 +71,8 @@ if (args.health) {
 // --- Event mode ------------------------------------------------------------
 
 if (!args.source || !args.event) {
-  console.error('Usage: orai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
-  console.error('       orai-gateway --ping [--endpoint <path>]');
+  console.error('Usage: oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
+  console.error('       oai-gateway --ping [--endpoint <path>]');
   console.error('');
   console.error('Sources: opencode, claude-code, codex');
   console.error('Events: session.start, session.end, session.idle, session.error,');

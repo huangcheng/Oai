@@ -1,4 +1,4 @@
-# Orai Desktop Pet
+# Oai Desktop Pet
 
 A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application with a sprite pack engine for customizable characters.
 
@@ -15,7 +15,7 @@ A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight
 
 ## Sprite Packs
 
-Orai supports customizable characters through sprite packs (`.opk` files). Each pack contains:
+Oai supports customizable characters through sprite packs (`.opk` files). Each pack contains:
 - Sprite sheet or Lottie animations
 - Animation definitions
 - Event-to-animation mappings
@@ -24,7 +24,7 @@ Orai supports customizable characters through sprite packs (`.opk` files). Each 
 ### Installing Packs
 
 1. **Drag-and-drop**: Drop `.opk` file onto the pet window
-2. **Manual**: Copy `.opk` to `~/.config/Orai/packs/`
+2. **Manual**: Copy `.opk` to `~/.config/Oai/packs/`
 3. **Built-in**: Official packs are generated during build
 
 ### Creating Packs
@@ -51,10 +51,10 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Create .app bundle
-macdeployqt Orai.app
+macdeployqt Oai.app
 
 # Run
-open Orai.app
+open Oai.app
 ```
 
 ### Windows (MSVC)
@@ -70,10 +70,10 @@ cmake .. -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\msvc2022_64"
 cmake --build . --config Release
 
 # Bundle Qt DLLs
-windeployqt Release\Orai.exe
+windeployqt Release\Oai.exe
 
 # Run
-Release\Orai.exe
+Release\Oai.exe
 ```
 
 ### Windows (MinGW)
@@ -88,10 +88,10 @@ cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\mingw_64"
 cmake --build .
 
 # Bundle Qt DLLs
-windeployqt Orai.exe
+windeployqt Oai.exe
 
 # Run
-Orai.exe
+Oai.exe
 ```
 
 ### Linux
@@ -110,12 +110,12 @@ cmake ..
 cmake --build .
 
 # Run
-./Orai
+./Oai
 ```
 
 ## IPC Protocol
 
-Orai accepts IPC messages over UDP localhost:
+Oai accepts IPC messages over UDP localhost:
 
 | Transport | Default Endpoint |
 |---|---|
@@ -189,7 +189,7 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 Install the CLI gateway globally from GitHub Packages:
 
 ```bash
-npm install -g @huangcheng/orai-gateway --registry=https://npm.pkg.github.com
+npm install -g @huangcheng/oai-gateway --registry=https://npm.pkg.github.com
 ```
 
 Configure your npm to use GitHub Packages for `@huangcheng` scope (one-time setup):
@@ -208,7 +208,7 @@ Add hooks to `~/.claude/settings.json`:
     "SessionStart": [{
       "hooks": [{
         "type": "command",
-        "command": "orai-gateway --source claude-code --event session.start",
+        "command": "oai-gateway --source claude-code --event session.start",
         "timeout": 3,
         "async": true
       }]
@@ -216,7 +216,7 @@ Add hooks to `~/.claude/settings.json`:
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "orai-gateway --source claude-code --event session.idle",
+        "command": "oai-gateway --source claude-code --event session.idle",
         "timeout": 3,
         "async": true
       }]
@@ -224,7 +224,7 @@ Add hooks to `~/.claude/settings.json`:
     "PreToolUse": [{
       "hooks": [{
         "type": "command",
-        "command": "orai-gateway --source claude-code --event tool.before",
+        "command": "oai-gateway --source claude-code --event tool.before",
         "timeout": 5,
         "async": true
       }]
@@ -232,7 +232,7 @@ Add hooks to `~/.claude/settings.json`:
     "PostToolUse": [{
       "hooks": [{
         "type": "command",
-        "command": "orai-gateway --source claude-code --event tool.after",
+        "command": "oai-gateway --source claude-code --event tool.after",
         "timeout": 3,
         "async": true
       }]
@@ -243,10 +243,10 @@ Add hooks to `~/.claude/settings.json`:
 
 ### Health Check
 
-Check if Orai is running:
+Check if Oai is running:
 
 ```bash
-orai-gateway --ping
+oai-gateway --ping
 # Exit code 0 = alive, 1 = not responding
 ```
 
@@ -255,13 +255,13 @@ orai-gateway --ping
 Send a test event:
 
 ```bash
-orai-gateway --source claude-code --event session.start
+oai-gateway --source claude-code --event session.start
 ```
 
 ## Project Structure
 
 ```
-orai/
+oai/
 ├── CMakeLists.txt              # Build configuration
 ├── src/
 │   ├── main.cpp                # Application entry point
@@ -292,13 +292,13 @@ orai/
 ├── gateways/
 │   ├── shared/                 # Platform-aware IPC transport (Node.js)
 │   │   └── ipc.mjs             # UDP client for 127.0.0.1:52847
-│   └── orai-gateway/           # CLI gateway tool
-└── Orai_zh_CN.ts               # Simplified Chinese translations
+│   └── oai-gateway/           # CLI gateway tool
+└── Oai_zh_CN.ts               # Simplified Chinese translations
 ```
 
 ## Configuration
 
-Config file: `~/.config/Orai/config.json`
+Config file: `~/.config/Oai/config.json`
 
 ```json
 {

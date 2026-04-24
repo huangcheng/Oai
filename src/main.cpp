@@ -24,24 +24,24 @@
 #include <QTimer>
 
 static QString configDir() {
-    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Orai";
+    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Oai";
 }
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    a.setApplicationName("Orai");
-    a.setOrganizationName("Orai");
+    a.setApplicationName("Oai");
+    a.setOrganizationName("Oai");
     a.setWindowIcon(QIcon(":/icons/clippy.png"));
     a.setQuitOnLastWindowClosed(false); // system tray keeps it alive
 
     // --- Single instance enforcement -----------------------------------------
     const QString lockDir = configDir();
     QDir().mkpath(lockDir);
-    QLockFile lockFile(lockDir + "/Orai.lock");
+    QLockFile lockFile(lockDir + "/Oai.lock");
     lockFile.setStaleLockTime(30000); // 30s stale timeout
     if (!lockFile.tryLock(100)) {
-        qInfo() << "Orai is already running. Bringing existing instance to front.";
+        qInfo() << "Oai is already running. Bringing existing instance to front.";
         return 0;
     }
 
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     QTranslator translator;
     QString lang = config.language();
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Orai_" + lang;
+        const QString baseName = "Oai_" + lang;
         if (translator.load(":/i18n/" + baseName)) {
             a.installTranslator(&translator);
         }
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
         // Fall back to system locale
         const QStringList uiLanguages = QLocale::system().uiLanguages();
         for (const QString &locale : uiLanguages) {
-            const QString baseName = "Orai_" + QLocale(locale).name();
+            const QString baseName = "Oai_" + QLocale(locale).name();
             if (translator.load(":/i18n/" + baseName)) {
                 a.installTranslator(&translator);
                 break;
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
     w.activateWindow();
 #endif
 
-    qDebug() << "Orai started — window at" << w.pos() << "size" << w.size();
+    qDebug() << "Oai started — window at" << w.pos() << "size" << w.size();
 
     return a.exec();
 }

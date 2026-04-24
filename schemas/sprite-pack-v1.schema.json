@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://oraipet.dev/schemas/sprite-pack-v1.json",
-  "title": "Oraipet Sprite Pack Manifest",
-  "description": "Manifest format for Oraipet sprite packs (.opk)",
+  "$id": "https://oaipet.dev/schemas/sprite-pack-v1.json",
+  "title": "Oaipet Sprite Pack Manifest",
+  "description": "Manifest format for Oaipet sprite packs (.opk)",
   "version": "1.0.0",
   "type": "object",
   "required": ["formatVersion", "id", "name", "author", "version", "character"],
@@ -59,7 +59,7 @@
     },
     "minAppVersion": {
       "type": "string",
-      "description": "Minimum Oraipet version required",
+      "description": "Minimum Oaipet version required",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
     "character": {
