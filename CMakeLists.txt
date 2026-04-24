@@ -367,10 +367,11 @@ install(TARGETS Oai
 set(PACKS_DIR ${CMAKE_BINARY_DIR}/packs)
 file(MAKE_DIRECTORY ${PACKS_DIR})
 
-# Sprite packs (Clippy + ClippyJS agents) are currently disabled: they render
-# acceptably only at native 80-200px, so next to 300x300 Live2D they either
-# look tiny (native) or blur (upscaled). Re-enable by uncommenting the two
-# blocks below and the macOS bundle loops further down.
+# Sprite packs (Clippy + ClippyJS agents) are currently disabled. The pack
+# directories were moved to assets/packs-disabled/ so the runtime
+# CharacterPackManager scan in dev builds skips them too. To re-enable,
+# move the directories back to assets/packs/ and uncomment the two blocks
+# below plus the macOS bundle loops further down.
 #
 # # Clippy pack (has external animations.json definitions file)
 # add_custom_command(
