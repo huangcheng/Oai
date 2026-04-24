@@ -51,7 +51,9 @@ void TipsEngine::processEvent(const QString &eventName, const QJsonObject &event
                 m_tipBubble->showBubble(matcher.tipTitle, matcher.tipBody,
                                         TipBubbleWidget::TipBubble);
             }
-            if (m_engine && !matcher.animation.isEmpty()) {
+            if (m_engine && m_engine->hasAnimations() && !matcher.animation.isEmpty()) {
+                // TipsEngine ships sprite-era animation names (wave, explain,
+                // getattentionyawn …); only fire when a sprite pack is loaded.
                 m_engine->playAnimation(matcher.animation,
                                         SpriteAnimationEngine::NormalPriority);
             }

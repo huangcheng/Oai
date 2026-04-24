@@ -23,6 +23,17 @@ const QSet<QString> EventRouter::s_validEvents = {
     "todo.updated"
 };
 
+// Events that trigger a reactive animation (tap-style). Everything else is
+// treated as a passive state change and queued at NormalPriority so it
+// doesn't interrupt an ongoing reaction — without this, a burst of idle-
+// mapped events mid-tap cuts the tap motion short every ~1.8s.
+static const QSet<QString> s_activeEvents = {
+    "session.start", "session.error",
+    "tool.after", "tool.failed",
+    "permission.requested", "permission.denied",
+    "notification.sent", "todo.updated",
+};
+
 const QSet<QString> EventRouter::s_validSources = {
     "opencode", "claude-code", "codex"
 };
@@ -57,19 +68,27 @@ void EventRouter::routeEvent(const QJsonObject &event)
 
     const EventAction action = m_eventMap.value(eventName);
 
-    // Trigger animation — always use HighPriority so event animations
-    // immediately interrupt idle/previous animations
+    // Trigger animation — HighPriority for active events (tap-style reactions
+    // that should feel snappy), NormalPriority for passive/state events so
+    // they queue rather than truncate an ongoing reaction.
     if (!action.animation.isEmpty()) {
+        const bool active = s_activeEvents.contains(eventName);
         // Use the engine that has animations loaded (Live2D > Lottie > Sprite)
 #ifdef OAI_LIVE2D_SUPPORT
         if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
-            m_live2dEngine->playAnimation(action.animation, Live2DAnimationEngine::HighPriority);
+            m_live2dEngine->playAnimation(action.animation,
+                active ? Live2DAnimationEngine::HighPriority
+                       : Live2DAnimationEngine::NormalPriority);
         } else
 #endif
         if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
-            m_lottieEngine->playAnimation(action.animation, LottieAnimationEngine::HighPriority);
+            m_lottieEngine->playAnimation(action.animation,
+                active ? LottieAnimationEngine::HighPriority
+                       : LottieAnimationEngine::NormalPriority);
         } else if (m_engine) {
-            m_engine->playAnimation(action.animation, SpriteAnimationEngine::HighPriority);
+            m_engine->playAnimation(action.animation,
+                active ? SpriteAnimationEngine::HighPriority
+                       : SpriteAnimationEngine::NormalPriority);
         }
     }
 
