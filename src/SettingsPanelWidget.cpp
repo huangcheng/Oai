@@ -423,6 +423,12 @@ void SettingsPanelWidget::refreshPackList()
         return;
     }
 
+    // Block currentIndexChanged while populating. Without this, the first
+    // addItem() fires currentIndexChanged(0) which calls onPackChanged ->
+    // switchPack(firstPack) and clobbers the pack that was just restored
+    // from config at startup.
+    const QSignalBlocker blocker(m_packCombo);
+
     m_packCombo->clear();
 
     if (!m_packManager) {
