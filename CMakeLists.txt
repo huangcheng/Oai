@@ -367,43 +367,49 @@ install(TARGETS Oai
 set(PACKS_DIR ${CMAKE_BINARY_DIR}/packs)
 file(MAKE_DIRECTORY ${PACKS_DIR})
 
-# Clippy pack (has external animations.json definitions file)
-add_custom_command(
-    OUTPUT ${PACKS_DIR}/clippy.opk
-    COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/clippy.opk --format=zip --
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
-    DEPENDS
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
-        ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
-    COMMENT "Generating clippy.opk"
-    WORKING_DIRECTORY ${PACKS_DIR}
-)
+# Sprite packs (Clippy + ClippyJS agents) are currently disabled: they render
+# acceptably only at native 80-200px, so next to 300x300 Live2D they either
+# look tiny (native) or blur (upscaled). Re-enable by uncommenting the two
+# blocks below and the macOS bundle loops further down.
+#
+# # Clippy pack (has external animations.json definitions file)
+# add_custom_command(
+#     OUTPUT ${PACKS_DIR}/clippy.opk
+#     COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/clippy.opk --format=zip --
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
+#     DEPENDS
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
+#         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
+#     COMMENT "Generating clippy.opk"
+#     WORKING_DIRECTORY ${PACKS_DIR}
+# )
+#
+# # ClippyJS agent packs (inline animations in manifest.json, no definitions file)
+# set(CLIPPYJS_PACKS bonzi f1 genie genius links merlin peedy rocky rover)
+#
+# foreach(pack ${CLIPPYJS_PACKS})
+#     add_custom_command(
+#         OUTPUT ${PACKS_DIR}/${pack}.opk
+#         COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.opk --format=zip --
+#             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
+#             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
+#             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
+#         DEPENDS
+#             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
+#             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
+#             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
+#         COMMENT "Generating ${pack}.opk"
+#         WORKING_DIRECTORY ${PACKS_DIR}
+#     )
+#     list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
+# endforeach()
 
-# ClippyJS agent packs (inline animations in manifest.json, no definitions file)
-set(CLIPPYJS_PACKS bonzi f1 genie genius links merlin peedy rocky rover)
-set(ALL_PACK_OPKS ${PACKS_DIR}/clippy.opk)
-
-foreach(pack ${CLIPPYJS_PACKS})
-    add_custom_command(
-        OUTPUT ${PACKS_DIR}/${pack}.opk
-        COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.opk --format=zip --
-            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
-            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
-            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
-        DEPENDS
-            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
-            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
-            ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
-        COMMENT "Generating ${pack}.opk"
-        WORKING_DIRECTORY ${PACKS_DIR}
-    )
-    list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
-endforeach()
+set(ALL_PACK_OPKS "")
 
 # Live2D packs (model3.json + moc3 + textures/ + motions/ + optional physics/pose/expressions)
 # These ship the whole pack directory, so we enumerate files with GLOB_RECURSE
@@ -448,18 +454,20 @@ if(APPLE)
     )
     target_sources(Oai PRIVATE assets/oai.icns)
 
-    # Include packs in the macOS bundle Resources
-    set_source_files_properties(${PACKS_DIR}/clippy.opk PROPERTIES
-        MACOSX_PACKAGE_LOCATION "Resources/packs"
-    )
-    target_sources(Oai PRIVATE ${PACKS_DIR}/clippy.opk)
-
-    foreach(pack ${CLIPPYJS_PACKS})
-        set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
-            MACOSX_PACKAGE_LOCATION "Resources/packs"
-        )
-        target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
-    endforeach()
+    # Include packs in the macOS bundle Resources.
+    # Sprite packs disabled — see the generation block above. Re-enable both
+    # together.
+    # set_source_files_properties(${PACKS_DIR}/clippy.opk PROPERTIES
+    #     MACOSX_PACKAGE_LOCATION "Resources/packs"
+    # )
+    # target_sources(Oai PRIVATE ${PACKS_DIR}/clippy.opk)
+    #
+    # foreach(pack ${CLIPPYJS_PACKS})
+    #     set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
+    #         MACOSX_PACKAGE_LOCATION "Resources/packs"
+    #     )
+    #     target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
+    # endforeach()
 
     foreach(pack ${LIVE2D_PACKS})
         set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
