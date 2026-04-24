@@ -603,6 +603,15 @@ void Live2DAnimationEngine::playAnimation(const QString &name, Priority priority
         return;
     }
 
+    // Don't re-trigger the same group while it's still playing. Without this,
+    // a chatty event stream where every active event maps to "Tap" (or every
+    // idle event maps to "Idle") restarts the motion every ~1.8s and the user
+    // only ever sees the opening frames — the "small repeat movements" feel.
+    // Different group requests still apply Cubism's priority rules normally.
+    if (name == m_currentMotion && !m_cubismModel->isMotionFinished()) {
+        return;
+    }
+
     int no = QRandomGenerator::global()->bounded(count);
     int cubismPriority = (priority == HighPriority) ? 3 : 2;  // Force=3, Normal=2
 
