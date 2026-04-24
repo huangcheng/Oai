@@ -28,30 +28,25 @@ SpriteAnimationEngine::~SpriteAnimationEngine() = default;
 
 void SpriteAnimationEngine::buildNameMap()
 {
-    // Map lowercase/snake_case names → PascalCase names in animations.json
-    m_nameMap["rest"]            = "RestPose";
-    m_nameMap["idle1"]           = "Idle1_1";
-    m_nameMap["idle2"]           = "IdleAtom";
-    m_nameMap["idle3"]           = "IdleSideToSide";
-    m_nameMap["click1"]          = "GestureUp";
-    m_nameMap["click2"]          = "GestureRight";
-    m_nameMap["doubleclick1"]    = "GetAttention";
-    m_nameMap["doubleclick2"]    = "GetArtsy";
-    m_nameMap["gesture_down"]    = "GestureDown";
-    m_nameMap["gesture_up"]      = "GestureUp";
-    m_nameMap["gesture_left"]    = "GestureLeft";
-    m_nameMap["gesture_right"]   = "GestureRight";
+    // Canonical animation names (skin-agnostic)
+    // These map to skin-specific animation names in animations.json
+    m_nameMap["greet"]           = "Wave";
+    m_nameMap["idle"]            = "Idle1_1";
+    m_nameMap["think"]           = "Thinking";
+    m_nameMap["work"]            = "Explain";
     m_nameMap["alert"]           = "Alert";
-    m_nameMap["congratulate"]    = "Congratulate";
-    m_nameMap["explain"]         = "Explain";
-    m_nameMap["getattentionyawn"]= "GetAttention";
-    m_nameMap["lookdown"]        = "LookDown";
-    m_nameMap["lookleft"]        = "LookLeft";
-    m_nameMap["lookright"]       = "LookRight";
-    m_nameMap["lookup"]          = "LookUp";
-    m_nameMap["sendmail"]        = "SendMail";
-    m_nameMap["thinking"]        = "Thinking";
+    m_nameMap["celebrate"]       = "Congratulate";
+    m_nameMap["rest"]            = "RestPose";
+    m_nameMap["send"]            = "SendMail";
+    m_nameMap["attention"]       = "GetAttention";
+
+    // Skin-specific aliases (legacy names kept for compatibility)
     m_nameMap["wave"]            = "Wave";
+    m_nameMap["explain"]         = "Explain";
+    m_nameMap["thinking"]        = "Thinking";
+    m_nameMap["congratulate"]    = "Congratulate";
+    m_nameMap["sendmail"]        = "SendMail";
+    m_nameMap["getattentionyawn"]= "GetAttention";
     m_nameMap["greeting"]        = "Greeting";
     m_nameMap["goodbye"]         = "GoodBye";
     m_nameMap["processing"]      = "Processing";
@@ -63,6 +58,23 @@ void SpriteAnimationEngine::buildNameMap()
     m_nameMap["show"]            = "Show";
     m_nameMap["gettechy"]        = "GetTechy";
     m_nameMap["getwizardy"]      = "GetWizardy";
+
+    // Idle animations (for random selection)
+    m_nameMap["idle1"]           = "Idle1_1";
+    m_nameMap["idle2"]           = "IdleAtom";
+    m_nameMap["idle3"]           = "IdleSideToSide";
+    m_nameMap["click1"]          = "GestureUp";
+    m_nameMap["click2"]          = "GestureRight";
+    m_nameMap["doubleclick1"]    = "GetAttention";
+    m_nameMap["doubleclick2"]    = "GetArtsy";
+    m_nameMap["gesture_down"]    = "GestureDown";
+    m_nameMap["gesture_up"]      = "GestureUp";
+    m_nameMap["gesture_left"]    = "GestureLeft";
+    m_nameMap["gesture_right"]   = "GestureRight";
+    m_nameMap["lookdown"]        = "LookDown";
+    m_nameMap["lookleft"]        = "LookLeft";
+    m_nameMap["lookright"]       = "LookRight";
+    m_nameMap["lookup"]          = "LookUp";
 }
 
 void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QString &animJsonPath)
