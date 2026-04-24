@@ -24,7 +24,8 @@ CharacterPackManager::~CharacterPackManager()
     qDeleteAll(m_loadedPacks);
 }
 
-void CharacterPackManager::initialize(const QString &builtInDir, const QString &userDir)
+void CharacterPackManager::initialize(const QString &builtInDir, const QString &userDir,
+                                       const QString &preferredId)
 {
     m_builtInDir = builtInDir;
     m_userDir = userDir;
@@ -41,11 +42,11 @@ void CharacterPackManager::initialize(const QString &builtInDir, const QString &
     // Setup file watcher for hot-reload
     setupFileWatcher();
 
-    // Load default pack (first available, or fallback)
+    // Load default pack: preferred ID from config (if still installed),
+    // otherwise fall back to the alphabetically-first available pack.
     if (!m_packs.isEmpty()) {
-        // Try to load 'clippy' as default, or first available
-        QString defaultPackId = "im.cheng.oai.clippy";
-        if (!m_packs.contains(defaultPackId)) {
+        QString defaultPackId = preferredId;
+        if (defaultPackId.isEmpty() || !m_packs.contains(defaultPackId)) {
             defaultPackId = m_packs.firstKey();
         }
         switchPack(defaultPackId);

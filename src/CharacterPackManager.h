@@ -55,8 +55,10 @@ public:
      * @brief Initialize the manager and discover packs
      * @param builtInDir Directory containing built-in packs
      * @param userDir Directory containing user packs
+     * @param preferredId Pack ID to activate if installed (empty = alphabetically first)
      */
-    void initialize(const QString &builtInDir, const QString &userDir);
+    void initialize(const QString &builtInDir, const QString &userDir,
+                    const QString &preferredId = QString());
 
     /**
      * @brief Get list of all discovered packs

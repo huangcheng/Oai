@@ -133,8 +133,14 @@ int main(int argc, char *argv[])
     CharacterPackManager packManager;
     const QString builtInPacksDir = assetsDir + "/packs";
     const QString userPacksDir = configDir() + "/packs";
-    packManager.initialize(builtInPacksDir, userPacksDir);
+    packManager.initialize(builtInPacksDir, userPacksDir, config.activePackId());
     w.setCharacterPackManager(&packManager);
+
+    // Persist the user's pack choice so the next launch restores it
+    QObject::connect(&packManager, &CharacterPackManager::activePackChanged,
+                     &config, [&config, &packManager](CharacterPack *) {
+        config.setActivePackId(packManager.activePackId());
+    });
 
     // --- Position window ----------------------------------------------------
     // Clamp to screen bounds to handle: resolution changes, disconnected monitors,

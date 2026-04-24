@@ -70,6 +70,11 @@ void ConfigManager::load()
         m_ipcEndpoint = obj["ipcSocketPath"].toString();
     }
 
+    // Last-selected character pack
+    if (obj.contains("activePackId")) {
+        m_activePackId = obj["activePackId"].toString();
+    }
+
     qDebug() << "Config loaded from:" << path;
 }
 
@@ -84,6 +89,7 @@ void ConfigManager::save()
     obj["language"] = m_language;
     obj["autoStart"] = m_autoStart;
     obj["ipcEndpoint"] = m_ipcEndpoint;
+    obj["activePackId"] = m_activePackId;
 
     QJsonDocument doc(obj);
 
@@ -120,6 +126,14 @@ void ConfigManager::setAutoStart(bool enabled)
 {
     if (m_autoStart != enabled) {
         m_autoStart = enabled;
+        save();
+    }
+}
+
+void ConfigManager::setActivePackId(const QString &packId)
+{
+    if (m_activePackId != packId) {
+        m_activePackId = packId;
         save();
     }
 }

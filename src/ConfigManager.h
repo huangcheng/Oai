@@ -24,6 +24,10 @@ public:
     bool autoStart() const { return m_autoStart; }
     void setAutoStart(bool enabled);
 
+    /** Pack ID of the last-selected character pack, or empty on first run. */
+    QString activePackId() const { return m_activePackId; }
+    void setActivePackId(const QString &packId);
+
     /**
      * Returns the TCP endpoint for IPC.
      * Format: "host:port", e.g. "127.0.0.1:52847"
@@ -55,6 +59,7 @@ private:
     QString m_language = "en";
     bool m_autoStart = false;
     QString m_ipcEndpoint;
+    QString m_activePackId;
 };
 
 #endif // CONFIGMANAGER_H
