@@ -6,10 +6,14 @@
   "version": "1.0.0",
   "description": "The classic Office Assistant from Microsoft Office 97/2000",
   "preview": "preview.png",
-  "tags": ["retro", "microsoft", "helper", "classic"],
+  "tags": [
+    "retro",
+    "microsoft",
+    "helper",
+    "classic"
+  ],
   "license": "MIT",
   "minAppVersion": "1.0.0",
-
   "character": {
     "type": "spriteSheet",
     "spriteSheet": "sprites/map.png",
@@ -17,41 +21,77 @@
     "frameHeight": 93,
     "definitions": "sprites/animations.json",
     "animations": {},
-    "idlePool": [
-      {"name": "Idle1_1", "weight": 4},
-      {"name": "IdleAtom", "weight": 3},
-      {"name": "IdleSideToSide", "weight": 3},
-      {"name": "IdleRopePile", "weight": 2},
-      {"name": "IdleHeadScratch", "weight": 3},
-      {"name": "IdleFingerTap", "weight": 3},
-      {"name": "IdleEyeBrowRaise", "weight": 3},
-      {"name": "IdleSnooze", "weight": 1},
-      {"name": "LookLeft", "weight": 2},
-      {"name": "LookRight", "weight": 2},
-      {"name": "LookUp", "weight": 2},
-      {"name": "LookDown", "weight": 2}
-    ],
-    "eventMap": {
-      "session.start": "Greeting",
-      "session.end": "RestPose",
-      "session.idle": "RestPose",
-      "session.error": "Alert",
-      "prompt.submitted": "Thinking",
-      "tool.before": "Explain",
-      "tool.after": "Congratulate",
-      "tool.failed": "Alert",
-      "permission.requested": "GetAttention",
-      "permission.denied": "Alert",
-      "permission.response": "RestPose",
-      "subagent.started": "Explain",
-      "subagent.stopped": "RestPose",
-      "notification.sent": "GetAttention",
-      "file.edited": "SendMail",
-      "file.watched": "RestPose",
-      "todo.updated": "Congratulate"
-    }
+    "displayScale": 2.0
   },
-
+  "idlePool": [
+    {
+      "name": "Idle1_1",
+      "weight": 4
+    },
+    {
+      "name": "IdleAtom",
+      "weight": 3
+    },
+    {
+      "name": "IdleSideToSide",
+      "weight": 3
+    },
+    {
+      "name": "IdleRopePile",
+      "weight": 2
+    },
+    {
+      "name": "IdleHeadScratch",
+      "weight": 3
+    },
+    {
+      "name": "IdleFingerTap",
+      "weight": 3
+    },
+    {
+      "name": "IdleEyeBrowRaise",
+      "weight": 3
+    },
+    {
+      "name": "IdleSnooze",
+      "weight": 1
+    },
+    {
+      "name": "LookLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookRight",
+      "weight": 2
+    },
+    {
+      "name": "LookUp",
+      "weight": 2
+    },
+    {
+      "name": "LookDown",
+      "weight": 2
+    }
+  ],
+  "eventMap": {
+    "session.start": "Greeting",
+    "session.end": "RestPose",
+    "session.idle": "RestPose",
+    "session.error": "Alert",
+    "prompt.submitted": "Thinking",
+    "tool.before": "Explain",
+    "tool.after": "Congratulate",
+    "tool.failed": "Alert",
+    "permission.requested": "GetAttention",
+    "permission.denied": "Alert",
+    "permission.response": "RestPose",
+    "subagent.started": "Explain",
+    "subagent.stopped": "RestPose",
+    "notification.sent": "GetAttention",
+    "file.edited": "SendMail",
+    "file.watched": "RestPose",
+    "todo.updated": "Congratulate"
+  },
   "sounds": {
     "directory": "sounds"
   }

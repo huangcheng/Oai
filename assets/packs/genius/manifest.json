@@ -9692,103 +9692,104 @@
         ]
       }
     },
-    "idlePool": [
-      {
-        "name": "Idle0",
-        "weight": 3
-      },
-      {
-        "name": "Idle1",
-        "weight": 3
-      },
-      {
-        "name": "Idle1_1",
-        "weight": 3
-      },
-      {
-        "name": "Idle2",
-        "weight": 3
-      },
-      {
-        "name": "Idle3",
-        "weight": 3
-      },
-      {
-        "name": "Idle4",
-        "weight": 3
-      },
-      {
-        "name": "Idle5",
-        "weight": 3
-      },
-      {
-        "name": "Idle6",
-        "weight": 3
-      },
-      {
-        "name": "Idle7",
-        "weight": 3
-      },
-      {
-        "name": "Idle8",
-        "weight": 3
-      },
-      {
-        "name": "Idle9",
-        "weight": 3
-      },
-      {
-        "name": "LookDown",
-        "weight": 2
-      },
-      {
-        "name": "LookDownLeft",
-        "weight": 2
-      },
-      {
-        "name": "LookDownRight",
-        "weight": 2
-      },
-      {
-        "name": "LookLeft",
-        "weight": 2
-      },
-      {
-        "name": "LookRight",
-        "weight": 2
-      },
-      {
-        "name": "LookUp",
-        "weight": 2
-      },
-      {
-        "name": "LookUpLeft",
-        "weight": 2
-      },
-      {
-        "name": "LookUpRight",
-        "weight": 2
-      }
-    ],
-    "eventMap": {
-      "session.start": "Greeting",
-      "session.end": "RestPose",
-      "session.idle": "RestPose",
-      "session.error": "Alert",
-      "prompt.submitted": "Thinking",
-      "tool.before": "Explain",
-      "tool.after": "Congratulate",
-      "tool.failed": "Alert",
-      "permission.requested": "GetAttention",
-      "permission.denied": "Alert",
-      "permission.response": "RestPose",
-      "subagent.started": "Explain",
-      "subagent.stopped": "RestPose",
-      "notification.sent": "GetAttention",
-      "file.edited": "Writing",
-      "file.watched": "RestPose",
-      "todo.updated": "Congratulate"
+    "displayScale": 2.0
+  },
+  "idlePool": [
+    {
+      "name": "Idle0",
+      "weight": 3
+    },
+    {
+      "name": "Idle1",
+      "weight": 3
+    },
+    {
+      "name": "Idle1_1",
+      "weight": 3
+    },
+    {
+      "name": "Idle2",
+      "weight": 3
+    },
+    {
+      "name": "Idle3",
+      "weight": 3
+    },
+    {
+      "name": "Idle4",
+      "weight": 3
+    },
+    {
+      "name": "Idle5",
+      "weight": 3
+    },
+    {
+      "name": "Idle6",
+      "weight": 3
+    },
+    {
+      "name": "Idle7",
+      "weight": 3
+    },
+    {
+      "name": "Idle8",
+      "weight": 3
+    },
+    {
+      "name": "Idle9",
+      "weight": 3
+    },
+    {
+      "name": "LookDown",
+      "weight": 2
+    },
+    {
+      "name": "LookDownLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookDownRight",
+      "weight": 2
+    },
+    {
+      "name": "LookLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookRight",
+      "weight": 2
+    },
+    {
+      "name": "LookUp",
+      "weight": 2
+    },
+    {
+      "name": "LookUpLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookUpRight",
+      "weight": 2
     }
+  ],
+  "eventMap": {
+    "session.start": "Greeting",
+    "session.end": "RestPose",
+    "session.idle": "RestPose",
+    "session.error": "Alert",
+    "prompt.submitted": "Thinking",
+    "tool.before": "Explain",
+    "tool.after": "Congratulate",
+    "tool.failed": "Alert",
+    "permission.requested": "GetAttention",
+    "permission.denied": "Alert",
+    "permission.response": "RestPose",
+    "subagent.started": "Explain",
+    "subagent.stopped": "RestPose",
+    "notification.sent": "GetAttention",
+    "file.edited": "Writing",
+    "file.watched": "RestPose",
+    "todo.updated": "Congratulate"
   },
   "sounds": {
     "directory": "sounds"

@@ -238,21 +238,31 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
     }
 
     // idlePool / eventMap / effectTriggers live at the top level of the manifest
-    // (see schemas/sprite-pack-v1.schema.json and every existing pack).
-    const QJsonArray idlePoolArray = manifest.value("idlePool").toArray();
-    if (!parseIdlePool(idlePoolArray)) {
+    // in the v1.0 schema. Historical sprite packs (Clippy / ClippyJS agents)
+    // shipped them nested inside the "character" object, so fall back to that
+    // location for backwards compatibility — top level wins when both exist.
+    auto pickArray = [&](const char *key) {
+        const QJsonArray top = manifest.value(key).toArray();
+        if (!top.isEmpty()) return top;
+        return manifest.value("character").toObject().value(key).toArray();
+    };
+    auto pickObject = [&](const char *key) {
+        const QJsonObject top = manifest.value(key).toObject();
+        if (!top.isEmpty()) return top;
+        return manifest.value("character").toObject().value(key).toObject();
+    };
+
+    if (!parseIdlePool(pickArray("idlePool"))) {
         qWarning() << "CharacterPack: Failed to parse idle pool";
         return false;
     }
 
-    const QJsonObject eventMapObj = manifest.value("eventMap").toObject();
-    if (!parseEventMap(eventMapObj)) {
+    if (!parseEventMap(pickObject("eventMap"))) {
         qWarning() << "CharacterPack: Failed to parse event map";
         return false;
     }
 
-    const QJsonObject effectTriggersObj = manifest.value("effectTriggers").toObject();
-    if (!parseEffectTriggers(effectTriggersObj)) {
+    if (!parseEffectTriggers(pickObject("effectTriggers"))) {
         qWarning() << "CharacterPack: Failed to parse effect triggers";
         return false;
     }
@@ -295,6 +305,13 @@ bool CharacterPack::parseCharacter(const QJsonObject &character)
             return false;
         }
     }
+
+    // Optional display-size multiplier. Lets a sprite pack ship at its native
+    // cell resolution (which determines how the engine reads the sheet) but
+    // render larger in the pet window — useful for low-res ClippyJS agents
+    // next to 300×300 Live2D packs.
+    const double scale = character.value("displayScale").toDouble(1.0);
+    m_characterConfig.displayScale = (scale > 0.0) ? static_cast<float>(scale) : 1.0f;
 
     // Parse animations (from definitions file or inline)
     if (!m_characterConfig.definitions.isEmpty()) {

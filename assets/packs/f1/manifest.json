@@ -11104,111 +11104,112 @@
         ]
       }
     },
-    "idlePool": [
-      {
-        "name": "Idle1_1",
-        "weight": 3
-      },
-      {
-        "name": "IdleBlink",
-        "weight": 3
-      },
-      {
-        "name": "IdleBlinkWithBrows",
-        "weight": 3
-      },
-      {
-        "name": "IdleCuteToeTwist",
-        "weight": 3
-      },
-      {
-        "name": "IdleFallsAsleep",
-        "weight": 3
-      },
-      {
-        "name": "IdleHeadPatting",
-        "weight": 3
-      },
-      {
-        "name": "IdleLeansAgainstWall",
-        "weight": 3
-      },
-      {
-        "name": "IdleLookDown",
-        "weight": 3
-      },
-      {
-        "name": "IdleLookLeft",
-        "weight": 3
-      },
-      {
-        "name": "IdleLookRight",
-        "weight": 3
-      },
-      {
-        "name": "IdleLooksAtUser",
-        "weight": 3
-      },
-      {
-        "name": "IdleLowersBrows",
-        "weight": 3
-      },
-      {
-        "name": "IdleLowersToGround",
-        "weight": 3
-      },
-      {
-        "name": "LookDown",
-        "weight": 2
-      },
-      {
-        "name": "LookDownLeft",
-        "weight": 2
-      },
-      {
-        "name": "LookDownRight",
-        "weight": 2
-      },
-      {
-        "name": "LookLeft",
-        "weight": 2
-      },
-      {
-        "name": "LookRight",
-        "weight": 2
-      },
-      {
-        "name": "LookUp",
-        "weight": 2
-      },
-      {
-        "name": "LookUpLeft",
-        "weight": 2
-      },
-      {
-        "name": "LookUpRight",
-        "weight": 2
-      }
-    ],
-    "eventMap": {
-      "session.start": "Greeting",
-      "session.end": "RestPose",
-      "session.idle": "RestPose",
-      "session.error": "Alert",
-      "prompt.submitted": "Thinking",
-      "tool.before": "Explain",
-      "tool.after": "Congratulate",
-      "tool.failed": "Alert",
-      "permission.requested": "GetAttention",
-      "permission.denied": "Alert",
-      "permission.response": "RestPose",
-      "subagent.started": "Explain",
-      "subagent.stopped": "RestPose",
-      "notification.sent": "GetAttention",
-      "file.edited": "Writing",
-      "file.watched": "RestPose",
-      "todo.updated": "Congratulate"
+    "displayScale": 2.0
+  },
+  "idlePool": [
+    {
+      "name": "Idle1_1",
+      "weight": 3
+    },
+    {
+      "name": "IdleBlink",
+      "weight": 3
+    },
+    {
+      "name": "IdleBlinkWithBrows",
+      "weight": 3
+    },
+    {
+      "name": "IdleCuteToeTwist",
+      "weight": 3
+    },
+    {
+      "name": "IdleFallsAsleep",
+      "weight": 3
+    },
+    {
+      "name": "IdleHeadPatting",
+      "weight": 3
+    },
+    {
+      "name": "IdleLeansAgainstWall",
+      "weight": 3
+    },
+    {
+      "name": "IdleLookDown",
+      "weight": 3
+    },
+    {
+      "name": "IdleLookLeft",
+      "weight": 3
+    },
+    {
+      "name": "IdleLookRight",
+      "weight": 3
+    },
+    {
+      "name": "IdleLooksAtUser",
+      "weight": 3
+    },
+    {
+      "name": "IdleLowersBrows",
+      "weight": 3
+    },
+    {
+      "name": "IdleLowersToGround",
+      "weight": 3
+    },
+    {
+      "name": "LookDown",
+      "weight": 2
+    },
+    {
+      "name": "LookDownLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookDownRight",
+      "weight": 2
+    },
+    {
+      "name": "LookLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookRight",
+      "weight": 2
+    },
+    {
+      "name": "LookUp",
+      "weight": 2
+    },
+    {
+      "name": "LookUpLeft",
+      "weight": 2
+    },
+    {
+      "name": "LookUpRight",
+      "weight": 2
     }
+  ],
+  "eventMap": {
+    "session.start": "Greeting",
+    "session.end": "RestPose",
+    "session.idle": "RestPose",
+    "session.error": "Alert",
+    "prompt.submitted": "Thinking",
+    "tool.before": "Explain",
+    "tool.after": "Congratulate",
+    "tool.failed": "Alert",
+    "permission.requested": "GetAttention",
+    "permission.denied": "Alert",
+    "permission.response": "RestPose",
+    "subagent.started": "Explain",
+    "subagent.stopped": "RestPose",
+    "notification.sent": "GetAttention",
+    "file.edited": "Writing",
+    "file.watched": "RestPose",
+    "todo.updated": "Congratulate"
   },
   "sounds": {
     "directory": "sounds"

@@ -7901,39 +7901,40 @@
         ]
       }
     },
-    "idlePool": [
-      {
-        "name": "Idle",
-        "weight": 3
-      },
-      {
-        "name": "LookUp",
-        "weight": 2
-      },
-      {
-        "name": "LookUpLeft",
-        "weight": 2
-      }
-    ],
-    "eventMap": {
-      "session.start": "Greet",
-      "session.end": "RestPose",
-      "session.idle": "RestPose",
-      "session.error": "Surprised",
-      "prompt.submitted": "Thinking",
-      "tool.before": "Searching",
-      "tool.after": "Congratulate",
-      "tool.failed": "Surprised",
-      "permission.requested": "GetAttention",
-      "permission.denied": "Surprised",
-      "permission.response": "RestPose",
-      "subagent.started": "Searching",
-      "subagent.stopped": "RestPose",
-      "notification.sent": "GetAttention",
-      "file.edited": "Writing",
-      "file.watched": "RestPose",
-      "todo.updated": "Congratulate"
+    "displayScale": 2.5
+  },
+  "idlePool": [
+    {
+      "name": "Idle",
+      "weight": 3
+    },
+    {
+      "name": "LookUp",
+      "weight": 2
+    },
+    {
+      "name": "LookUpLeft",
+      "weight": 2
     }
+  ],
+  "eventMap": {
+    "session.start": "Greet",
+    "session.end": "RestPose",
+    "session.idle": "RestPose",
+    "session.error": "Surprised",
+    "prompt.submitted": "Thinking",
+    "tool.before": "Searching",
+    "tool.after": "Congratulate",
+    "tool.failed": "Surprised",
+    "permission.requested": "GetAttention",
+    "permission.denied": "Surprised",
+    "permission.response": "RestPose",
+    "subagent.started": "Searching",
+    "subagent.stopped": "RestPose",
+    "notification.sent": "GetAttention",
+    "file.edited": "Writing",
+    "file.watched": "RestPose",
+    "todo.updated": "Congratulate"
   },
   "sounds": {
     "directory": "sounds"

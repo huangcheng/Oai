@@ -99,6 +99,9 @@ public:
         QString animDirectory;    ///< Directory containing Lottie files (for Lottie type)
         QString definitions;      ///< Path to animations.json (for SpriteSheet type, optional)
         QString modelJson;        ///< Path to .model3.json (for Live2D type)
+        float displayScale = 1.0f;///< Window-size multiplier over frameWidth/Height (default 1.0).
+                                  ///< Sprite sheets can set e.g. 2.0 to render the 124×93 art at 248×186
+                                  ///< so it looks comparable in size to 300×300 Live2D packs.
     };
 
     CharacterPack() = default;
