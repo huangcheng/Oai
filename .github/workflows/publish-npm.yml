@@ -16,9 +16,9 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@huangcheng'
+          scope: '@eastlake'
 
-      - name: Publish @huangcheng/oai-gateway
+      - name: Publish @eastlake/oai-gateway
         working-directory: gateways/oai-gateway
         run: npm publish --access public || echo "Already published or unchanged"
         env:
