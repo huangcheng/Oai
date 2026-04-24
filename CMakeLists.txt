@@ -416,8 +416,8 @@ set(ALL_PACK_OPKS "")
 # These ship the whole pack directory, so we enumerate files with GLOB_RECURSE
 # and archive paths relative to the pack root.
 set(LIVE2D_PACKS
-    chitose epsilon gantzert_felixander haru haru_greeter haruto hibiki hiyori
-    izumi kei koharu mao mark miara miku natori ren rice unitychan wanko)
+    chitose epsilon furina gantzert_felixander haru haru_greeter haruto hibiki
+    hiyori izumi kei koharu mao mark miara miku natori ren rice unitychan wanko)
 foreach(pack ${LIVE2D_PACKS})
     file(GLOB_RECURSE _${pack}_FILES RELATIVE
         ${CMAKE_SOURCE_DIR}/assets/packs/${pack}

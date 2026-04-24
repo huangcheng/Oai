@@ -1,0 +1,52 @@
+{
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "furina.moc3",
+    "Textures": [
+      "furina.2048/texture_00.png"
+    ],
+    "Physics": "furina.physics3.json",
+    "DisplayInfo": "furina.cdi3.json",
+    "Motions": {
+      "Idle": [
+        {
+          "File": "motions/idle_01.motion3.json",
+          "FadeInTime": 0.5,
+          "FadeOutTime": 0.5
+        }
+      ],
+      "Tap": [
+        {
+          "File": "motions/tap_01.motion3.json",
+          "FadeInTime": 0.5,
+          "FadeOutTime": 0.5
+        },
+        {
+          "File": "motions/tap_02.motion3.json",
+          "FadeInTime": 0.5,
+          "FadeOutTime": 0.5
+        },
+        {
+          "File": "motions/tap_03.motion3.json",
+          "FadeInTime": 0.5,
+          "FadeOutTime": 0.5
+        }
+      ]
+    }
+  },
+  "Groups": [
+    {
+      "Target": "Parameter",
+      "Name": "LipSync",
+      "Ids": [
+        "ParamMouthForm",
+        "ParamMouthOpenY"
+      ]
+    },
+    {
+      "Target": "Parameter",
+      "Name": "EyeBlink",
+      "Ids": []
+    }
+  ]
+}
