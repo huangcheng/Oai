@@ -427,9 +427,9 @@ void MainWindow::onActivePackChanged()
             const QRect b = m_live2dEngine->characterBounds();
             if (b.isNull() || b.isEmpty()) return;
             // Match Live2DAnimationEngine::paint()'s source rect: full frame
-            // width + measured height + vertical pad for motion headroom.
-            // Horizontal crop would clip arm/hair swings during Tap motions.
-            const int padTop = std::max(16, b.height() / 6);
+            // width + measured height + generous top pad for motion headroom
+            // and lighting/glow effects above the character.
+            const int padTop = std::max(32, b.height() / 4);
             const int srcH = std::min(m_live2dEngine->renderHeight() - std::max(0, b.y() - padTop),
                                       b.height() + padTop);
             const int displayW = static_cast<int>(m_live2dEngine->renderWidth() * displayScale);
