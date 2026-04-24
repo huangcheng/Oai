@@ -130,7 +130,7 @@ if (args['file-path']) {
 // --- Connect and send -------------------------------------------------------
 
 try {
-  await sendToQlippy(message, { endpoint: args.endpoint, retries: 2 });
+  await sendToOai(message, { endpoint: args.endpoint, retries: 2 });
 } catch (err) {
   console.error(err.message);
   process.exit(1);
