@@ -66,14 +66,15 @@ jobs:
         continue-on-error: true
 
       - name: Package
-        shell: bash
+        shell: pwsh
         run: |
           cd build
           mkdir -p Oai-windows
-          find . -name "Oai.exe" -not -path "./Oai-windows/*" | head -1 | xargs -I{} cp {} Oai-windows/
-          cp -R ../assets Oai-windows/assets
-          cd Oai-windows && windeployqt Oai.exe || true
-          cd .. && zip -r Oai-windows.zip Oai-windows
+          $exe = Get-ChildItem -Path . -Filter "Oai.exe" -Recurse | Where-Object { $_.FullName -notlike "*\Oai-windows\*" } | Select-Object -First 1
+          if ($exe) { Copy-Item $exe.FullName Oai-windows/ }
+          Copy-Item -Recurse ..\assets Oai-windows\assets
+          cd Oai-windows; windeployqt Oai.exe 2>$null; cd ..
+          Compress-Archive -Path Oai-windows -DestinationPath Oai-windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
