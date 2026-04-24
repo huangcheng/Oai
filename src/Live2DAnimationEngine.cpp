@@ -285,19 +285,15 @@ public:
         CubismMatrix44 proj;
         proj.LoadIdentity();
 
-        // Aspect correction so the model isn't squashed on non-square viewports.
+        // Aspect correction only. The model's CubismModelMatrix constructor
+        // already calls SetHeight(2.0f) so the canvas fills NDC [-1, +1]
+        // vertically — no extra scaling needed for a square-ish viewport.
         const float aspect = static_cast<float>(width) / static_cast<float>(height);
         if (aspect < 1.0f) {
             proj.Scale(1.0f, aspect);
         } else {
             proj.Scale(1.0f / aspect, 1.0f);
         }
-
-        // Cubism model matrices default to fitting the model's canvas in 1×1
-        // normalized space, but characters typically occupy only a fraction of
-        // the canvas. Scale up so the character actually fills the view.
-        // (Matches Cubism's LAppView which calls SetWidth(2.0f) for portrait.)
-        proj.ScaleRelative(2.0f, 2.0f);
 
         proj.MultiplyByMatrix(_modelMatrix);
         GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->SetMvpMatrix(&proj);

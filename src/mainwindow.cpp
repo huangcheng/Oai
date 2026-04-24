@@ -137,7 +137,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 
 QRect MainWindow::petRect() const
 {
-    return QRect(0, height() - 93, 124, 93);
+    return QRect(0, height() - m_petSize.height(), m_petSize.width(), m_petSize.height());
 }
 
 bool MainWindow::isInPetRect(const QPoint &pos) const
@@ -333,6 +333,7 @@ void MainWindow::onActivePackChanged()
     int fh = pack->characterConfig().frameHeight;
     if (fw > 0 && fh > 0) {
         int tipSpace = height() - petRect().height();
+        m_petSize = QSize(fw, fh);
         setFixedSize(fw, fh + tipSpace);
     }
 

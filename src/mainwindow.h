@@ -85,6 +85,12 @@ private:
     bool m_dragging = false;
     static constexpr int DRAG_THRESHOLD = 5;
 
+    // Active pack's render size (drives petRect). Defaults to Clippy's
+    // historical 124×93; onActivePackChanged() updates it to the pack's
+    // frameWidth/frameHeight so Live2D/Lottie packs aren't squished into
+    // a Clippy-sized rect at the bottom of a much taller window.
+    QSize m_petSize = QSize(124, 93);
+
     // Visibility
     bool m_visible = true;
 };
