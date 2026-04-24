@@ -4,13 +4,9 @@
  * oai-gateway — CLI tool for sending events to Oai desktop pet.
  *
  * Usage:
- *   oai-gateway --source <tool> --event <unified-name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
+ *   oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
+ *   oai-gateway --title <title> --content <body> [--animation <name>] [--endpoint <path>]
  *   oai-gateway --ping [--endpoint <path>]
- *
- * Platform transport:
- *   Linux / macOS → Unix domain socket  (~/.oai/oai.sock)
- *   Windows       → Named pipe          (\\.\pipe\oai)
- *   Override      → --endpoint <path>
  */
 
 import { platform } from 'node:process';
@@ -67,21 +63,46 @@ if (args.health) {
   }
 }
 
+// --- Tip mode ---------------------------------------------------------------
+
+if (args.title) {
+  const tipMessage = {
+    type: 'tip',
+    title: args.title,
+    body: args.content || '',
+    animation: args.animation || '',
+  };
+
+  try {
+    await sendToOai(tipMessage, { endpoint: args.endpoint, retries: 2 });
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 // --- Event mode ------------------------------------------------------------
 
 if (!args.source || !args.event) {
-  console.error('Usage: oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
-  console.error('       oai-gateway --ping [--endpoint <path>]');
-  console.error('');
-  console.error('Sources: opencode, claude-code, codex');
-  console.error('Events: session.start, session.end, session.idle, session.error,');
-  console.error('        prompt.submitted, tool.before, tool.after, tool.failed,');
-  console.error('        permission.requested, permission.denied, permission.response,');
-  console.error('        subagent.started, subagent.stopped, notification.sent,');
-  console.error('        file.edited, file.watched, todo.updated');
-  console.error('');
-  console.error(`Platform: ${platform}  →  endpoint: ${getEndpoint()}`);
-  process.exit(1);
+  if (!args.title) {
+    console.error('Usage: oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]');
+    console.error('       oai-gateway --title <title> [--content <body>] [--animation <name>] [--endpoint <path>]');
+    console.error('       oai-gateway --ping [--endpoint <path>]');
+    console.error('');
+    console.error('Sources: opencode, claude-code, codex');
+    console.error('Events: session.start, session.end, session.idle, session.error,');
+    console.error('        prompt.submitted, tool.before, tool.after, tool.failed,');
+    console.error('        permission.requested, permission.denied, permission.response,');
+    console.error('        subagent.started, subagent.stopped, notification.sent,');
+    console.error('        file.edited, file.watched, todo.updated');
+    console.error('');
+    console.error('Animations: wave, alert, explain, congratulate, thinking,');
+    console.error('            sendmail, getattentionyawn, rest, etc.');
+    console.error('');
+    console.error(`Platform: ${platform}  →  endpoint: ${getEndpoint()}`);
+    process.exit(1);
+  }
 }
 
 // --- Auto-detect session name ------------------------------------------------
