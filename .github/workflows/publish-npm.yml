@@ -4,25 +4,22 @@ on:
   push:
     branches: [main]
     paths:
-      - 'gateways/qlippy-gateway/**'
+      - 'gateways/oai-gateway/**'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
+          registry-url: 'https://registry.npmjs.org'
           scope: '@huangcheng'
 
-      - name: Publish @huangcheng/qlippy-gateway
-        working-directory: gateways/qlippy-gateway
+      - name: Publish @huangcheng/oai-gateway
+        working-directory: gateways/oai-gateway
         run: npm publish --access public || echo "Already published or unchanged"
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
