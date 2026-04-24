@@ -12,10 +12,10 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/LottieAnimationEngine.h
     ${CMAKE_SOURCE_DIR}/src/LottieEffectOverlay.cpp
     ${CMAKE_SOURCE_DIR}/src/LottieEffectOverlay.h
-    ${CMAKE_SOURCE_DIR}/src/SpritePack.cpp
-    ${CMAKE_SOURCE_DIR}/src/SpritePack.h
-    ${CMAKE_SOURCE_DIR}/src/SpritePackManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/SpritePackManager.h
+    ${CMAKE_SOURCE_DIR}/src/CharacterPack.cpp
+    ${CMAKE_SOURCE_DIR}/src/CharacterPack.h
+    ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.h
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.cpp

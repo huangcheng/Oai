@@ -1,5 +1,5 @@
-#ifndef SPRITEPACKMANAGER_H
-#define SPRITEPACKMANAGER_H
+#ifndef CHARACTERPACKMANAGER_H
+#define CHARACTERPACKMANAGER_H
 
 #include <QObject>
 #include <QMap>
@@ -7,12 +7,12 @@
 #include <QFileSystemWatcher>
 #include <QTimer>
 
-class SpritePack;
+class CharacterPack;
 
 /**
  * @brief Manages sprite pack discovery, loading, and switching.
  *
- * SpritePackManager scans multiple directories for sprite packs:
+ * CharacterPackManager scans multiple directories for sprite packs:
  * - Built-in packs (app directory)
  * - User packs (~/.config/Oai/packs/)
  *
@@ -21,7 +21,7 @@ class SpritePack;
  * - Pack switching without restart
  * - Fallback to default pack
  */
-class SpritePackManager : public QObject
+class CharacterPackManager : public QObject
 {
     Q_OBJECT
 
@@ -48,8 +48,8 @@ public:
         PackSource source;        ///< Where pack is located
     };
 
-    explicit SpritePackManager(QObject *parent = nullptr);
-    ~SpritePackManager() override;
+    explicit CharacterPackManager(QObject *parent = nullptr);
+    ~CharacterPackManager() override;
 
     /**
      * @brief Initialize the manager and discover packs
@@ -67,7 +67,7 @@ public:
      * @brief Get current active pack
      * @return Pointer to active pack, or nullptr if none loaded
      */
-    SpritePack *activePack() const { return m_activePack; }
+    CharacterPack *activePack() const { return m_activePack; }
 
     /**
      * @brief Get active pack ID
@@ -119,7 +119,7 @@ signals:
     /**
      * @brief Emitted when active pack changes
      */
-    void activePackChanged(SpritePack *pack);
+    void activePackChanged(CharacterPack *pack);
 
     /**
      * @brief Emitted when pack list changes (install/uninstall)
@@ -129,7 +129,7 @@ signals:
     /**
      * @brief Emitted when pack is reloaded (hot-reload)
      */
-    void packReloaded(SpritePack *pack);
+    void packReloaded(CharacterPack *pack);
 
 private slots:
     void onDirectoryChanged(const QString &path);
@@ -138,7 +138,7 @@ private slots:
 private:
     void discoverPacks();
     void loadPackFromDirectory(const QString &packDir, PackSource source);
-    SpritePack *createAndLoadPack(const QString &packDir);
+    CharacterPack *createAndLoadPack(const QString &packDir);
     void setupFileWatcher();
     void cleanupFileWatcher();
     void autoInstallBuiltInPacks();
@@ -147,10 +147,10 @@ private:
     QString m_builtInDir;
     QString m_userDir;
     QString m_activePackId;
-    SpritePack *m_activePack = nullptr;
+    CharacterPack *m_activePack = nullptr;
 
     QMap<QString, PackInfo> m_packs;
-    QMap<QString, SpritePack *> m_loadedPacks;
+    QMap<QString, CharacterPack *> m_loadedPacks;
 
     QFileSystemWatcher *m_fileWatcher = nullptr;
     QTimer *m_hotReloadTimer = nullptr;
@@ -158,4 +158,4 @@ private:
     bool m_hotReloadPending = false;
 };
 
-#endif // SPRITEPACKMANAGER_H
+#endif // CHARACTERPACKMANAGER_H

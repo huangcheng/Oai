@@ -8,7 +8,7 @@ class QSystemTrayIcon;
 class QMenu;
 class QWidget;
 class QAction;
-class SpritePackManager;
+class CharacterPackManager;
 class UpdateChecker;
 
 class SystemTray : public QObject
@@ -23,7 +23,7 @@ public:
     void retranslateUi();
 
     // Set sprite pack manager for pack submenu
-    void setSpritePackManager(SpritePackManager *manager);
+    void setCharacterPackManager(CharacterPackManager *manager);
 
     // Set update checker
     void setUpdateChecker(UpdateChecker *checker);
@@ -46,7 +46,7 @@ private:
     QAction *m_toggleAction = nullptr;
     QAction *m_quitAction = nullptr;
     QAction *m_checkUpdateAction = nullptr;
-    SpritePackManager *m_packManager = nullptr;
+    CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
 };
 

@@ -1,7 +1,7 @@
 #include "SettingsPanelWidget.h"
 #include "ConfigManager.h"
-#include "SpritePackManager.h"
-#include "SpritePack.h"
+#include "CharacterPackManager.h"
+#include "CharacterPack.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -399,7 +399,7 @@ void SettingsPanelWidget::onPortEditingFinished()
     }
 }
 
-void SettingsPanelWidget::setSpritePackManager(SpritePackManager *manager)
+void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
     refreshPackList();

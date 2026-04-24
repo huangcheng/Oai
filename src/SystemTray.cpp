@@ -1,7 +1,7 @@
 #include "SystemTray.h"
 #include "mainwindow.h"
-#include "SpritePackManager.h"
-#include "SpritePack.h"
+#include "CharacterPackManager.h"
+#include "CharacterPack.h"
 #include "UpdateChecker.h"
 
 #include <QSystemTrayIcon>
@@ -118,11 +118,11 @@ void SystemTray::setupMenu()
     m_trayIcon->setContextMenu(m_trayMenu);
 }
 
-void SystemTray::setSpritePackManager(SpritePackManager *manager)
+void SystemTray::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
     if (m_packManager) {
-        connect(m_packManager, &SpritePackManager::packListChanged,
+        connect(m_packManager, &CharacterPackManager::packListChanged,
                 this, &SystemTray::refreshPackMenu);
         refreshPackMenu();
     }

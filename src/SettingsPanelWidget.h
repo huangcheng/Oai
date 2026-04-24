@@ -5,7 +5,7 @@
 #include <QString>
 
 class ConfigManager;
-class SpritePackManager;
+class CharacterPackManager;
 
 class QLabel;
 class QPushButton;
@@ -26,7 +26,7 @@ public:
     void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
 
     // Set sprite pack manager for pack selection
-    void setSpritePackManager(SpritePackManager *manager);
+    void setCharacterPackManager(CharacterPackManager *manager);
 
     // Retranslate UI when language changes at runtime
     void retranslateUi();
@@ -47,7 +47,7 @@ private:
     void refreshPackList();
 
     ConfigManager *m_config;
-    SpritePackManager *m_packManager = nullptr;
+    CharacterPackManager *m_packManager = nullptr;
 
     // UI elements
     QLabel *m_titleLabel = nullptr;

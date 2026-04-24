@@ -11,7 +11,7 @@
 class QPainter;
 class QRect;
 class QImage;
-class SpritePack;
+class CharacterPack;
 
 class LottieAnimationEngine : public QObject
 {
@@ -34,7 +34,7 @@ public:
      * @param pack Sprite pack to load from
      * @return true if loaded successfully
      */
-    bool loadFromSpritePack(const SpritePack *pack);
+    bool loadFromCharacterPack(const CharacterPack *pack);
 
     // Play named animation with given priority
     void playAnimation(const QString &name, Priority priority = NormalPriority);

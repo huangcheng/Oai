@@ -52,7 +52,9 @@ bool IpcServer::start(const QString &endpoint)
 void IpcServer::stop()
 {
     if (m_thread) {
-        m_worker->stop();
+        // Invoke stop() on the worker's thread to avoid touching the socket
+        // from the main thread (QSocketNotifier is thread-affine).
+        QMetaObject::invokeMethod(m_worker, "stop", Qt::BlockingQueuedConnection);
         m_thread->quit();
         m_thread->wait();
         delete m_thread;

@@ -1,5 +1,5 @@
 #include "SpriteAnimationEngine.h"
-#include "SpritePack.h"
+#include "CharacterPack.h"
 
 #include <QPainter>
 #include <QJsonDocument>
@@ -193,7 +193,7 @@ void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
     m_idleTimer.start();
 }
 
-bool SpriteAnimationEngine::loadFromSpritePack(const SpritePack *pack)
+bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
 {
     if (!pack || !pack->isValid()) {
         qWarning() << "SpriteAnimationEngine: Invalid sprite pack";
@@ -201,7 +201,7 @@ bool SpriteAnimationEngine::loadFromSpritePack(const SpritePack *pack)
     }
 
     // Check if pack uses sprite sheet engine
-    if (pack->characterConfig().engineType != SpritePack::EngineType::SpriteSheet) {
+    if (pack->characterConfig().engineType != CharacterPack::EngineType::SpriteSheet) {
         qWarning() << "SpriteAnimationEngine: Pack does not use sprite sheet engine";
         return false;
     }
@@ -232,10 +232,10 @@ bool SpriteAnimationEngine::loadFromSpritePack(const SpritePack *pack)
     const auto &animations = pack->animations();
     for (auto it = animations.begin(); it != animations.end(); ++it) {
         const QString name = it.key();
-        const SpritePack::AnimationDef &animDef = it.value();
+        const CharacterPack::AnimationDef &animDef = it.value();
 
         // Only load sprite sheet animations
-        if (animDef.type != SpritePack::EngineType::SpriteSheet) {
+        if (animDef.type != CharacterPack::EngineType::SpriteSheet) {
             continue;
         }
 

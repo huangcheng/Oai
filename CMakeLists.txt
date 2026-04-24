@@ -132,7 +132,8 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
     endif()
 
     # Import Cubism Core (pre-built binary) — platform-specific paths
-    add_library(Live2DCubismCore STATIC IMPORTED)
+    # Use UNKNOWN IMPORTED so both static (.a/.lib) and shared (.dll) linking works
+    add_library(Live2DCubismCore UNKNOWN IMPORTED)
     if(APPLE)
         EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
         set_target_properties(Live2DCubismCore PROPERTIES
@@ -145,23 +146,66 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
         else()
             set(_CUBISM_ARCH x86)
         endif()
-        # Detect MSVC toolset version (143 = VS2022, 142 = VS2019, 141 = VS2017)
-        if(MSVC_TOOLSET_VERSION)
-            set(_CUBISM_MSVC ${MSVC_TOOLSET_VERSION})
+        if(MSVC)
+            # MSVC: use static library from lib/ directory
+            if(MSVC_TOOLSET_VERSION)
+                set(_CUBISM_MSVC ${MSVC_TOOLSET_VERSION})
+            else()
+                set(_CUBISM_MSVC 143)
+            endif()
+            set_target_properties(Live2DCubismCore PROPERTIES
+                IMPORTED_LOCATION ${CUBISM_CORE_DIR}/lib/windows/${_CUBISM_ARCH}/${_CUBISM_MSVC}/Live2DCubismCore_MD.lib
+                IMPORTED_LOCATION_DEBUG ${CUBISM_CORE_DIR}/lib/windows/${_CUBISM_ARCH}/${_CUBISM_MSVC}/Live2DCubismCore_MDd.lib
+                INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
+            )
         else()
-            set(_CUBISM_MSVC 143)
+            # MinGW/Clang: use DLL import library from dll/ directory.
+            # llvm-mingw's LLD linker can consume MSVC import libraries directly.
+            # At runtime, Live2DCubismCore.dll must be next to the executable.
+            set_target_properties(Live2DCubismCore PROPERTIES
+                IMPORTED_LOCATION ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.dll
+                IMPORTED_IMPLIB ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.lib
+                INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
+            )
         endif()
-        set_target_properties(Live2DCubismCore PROPERTIES
-            IMPORTED_LOCATION ${CUBISM_CORE_DIR}/lib/windows/${_CUBISM_ARCH}/${_CUBISM_MSVC}/Live2DCubismCore_MD.lib
-            IMPORTED_LOCATION_DEBUG ${CUBISM_CORE_DIR}/lib/windows/${_CUBISM_ARCH}/${_CUBISM_MSVC}/Live2DCubismCore_MDd.lib
-            INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
-        )
     else()
         # Linux
         set_target_properties(Live2DCubismCore PROPERTIES
             IMPORTED_LOCATION ${CUBISM_CORE_DIR}/lib/linux/x86_64/libLive2DCubismCore.a
             INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
         )
+    endif()
+
+    # Patch Cubism Framework for MinGW: wglGetProcAddress returns PROC, not void*
+    set(_RENDERER_FILE "${CUBISM_FRAMEWORK_DIR}/src/Rendering/OpenGL/CubismRenderer_OpenGLES2.cpp")
+    file(READ "${_RENDERER_FILE}" _RENDERER_CONTENT)
+    if(NOT _RENDERER_CONTENT MATCHES "reinterpret_cast.*wglGetProcAddress")
+        string(REPLACE "void* ptr = wglGetProcAddress(name);"
+               "void* ptr = reinterpret_cast<void*>(wglGetProcAddress(name));"
+               _RENDERER_CONTENT "${_RENDERER_CONTENT}")
+        file(WRITE "${_RENDERER_FILE}" "${_RENDERER_CONTENT}")
+    endif()
+
+    # Patch Cubism Framework: InitializeGlFunctions() normally resolves GL function
+    # pointers via wglGetProcAddress(), but this conflicts with QOpenGLContext/GLEW.
+    # GLEW already resolves all pointers via glewInit(). However, this file declares
+    # anonymous-namespace local variables that SHADOW GLEW's global __glew* pointers.
+    # We must initialize these locals from GLEW's already-valid globals.
+    #
+    # Strategy: Use a Python script to replace each WinGlGetProcAddress("name") call
+    # with a direct assignment from the corresponding GLEW __glew* global variable.
+    file(READ "${_RENDERER_FILE}" _RENDERER_CONTENT2)
+    if(NOT _RENDERER_CONTENT2 MATCHES "OAI_GLEW_COPY_FROM_GLEW")
+        find_package(Python3 COMPONENTS Interpreter REQUIRED)
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/cmake/patch_cubism_gl.py" "${_RENDERER_FILE}"
+            OUTPUT_VARIABLE _PATCH_OUTPUT
+            RESULT_VARIABLE _PATCH_RESULT
+        )
+        message(STATUS "Cubism GL patch: ${_PATCH_OUTPUT}")
+        if(NOT _PATCH_RESULT EQUAL 0)
+            message(WARNING "Failed to patch Cubism GL functions: ${_PATCH_RESULT}")
+        endif()
     endif()
 
     # Build Cubism Framework
@@ -206,10 +250,10 @@ qt_add_executable(Oai
     src/LottieEffectOverlay.h
     src/Live2DAnimationEngine.cpp
     src/Live2DAnimationEngine.h
-    src/SpritePack.cpp
-    src/SpritePack.h
-    src/SpritePackManager.cpp
-    src/SpritePackManager.h
+    src/CharacterPack.cpp
+    src/CharacterPack.h
+    src/CharacterPackManager.cpp
+    src/CharacterPackManager.h
     src/UpdateChecker.cpp
     src/UpdateChecker.h
     src/IpcServer.cpp
@@ -288,6 +332,25 @@ if(OAI_HAS_LIVE2D)
     if(Qt6OpenGLWidgets_FOUND)
         target_link_libraries(Oai PRIVATE Qt::OpenGLWidgets)
     endif()
+
+    # Bundle Cubism Framework shader sources as Qt resources.
+    # CubismShader_OpenGLES2::LoadShaderProgramFromFile requests paths like
+    # "FrameworkShaders/VertShaderSrc.vert"; our loader maps that to
+    # ":/live2d/FrameworkShaders/<name>", so we alias each file accordingly.
+    set(_LIVE2D_SHADER_DIR
+        ${CUBISM_SDK_DIR}/Framework/src/Rendering/OpenGL/Shaders/Standard)
+    file(GLOB _LIVE2D_SHADER_FILES
+        ${_LIVE2D_SHADER_DIR}/*.vert
+        ${_LIVE2D_SHADER_DIR}/*.frag)
+    foreach(_shader ${_LIVE2D_SHADER_FILES})
+        get_filename_component(_shader_name ${_shader} NAME)
+        set_source_files_properties(${_shader} PROPERTIES
+            QT_RESOURCE_ALIAS "FrameworkShaders/${_shader_name}")
+    endforeach()
+    qt_add_resources(Oai "live2d_shaders"
+        PREFIX "/live2d"
+        FILES ${_LIVE2D_SHADER_FILES}
+    )
 endif()
 
 # --- Install -----------------------------------------------------------------
@@ -342,6 +405,28 @@ foreach(pack ${CLIPPYJS_PACKS})
     list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
 endforeach()
 
+# Live2D packs (model3.json + moc3 + textures/ + motions/ + optional physics/pose/expressions)
+# These ship the whole pack directory, so we enumerate files with GLOB_RECURSE
+# and archive paths relative to the pack root.
+set(LIVE2D_PACKS hiyori haru mao mark natori ren rice wanko)
+foreach(pack ${LIVE2D_PACKS})
+    file(GLOB_RECURSE _${pack}_FILES RELATIVE
+        ${CMAKE_SOURCE_DIR}/assets/packs/${pack}
+        ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/*)
+    set(_${pack}_DEPS "")
+    foreach(f ${_${pack}_FILES})
+        list(APPEND _${pack}_DEPS ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/${f})
+    endforeach()
+    add_custom_command(
+        OUTPUT ${PACKS_DIR}/${pack}.opk
+        COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.opk --format=zip -- ${_${pack}_FILES}
+        DEPENDS ${_${pack}_DEPS}
+        COMMENT "Generating ${pack}.opk"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/assets/packs/${pack}
+    )
+    list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
+endforeach()
+
 add_custom_target(generate_packs ALL DEPENDS ${ALL_PACK_OPKS})
 add_dependencies(Oai generate_packs)
 
@@ -370,6 +455,13 @@ if(APPLE)
     target_sources(Oai PRIVATE ${PACKS_DIR}/clippy.opk)
 
     foreach(pack ${CLIPPYJS_PACKS})
+        set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/packs"
+        )
+        target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
+    endforeach()
+
+    foreach(pack ${LIVE2D_PACKS})
         set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources/packs"
         )

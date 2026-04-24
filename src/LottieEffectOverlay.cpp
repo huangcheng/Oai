@@ -1,5 +1,5 @@
 #include "LottieEffectOverlay.h"
-#include "SpritePack.h"
+#include "CharacterPack.h"
 
 #include <QPainter>
 #include <QImage>
@@ -45,7 +45,7 @@ void LottieEffectOverlay::loadEffects(const QString &effectsDir)
     }
 }
 
-bool LottieEffectOverlay::loadFromSpritePack(const SpritePack *pack)
+bool LottieEffectOverlay::loadFromCharacterPack(const CharacterPack *pack)
 {
     if (!pack || !pack->isValid()) {
         qWarning() << "LottieEffectOverlay: Invalid sprite pack";

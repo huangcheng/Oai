@@ -1,5 +1,5 @@
 #include "LottieAnimationEngine.h"
-#include "SpritePack.h"
+#include "CharacterPack.h"
 
 #include <QPainter>
 #include <QImage>
@@ -67,7 +67,7 @@ void LottieAnimationEngine::loadAnimations(const QString &characterDir)
     m_timer.start();
 }
 
-bool LottieAnimationEngine::loadFromSpritePack(const SpritePack *pack)
+bool LottieAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
 {
     if (!pack || !pack->isValid()) {
         qWarning() << "LottieAnimationEngine: Invalid sprite pack";
@@ -75,7 +75,7 @@ bool LottieAnimationEngine::loadFromSpritePack(const SpritePack *pack)
     }
 
     // Check if pack uses Lottie engine
-    if (pack->characterConfig().engineType != SpritePack::EngineType::Lottie) {
+    if (pack->characterConfig().engineType != CharacterPack::EngineType::Lottie) {
         qWarning() << "LottieAnimationEngine: Pack does not use Lottie engine";
         return false;
     }
@@ -89,10 +89,10 @@ bool LottieAnimationEngine::loadFromSpritePack(const SpritePack *pack)
     const auto &animations = pack->animations();
     for (auto it = animations.begin(); it != animations.end(); ++it) {
         const QString name = it.key();
-        const SpritePack::AnimationDef &animDef = it.value();
+        const CharacterPack::AnimationDef &animDef = it.value();
 
         // Only load Lottie animations
-        if (animDef.type != SpritePack::EngineType::Lottie) {
+        if (animDef.type != CharacterPack::EngineType::Lottie) {
             continue;
         }
 

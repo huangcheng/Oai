@@ -4,8 +4,8 @@
 #ifdef OAI_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
-#include "SpritePackManager.h"
-#include "SpritePack.h"
+#include "CharacterPackManager.h"
+#include "CharacterPack.h"
 #include "ConfigManager.h"
 #include "TipBubbleWidget.h"
 #include "SettingsPanelWidget.h"
@@ -294,20 +294,20 @@ void MainWindow::setSystemTray(SystemTray *tray)
 {
     m_systemTray = tray;
     if (m_systemTray && m_packManager) {
-        m_systemTray->setSpritePackManager(m_packManager);
+        m_systemTray->setCharacterPackManager(m_packManager);
     }
 }
 
-void MainWindow::setSpritePackManager(SpritePackManager *manager)
+void MainWindow::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
     if (m_packManager) {
-        connect(m_packManager, &SpritePackManager::activePackChanged,
+        connect(m_packManager, &CharacterPackManager::activePackChanged,
                 this, &MainWindow::onActivePackChanged);
 
         // Pass to settings panel
         if (m_settingsPanel) {
-            m_settingsPanel->setSpritePackManager(manager);
+            m_settingsPanel->setCharacterPackManager(manager);
         }
 
         // Load active pack immediately (pack may have been loaded before signal was connected)
@@ -323,7 +323,7 @@ void MainWindow::onActivePackChanged()
         return;
     }
 
-    SpritePack *pack = m_packManager->activePack();
+    CharacterPack *pack = m_packManager->activePack();
     if (!pack) {
         return;
     }
@@ -338,14 +338,14 @@ void MainWindow::onActivePackChanged()
 
     // Load animations based on pack type
 #ifdef OAI_LIVE2D_SUPPORT
-    if (pack->characterConfig().engineType == SpritePack::EngineType::Live2D) {
-        m_live2dEngine->loadFromSpritePack(pack);
+    if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
+        m_live2dEngine->loadFromCharacterPack(pack);
     } else
 #endif
-    if (pack->characterConfig().engineType == SpritePack::EngineType::Lottie) {
-        m_lottieEngine->loadFromSpritePack(pack);
+    if (pack->characterConfig().engineType == CharacterPack::EngineType::Lottie) {
+        m_lottieEngine->loadFromCharacterPack(pack);
     } else {
-        m_engine->loadFromSpritePack(pack);
+        m_engine->loadFromCharacterPack(pack);
     }
 
     update();  // Trigger repaint

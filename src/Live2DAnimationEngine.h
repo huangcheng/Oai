@@ -20,7 +20,7 @@
 
 class QPainter;
 class QRect;
-class SpritePack;
+class CharacterPack;
 
 /**
  * @brief Live2D Cubism animation engine.
@@ -49,7 +49,7 @@ public:
      * @param pack  Pack whose characterConfig().engineType == Live2D
      * @return true on success
      */
-    bool loadFromSpritePack(const SpritePack *pack);
+    bool loadFromCharacterPack(const CharacterPack *pack);
 
     /**
      * @brief Start playing a named motion group.

@@ -11,7 +11,7 @@
 
 class QPainter;
 class QRect;
-class SpritePack;
+class CharacterPack;
 
 class LottieEffectOverlay : public QObject
 {
@@ -29,7 +29,7 @@ public:
      * @param pack Sprite pack to load from
      * @return true if loaded successfully
      */
-    bool loadFromSpritePack(const SpritePack *pack);
+    bool loadFromCharacterPack(const CharacterPack *pack);
 
     // Trigger an effect by name
     void triggerEffect(const QString &effectName);

@@ -160,7 +160,7 @@ def import_character(name):
     # Build manifest
     manifest = {
         "formatVersion": "1.0.0",
-        "id": f"com.oaipet.{name.lower()}",
+        "id": f"im.cheng.oai.{name.lower()}",
         "name": name,
         "author": "Microsoft / ClippyJS (MIT)",
         "version": "1.0.0",

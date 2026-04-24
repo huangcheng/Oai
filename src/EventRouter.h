@@ -12,7 +12,7 @@ class Live2DAnimationEngine;
 #endif
 class TipBubbleWidget;
 class TipsEngine;
-class SpritePack;
+class CharacterPack;
 
 class EventRouter : public QObject
 {
@@ -33,7 +33,7 @@ public:
      * @brief Load event mappings from a sprite pack
      * @param pack Sprite pack to load from
      */
-    void loadFromSpritePack(const SpritePack *pack);
+    void loadFromCharacterPack(const CharacterPack *pack);
 
 public slots:
     void routeEvent(const QJsonObject &event);

@@ -8,8 +8,8 @@
 #include "Live2DAnimationEngine.h"
 #endif
 #include "LottieEffectOverlay.h"
-#include "SpritePackManager.h"
-#include "SpritePack.h"
+#include "CharacterPackManager.h"
+#include "CharacterPack.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
@@ -130,39 +130,53 @@ int main(int argc, char *argv[])
     MainWindow w(&config, &translator);
 
     // --- Sprite pack manager -------------------------------------------------
-    SpritePackManager packManager;
+    CharacterPackManager packManager;
     const QString builtInPacksDir = assetsDir + "/packs";
     const QString userPacksDir = configDir() + "/packs";
     packManager.initialize(builtInPacksDir, userPacksDir);
-    w.setSpritePackManager(&packManager);
+    w.setCharacterPackManager(&packManager);
 
-    // Restore saved position (or default to bottom-right of primary screen)
-    QPoint savedPos = config.windowPosition();
-    if (!savedPos.isNull()) {
-        // Ensure pet is visible on at least one screen
-        bool onScreen = false;
-        const auto screens = QApplication::screens();
-        for (const QScreen *screen : screens) {
-            QRect geo = screen->availableGeometry();
-            // Check if pet (124x93) is at least partially visible
-            if (geo.intersects(QRect(savedPos, QSize(124, 93)))) {
-                onScreen = true;
-                break;
+    // --- Position window ----------------------------------------------------
+    // Clamp to screen bounds to handle: resolution changes, disconnected monitors,
+    // or window size changes from sprite pack loading.
+    const QSize winSize = w.size();
+    const int posMargin = 8;
+
+    // Helper: clamp a position so the entire window fits inside a screen rect
+    auto clampedPos = [&](const QPoint &pos, const QRect &geo) -> QPoint {
+        int x = qBound(geo.left() + posMargin, pos.x(), geo.right() - winSize.width() - posMargin);
+        int y = qBound(geo.top() + posMargin, pos.y(), geo.bottom() - winSize.height() - posMargin);
+        return QPoint(x, y);
+    };
+
+    // Helper: find the screen whose geometry has the largest overlap with a rect
+    auto bestScreenFor = [&](const QRect &rect) -> const QScreen * {
+        const QScreen *best = nullptr;
+        int bestArea = -1;
+        for (const QScreen *screen : QApplication::screens()) {
+            QRect inter = screen->availableGeometry().intersected(rect);
+            int area = inter.width() * inter.height();
+            if (area > bestArea) {
+                bestArea = area;
+                best = screen;
             }
         }
-        if (onScreen) {
-            w.move(savedPos);
-        } else {
-            // Saved position is off-screen, clamp to primary screen
-            const QRect screen = QApplication::primaryScreen()->availableGeometry();
-            int x = qBound(screen.left(), savedPos.x(), screen.right() - 124);
-            int y = qBound(screen.top(), savedPos.y(), screen.bottom() - 93);
-            w.move(x, y);
-        }
+        return best ? best : QApplication::primaryScreen();
+    };
+
+    QPoint savedPos = config.windowPosition();
+    QPoint targetPos;
+    if (!savedPos.isNull()) {
+        // Restore saved position, clamped to the best-matching screen
+        const QScreen *screen = bestScreenFor(QRect(savedPos, winSize));
+        targetPos = clampedPos(savedPos, screen->availableGeometry());
     } else {
+        // Default: bottom-right corner of primary screen
         const QRect screen = QApplication::primaryScreen()->availableGeometry();
-        w.move(screen.right() - 220, screen.bottom() - 220);
+        targetPos = QPoint(screen.right() - winSize.width() - posMargin,
+                           screen.bottom() - winSize.height() - posMargin);
     }
+    w.move(targetPos);
 
     // --- Load animation assets (legacy fallback) -----------------------------
     // If no sprite pack is loaded, fall back to hardcoded assets
@@ -195,8 +209,16 @@ int main(int argc, char *argv[])
 
     // Load event mappings from active sprite pack
     if (packManager.activePack()) {
-        eventRouter.loadFromSpritePack(packManager.activePack());
+        eventRouter.loadFromCharacterPack(packManager.activePack());
     }
+
+    // Refresh event mappings when the active pack changes or is reloaded,
+    // otherwise a previous pack's animation names (e.g. Clippy's PascalCase
+    // "Greet"/"Think") leak into the new pack's engine (e.g. Live2D Hiyori).
+    QObject::connect(&packManager, &CharacterPackManager::activePackChanged,
+                     &eventRouter, &EventRouter::loadFromCharacterPack);
+    QObject::connect(&packManager, &CharacterPackManager::packReloaded,
+                     &eventRouter, &EventRouter::loadFromCharacterPack);
 
     // --- IPC server ----------------------------------------------------------
     IpcServer ipcServer;
@@ -214,9 +236,21 @@ int main(int argc, char *argv[])
 
         w.tipBubbleWidget()->showBubble(title, body, TipBubbleWidget::TipBubble);
 
-        if (!anim.isEmpty()) {
-            w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
+        if (anim.isEmpty()) return;
+
+        // Route through whichever engine has animations loaded,
+        // matching EventRouter's priority (Live2D > Lottie > Sprite).
+#ifdef OAI_LIVE2D_SUPPORT
+        if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
+            w.live2dEngine()->playAnimation(anim, Live2DAnimationEngine::NormalPriority);
+            return;
         }
+#endif
+        if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
+            w.lottieEngine()->playAnimation(anim, LottieAnimationEngine::NormalPriority);
+            return;
+        }
+        w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
     });
 
     ipcServer.start(config.ipcEndpoint());

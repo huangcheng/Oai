@@ -14,7 +14,7 @@ class Live2DAnimationEngine;
 class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
-class SpritePackManager;
+class CharacterPackManager;
 
 class QTranslator;
 class SystemTray;
@@ -35,7 +35,7 @@ public:
     TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
 
     void setSystemTray(SystemTray *tray);
-    void setSpritePackManager(SpritePackManager *manager);
+    void setCharacterPackManager(CharacterPackManager *manager);
 
 signals:
     void positionChanged(const QPoint &pos);
@@ -77,7 +77,7 @@ private:
     SettingsPanelWidget *m_settingsPanel;
     QTranslator *m_translator;
     SystemTray *m_systemTray = nullptr;
-    SpritePackManager *m_packManager = nullptr;
+    CharacterPackManager *m_packManager = nullptr;
 
     // Drag state
     QPoint m_dragStartPos;

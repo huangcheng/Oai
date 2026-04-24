@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://oaipet.dev/schemas/sprite-pack-v1.json",
+  "$id": "https://oai.cheng.im/schemas/sprite-pack-v1.json",
   "title": "Oaipet Sprite Pack Manifest",
   "description": "Manifest format for Oaipet sprite packs (.opk)",
   "version": "1.0.0",

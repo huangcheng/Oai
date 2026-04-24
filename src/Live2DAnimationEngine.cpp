@@ -4,15 +4,17 @@
 #include <GL/glew.h>
 
 #include "Live2DAnimationEngine.h"
-#include "SpritePack.h"
+#include "CharacterPack.h"
 
 #include <QPainter>
 #include <QDir>
 #include <QFile>
+#include <QByteArray>
 #include <QElapsedTimer>
 #include <QRandomGenerator>
 #include <QDebug>
 #include <QOpenGLFunctions>
+#include <cstring>
 
 // Live2D Cubism SDK
 #include <CubismFramework.hpp>
@@ -41,10 +43,11 @@ class OaiCubismAllocator : public Csm::ICubismAllocator
     void Deallocate(void *addr) override { free(addr); }
     void *AllocateAligned(const Csm::csmSizeType size, const Csm::csmUint32 align) override
     {
-        size_t offset = align - 1 + sizeof(void *);
+        const size_t alignMask = ~(static_cast<size_t>(align) - 1);
+        size_t offset = static_cast<size_t>(align) - 1 + sizeof(void *);
         void *raw = malloc(size + offset);
         if (!raw) return nullptr;
-        void **aligned = reinterpret_cast<void **>((reinterpret_cast<size_t>(raw) + offset) & ~(align - 1));
+        void **aligned = reinterpret_cast<void **>((reinterpret_cast<size_t>(raw) + offset) & alignMask);
         aligned[-1] = raw;
         return aligned;
     }
@@ -57,13 +60,53 @@ class OaiCubismAllocator : public Csm::ICubismAllocator
 static OaiCubismAllocator s_allocator;
 static bool s_frameworkInitialized = false;
 
+// Cubism Framework loads shader source from disk via this callback.
+// We ship the framework's shader files as Qt resources under :/live2d/
+// with aliases that match the paths the framework requests
+// (e.g. "FrameworkShaders/VertShaderSrc.vert").
+static Csm::csmByte *oaiCubismLoadFile(const std::string filePath, Csm::csmSizeInt *outSize)
+{
+    const QString resourcePath = ":/live2d/" + QString::fromStdString(filePath);
+    QFile f(resourcePath);
+    if (!f.open(QIODevice::ReadOnly)) {
+        qWarning() << "Live2D: framework file not found:" << resourcePath;
+        if (outSize) *outSize = 0;
+        return nullptr;
+    }
+    const QByteArray data = f.readAll();
+    auto *buf = static_cast<Csm::csmByte *>(malloc(static_cast<size_t>(data.size())));
+    if (!buf) {
+        if (outSize) *outSize = 0;
+        return nullptr;
+    }
+    std::memcpy(buf, data.constData(), static_cast<size_t>(data.size()));
+    if (outSize) *outSize = static_cast<Csm::csmSizeInt>(data.size());
+    return buf;
+}
+
+static void oaiCubismReleaseBytes(Csm::csmByte *buf)
+{
+    free(buf);
+}
+
 static void ensureFrameworkInitialized()
 {
+    // NOTE: CubismFramework::StartUp() stores the Option* pointer (no copy),
+    // and GetLoadFileFunction()/GetReleaseBytesFunction() dereference it on
+    // every lookup. The Option must therefore outlive the framework — using
+    // a local on the stack causes use-after-return the first time the
+    // renderer's shader init asks for the file loader. Make it static.
+    static CubismFramework::Option s_option = [] {
+        CubismFramework::Option o;
+        o.LogFunction = [](const char *msg) { qDebug() << "[Live2D]" << msg; };
+        o.LoggingLevel = CubismFramework::Option::LogLevel_Warning;
+        o.LoadFileFunction = &oaiCubismLoadFile;
+        o.ReleaseBytesFunction = &oaiCubismReleaseBytes;
+        return o;
+    }();
+
     if (!s_frameworkInitialized) {
-        CubismFramework::Option opt;
-        opt.LogFunction = [](const char *msg) { qDebug() << "[Live2D]" << msg; };
-        opt.LoggingLevel = CubismFramework::Option::LogLevel_Warning;
-        CubismFramework::StartUp(&s_allocator, &opt);
+        CubismFramework::StartUp(&s_allocator, &s_option);
         CubismFramework::Initialize();
         s_frameworkInitialized = true;
     }
@@ -84,33 +127,45 @@ public:
         if (!m_modelDir.empty() && m_modelDir.back() != '/') m_modelDir += '/';
 
         // --- model3.json ---
+        qDebug() << "Live2D: Reading model3.json...";
         QByteArray jsonBuf = readFile(modelJsonPath);
-        if (jsonBuf.isEmpty()) return false;
+        if (jsonBuf.isEmpty()) { qWarning() << "Live2D: model3.json is empty"; return false; }
+        qDebug() << "Live2D: model3.json size:" << jsonBuf.size() << "bytes";
         m_setting = new CubismModelSettingJson(
             reinterpret_cast<const Csm::csmByte *>(jsonBuf.constData()), jsonBuf.size());
+        qDebug() << "Live2D: CubismModelSettingJson created OK";
 
         // --- .moc3 ---
         {
             std::string path = m_modelDir + m_setting->GetModelFileName();
+            qDebug() << "Live2D: Reading moc3:" << QString::fromStdString(path);
             QByteArray buf = readFile(QString::fromStdString(path));
-            if (buf.isEmpty()) return false;
+            if (buf.isEmpty()) { qWarning() << "Live2D: moc3 file is empty"; return false; }
+            qDebug() << "Live2D: moc3 size:" << buf.size() << "bytes, calling LoadModel...";
             LoadModel(reinterpret_cast<const Csm::csmByte *>(buf.constData()), buf.size());
+            qDebug() << "Live2D: LoadModel OK";
         }
 
         // --- Physics ---
         if (strcmp(m_setting->GetPhysicsFileName(), "")) {
             std::string path = m_modelDir + m_setting->GetPhysicsFileName();
+            qDebug() << "Live2D: Loading physics:" << QString::fromStdString(path);
             QByteArray buf = readFile(QString::fromStdString(path));
-            if (!buf.isEmpty())
+            if (!buf.isEmpty()) {
                 LoadPhysics(reinterpret_cast<const Csm::csmByte *>(buf.constData()), buf.size());
+                qDebug() << "Live2D: Physics loaded OK";
+            }
         }
 
         // --- Pose ---
         if (strcmp(m_setting->GetPoseFileName(), "")) {
             std::string path = m_modelDir + m_setting->GetPoseFileName();
+            qDebug() << "Live2D: Loading pose:" << QString::fromStdString(path);
             QByteArray buf = readFile(QString::fromStdString(path));
-            if (!buf.isEmpty())
+            if (!buf.isEmpty()) {
                 LoadPose(reinterpret_cast<const Csm::csmByte *>(buf.constData()), buf.size());
+                qDebug() << "Live2D: Pose loaded OK";
+            }
         }
 
         // --- Eye blink ---
@@ -134,6 +189,7 @@ public:
         }
 
         // --- Preload motions ---
+        qDebug() << "Live2D: Preloading motions, groups:" << m_setting->GetMotionGroupCount();
         for (Csm::csmInt32 g = 0; g < m_setting->GetMotionGroupCount(); ++g) {
             const char *group = m_setting->GetMotionGroupName(g);
             m_motionGroupNames.append(QString::fromUtf8(group));
@@ -165,16 +221,26 @@ public:
 
     void setupRenderer(int width, int height)
     {
-        if (!_model) return;
+        if (!_model) { qWarning() << "Live2D: setupRenderer: no model"; return; }
+        qDebug() << "Live2D: Creating renderer" << width << "x" << height;
+        qDebug() << "Live2D: _model ptr:" << (void*)_model
+                 << "canvas:" << _model->GetCanvasWidth() << "x" << _model->GetCanvasHeight()
+                 << "drawables:" << _model->GetDrawableCount()
+                 << "blendMode:" << _model->IsBlendModeEnabled()
+                 << "masking:" << _model->IsUsingMasking();
         CreateRenderer(width, height);
+        qDebug() << "Live2D: Renderer created OK, loading" << m_setting->GetTextureCount() << "textures...";
         // Textures
         for (Csm::csmInt32 t = 0; t < m_setting->GetTextureCount(); ++t) {
             std::string texPath = m_modelDir + m_setting->GetTextureFileName(t);
+            qDebug() << "Live2D: Texture" << t << ":" << texPath.c_str();
             GLuint texId = loadTexture(QString::fromStdString(texPath));
+            qDebug() << "Live2D: Texture" << t << "loaded, GL ID:" << texId;
             GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->BindTexture(t, texId);
             m_textures.append(texId);
         }
         GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->IsPremultipliedAlpha(false);
+        qDebug() << "Live2D: Renderer setup complete";
     }
 
     Csm::CubismMotionQueueEntryHandle startMotion(const QString &group, int no, int priority)
@@ -218,15 +284,21 @@ public:
         if (!_model) return;
         CubismMatrix44 proj;
         proj.LoadIdentity();
-        // Scale model to fit viewport
-        if (_model->GetCanvasWidth() > 1.0f) {
-            float aspect = static_cast<float>(width) / static_cast<float>(height);
-            if (aspect < 1.0f) {
-                proj.Scale(1.0f, aspect);
-            } else {
-                proj.Scale(1.0f / aspect, 1.0f);
-            }
+
+        // Aspect correction so the model isn't squashed on non-square viewports.
+        const float aspect = static_cast<float>(width) / static_cast<float>(height);
+        if (aspect < 1.0f) {
+            proj.Scale(1.0f, aspect);
+        } else {
+            proj.Scale(1.0f / aspect, 1.0f);
         }
+
+        // Cubism model matrices default to fitting the model's canvas in 1×1
+        // normalized space, but characters typically occupy only a fraction of
+        // the canvas. Scale up so the character actually fills the view.
+        // (Matches Cubism's LAppView which calls SetWidth(2.0f) for portrait.)
+        proj.ScaleRelative(2.0f, 2.0f);
+
         proj.MultiplyByMatrix(_modelMatrix);
         GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->SetMvpMatrix(&proj);
         GetRenderer<Csm::Rendering::CubismRenderer_OpenGLES2>()->DrawModel();
@@ -364,10 +436,16 @@ bool Live2DAnimationEngine::initOpenGL()
         qWarning() << "Live2D: GLEW init failed:" << reinterpret_cast<const char *>(glewGetErrorString(err));
         return false;
     }
+    qDebug() << "Live2D: GLEW initialized OK, GL version:"
+             << reinterpret_cast<const char *>(glGetString(GL_VERSION));
 
     // Create FBO
     m_fbo = new QOpenGLFramebufferObject(m_renderWidth, m_renderHeight,
                                           QOpenGLFramebufferObject::CombinedDepthStencil);
+    if (!m_fbo->isValid()) {
+        qWarning() << "Live2D: FBO creation failed";
+        return false;
+    }
     return true;
 }
 
@@ -391,18 +469,23 @@ void Live2DAnimationEngine::releaseModel()
     m_idleWeights.clear();
 }
 
-bool Live2DAnimationEngine::loadFromSpritePack(const SpritePack *pack)
+bool Live2DAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
 {
     if (!pack || !pack->isValid()) return false;
-    if (pack->characterConfig().engineType != SpritePack::EngineType::Live2D) return false;
+    if (pack->characterConfig().engineType != CharacterPack::EngineType::Live2D) return false;
 
     // Set render dimensions from pack
     m_renderWidth = pack->characterConfig().frameWidth;
     m_renderHeight = pack->characterConfig().frameHeight;
 
     // Initialize OpenGL
-    if (!initOpenGL()) return false;
+    qDebug() << "Live2D: initOpenGL()...";
+    if (!initOpenGL()) {
+        qWarning() << "Live2D: initOpenGL() failed";
+        return false;
+    }
     m_glContext->makeCurrent(m_surface);
+    qDebug() << "Live2D: GL context current, GLEW version:" << reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
 
     // Recreate FBO if size changed
     if (m_fbo && (m_fbo->width() != m_renderWidth || m_fbo->height() != m_renderHeight)) {
@@ -421,6 +504,7 @@ bool Live2DAnimationEngine::loadFromSpritePack(const SpritePack *pack)
         return false;
     }
 
+    qDebug() << "Live2D: Loading model from" << modelJsonPath;
     QString modelDir = QFileInfo(modelJsonPath).absolutePath();
     m_cubismModel = new CubismModel();
     if (!m_cubismModel->load(modelJsonPath, modelDir)) {
@@ -428,6 +512,7 @@ bool Live2DAnimationEngine::loadFromSpritePack(const SpritePack *pack)
         releaseModel();
         return false;
     }
+    qDebug() << "Live2D: Model loaded, setting up renderer...";
 
     // Setup renderer (needs GL context)
     m_cubismModel->setupRenderer(m_renderWidth, m_renderHeight);
@@ -520,6 +605,10 @@ void Live2DAnimationEngine::tick()
 
     // Render to FBO
     renderFrame();
+
+    // Release the offscreen context so Qt's own GL context can be bound
+    // for widget compositing (translucent frameless window).
+    m_glContext->doneCurrent();
 
     emit frameChanged();
 }

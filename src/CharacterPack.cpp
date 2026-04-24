@@ -1,4 +1,4 @@
-#include "SpritePack.h"
+#include "CharacterPack.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -9,25 +9,25 @@
 #include <QDebug>
 #include <QTemporaryDir>
 
-bool SpritePack::loadFromDirectory(const QString &packDir)
+bool CharacterPack::loadFromDirectory(const QString &packDir)
 {
     QDir dir(packDir);
     if (!dir.exists()) {
-        qWarning() << "SpritePack: Directory does not exist:" << packDir;
+        qWarning() << "CharacterPack: Directory does not exist:" << packDir;
         return false;
     }
 
     // Check for manifest.json
     const QString manifestPath = dir.absoluteFilePath("manifest.json");
     if (!QFile::exists(manifestPath)) {
-        qWarning() << "SpritePack: No manifest.json found in:" << packDir;
+        qWarning() << "CharacterPack: No manifest.json found in:" << packDir;
         return false;
     }
 
     // Read and parse manifest
     QFile manifestFile(manifestPath);
     if (!manifestFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "SpritePack: Failed to open manifest.json:" << manifestPath;
+        qWarning() << "CharacterPack: Failed to open manifest.json:" << manifestPath;
         return false;
     }
 
@@ -36,36 +36,36 @@ bool SpritePack::loadFromDirectory(const QString &packDir)
     manifestFile.close();
 
     if (error.error != QJsonParseError::NoError) {
-        qWarning() << "SpritePack: manifest.json parse error:" << error.errorString();
+        qWarning() << "CharacterPack: manifest.json parse error:" << error.errorString();
         return false;
     }
 
     if (!doc.isObject()) {
-        qWarning() << "SpritePack: manifest.json is not an object";
+        qWarning() << "CharacterPack: manifest.json is not an object";
         return false;
     }
 
     // Parse manifest
     m_rootPath = dir.absolutePath();
     if (!parseManifest(doc.object())) {
-        qWarning() << "SpritePack: Failed to parse manifest";
+        qWarning() << "CharacterPack: Failed to parse manifest";
         return false;
     }
 
     m_valid = true;
-    qDebug() << "SpritePack: Loaded pack" << m_metadata.name << "from" << m_rootPath;
+    qDebug() << "CharacterPack: Loaded pack" << m_metadata.name << "from" << m_rootPath;
     return true;
 }
 
-bool SpritePack::loadFromArchive(const QString &archivePath, const QString &extractDir)
+bool CharacterPack::loadFromArchive(const QString &archivePath, const QString &extractDir)
 {
     // TODO: Implement ZIP extraction using QZipReader or miniz
     // For now, log a warning and return false
-    qWarning() << "SpritePack: Archive loading not yet implemented:" << archivePath;
+    qWarning() << "CharacterPack: Archive loading not yet implemented:" << archivePath;
     return false;
 }
 
-const SpritePack::AnimationDef *SpritePack::animation(const QString &name) const
+const CharacterPack::AnimationDef *CharacterPack::animation(const QString &name) const
 {
     auto it = m_animations.find(name);
     if (it != m_animations.end()) {
@@ -74,7 +74,7 @@ const SpritePack::AnimationDef *SpritePack::animation(const QString &name) const
     return nullptr;
 }
 
-QString SpritePack::assetPath(const QString &relativePath) const
+QString CharacterPack::assetPath(const QString &relativePath) const
 {
     if (m_rootPath.isEmpty()) {
         return QString();
@@ -82,7 +82,7 @@ QString SpritePack::assetPath(const QString &relativePath) const
     return QDir(m_rootPath).absoluteFilePath(relativePath);
 }
 
-QString SpritePack::lottieAnimationPath(const QString &animationName) const
+QString CharacterPack::lottieAnimationPath(const QString &animationName) const
 {
     const AnimationDef *anim = animation(animationName);
     if (!anim || anim->type != EngineType::Lottie) {
@@ -91,7 +91,7 @@ QString SpritePack::lottieAnimationPath(const QString &animationName) const
     return assetPath(anim->lottieFile);
 }
 
-QString SpritePack::modelJsonPath() const
+QString CharacterPack::modelJsonPath() const
 {
     if (m_characterConfig.engineType != EngineType::Live2D || m_characterConfig.modelJson.isEmpty()) {
         return QString();
@@ -99,7 +99,7 @@ QString SpritePack::modelJsonPath() const
     return assetPath(m_characterConfig.modelJson);
 }
 
-QString SpritePack::effectPath(const QString &effectName) const
+QString CharacterPack::effectPath(const QString &effectName) const
 {
     // Look in effects directory
     const QString effectsDir = assetPath("effects");
@@ -114,7 +114,7 @@ QString SpritePack::effectPath(const QString &effectName) const
     return QString();
 }
 
-QString SpritePack::soundPath(const QString &soundName) const
+QString CharacterPack::soundPath(const QString &soundName) const
 {
     // Look in sounds directory
     const QString soundsDir = assetPath("sounds");
@@ -129,7 +129,7 @@ QString SpritePack::soundPath(const QString &soundName) const
     return QString();
 }
 
-QStringList SpritePack::availableLottieAnimations() const
+QStringList CharacterPack::availableLottieAnimations() const
 {
     QStringList result;
     if (m_characterConfig.engineType != EngineType::Lottie) {
@@ -155,7 +155,7 @@ QStringList SpritePack::availableLottieAnimations() const
     return result;
 }
 
-QStringList SpritePack::availableEffects() const
+QStringList CharacterPack::availableEffects() const
 {
     QStringList result;
     const QString effectsDir = assetPath("effects");
@@ -176,7 +176,7 @@ QStringList SpritePack::availableEffects() const
     return result;
 }
 
-QStringList SpritePack::availableSounds() const
+QStringList CharacterPack::availableSounds() const
 {
     QStringList result;
     const QString soundsDir = assetPath("sounds");
@@ -197,12 +197,12 @@ QStringList SpritePack::availableSounds() const
     return result;
 }
 
-bool SpritePack::parseManifest(const QJsonObject &manifest)
+bool CharacterPack::parseManifest(const QJsonObject &manifest)
 {
     // Parse format version
     m_metadata.formatVersion = manifest.value("formatVersion").toString();
     if (m_metadata.formatVersion != "1.0.0") {
-        qWarning() << "SpritePack: Unsupported format version:" << m_metadata.formatVersion;
+        qWarning() << "CharacterPack: Unsupported format version:" << m_metadata.formatVersion;
         return false;
     }
 
@@ -214,7 +214,7 @@ bool SpritePack::parseManifest(const QJsonObject &manifest)
 
     if (m_metadata.id.isEmpty() || m_metadata.name.isEmpty() || 
         m_metadata.author.isEmpty() || m_metadata.version.isEmpty()) {
-        qWarning() << "SpritePack: Missing required metadata fields";
+        qWarning() << "CharacterPack: Missing required metadata fields";
         return false;
     }
 
@@ -233,14 +233,34 @@ bool SpritePack::parseManifest(const QJsonObject &manifest)
     // Parse character configuration
     const QJsonObject characterObj = manifest.value("character").toObject();
     if (!parseCharacter(characterObj)) {
-        qWarning() << "SpritePack: Failed to parse character configuration";
+        qWarning() << "CharacterPack: Failed to parse character configuration";
+        return false;
+    }
+
+    // idlePool / eventMap / effectTriggers live at the top level of the manifest
+    // (see schemas/sprite-pack-v1.schema.json and every existing pack).
+    const QJsonArray idlePoolArray = manifest.value("idlePool").toArray();
+    if (!parseIdlePool(idlePoolArray)) {
+        qWarning() << "CharacterPack: Failed to parse idle pool";
+        return false;
+    }
+
+    const QJsonObject eventMapObj = manifest.value("eventMap").toObject();
+    if (!parseEventMap(eventMapObj)) {
+        qWarning() << "CharacterPack: Failed to parse event map";
+        return false;
+    }
+
+    const QJsonObject effectTriggersObj = manifest.value("effectTriggers").toObject();
+    if (!parseEffectTriggers(effectTriggersObj)) {
+        qWarning() << "CharacterPack: Failed to parse effect triggers";
         return false;
     }
 
     return true;
 }
 
-bool SpritePack::parseCharacter(const QJsonObject &character)
+bool CharacterPack::parseCharacter(const QJsonObject &character)
 {
     // Parse engine type
     const QString typeStr = character.value("type").toString();
@@ -251,7 +271,7 @@ bool SpritePack::parseCharacter(const QJsonObject &character)
     } else if (typeStr == "live2d") {
         m_characterConfig.engineType = EngineType::Live2D;
     } else {
-        qWarning() << "SpritePack: Unknown character type:" << typeStr;
+        qWarning() << "CharacterPack: Unknown character type:" << typeStr;
         return false;
     }
 
@@ -268,10 +288,10 @@ bool SpritePack::parseCharacter(const QJsonObject &character)
         m_characterConfig.frameHeight = character.value("frameHeight").toInt();
         m_characterConfig.definitions = character.value("definitions").toString();
 
-        if (m_characterConfig.spriteSheet.isEmpty() || 
-            m_characterConfig.frameWidth <= 0 || 
+        if (m_characterConfig.spriteSheet.isEmpty() ||
+            m_characterConfig.frameWidth <= 0 ||
             m_characterConfig.frameHeight <= 0) {
-            qWarning() << "SpritePack: Invalid sprite sheet configuration";
+            qWarning() << "CharacterPack: Invalid sprite sheet configuration";
             return false;
         }
     }
@@ -281,43 +301,22 @@ bool SpritePack::parseCharacter(const QJsonObject &character)
         // Load animations from external definitions file (original animations.json format)
         const QString definitionsPath = assetPath(m_characterConfig.definitions);
         if (!loadAnimationsFromDefinitions(definitionsPath)) {
-            qWarning() << "SpritePack: Failed to load animations from definitions:" << definitionsPath;
+            qWarning() << "CharacterPack: Failed to load animations from definitions:" << definitionsPath;
             return false;
         }
     } else {
         // Load animations from inline definitions
         const QJsonObject animationsObj = character.value("animations").toObject();
         if (!parseAnimations(animationsObj)) {
-            qWarning() << "SpritePack: failed to parse animations";
+            qWarning() << "CharacterPack: failed to parse animations";
             return false;
         }
-    }
-
-    // Parse idle pool
-    const QJsonArray idlePoolArray = character.value("idlePool").toArray();
-    if (!parseIdlePool(idlePoolArray)) {
-        qWarning() << "SpritePack: Failed to parse idle pool";
-        return false;
-    }
-
-    // Parse event map
-    const QJsonObject eventMapObj = character.value("eventMap").toObject();
-    if (!parseEventMap(eventMapObj)) {
-        qWarning() << "SpritePack: Failed to parse event map";
-        return false;
-    }
-
-    // Parse effect triggers
-    const QJsonObject effectTriggersObj = character.value("effectTriggers").toObject();
-    if (!parseEffectTriggers(effectTriggersObj)) {
-        qWarning() << "SpritePack: Failed to parse effect triggers";
-        return false;
     }
 
     return true;
 }
 
-bool SpritePack::parseAnimations(const QJsonObject &animations)
+bool CharacterPack::parseAnimations(const QJsonObject &animations)
 {
     for (auto it = animations.begin(); it != animations.end(); ++it) {
         const QString name = it.key();
@@ -327,7 +326,7 @@ bool SpritePack::parseAnimations(const QJsonObject &animations)
         anim.name = name;
 
         if (!parseAnimationDef(name, animObj, anim)) {
-            qWarning() << "SpritePack: Failed to parse animation:" << name;
+            qWarning() << "CharacterPack: Failed to parse animation:" << name;
             return false;
         }
 
@@ -337,7 +336,7 @@ bool SpritePack::parseAnimations(const QJsonObject &animations)
     return true;
 }
 
-bool SpritePack::parseAnimationDef(const QString &name, const QJsonObject &def, AnimationDef &out)
+bool CharacterPack::parseAnimationDef(const QString &name, const QJsonObject &def, AnimationDef &out)
 {
     // Parse type
     const QString typeStr = def.value("type").toString();
@@ -346,7 +345,7 @@ bool SpritePack::parseAnimationDef(const QString &name, const QJsonObject &def, 
         out.lottieFile = def.value("file").toString();
 
         if (out.lottieFile.isEmpty()) {
-            qWarning() << "SpritePack: Lottie animation missing 'file' field:" << name;
+            qWarning() << "CharacterPack: Lottie animation missing 'file' field:" << name;
             return false;
         }
     } else if (typeStr == "sprite") {
@@ -354,16 +353,16 @@ bool SpritePack::parseAnimationDef(const QString &name, const QJsonObject &def, 
 
         const QJsonArray framesArray = def.value("frames").toArray();
         if (!parseFrames(framesArray, out.frames)) {
-            qWarning() << "SpritePack: Failed to parse frames for animation:" << name;
+            qWarning() << "CharacterPack: Failed to parse frames for animation:" << name;
             return false;
         }
 
         if (out.frames.isEmpty()) {
-            qWarning() << "SpritePack: Sprite animation has no frames:" << name;
+            qWarning() << "CharacterPack: Sprite animation has no frames:" << name;
             return false;
         }
     } else {
-        qWarning() << "SpritePack: Unknown animation type:" << typeStr << "for" << name;
+        qWarning() << "CharacterPack: Unknown animation type:" << typeStr << "for" << name;
         return false;
     }
 
@@ -376,7 +375,7 @@ bool SpritePack::parseAnimationDef(const QString &name, const QJsonObject &def, 
     return true;
 }
 
-bool SpritePack::parseFrames(const QJsonArray &frames, QVector<FrameDef> &out)
+bool CharacterPack::parseFrames(const QJsonArray &frames, QVector<FrameDef> &out)
 {
     for (const QJsonValue &frameVal : frames) {
         const QJsonObject frameObj = frameVal.toObject();
@@ -401,12 +400,12 @@ bool SpritePack::parseFrames(const QJsonArray &frames, QVector<FrameDef> &out)
             frame.col = -1;  // Atlas mode
             frame.row = -1;
         } else {
-            qWarning() << "SpritePack: Frame missing position (col/row or x/y/w/h)";
+            qWarning() << "CharacterPack: Frame missing position (col/row or x/y/w/h)";
             return false;
         }
 
         if (frame.durationMs <= 0) {
-            qWarning() << "SpritePack: Frame has invalid duration:" << frame.durationMs;
+            qWarning() << "CharacterPack: Frame has invalid duration:" << frame.durationMs;
             return false;
         }
 
@@ -416,7 +415,7 @@ bool SpritePack::parseFrames(const QJsonArray &frames, QVector<FrameDef> &out)
     return true;
 }
 
-bool SpritePack::parseIdlePool(const QJsonArray &pool)
+bool CharacterPack::parseIdlePool(const QJsonArray &pool)
 {
     for (const QJsonValue &entryVal : pool) {
         const QJsonObject entryObj = entryVal.toObject();
@@ -426,12 +425,12 @@ bool SpritePack::parseIdlePool(const QJsonArray &pool)
         entry.weight = entryObj.value("weight").toInt(1);
 
         if (entry.animationName.isEmpty()) {
-            qWarning() << "SpritePack: Idle pool entry missing 'name'";
+            qWarning() << "CharacterPack: Idle pool entry missing 'name'";
             return false;
         }
 
         if (entry.weight <= 0) {
-            qWarning() << "SpritePack: Idle pool entry has invalid weight:" << entry.weight;
+            qWarning() << "CharacterPack: Idle pool entry has invalid weight:" << entry.weight;
             return false;
         }
 
@@ -441,14 +440,14 @@ bool SpritePack::parseIdlePool(const QJsonArray &pool)
     return true;
 }
 
-bool SpritePack::parseEventMap(const QJsonObject &map)
+bool CharacterPack::parseEventMap(const QJsonObject &map)
 {
     for (auto it = map.begin(); it != map.end(); ++it) {
         const QString eventName = it.key();
         const QString animationName = it.value().toString();
 
         if (animationName.isEmpty()) {
-            qWarning() << "SpritePack: Event map entry has empty animation for event:" << eventName;
+            qWarning() << "CharacterPack: Event map entry has empty animation for event:" << eventName;
             return false;
         }
 
@@ -458,14 +457,14 @@ bool SpritePack::parseEventMap(const QJsonObject &map)
     return true;
 }
 
-bool SpritePack::parseEffectTriggers(const QJsonObject &triggers)
+bool CharacterPack::parseEffectTriggers(const QJsonObject &triggers)
 {
     for (auto it = triggers.begin(); it != triggers.end(); ++it) {
         const QString animationName = it.key();
         const QString effectName = it.value().toString();
 
         if (effectName.isEmpty()) {
-            qWarning() << "SpritePack: Effect trigger has empty effect for animation:" << animationName;
+            qWarning() << "CharacterPack: Effect trigger has empty effect for animation:" << animationName;
             return false;
         }
 
@@ -475,11 +474,11 @@ bool SpritePack::parseEffectTriggers(const QJsonObject &triggers)
     return true;
 }
 
-bool SpritePack::loadAnimationsFromDefinitions(const QString &definitionsPath)
+bool CharacterPack::loadAnimationsFromDefinitions(const QString &definitionsPath)
 {
     QFile file(definitionsPath);
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "SpritePack: Failed to open definitions file:" << definitionsPath;
+        qWarning() << "CharacterPack: Failed to open definitions file:" << definitionsPath;
         return false;
     }
 
@@ -488,12 +487,12 @@ bool SpritePack::loadAnimationsFromDefinitions(const QString &definitionsPath)
     file.close();
 
     if (error.error != QJsonParseError::NoError) {
-        qWarning() << "SpritePack: definitions parse error:" << error.errorString();
+        qWarning() << "CharacterPack: definitions parse error:" << error.errorString();
         return false;
     }
 
     if (!doc.isArray()) {
-        qWarning() << "SpritePack: definitions is not an array";
+        qWarning() << "CharacterPack: definitions is not an array";
         return false;
     }
 
@@ -535,6 +534,6 @@ bool SpritePack::loadAnimationsFromDefinitions(const QString &definitionsPath)
         m_animations.insert(name, def);
     }
 
-    qDebug() << "SpritePack: Loaded" << m_animations.size() << "animations from definitions:" << definitionsPath;
+    qDebug() << "CharacterPack: Loaded" << m_animations.size() << "animations from definitions:" << definitionsPath;
     return true;
 }

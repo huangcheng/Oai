@@ -1,5 +1,5 @@
-#include "SpritePackManager.h"
-#include "SpritePack.h"
+#include "CharacterPackManager.h"
+#include "CharacterPack.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -9,22 +9,22 @@
 #include <QJsonObject>
 #include <QCoreApplication>
 
-SpritePackManager::SpritePackManager(QObject *parent)
+CharacterPackManager::CharacterPackManager(QObject *parent)
     : QObject(parent)
 {
     m_hotReloadTimer = new QTimer(this);
     m_hotReloadTimer->setSingleShot(true);
     m_hotReloadTimer->setInterval(500);  // 500ms debounce
-    connect(m_hotReloadTimer, &QTimer::timeout, this, &SpritePackManager::onHotReloadTimer);
+    connect(m_hotReloadTimer, &QTimer::timeout, this, &CharacterPackManager::onHotReloadTimer);
 }
 
-SpritePackManager::~SpritePackManager()
+CharacterPackManager::~CharacterPackManager()
 {
     cleanupFileWatcher();
     qDeleteAll(m_loadedPacks);
 }
 
-void SpritePackManager::initialize(const QString &builtInDir, const QString &userDir)
+void CharacterPackManager::initialize(const QString &builtInDir, const QString &userDir)
 {
     m_builtInDir = builtInDir;
     m_userDir = userDir;
@@ -44,25 +44,25 @@ void SpritePackManager::initialize(const QString &builtInDir, const QString &use
     // Load default pack (first available, or fallback)
     if (!m_packs.isEmpty()) {
         // Try to load 'clippy' as default, or first available
-        QString defaultPackId = "com.oaipet.clippy";
+        QString defaultPackId = "im.cheng.oai.clippy";
         if (!m_packs.contains(defaultPackId)) {
             defaultPackId = m_packs.firstKey();
         }
         switchPack(defaultPackId);
     } else {
-        qWarning() << "SpritePackManager: No sprite packs found!";
+        qWarning() << "CharacterPackManager: No sprite packs found!";
     }
 }
 
-QVector<SpritePackManager::PackInfo> SpritePackManager::availablePacks() const
+QVector<CharacterPackManager::PackInfo> CharacterPackManager::availablePacks() const
 {
     return m_packs.values().toVector();
 }
 
-bool SpritePackManager::switchPack(const QString &packId)
+bool CharacterPackManager::switchPack(const QString &packId)
 {
     if (!m_packs.contains(packId)) {
-        qWarning() << "SpritePackManager: Pack not found:" << packId;
+        qWarning() << "CharacterPackManager: Pack not found:" << packId;
         return false;
     }
 
@@ -75,9 +75,9 @@ bool SpritePackManager::switchPack(const QString &packId)
 
     // Load pack if not already loaded
     if (!m_loadedPacks.contains(packId)) {
-        SpritePack *pack = createAndLoadPack(info.path);
+        CharacterPack *pack = createAndLoadPack(info.path);
         if (!pack) {
-            qWarning() << "SpritePackManager: Failed to load pack:" << packId;
+            qWarning() << "CharacterPackManager: Failed to load pack:" << packId;
             return false;
         }
         m_loadedPacks[packId] = pack;
@@ -87,23 +87,23 @@ bool SpritePackManager::switchPack(const QString &packId)
     m_activePackId = packId;
     m_activePack = m_loadedPacks[packId];
 
-    qDebug() << "SpritePackManager: Switched to pack:" << info.name;
+    qDebug() << "CharacterPackManager: Switched to pack:" << info.name;
     emit activePackChanged(m_activePack);
 
     return true;
 }
 
-bool SpritePackManager::installPack(const QString &archivePath)
+bool CharacterPackManager::installPack(const QString &archivePath)
 {
     // TODO: Implement .opk archive extraction
-    qWarning() << "SpritePackManager: Pack installation not yet implemented:" << archivePath;
+    qWarning() << "CharacterPackManager: Pack installation not yet implemented:" << archivePath;
     return false;
 }
 
-bool SpritePackManager::uninstallPack(const QString &packId)
+bool CharacterPackManager::uninstallPack(const QString &packId)
 {
     if (!m_packs.contains(packId)) {
-        qWarning() << "SpritePackManager: Pack not found:" << packId;
+        qWarning() << "CharacterPackManager: Pack not found:" << packId;
         return false;
     }
 
@@ -111,7 +111,7 @@ bool SpritePackManager::uninstallPack(const QString &packId)
 
     // Only user packs can be uninstalled
     if (info.source != PackSource::User) {
-        qWarning() << "SpritePackManager: Cannot uninstall built-in pack:" << packId;
+        qWarning() << "CharacterPackManager: Cannot uninstall built-in pack:" << packId;
         return false;
     }
 
@@ -127,7 +127,7 @@ bool SpritePackManager::uninstallPack(const QString &packId)
         }
 
         if (newPackId.isEmpty()) {
-            qWarning() << "SpritePackManager: Cannot uninstall last remaining pack";
+            qWarning() << "CharacterPackManager: Cannot uninstall last remaining pack";
             return false;
         }
 
@@ -138,7 +138,7 @@ bool SpritePackManager::uninstallPack(const QString &packId)
     QDir packDir(info.path);
     if (packDir.exists()) {
         if (!packDir.removeRecursively()) {
-            qWarning() << "SpritePackManager: Failed to remove pack directory:" << info.path;
+            qWarning() << "CharacterPackManager: Failed to remove pack directory:" << info.path;
             return false;
         }
     }
@@ -152,23 +152,23 @@ bool SpritePackManager::uninstallPack(const QString &packId)
     // Remove from packs map
     m_packs.remove(packId);
 
-    qDebug() << "SpritePackManager: Uninstalled pack:" << packId;
+    qDebug() << "CharacterPackManager: Uninstalled pack:" << packId;
     emit packListChanged();
 
     return true;
 }
 
-bool SpritePackManager::isPackInstalled(const QString &packId) const
+bool CharacterPackManager::isPackInstalled(const QString &packId) const
 {
     return m_packs.contains(packId);
 }
 
-SpritePackManager::PackInfo SpritePackManager::packInfo(const QString &packId) const
+CharacterPackManager::PackInfo CharacterPackManager::packInfo(const QString &packId) const
 {
     return m_packs.value(packId);
 }
 
-void SpritePackManager::setHotReloadEnabled(bool enabled)
+void CharacterPackManager::setHotReloadEnabled(bool enabled)
 {
     m_hotReloadEnabled = enabled;
     if (enabled) {
@@ -178,7 +178,7 @@ void SpritePackManager::setHotReloadEnabled(bool enabled)
     }
 }
 
-void SpritePackManager::reloadCurrentPack()
+void CharacterPackManager::reloadCurrentPack()
 {
     if (m_activePackId.isEmpty() || !m_activePack) {
         return;
@@ -187,9 +187,9 @@ void SpritePackManager::reloadCurrentPack()
     const PackInfo &info = m_packs[m_activePackId];
 
     // Reload pack
-    SpritePack *newPack = createAndLoadPack(info.path);
+    CharacterPack *newPack = createAndLoadPack(info.path);
     if (!newPack) {
-        qWarning() << "SpritePackManager: Failed to reload pack:" << m_activePackId;
+        qWarning() << "CharacterPackManager: Failed to reload pack:" << m_activePackId;
         return;
     }
 
@@ -198,11 +198,11 @@ void SpritePackManager::reloadCurrentPack()
     m_loadedPacks[m_activePackId] = newPack;
     m_activePack = newPack;
 
-    qDebug() << "SpritePackManager: Reloaded pack:" << info.name;
+    qDebug() << "CharacterPackManager: Reloaded pack:" << info.name;
     emit packReloaded(m_activePack);
 }
 
-void SpritePackManager::discoverPacks()
+void CharacterPackManager::discoverPacks()
 {
     m_packs.clear();
 
@@ -228,10 +228,10 @@ void SpritePackManager::discoverPacks()
         }
     }
 
-    qDebug() << "SpritePackManager: Discovered" << m_packs.size() << "packs";
+    qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs";
 }
 
-void SpritePackManager::autoInstallBuiltInPacks()
+void CharacterPackManager::autoInstallBuiltInPacks()
 {
     if (m_userDir.isEmpty()) {
         return;
@@ -276,22 +276,22 @@ void SpritePackManager::autoInstallBuiltInPacks()
             // Check if already installed
             QString installDir = m_userDir + "/" + packId;
             if (QDir(installDir).exists()) {
-                qDebug() << "SpritePackManager: Pack already installed:" << packId;
+                qDebug() << "CharacterPackManager: Pack already installed:" << packId;
                 continue;
             }
 
             // Install the pack
-            qDebug() << "SpritePackManager: Auto-installing pack:" << opkFile.fileName();
+            qDebug() << "CharacterPackManager: Auto-installing pack:" << opkFile.fileName();
             if (installPack(opkFile.absoluteFilePath())) {
-                qDebug() << "SpritePackManager: Successfully installed:" << packId;
+                qDebug() << "CharacterPackManager: Successfully installed:" << packId;
             } else {
-                qWarning() << "SpritePackManager: failed to auto-install:" << opkFile.fileName();
+                qWarning() << "CharacterPackManager: failed to auto-install:" << opkFile.fileName();
             }
         }
     }
 }
 
-QString SpritePackManager::extractPackIdFromOpk(const QString &opkPath)
+QString CharacterPackManager::extractPackIdFromOpk(const QString &opkPath)
 {
     // Open the .opk file (ZIP) and read manifest.json to get the pack ID
     // For now, use a simple approach - read the first .json file found
@@ -300,7 +300,7 @@ QString SpritePackManager::extractPackIdFromOpk(const QString &opkPath)
     return QString();
 }
 
-void SpritePackManager::loadPackFromDirectory(const QString &packDir, PackSource source)
+void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSource source)
 {
     // Check for manifest.json
     const QString manifestPath = QDir(packDir).absoluteFilePath("manifest.json");
@@ -311,7 +311,7 @@ void SpritePackManager::loadPackFromDirectory(const QString &packDir, PackSource
     // Read manifest to get pack ID
     QFile manifestFile(manifestPath);
     if (!manifestFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "SpritePackManager: Failed to open manifest:" << manifestPath;
+        qWarning() << "CharacterPackManager: Failed to open manifest:" << manifestPath;
         return;
     }
 
@@ -319,7 +319,7 @@ void SpritePackManager::loadPackFromDirectory(const QString &packDir, PackSource
     manifestFile.close();
 
     if (!doc.isObject()) {
-        qWarning() << "SpritePackManager: Invalid manifest:" << manifestPath;
+        qWarning() << "CharacterPackManager: Invalid manifest:" << manifestPath;
         return;
     }
 
@@ -327,7 +327,7 @@ void SpritePackManager::loadPackFromDirectory(const QString &packDir, PackSource
     const QString packId = manifest.value("id").toString();
 
     if (packId.isEmpty()) {
-        qWarning() << "SpritePackManager: Pack missing ID:" << manifestPath;
+        qWarning() << "CharacterPackManager: Pack missing ID:" << manifestPath;
         return;
     }
 
@@ -345,21 +345,21 @@ void SpritePackManager::loadPackFromDirectory(const QString &packDir, PackSource
     // Add to packs map (user packs override built-in with same ID)
     m_packs[packId] = info;
 
-    qDebug() << "SpritePackManager: Found pack:" << info.name << "(" << packId << ")";
+    qDebug() << "CharacterPackManager: Found pack:" << info.name << "(" << packId << ")";
 }
 
-SpritePack *SpritePackManager::createAndLoadPack(const QString &packDir)
+CharacterPack *CharacterPackManager::createAndLoadPack(const QString &packDir)
 {
-    SpritePack *pack = new SpritePack();
+    CharacterPack *pack = new CharacterPack();
     if (!pack->loadFromDirectory(packDir)) {
-        qWarning() << "SpritePackManager: Failed to load pack from:" << packDir;
+        qWarning() << "CharacterPackManager: Failed to load pack from:" << packDir;
         delete pack;
         return nullptr;
     }
     return pack;
 }
 
-void SpritePackManager::setupFileWatcher()
+void CharacterPackManager::setupFileWatcher()
 {
     if (m_fileWatcher) {
         return;  // Already setup
@@ -367,7 +367,7 @@ void SpritePackManager::setupFileWatcher()
 
     m_fileWatcher = new QFileSystemWatcher(this);
     connect(m_fileWatcher, &QFileSystemWatcher::directoryChanged,
-            this, &SpritePackManager::onDirectoryChanged);
+            this, &CharacterPackManager::onDirectoryChanged);
 
     // Watch user packs directory
     if (!m_userDir.isEmpty() && QDir(m_userDir).exists()) {
@@ -375,7 +375,7 @@ void SpritePackManager::setupFileWatcher()
     }
 }
 
-void SpritePackManager::cleanupFileWatcher()
+void CharacterPackManager::cleanupFileWatcher()
 {
     if (m_fileWatcher) {
         delete m_fileWatcher;
@@ -383,7 +383,7 @@ void SpritePackManager::cleanupFileWatcher()
     }
 }
 
-void SpritePackManager::onDirectoryChanged(const QString &path)
+void CharacterPackManager::onDirectoryChanged(const QString &path)
 {
     Q_UNUSED(path);
 
@@ -396,7 +396,7 @@ void SpritePackManager::onDirectoryChanged(const QString &path)
     m_hotReloadTimer->start();
 }
 
-void SpritePackManager::onHotReloadTimer()
+void CharacterPackManager::onHotReloadTimer()
 {
     if (!m_hotReloadPending) {
         return;

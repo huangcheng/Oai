@@ -1,5 +1,5 @@
-#ifndef SPRITEPACK_H
-#define SPRITEPACK_H
+#ifndef CHARACTERPACK_H
+#define CHARACTERPACK_H
 
 #include <QString>
 #include <QMap>
@@ -22,7 +22,7 @@
  * - Directory (for development/hot-reload)
  * - .opk archive (for distribution)
  */
-class SpritePack
+class CharacterPack
 {
 public:
     /**
@@ -101,8 +101,8 @@ public:
         QString modelJson;        ///< Path to .model3.json (for Live2D type)
     };
 
-    SpritePack() = default;
-    ~SpritePack() = default;
+    CharacterPack() = default;
+    ~CharacterPack() = default;
 
     /**
      * @brief Load sprite pack from directory
@@ -235,4 +235,4 @@ private:
     QVector<IdleEntry> m_idlePool;
 };
 
-#endif // SPRITEPACK_H
+#endif // CHARACTERPACK_H

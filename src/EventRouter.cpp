@@ -4,7 +4,7 @@
 #ifdef OAI_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
-#include "SpritePack.h"
+#include "CharacterPack.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
 
@@ -124,7 +124,7 @@ void EventRouter::retranslateUi()
     initEventMap();
 }
 
-void EventRouter::loadFromSpritePack(const SpritePack *pack)
+void EventRouter::loadFromCharacterPack(const CharacterPack *pack)
 {
     if (!pack || !pack->isValid()) {
         qWarning() << "EventRouter: Invalid sprite pack";
