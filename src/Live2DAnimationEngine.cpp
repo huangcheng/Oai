@@ -26,6 +26,7 @@
 #include <Effect/CubismEyeBlink.hpp>
 #include <Effect/CubismBreath.hpp>
 #include <Effect/CubismPose.hpp>
+#include <Math/CubismTargetPoint.hpp>
 #include <Rendering/OpenGL/CubismRenderer_OpenGLES2.hpp>
 #include <Id/CubismIdManager.hpp>
 #include <CubismDefaultParameterId.hpp>
@@ -173,6 +174,18 @@ public:
             _eyeBlink = CubismEyeBlink::Create(m_setting);
         }
 
+        // --- Drag / pointer tracking ---
+        // Cubism's CubismTargetPoint smooths raw input into a moving target
+        // that feeds the head/body/eye drag parameters every update.
+        m_dragManager = CSM_NEW Csm::CubismTargetPoint();
+        auto *idm = CubismFramework::GetIdManager();
+        m_idParamAngleX     = idm->GetId(ParamAngleX);
+        m_idParamAngleY     = idm->GetId(ParamAngleY);
+        m_idParamAngleZ     = idm->GetId(ParamAngleZ);
+        m_idParamBodyAngleX = idm->GetId(ParamBodyAngleX);
+        m_idParamEyeBallX   = idm->GetId(ParamEyeBallX);
+        m_idParamEyeBallY   = idm->GetId(ParamEyeBallY);
+
         // --- Breath ---
         {
             _breath = CubismBreath::Create();
@@ -271,12 +284,33 @@ public:
         if (_eyeBlink) _eyeBlink->UpdateParameters(_model, deltaSeconds);
         // Breath
         if (_breath) _breath->UpdateParameters(_model, deltaSeconds);
+
+        // Drag / pointer tracking — smoothed head/body/eye tracking.
+        // Apply after motion/breath so it biases the base pose without being
+        // overwritten by SaveParameters.
+        if (m_dragManager) {
+            m_dragManager->Update(deltaSeconds);
+            const float dx = m_dragManager->GetX();
+            const float dy = m_dragManager->GetY();
+            if (m_idParamAngleX)     _model->AddParameterValue(m_idParamAngleX,     dx * 30.0f);
+            if (m_idParamAngleY)     _model->AddParameterValue(m_idParamAngleY,     dy * 30.0f);
+            if (m_idParamAngleZ)     _model->AddParameterValue(m_idParamAngleZ,     dx * dy * -30.0f);
+            if (m_idParamBodyAngleX) _model->AddParameterValue(m_idParamBodyAngleX, dx * 10.0f);
+            if (m_idParamEyeBallX)   _model->AddParameterValue(m_idParamEyeBallX,   dx);
+            if (m_idParamEyeBallY)   _model->AddParameterValue(m_idParamEyeBallY,   dy);
+        }
+
         // Physics
         if (_physics) _physics->Evaluate(_model, deltaSeconds);
         // Pose
         if (_pose) _pose->UpdateParameters(_model, deltaSeconds);
 
         _model->Update();
+    }
+
+    void setDragging(float x, float y)
+    {
+        if (m_dragManager) m_dragManager->Set(x, y);
     }
 
     void draw(int width, int height)
@@ -320,6 +354,13 @@ public:
         m_textures.clear();
         delete m_setting;
         m_setting = nullptr;
+        if (m_dragManager) {
+            CSM_DELETE(m_dragManager);
+            m_dragManager = nullptr;
+        }
+        m_idParamAngleX = m_idParamAngleY = m_idParamAngleZ = nullptr;
+        m_idParamBodyAngleX = nullptr;
+        m_idParamEyeBallX = m_idParamEyeBallY = nullptr;
         m_modelLoaded = false;
     }
 
@@ -365,6 +406,15 @@ private:
     QStringList m_motionGroupNames;
     QVector<GLuint> m_textures;
     bool m_modelLoaded = false;
+
+    // Drag / pointer tracking — see update() for how these are applied.
+    Csm::CubismTargetPoint *m_dragManager = nullptr;
+    const Csm::CubismId *m_idParamAngleX = nullptr;
+    const Csm::CubismId *m_idParamAngleY = nullptr;
+    const Csm::CubismId *m_idParamAngleZ = nullptr;
+    const Csm::CubismId *m_idParamBodyAngleX = nullptr;
+    const Csm::CubismId *m_idParamEyeBallX = nullptr;
+    const Csm::CubismId *m_idParamEyeBallY = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -547,7 +597,6 @@ void Live2DAnimationEngine::playAnimation(const QString &name, Priority priority
     if (!m_modelLoaded || !m_cubismModel) return;
 
     m_idleTimer.stop();
-
     int count = m_cubismModel->motionCount(name);
     if (count <= 0) {
         qWarning() << "Live2D: Motion group not found:" << name;
@@ -575,6 +624,11 @@ void Live2DAnimationEngine::stop()
     m_currentMotion.clear();
     m_image = QImage();  // clear last rendered frame so paint() returns early
     m_characterBounds = QRect();
+}
+
+void Live2DAnimationEngine::setPointerTarget(float x, float y)
+{
+    if (m_cubismModel) m_cubismModel->setDragging(x, y);
 }
 
 QRect Live2DAnimationEngine::characterBounds() const

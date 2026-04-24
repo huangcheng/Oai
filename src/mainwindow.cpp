@@ -36,6 +36,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     // Enable drag-and-drop
     setAcceptDrops(true);
 
+    // Receive mouseMoveEvent without a button held, so Live2D models can
+    // track the cursor (head/eyes follow pointer).
+    setMouseTracking(true);
+
     // Window is taller than the pet so the speech bubble fits above it
     setFixedSize(124, 200);
 
@@ -149,6 +153,18 @@ bool MainWindow::isInPetRect(const QPoint &pos) const
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    // Feed the Live2D drag manager so the head/eyes track the cursor.
+    // Map pointer position inside petRect to normalized (-1..+1), Y-up
+    // (Cubism convention). Skip for clicks that are starting a window drag.
+#ifdef OAI_LIVE2D_SUPPORT
+    if (m_live2dEngine && isInPetRect(event->pos())) {
+        const QRect pet = petRect();
+        const float nx = 2.0f * (event->pos().x() - pet.x()) / float(pet.width())  - 1.0f;
+        const float ny = 1.0f - 2.0f * (event->pos().y() - pet.y()) / float(pet.height());
+        m_live2dEngine->setPointerTarget(nx, ny);
+    }
+#endif
+
     if (event->buttons() & Qt::LeftButton) {
         const QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
 
@@ -162,6 +178,14 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
         }
     }
     QWidget::mouseMoveEvent(event);
+}
+
+void MainWindow::leaveEvent(QEvent *event)
+{
+#ifdef OAI_LIVE2D_SUPPORT
+    if (m_live2dEngine) m_live2dEngine->setPointerTarget(0.0f, 0.0f);
+#endif
+    QWidget::leaveEvent(event);
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)

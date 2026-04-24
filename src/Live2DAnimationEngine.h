@@ -62,7 +62,17 @@ public:
     /** @brief Stop playback and clear state (used when switching to a different engine). */
     void stop();
 
-    /** @brief Render the current frame into a QPainter target rect. */
+    /**
+     * @brief Set the pointer target in normalized viewport coords (-1..+1).
+     *        Live2D's drag manager smooths this into ParamAngleX/Y/Z,
+     *        ParamBodyAngleX, and ParamEyeBallX/Y so the head/body/eyes follow
+     *        the cursor. Pass (0, 0) to recenter when the pointer leaves.
+     */
+    void setPointerTarget(float x, float y);
+
+    /**
+     * @brief Render the current frame into a QPainter target rect.
+     */
     void paint(QPainter *painter, const QRect &bounds);
 
     /**
