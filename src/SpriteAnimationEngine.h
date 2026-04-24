@@ -52,6 +52,9 @@ public:
     bool isPlaying() const { return m_playing; }
     int queueSize() const { return m_queue.size(); }
 
+    /** @brief True once loadAssets / loadFromCharacterPack has loaded animations. */
+    bool hasAnimations() const { return !m_animations.isEmpty(); }
+
 signals:
     void effectRequested(const QString &effectName);
     void frameChanged();

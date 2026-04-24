@@ -170,7 +170,11 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 
         if (!m_dragging && delta.manhattanLength() > DRAG_THRESHOLD) {
             m_dragging = true;
-            m_engine->playAnimation("gesture_down", SpriteAnimationEngine::HighPriority);
+            // Only sprite packs ship a 'gesture_down' animation. For Live2D
+            // the drag reaction is already provided by pointer tracking.
+            if (m_engine->hasAnimations()) {
+                m_engine->playAnimation("gesture_down", SpriteAnimationEngine::HighPriority);
+            }
         }
 
         if (m_dragging) {
@@ -193,8 +197,10 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         if (m_dragging) {
             m_dragging = false;
-            m_engine->playAnimation("lookdown", SpriteAnimationEngine::HighPriority);
-            m_engine->playAnimation("rest", SpriteAnimationEngine::NormalPriority);
+            if (m_engine->hasAnimations()) {
+                m_engine->playAnimation("lookdown", SpriteAnimationEngine::HighPriority);
+                m_engine->playAnimation("rest", SpriteAnimationEngine::NormalPriority);
+            }
             emit positionChanged(pos());
         } else if (isInPetRect(event->pos())) {
 #ifdef OAI_LIVE2D_SUPPORT
