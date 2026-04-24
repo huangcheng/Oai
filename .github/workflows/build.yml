@@ -31,22 +31,18 @@ jobs:
       - name: Package
         run: |
           cd build
-          macdeployqt Orai.app
-          # Copy packs into Resources
-          mkdir -p Orai.app/Contents/Resources/packs
-          cp packs/*.opk Orai.app/Contents/Resources/packs/ 2>/dev/null || true
-          # Ad-hoc sign so Gatekeeper doesn't flag it as damaged
-          codesign --force --deep --sign - Orai.app
-          # Remove quarantine attribute
-          xattr -cr Orai.app
-          # Create DMG
-          hdiutil create -volname "Orai" -srcfolder Orai.app -ov -format UDZO Orai-macos.dmg
+          macdeployqt Oai.app
+          mkdir -p Oai.app/Contents/Resources/packs
+          cp packs/*.opk Oai.app/Contents/Resources/packs/ 2>/dev/null || true
+          codesign --force --deep --sign - Oai.app
+          xattr -cr Oai.app
+          hdiutil create -volname "Oai" -srcfolder Oai.app -ov -format UDZO Oai-macos.dmg
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Orai-macos
-          path: build/Orai-macos.dmg
+          name: Oai-macos
+          path: build/Oai-macos.dmg
 
   build-windows:
     runs-on: windows-latest
@@ -78,22 +74,21 @@ jobs:
         shell: bash
         run: |
           cd build
-          mkdir -p installer/packages/com.orai.desktop/data
-          # Find the executable (could be in Release/ subdirectory with MSVC)
-          find . -name "Orai.exe" -not -path "./installer/*" | head -1 | xargs -I{} cp {} installer/packages/com.orai.desktop/data/
-          cp -R packs installer/packages/com.orai.desktop/data/ 2>/dev/null || true
-          windeployqt installer/packages/com.orai.desktop/data/Orai.exe || true
+          mkdir -p installer/packages/im.cheng.oai.desktop/data
+          find . -name "Oai.exe" -not -path "./installer/*" | head -1 | xargs -I{} cp {} installer/packages/im.cheng.oai.desktop/data/
+          cp -R packs installer/packages/im.cheng.oai.desktop/data/ 2>/dev/null || true
+          windeployqt installer/packages/im.cheng.oai.desktop/data/Oai.exe || true
 
       - name: Build installer
         run: |
-          $IFW_PATH = (Get-ChildItem -Path "C:\Users\*\AppData\Local\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
-          & "$IFW_PATH\bin\binarycreator.exe" -c installer/config.xml -p installer/packages build/Orai-installer.exe
+          $IFW_PATH = (Get-ChildItem -Path "C:\Users*\AppData\Local\aqt\tools_ifw" -Directory | Select-Object -First 1).FullName
+          & "$IFW_PATH\bin\binarycreator.exe" -c installer/config.xml -p installer/packages build/Oai-installer.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Orai-windows-installer
-          path: build/Orai-installer.exe
+          name: Oai-windows-installer
+          path: build/Oai-installer.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -124,15 +119,15 @@ jobs:
         run: |
           cd build
           mkdir -p package
-          cp Orai package/
+          cp Oai package/
           cp -R ../assets package/assets
-          tar -czf Orai-linux-x86_64.tar.gz -C package .
+          tar -czf Oai-linux-x86_64.tar.gz -C package .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Orai-linux-x86_64
-          path: build/Orai-linux-x86_64.tar.gz
+          name: Oai-linux-x86_64
+          path: build/Oai-linux-x86_64.tar.gz
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -150,6 +145,6 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            artifacts/Orai-macos/Orai-macos.dmg
-            artifacts/Orai-windows-installer/Orai-installer.exe
-            artifacts/Orai-linux-x86_64/Orai-linux-x86_64.tar.gz
+            artifacts/Oai-macos/Oai-macos.dmg
+            artifacts/Oai-windows-installer/Oai-installer.exe
+            artifacts/Oai-linux-x86_64/Oai-linux-x86_64.tar.gz
