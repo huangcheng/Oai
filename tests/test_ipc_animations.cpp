@@ -41,6 +41,7 @@ private slots:
     void testMalformedJson();
     void testUnknownEventType();
     void testPriorityQueue();
+    void testTipWithAnimation();
 
 private:
     static QString findAssetsDir();
@@ -303,6 +304,30 @@ void TestIpcAnimations::testPriorityQueue()
     QTest::qWait(200);
 
     QVERIFY(m_engine->isPlaying());
+
+    client.close();
+}
+
+// ------------------------------------------------------------------
+// 9. Tip message with animation shows bubble AND plays animation
+// ------------------------------------------------------------------
+void TestIpcAnimations::testTipWithAnimation()
+{
+    QUdpSocket client;
+    client.bind(QHostAddress::Any, 0);
+
+    QJsonObject tip{
+        {"type", "tip"},
+        {"title", "Animated Tip"},
+        {"body", "With animation"},
+        {"animation", "wave"}
+    };
+    sendJson(&client, tip);
+
+    QTest::qWait(500);
+
+    QCOMPARE(m_bubble->title(), QStringLiteral("Animated Tip"));
+    QVERIFY(m_engine->isPlaying() || !m_engine->currentAnimation().isEmpty());
 
     client.close();
 }
