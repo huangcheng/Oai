@@ -84,6 +84,14 @@ int main(int argc, char *argv[])
             }
             if (!dir.cdUp()) break;
         }
+#ifdef OAI_SOURCE_DIR
+        // Fallback: use the compile-time source directory (for IDE builds
+        // whose build tree is far from the source tree).
+        QString sourceAssets = QStringLiteral(OAI_SOURCE_DIR) + "/assets";
+        if (QFile::exists(sourceAssets + "/map.png")) {
+            return sourceAssets;
+        }
+#endif
         return QString();
     };
 

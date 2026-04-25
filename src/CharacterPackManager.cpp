@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QCoreApplication>
 
+#include "../thirdparty/miniz/miniz.h"
+
 CharacterPackManager::CharacterPackManager(QObject *parent)
     : QObject(parent)
 {
@@ -96,9 +98,72 @@ bool CharacterPackManager::switchPack(const QString &packId)
 
 bool CharacterPackManager::installPack(const QString &archivePath)
 {
-    // TODO: Implement .opk archive extraction
-    qWarning() << "CharacterPackManager: Pack installation not yet implemented:" << archivePath;
-    return false;
+    mz_zip_archive zip{};
+    if (!mz_zip_reader_init_file(&zip, archivePath.toUtf8().constData(), 0)) {
+        qWarning() << "CharacterPackManager: Failed to open archive:" << archivePath;
+        return false;
+    }
+
+    // First pass: read manifest.json to get the pack ID
+    int manifestIdx = mz_zip_reader_locate_file(&zip, "manifest.json", nullptr, 0);
+    if (manifestIdx < 0) {
+        qWarning() << "CharacterPackManager: No manifest.json in archive:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    size_t manifestSize = 0;
+    void *manifestData = mz_zip_reader_extract_to_heap(&zip, manifestIdx, &manifestSize, 0);
+    if (!manifestData) {
+        qWarning() << "CharacterPackManager: Failed to read manifest.json from:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(QByteArray(static_cast<const char *>(manifestData),
+                                                           static_cast<int>(manifestSize)));
+    mz_free(manifestData);
+
+    if (!doc.isObject()) {
+        qWarning() << "CharacterPackManager: Invalid manifest.json in:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    QString packId = doc.object().value("id").toString();
+    if (packId.isEmpty()) {
+        qWarning() << "CharacterPackManager: Pack manifest missing 'id' in:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    // Extract all files to user packs directory
+    QString installDir = m_userDir + "/" + packId;
+    QDir().mkpath(installDir);
+
+    int numFiles = static_cast<int>(mz_zip_reader_get_num_files(&zip));
+    for (int i = 0; i < numFiles; ++i) {
+        mz_zip_archive_file_stat stat;
+        if (!mz_zip_reader_file_stat(&zip, i, &stat))
+            continue;
+
+        QString entryName = QString::fromUtf8(stat.m_filename);
+        QString destPath = installDir + "/" + entryName;
+
+        if (mz_zip_reader_is_file_a_directory(&zip, i)) {
+            QDir().mkpath(destPath);
+        } else {
+            // Ensure parent directory exists
+            QDir().mkpath(QFileInfo(destPath).absolutePath());
+            if (!mz_zip_reader_extract_to_file(&zip, i, destPath.toUtf8().constData(), 0)) {
+                qWarning() << "CharacterPackManager: Failed to extract:" << entryName;
+            }
+        }
+    }
+
+    mz_zip_reader_end(&zip);
+    qDebug() << "CharacterPackManager: Installed pack" << packId << "to" << installDir;
+    return true;
 }
 
 bool CharacterPackManager::uninstallPack(const QString &packId)
@@ -294,11 +359,34 @@ void CharacterPackManager::autoInstallBuiltInPacks()
 
 QString CharacterPackManager::extractPackIdFromOpk(const QString &opkPath)
 {
-    // Open the .opk file (ZIP) and read manifest.json to get the pack ID
-    // For now, use a simple approach - read the first .json file found
-    // TODO: Implement proper ZIP reading
-    Q_UNUSED(opkPath);
-    return QString();
+    mz_zip_archive zip{};
+    if (!mz_zip_reader_init_file(&zip, opkPath.toUtf8().constData(), 0)) {
+        return QString();
+    }
+
+    int manifestIdx = mz_zip_reader_locate_file(&zip, "manifest.json", nullptr, 0);
+    if (manifestIdx < 0) {
+        mz_zip_reader_end(&zip);
+        return QString();
+    }
+
+    size_t manifestSize = 0;
+    void *manifestData = mz_zip_reader_extract_to_heap(&zip, manifestIdx, &manifestSize, 0);
+    mz_zip_reader_end(&zip);
+
+    if (!manifestData) {
+        return QString();
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(QByteArray(static_cast<const char *>(manifestData),
+                                                           static_cast<int>(manifestSize)));
+    mz_free(manifestData);
+
+    if (!doc.isObject()) {
+        return QString();
+    }
+
+    return doc.object().value("id").toString();
 }
 
 void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSource source)

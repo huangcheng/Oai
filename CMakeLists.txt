@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(Oai VERSION 1.2.0 LANGUAGES CXX)
+project(Oai VERSION 1.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -272,12 +272,17 @@ qt_add_executable(Oai
     src/TipBubbleWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    thirdparty/miniz/miniz.c
+    thirdparty/miniz/miniz.h
 )
 
 target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-# Pass version to C++ code
-target_compile_definitions(Oai PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
+# Pass version and source directory to C++ code
+target_compile_definitions(Oai PRIVATE
+    PROJECT_VERSION="${PROJECT_VERSION}"
+    OAI_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
 
 # --- Icon resource -----------------------------------------------------------
 qt_add_resources(Oai "icons"
@@ -338,7 +343,7 @@ if(OAI_HAS_LIVE2D)
     # "FrameworkShaders/VertShaderSrc.vert"; our loader maps that to
     # ":/live2d/FrameworkShaders/<name>", so we alias each file accordingly.
     set(_LIVE2D_SHADER_DIR
-        ${CUBISM_SDK_DIR}/Framework/src/Rendering/OpenGL/Shaders/Standard)
+        ${CUBISM_FRAMEWORK_DIR}/src/Rendering/OpenGL/Shaders/Standard)
     file(GLOB _LIVE2D_SHADER_FILES
         ${_LIVE2D_SHADER_DIR}/*.vert
         ${_LIVE2D_SHADER_DIR}/*.frag)

@@ -22,6 +22,7 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.h
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.cpp
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.h
+    ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
 )
 
 set(TEST_SOURCES
