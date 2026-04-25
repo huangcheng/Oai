@@ -115,4 +115,8 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 Testing/
-.claude/
+
+# Claude Code: user-specific files only. Shared tooling (skills/, commands/,
+# agents/) is tracked so the project workflow travels with the repo.
+.claude/settings.local.json
+.claude/local/
