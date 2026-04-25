@@ -14,6 +14,8 @@ class QFrame;
 class QComboBox;
 class QCheckBox;
 class QLineEdit;
+class QToolButton;
+class QAction;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -51,12 +53,12 @@ private slots:
     void onLanguageChanged(int index);
     void onAutoStartToggled(bool checked);
     void onPortEditingFinished();
-    void onPackChanged(int index);
 
 private:
     void setupUi();
     void positionRelativeTo(const QWidget *pet);
     void refreshPackList();
+    void updatePackButtonLabel();
 
     ConfigManager *m_config;
     CharacterPackManager *m_packManager = nullptr;
@@ -72,7 +74,7 @@ private:
     QLabel *m_portLabel = nullptr;
     QLineEdit *m_portInput = nullptr;
     QLabel *m_packLabel = nullptr;
-    QComboBox *m_packCombo = nullptr;
+    QToolButton *m_packButton = nullptr;
 
     // Layout container
     QWidget *m_contentWidget = nullptr;

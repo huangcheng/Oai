@@ -24,6 +24,9 @@
 #include <QPolygon>
 #include <QFile>
 #include <QListView>
+#include <QToolButton>
+#include <QMenu>
+#include <QActionGroup>
 #include <QTransform>
 
 // All UI fonts in this panel are HarmonyOS Sans SC. The default style strategy
@@ -295,60 +298,64 @@ void SettingsPanelWidget::setupUi()
     connect(m_portInput, &QLineEdit::editingFinished,
             this, &SettingsPanelWidget::onPortEditingFinished);
 
-    // Pack selection row: label + combo
+    // Pack selection row: label + cascading button (mirrors the tray Pet menu)
     m_packLabel = new QLabel(tr("Pet"), m_contentWidget);
     m_packLabel->setFont(harmonyFont(10));
     m_packLabel->setStyleSheet("color: black; background: transparent;");
     m_packLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_packCombo = new QComboBox(m_contentWidget);
-    auto *packListView = new QListView(m_packCombo);
-    packListView->setFont(harmonyFont(10));
-    m_packCombo->setView(packListView);
-    m_packCombo->setFont(harmonyFont(10));
-    m_packCombo->setFixedHeight(24);
-    m_packCombo->setStyleSheet(QStringLiteral(R"(
-        QComboBox {
+    m_packButton = new QToolButton(m_contentWidget);
+    m_packButton->setFont(harmonyFont(10));
+    m_packButton->setFixedHeight(24);
+    m_packButton->setPopupMode(QToolButton::InstantPopup);
+    m_packButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_packButton->setText(tr("(no pack)"));
+    m_packButton->setCursor(Qt::PointingHandCursor);
+    m_packButton->setStyleSheet(QStringLiteral(R"(
+        QToolButton {
             background: white;
             border: 2px solid black;
             border-radius: 3px;
-            padding: 2px 6px;
+            padding: 2px 22px 2px 6px;   /* right pad for arrow */
             color: #2C2C2E;
             min-width: 70px;
+            text-align: left;
         }
-        QComboBox::drop-down {
-            border-left: 2px solid black;
-            border-top-right-radius: 6px;
-            border-bottom-right-radius: 6px;
-            width: 18px;
+        QToolButton::menu-indicator {
+            image: url(%1);
             subcontrol-origin: padding;
             subcontrol-position: center right;
-        }
-        QComboBox::down-arrow {
-            image: url(%1);
+            right: 6px;
             width: 8px;
             height: 5px;
         }
-        QComboBox QAbstractItemView {
-            background: white;
-            color: #2C2C2E;
-            border: 2px solid black;
-            border-radius: 4px;
-            selection-background-color: #F36F1A;
-            selection-color: white;
-            outline: none;
-        }
-        QComboBox QAbstractItemView::item {
-            color: #2C2C2E;
-            padding: 3px 6px;
-        }
-        QComboBox QAbstractItemView::item:selected {
+        QToolButton:hover {
             background: #F36F1A;
             color: white;
         }
+        QMenu {
+            background: white;
+            border: 2px solid black;
+            border-radius: 4px;
+            color: #2C2C2E;
+            padding: 2px;
+        }
+        QMenu::item {
+            padding: 4px 18px 4px 10px;
+        }
+        QMenu::item:selected {
+            background: #F36F1A;
+            color: white;
+        }
+        QMenu::item:checked {
+            font-weight: bold;
+        }
+        QMenu::separator {
+            height: 1px;
+            background: black;
+            margin: 2px 4px;
+        }
     )").arg(arrowPath));
-    connect(m_packCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &SettingsPanelWidget::onPackChanged);
 
     // Grid layout for form rows: labels in col 0, controls in col 1
     QGridLayout *formGrid = new QGridLayout();
@@ -363,7 +370,7 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_portLabel,       2, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_portInput,       2, 1);
     formGrid->addWidget(m_packLabel,       3, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_packCombo,       3, 1);
+    formGrid->addWidget(m_packButton,      3, 1);
 
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
@@ -515,52 +522,94 @@ void SettingsPanelWidget::onPortEditingFinished()
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
+    if (m_packManager) {
+        // Keep the button label in sync when the active pack changes via any
+        // other path (system tray, hot reload, etc).
+        connect(m_packManager, &CharacterPackManager::activePackChanged,
+                this, [this]() { updatePackButtonLabel(); });
+    }
     refreshPackList();
-}
-
-void SettingsPanelWidget::onPackChanged(int index)
-{
-    if (!m_packManager || index < 0) {
-        return;
-    }
-
-    QString packId = m_packCombo->itemData(index).toString();
-    if (!packId.isEmpty()) {
-        m_packManager->switchPack(packId);
-    }
 }
 
 void SettingsPanelWidget::refreshPackList()
 {
-    if (!m_packCombo) {
+    if (!m_packButton) {
         return;
     }
 
-    // Block currentIndexChanged while populating. Without this, the first
-    // addItem() fires currentIndexChanged(0) which calls onPackChanged ->
-    // switchPack(firstPack) and clobbers the pack that was just restored
-    // from config at startup.
-    const QSignalBlocker blocker(m_packCombo);
-
-    m_packCombo->clear();
+    // Discard the previous menu so old QAction lambdas don't pile up.
+    if (QMenu *old = m_packButton->menu()) {
+        m_packButton->setMenu(nullptr);
+        old->deleteLater();
+    }
 
     if (!m_packManager) {
+        m_packButton->setText(tr("(no pack)"));
         return;
     }
 
-    const auto packs = m_packManager->availablePacks();
-    for (const auto &pack : packs) {
-        m_packCombo->addItem(pack.displayName(m_packManager->activeLocale()), pack.id);
-    }
+    QMenu *menu = new QMenu(m_packButton);
+    menu->setFont(m_packButton->font());
 
-    // Select active pack
-    QString activeId = m_packManager->activePackId();
-    if (!activeId.isEmpty()) {
-        int index = m_packCombo->findData(activeId);
-        if (index >= 0) {
-            m_packCombo->setCurrentIndex(index);
+    const auto packs = m_packManager->availablePacks();
+    const QString activeId = m_packManager->activePackId();
+    const QString locale = m_packManager->activeLocale();
+
+    // Same partition as SystemTray::refreshPackMenu: anything imported via
+    // scripts/import_live2d.py carries an "Imported from github.com/" author;
+    // those go in the "Azur Lane" submenu, the rest in "Originals".
+    QVector<CharacterPackManager::PackInfo> originals, imported;
+    for (const auto &pack : packs) {
+        if (pack.author.startsWith(QStringLiteral("Imported from github.com/"))) {
+            imported.append(pack);
+        } else {
+            originals.append(pack);
         }
     }
+
+    QActionGroup *group = new QActionGroup(menu);
+    group->setExclusive(true);
+
+    auto addToSubmenu = [&](QMenu *sub, const QVector<CharacterPackManager::PackInfo> &list) {
+        for (const auto &pack : list) {
+            QAction *action = sub->addAction(pack.displayName(locale));
+            action->setCheckable(true);
+            action->setChecked(pack.id == activeId);
+            group->addAction(action);
+            const QString packId = pack.id;
+            connect(action, &QAction::triggered, this, [this, packId]() {
+                if (m_packManager) m_packManager->switchPack(packId);
+            });
+        }
+    };
+
+    if (!originals.isEmpty()) {
+        QMenu *sub = menu->addMenu(tr("Originals"));
+        sub->setFont(m_packButton->font());
+        addToSubmenu(sub, originals);
+    }
+    if (!imported.isEmpty()) {
+        QMenu *sub = menu->addMenu(tr("Azur Lane"));
+        sub->setFont(m_packButton->font());
+        addToSubmenu(sub, imported);
+    }
+
+    m_packButton->setMenu(menu);
+    updatePackButtonLabel();
+}
+
+void SettingsPanelWidget::updatePackButtonLabel()
+{
+    if (!m_packButton || !m_packManager) return;
+    const QString activeId = m_packManager->activePackId();
+    const QString locale = m_packManager->activeLocale();
+    for (const auto &pack : m_packManager->availablePacks()) {
+        if (pack.id == activeId) {
+            m_packButton->setText(pack.displayName(locale));
+            return;
+        }
+    }
+    m_packButton->setText(tr("(no pack)"));
 }
 
 void SettingsPanelWidget::retranslateUi()
