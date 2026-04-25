@@ -20,6 +20,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.h
+    ${CMAKE_SOURCE_DIR}/src/TipsCatalog.cpp
+    ${CMAKE_SOURCE_DIR}/src/TipsCatalog.h
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.cpp
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.h
     ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
