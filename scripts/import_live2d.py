@@ -306,13 +306,22 @@ def write_manifest(pack_dir: Path, local_id: str, name_en: str, name_zh: str,
             "frameWidth": 300,
             "frameHeight": 300,
         },
-        # Idle pool weights what plays during ambient cycling. The engine
-        # falls back to "Idle" alone if nothing here exists in the model.
+        # Idle pool — what plays when the pet is doing nothing. Lists every
+        # non-interaction group with weights that favour the multi-motion
+        # ambient ones (Standby holds home/main_*/stand, lots of variety)
+        # but still occasionally fires the dramatic ones (Wedding, Login)
+        # so the pet feels alive instead of looping the same idle motion.
+        # Engine filters out entries whose group has 0 motions in the
+        # loaded model, so listing groups that may not exist is harmless.
         "idlePool": [
-            {"name": "Idle",    "weight": 8},  # bread-and-butter ambient
-            {"name": "Standby", "weight": 3},  # variety: home / main_* / stand
-            {"name": "Mail",    "weight": 1},  # rare flavour: checking mail
-            {"name": "Wedding", "weight": 1},  # very rare flourish
+            {"name": "Idle",            "weight": 4},
+            {"name": "Standby",         "weight": 6},  # 4 motions: home/main_1-3
+            {"name": "Login",           "weight": 1},  # occasional greet flair
+            {"name": "Mission",         "weight": 1},  # "going about my work"
+            {"name": "Complete",        "weight": 1},  # quiet "done" gesture
+            {"name": "MissionComplete", "weight": 1},  # bigger satisfaction
+            {"name": "Mail",            "weight": 2},  # "checking inbox"
+            {"name": "Wedding",         "weight": 1},  # rare special flourish
         ],
         # Each event maps to a fallback chain of motion-group names. The
         # engine has no hardcoded knowledge of what these groups mean — it

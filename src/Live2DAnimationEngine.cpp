@@ -568,9 +568,16 @@ bool Live2DAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
     m_motionGroups = m_cubismModel->motionGroupNames();
     m_modelLoaded = true;
 
-    // Build idle pool from pack
+    // Build idle pool from pack — but skip entries whose group has zero
+    // motions in this model. Without this filter, an idlePool that lists
+    // (say) Wedding wastes its weight roll on packs that don't ship a
+    // Wedding group, producing dead air every Nth idle tick.
     const auto &idlePool = pack->idlePool();
     for (const auto &entry : idlePool) {
+        if (!m_cubismModel || m_cubismModel->motionCount(entry.animationName) <= 0) {
+            qDebug() << "Live2D: idlePool skipping missing group:" << entry.animationName;
+            continue;
+        }
         m_idleAnims.append(entry.animationName);
         m_idleWeights.append(entry.weight);
     }
@@ -765,6 +772,12 @@ void Live2DAnimationEngine::startNextAnimation()
         QString next = m_queue.takeFirst();
         playAnimation(next, NormalPriority);
     } else {
+        // Vary the gap between idle motions ±50% so the pet doesn't feel
+        // mechanical. m_idleTimeoutMs is the midpoint; actual interval lands
+        // in [0.5x, 1.5x] uniformly.
+        const int half = m_idleTimeoutMs / 2;
+        const int jitter = QRandomGenerator::global()->bounded(2 * half + 1) - half;
+        m_idleTimer.setInterval(m_idleTimeoutMs + jitter);
         m_idleTimer.start();
     }
 }

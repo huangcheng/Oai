@@ -22,15 +22,31 @@
   "idlePool": [
     {
       "name": "Idle",
-      "weight": 8
+      "weight": 4
     },
     {
       "name": "Standby",
-      "weight": 3
+      "weight": 6
+    },
+    {
+      "name": "Login",
+      "weight": 1
+    },
+    {
+      "name": "Mission",
+      "weight": 1
+    },
+    {
+      "name": "Complete",
+      "weight": 1
+    },
+    {
+      "name": "MissionComplete",
+      "weight": 1
     },
     {
       "name": "Mail",
-      "weight": 1
+      "weight": 2
     },
     {
       "name": "Wedding",
