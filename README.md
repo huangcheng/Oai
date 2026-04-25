@@ -337,6 +337,13 @@ The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
 
 ## Acknowledgements
 
+### Live2D character packs
+
+- [Eikanya/Live2d-model](https://github.com/Eikanya/Live2d-model) — Community archive of Live2D Cubism 3+ models from Azur Lane and other titles. Pinned as a submodule under `thirdparty/upstream-live2d/`; `scripts/import_live2d.py --local` populates `assets/packs/` from it on demand. Asset rights belong to the original game studios; treat imports as personal-use only.
+- [Bilibili: BV1fP411e7fA](https://www.bilibili.com/video/BV1fP411e7fA) — Source of the `little_demon` (小恶魔) and `yumi` VTube Studio model packs in `assets/packs/`. Credit and copyright remain with the original creator.
+
+### Sprite packs (legacy)
+
 - [clippyjs/clippy.js](https://github.com/clippyjs/clippy.js) — The original JavaScript library that brought Clippy and friends back to the web. All 10 Office Assistant character sprite sheets and animation definitions are sourced from this project.
 - [pi0/clippyjs](https://github.com/pi0/clippyjs) — Modern TypeScript rewrite of ClippyJS.
 - [thebeebs/OfficeAssistant](https://github.com/thebeebs/OfficeAssistant) — The original Microsoft Office Assistant C++ source code.

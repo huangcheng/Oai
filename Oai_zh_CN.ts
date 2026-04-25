@@ -361,8 +361,8 @@ v1.2.0</translation>
         <translation>（未选择）</translation>
     </message>
     <message>
-        <source>Originals</source>
-        <translation>原版</translation>
+        <source>Standalone</source>
+        <translation>独立</translation>
     </message>
     <message>
         <source>Azur Lane</source>
@@ -410,8 +410,8 @@ v1.2.0</translation>
         <translation>宠物</translation>
     </message>
     <message>
-        <source>Originals</source>
-        <translation>原版</translation>
+        <source>Standalone</source>
+        <translation>独立</translation>
     </message>
     <message>
         <source>Azur Lane</source>

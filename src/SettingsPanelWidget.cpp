@@ -538,7 +538,7 @@ static const struct {
     const char *id;
     const char *labelEn;
 } kCategoryOrder[] = {
-    { "originals",       QT_TR_NOOP("Originals") },
+    { "originals",       QT_TR_NOOP("Standalone") },
     { "azur_lane",       QT_TR_NOOP("Azur Lane") },
     { "girls_frontline", QT_TR_NOOP("Girls' Frontline") },
     { "idol_dimension",  QT_TR_NOOP("Idol Dimension") },
