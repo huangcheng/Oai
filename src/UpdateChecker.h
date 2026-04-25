@@ -30,7 +30,21 @@ class UpdateChecker : public QObject
 public:
     explicit UpdateChecker(ConfigManager *config, QObject *parent = nullptr);
 
-    void checkForUpdates();
+    /**
+     * @param userTriggered Set to true when the user explicitly clicked
+     *        "Check for Updates" — so the receiver (SystemTray) knows
+     *        whether to surface "no update available" / "check failed"
+     *        feedback. Background/auto checks should leave this false
+     *        so a quiet network never bothers the user. If a manual
+     *        request arrives while an auto check is in flight, the
+     *        in-flight response gets upgraded to user-triggered.
+     */
+    void checkForUpdates(bool userTriggered = false);
+
+    /// True if the most-recent (or in-flight) check originated from a user
+    /// action. SystemTray slots query this to decide whether silent results
+    /// suppress their notifications.
+    bool wasUserTriggered() const { return m_userTriggered; }
 
     static QString currentVersion();
 
@@ -53,6 +67,7 @@ private:
     QTimer *m_timeout = nullptr;
     quint16 m_pendingSeq = 0;
     bool m_inFlight = false;
+    bool m_userTriggered = false;
 
     static constexpr int CHECK_TIMEOUT_MS = 5000;
     static constexpr int CMD_CHECK = 1;

@@ -1,0 +1,32 @@
+; Oai portable defaults — shipped by the installer next to Oai.exe.
+;
+; Read once on every startup by ConfigManager (see src/ConfigManager.cpp).
+; Values here become the in-memory default for fields that have no override
+; in the user's roaming config (~/AppData/Roaming/Oai/Oai.ini on Windows,
+; ~/.config/Oai/Oai.ini on Linux). The user-scope file always wins on save,
+; so settings the user changes via the UI persist independently of this file.
+;
+; Use cases:
+;   - Pre-flight a custom updateServerEndpoint for an internal staging build
+;   - Localize default language for a region-specific installer
+;   - Pin an alternate IPC port if 52847 conflicts with another service
+;
+; Anything missing from this file falls back to the compiled defaults in
+; ConfigManager::defaultEndpoint() / defaultUpdateEndpoint() / etc.
+
+[General]
+; Aliyun-hosted UDP server for version checks. Override during installer
+; build to point at staging / a local Erlang server, e.g.:
+;   updateServerEndpoint=192.168.1.10:9340
+updateServerEndpoint=101.133.144.133:9340
+
+; Local IPC endpoint for incoming gateway events.
+; ipcEndpoint=127.0.0.1:52847
+
+; Default UI language. Anything other than "en" or "zh_CN" falls through
+; to system locale detection.
+; language=en
+
+; Whether the app launches at user login. Has no effect at first run unless
+; the per-platform autostart hook is installed.
+; autoStart=false

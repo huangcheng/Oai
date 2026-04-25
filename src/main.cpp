@@ -332,8 +332,12 @@ int main(int argc, char *argv[])
     UpdateChecker updateChecker(&config);
     tray.setUpdateChecker(&updateChecker);
 
-    // Check for updates on startup (delayed to not block UI)
-    QTimer::singleShot(5000, &updateChecker, &UpdateChecker::checkForUpdates);
+    // Check for updates on startup (delayed to not block UI). userTriggered=false
+    // keeps the result silent on the happy path — only an `updateAvailable`
+    // surfaces a notification.
+    QTimer::singleShot(5000, &updateChecker, [&updateChecker]() {
+        updateChecker.checkForUpdates(false);
+    });
 
     // --- Language switching --------------------------------------------------
     QObject::connect(&config, &ConfigManager::languageChanged,

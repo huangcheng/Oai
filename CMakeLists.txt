@@ -630,6 +630,14 @@ if(OAI_QTIFW_BINARYCREATOR)
         # Drop transitive install artifacts (rlottie headers, glew/.a stubs,
         # CMake configs, pkgconfig) — runtime install doesn't need them.
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/include ${OAI_IFW_PKG_DATA}/lib
+        # Ship the portable Oai.ini template — ConfigManager reads it on
+        # startup as a default-values layer underneath user-scope settings,
+        # so the installer can pre-set updateServerEndpoint / language /
+        # ipcEndpoint per build flavor without forcing every user to edit
+        # their roaming config.
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_SOURCE_DIR}/installer/oai.ini.template
+                ${OAI_IFW_PKG_DATA}/Oai.ini
         COMMAND ${CMAKE_COMMAND} -E touch ${OAI_IFW_STAGE_TS}
         DEPENDS Oai
         COMMENT "Staging Oai for installer packaging"

@@ -78,16 +78,25 @@ QByteArray UpdateChecker::encodeCheck(quint16 seq) const
     return packet;
 }
 
-void UpdateChecker::checkForUpdates()
+void UpdateChecker::checkForUpdates(bool userTriggered)
 {
     if (m_inFlight) {
-        qDebug() << "UpdateChecker: check already in flight, ignoring duplicate request";
+        // A check is already on the wire. If THIS request is user-driven
+        // but the in-flight one wasn't, upgrade the flag so the response
+        // surfaces feedback to the user instead of being silent.
+        if (userTriggered && !m_userTriggered) {
+            m_userTriggered = true;
+            qDebug() << "UpdateChecker: upgrading in-flight check to user-triggered";
+        }
         return;
     }
     if (!m_config) {
+        m_userTriggered = userTriggered;
         emit checkFailed(QStringLiteral("no ConfigManager"));
         return;
     }
+
+    m_userTriggered = userTriggered;
 
     const QString endpoint = m_config->updateServerEndpoint();
     const int colon = endpoint.lastIndexOf(':');

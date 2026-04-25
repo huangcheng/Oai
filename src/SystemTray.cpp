@@ -107,7 +107,10 @@ void SystemTray::setupMenu()
     m_checkUpdateAction = m_trayMenu->addAction(tr("Check for Updates"));
     connect(m_checkUpdateAction, &QAction::triggered, this, [this]() {
         if (m_updateChecker) {
-            m_updateChecker->checkForUpdates();
+            // Pass true so the response surfaces feedback whether or not
+            // an update is actually available — user clicked, user gets
+            // an answer.
+            m_updateChecker->checkForUpdates(true);
         }
     });
 
@@ -145,6 +148,8 @@ void SystemTray::setUpdateChecker(UpdateChecker *checker)
 void SystemTray::onUpdateAvailable(const QString &current, const QString &latest, const QString &url)
 {
     Q_UNUSED(url);
+    // Always notify on update-available — the whole point of the auto
+    // check is to surface this. Manual checks also report it.
     m_trayIcon->showMessage(
         tr("Update Available"),
         tr("Version %1 is available (current: %2)").arg(latest, current),
@@ -155,6 +160,12 @@ void SystemTray::onUpdateAvailable(const QString &current, const QString &latest
 
 void SystemTray::onNoUpdateAvailable(const QString &current)
 {
+    // Only feedback the user if THEY asked. The 5s post-launch auto check
+    // stays silent on the happy path so we don't pop a balloon every time
+    // the app starts up on the latest version.
+    if (!m_updateChecker || !m_updateChecker->wasUserTriggered()) {
+        return;
+    }
     m_trayIcon->showMessage(
         tr("No Updates"),
         tr("You are running the latest version (%1)").arg(current),
@@ -165,6 +176,14 @@ void SystemTray::onNoUpdateAvailable(const QString &current)
 
 void SystemTray::onUpdateCheckFailed(const QString &error)
 {
+    // Same rationale as onNoUpdateAvailable — auto checks stay silent on
+    // failure (network is flaky, no point bothering the user). Manual
+    // checks always surface the error so the user knows their click hit
+    // a wall.
+    if (!m_updateChecker || !m_updateChecker->wasUserTriggered()) {
+        qDebug() << "UpdateChecker: silent failure (auto check):" << error;
+        return;
+    }
     m_trayIcon->showMessage(
         tr("Update Check Failed"),
         tr("Could not check for updates: %1").arg(error),

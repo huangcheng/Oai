@@ -1,5 +1,7 @@
 #include "ConfigManager.h"
 
+#include <QCoreApplication>
+#include <QFile>
 #include <QDebug>
 
 QString ConfigManager::defaultEndpoint()
@@ -21,6 +23,31 @@ ConfigManager::ConfigManager(QObject *parent)
     , m_ipcEndpoint(defaultEndpoint())
     , m_updateServerEndpoint(defaultUpdateEndpoint())
 {
+    // Layer 1: in-memory defaults (above).
+    // Layer 2: portable Oai.ini next to the exe — shipped by the installer
+    //          so a built distribution can pre-set updateServerEndpoint /
+    //          ipcEndpoint / language without forcing every user to edit
+    //          their roaming config. Read-only here; save() never writes
+    //          to it (user changes always land in the user-scope file).
+    // Layer 3: user-scope ~/AppData/Roaming/Oai/Oai.ini — applied by load()
+    //          after construction, wins over portable values.
+    const QString portablePath = QCoreApplication::applicationDirPath() + "/Oai.ini";
+    if (QFile::exists(portablePath)) {
+        QSettings portable(portablePath, QSettings::IniFormat);
+        if (const auto v = portable.value("updateServerEndpoint").toString(); !v.isEmpty()) {
+            m_updateServerEndpoint = v;
+        }
+        if (const auto v = portable.value("ipcEndpoint").toString(); !v.isEmpty()) {
+            m_ipcEndpoint = v;
+        }
+        if (const auto v = portable.value("language").toString(); !v.isEmpty()) {
+            m_language = v;
+        }
+        if (portable.contains("autoStart")) {
+            m_autoStart = portable.value("autoStart").toBool();
+        }
+        qDebug() << "ConfigManager: portable defaults loaded from" << portablePath;
+    }
 }
 
 void ConfigManager::load()
