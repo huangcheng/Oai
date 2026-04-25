@@ -326,16 +326,15 @@ void MainWindow::toggleVisibility()
     } else {
         hide();
         m_tipBubble->hideBubble();
-        m_settingsPanel->hide();
+        m_settingsPanel->hideAnimated();
     }
 }
 
 void MainWindow::openSettings()
 {
     m_settingsPanel->setAnchorRect(petRect());
-    m_settingsPanel->show();
     m_settingsPanel->anchorTo(this);
-    m_settingsPanel->raise();
+    m_settingsPanel->showAnimated();
 }
 
 void MainWindow::setSystemTray(SystemTray *tray)

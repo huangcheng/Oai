@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QString>
+#include <QPropertyAnimation>
 
 class ConfigManager;
 class CharacterPackManager;
@@ -17,6 +18,8 @@ class QLineEdit;
 class SettingsPanelWidget : public QWidget
 {
     Q_OBJECT
+    Q_PROPERTY(qreal panelScale READ panelScale WRITE setPanelScale)
+    Q_PROPERTY(qreal panelOpacity READ panelOpacity WRITE setPanelOpacity)
 
 public:
     explicit SettingsPanelWidget(ConfigManager *config, QWidget *parent = nullptr);
@@ -30,6 +33,15 @@ public:
 
     // Retranslate UI when language changes at runtime
     void retranslateUi();
+
+    // Animated show/hide
+    void showAnimated();
+    void hideAnimated();
+
+    qreal panelScale() const { return m_scale; }
+    void setPanelScale(qreal s);
+    qreal panelOpacity() const { return m_panelOpacity; }
+    void setPanelOpacity(qreal o);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -65,6 +77,12 @@ private:
     // Layout container
     QWidget *m_contentWidget = nullptr;
     QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)
+
+    // Animation
+    qreal m_scale = 1.0;
+    qreal m_panelOpacity = 1.0;
+    QPropertyAnimation *m_scaleAnim = nullptr;
+    QPropertyAnimation *m_opacityAnim = nullptr;
 
     // Styling constants
     static constexpr int PADDING = 14;

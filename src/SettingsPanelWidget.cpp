@@ -24,6 +24,7 @@
 #include <QPolygon>
 #include <QFile>
 #include <QListView>
+#include <QTransform>
 
 SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     : QWidget(parent)
@@ -398,7 +399,82 @@ void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
 
 void SettingsPanelWidget::onCloseClicked()
 {
-    hide();
+    hideAnimated();
+}
+
+void SettingsPanelWidget::setPanelScale(qreal s)
+{
+    m_scale = s;
+    // Scale the content widget via transform from center
+    QTransform t;
+    qreal cx = SHADOW_BLUR + PANEL_WIDTH / 2.0;
+    qreal cy = SHADOW_BLUR + PANEL_HEIGHT / 2.0;
+    t.translate(cx, cy);
+    t.scale(s, s);
+    t.translate(-cx, -cy);
+    m_contentWidget->setGeometry(
+        SHADOW_BLUR + static_cast<int>(cx * (1.0 - s)),
+        SHADOW_BLUR + static_cast<int>(cy * (1.0 - s)),
+        static_cast<int>(PANEL_WIDTH * s),
+        static_cast<int>(PANEL_HEIGHT * s));
+    update();
+}
+
+void SettingsPanelWidget::setPanelOpacity(qreal o)
+{
+    m_panelOpacity = o;
+    setWindowOpacity(o);
+}
+
+void SettingsPanelWidget::showAnimated()
+{
+    m_scale = 0.9;
+    m_panelOpacity = 0.0;
+    setWindowOpacity(0.0);
+    QWidget::show();
+    raise();
+
+    delete m_scaleAnim;
+    delete m_opacityAnim;
+
+    // Scale: 0.9 → 1.0 with overshoot
+    m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
+    m_scaleAnim->setDuration(300);
+    m_scaleAnim->setStartValue(0.9);
+    m_scaleAnim->setEndValue(1.0);
+    m_scaleAnim->setEasingCurve(QEasingCurve::OutBack);
+    m_scaleAnim->start();
+
+    // Fade in
+    m_opacityAnim = new QPropertyAnimation(this, "panelOpacity", this);
+    m_opacityAnim->setDuration(250);
+    m_opacityAnim->setStartValue(0.0);
+    m_opacityAnim->setEndValue(1.0);
+    m_opacityAnim->setEasingCurve(QEasingCurve::OutCubic);
+    m_opacityAnim->start();
+}
+
+void SettingsPanelWidget::hideAnimated()
+{
+    delete m_scaleAnim;
+    delete m_opacityAnim;
+
+    // Scale: 1.0 → 0.9
+    m_scaleAnim = new QPropertyAnimation(this, "panelScale", this);
+    m_scaleAnim->setDuration(200);
+    m_scaleAnim->setStartValue(1.0);
+    m_scaleAnim->setEndValue(0.9);
+    m_scaleAnim->setEasingCurve(QEasingCurve::InCubic);
+    m_scaleAnim->start();
+
+    // Fade out → hide when done
+    m_opacityAnim = new QPropertyAnimation(this, "panelOpacity", this);
+    m_opacityAnim->setDuration(200);
+    m_opacityAnim->setStartValue(m_panelOpacity);
+    m_opacityAnim->setEndValue(0.0);
+    m_opacityAnim->setEasingCurve(QEasingCurve::InCubic);
+    connect(m_opacityAnim, &QPropertyAnimation::finished, this, &QWidget::hide);
+    m_opacityAnim->start();
 }
 
 void SettingsPanelWidget::onLanguageChanged(int index)

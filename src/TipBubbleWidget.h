@@ -12,6 +12,7 @@ class TipBubbleWidget : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
+    Q_PROPERTY(qreal slideOffset READ slideOffset WRITE setSlideOffset)
 
 public:
     enum BubbleType { StatusBubble = 0, TipBubble = 1 };
@@ -31,6 +32,8 @@ public:
 
     qreal opacity() const { return m_opacity; }
     void setOpacity(qreal o);
+    qreal slideOffset() const { return m_slideOffset; }
+    void setSlideOffset(qreal o);
 
     // --- Test accessors ------------------------------------------------------
     QString title() const { return m_title; }
@@ -62,7 +65,10 @@ private:
 
     // Animation
     qreal m_opacity = 1.0;
+    qreal m_slideOffset = 0.0;   // vertical slide offset in pixels
     QPropertyAnimation *m_opacityAnim = nullptr;
+    QPropertyAnimation *m_slideAnim = nullptr;
+    QPoint m_targetPos;          // final resting position
 
     // Auto-dismiss
     QTimer m_dismissTimer;

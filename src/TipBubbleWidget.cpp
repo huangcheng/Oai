@@ -34,9 +34,8 @@ TipBubbleWidget::TipBubbleWidget(QWidget *parent)
 
 TipBubbleWidget::~TipBubbleWidget()
 {
-    if (m_opacityAnim) {
-        m_opacityAnim->deleteLater();
-    }
+    delete m_opacityAnim;
+    delete m_slideAnim;
 }
 
 void TipBubbleWidget::anchorTo(const QWidget *petWidget)
@@ -113,6 +112,12 @@ void TipBubbleWidget::setOpacity(qreal o)
 {
     m_opacity = o;
     update();
+}
+
+void TipBubbleWidget::setSlideOffset(qreal o)
+{
+    m_slideOffset = o;
+    move(m_targetPos.x(), m_targetPos.y() + static_cast<int>(o));
 }
 
 void TipBubbleWidget::paintEvent(QPaintEvent *event)
@@ -280,37 +285,58 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
         bubbleY = qBound(screenRect.top(), bubbleY, screenRect.bottom() - height());
     }
 
-    move(bubbleX, bubbleY);
+    m_targetPos = QPoint(bubbleX, bubbleY);
+    move(m_targetPos);
 }
 
 void TipBubbleWidget::startEnterAnimation()
 {
-    if (m_opacityAnim) {
-        m_opacityAnim->deleteLater();
-    }
+    delete m_opacityAnim;
+    delete m_slideAnim;
 
+    // Slide direction: bubble above pet slides up from below, below pet slides down from above
+    int slideDistance = m_tailDown ? 20 : -20;
+
+    // Fade in
     m_opacityAnim = new QPropertyAnimation(this, "opacity", this);
-    m_opacityAnim->setDuration(400);
+    m_opacityAnim->setDuration(300);
     m_opacityAnim->setStartValue(0.0);
     m_opacityAnim->setEndValue(1.0);
-    m_opacityAnim->setEasingCurve(QEasingCurve::OutQuad);
+    m_opacityAnim->setEasingCurve(QEasingCurve::OutCubic);
     m_opacityAnim->start();
+
+    // Slide with overshoot bounce
+    m_slideAnim = new QPropertyAnimation(this, "slideOffset", this);
+    m_slideAnim->setDuration(350);
+    m_slideAnim->setStartValue(static_cast<qreal>(slideDistance));
+    m_slideAnim->setEndValue(0.0);
+    m_slideAnim->setEasingCurve(QEasingCurve::OutBack);
+    m_slideAnim->start();
 }
 
 void TipBubbleWidget::startExitAnimation()
 {
-    if (m_opacityAnim) {
-        m_opacityAnim->deleteLater();
-    }
+    delete m_opacityAnim;
+    delete m_slideAnim;
 
+    int slideDistance = m_tailDown ? 12 : -12;
+
+    // Fade out
     m_opacityAnim = new QPropertyAnimation(this, "opacity", this);
-    m_opacityAnim->setDuration(300);
+    m_opacityAnim->setDuration(200);
     m_opacityAnim->setStartValue(m_opacity);
     m_opacityAnim->setEndValue(0.0);
-    m_opacityAnim->setEasingCurve(QEasingCurve::InQuad);
-
+    m_opacityAnim->setEasingCurve(QEasingCurve::InCubic);
     connect(m_opacityAnim, &QPropertyAnimation::finished, this, &QWidget::hide);
     m_opacityAnim->start();
+
+    // Slide away
+    m_slideAnim = new QPropertyAnimation(this, "slideOffset", this);
+    m_slideAnim->setDuration(200);
+    m_slideAnim->setStartValue(0.0);
+    m_slideAnim->setEndValue(static_cast<qreal>(slideDistance));
+    m_slideAnim->setEasingCurve(QEasingCurve::InCubic);
+    m_slideAnim->start();
 }
 
 void TipBubbleWidget::calculateTextLayout()
