@@ -15,6 +15,7 @@ class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
 class CharacterPackManager;
+class EventRouter;
 
 class QTranslator;
 class SystemTray;
@@ -36,6 +37,7 @@ public:
 
     void setSystemTray(SystemTray *tray);
     void setCharacterPackManager(CharacterPackManager *manager);
+    void setEventRouter(EventRouter *router) { m_eventRouter = router; }
 
 signals:
     void positionChanged(const QPoint &pos);
@@ -79,6 +81,7 @@ private:
     QTranslator *m_translator;
     SystemTray *m_systemTray = nullptr;
     CharacterPackManager *m_packManager = nullptr;
+    EventRouter *m_eventRouter = nullptr;
 
     // Drag state
     QPoint m_dragStartPos;

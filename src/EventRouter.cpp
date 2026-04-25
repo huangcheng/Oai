@@ -73,20 +73,24 @@ void EventRouter::routeEvent(const QJsonObject &event)
     // they queue rather than truncate an ongoing reaction.
     if (!action.animation.isEmpty()) {
         const bool active = s_activeEvents.contains(eventName);
-        // Use the engine that has animations loaded (Live2D > Lottie > Sprite)
+        // Use the engine that has animations loaded (Live2D > Lottie > Sprite).
+        // Each engine accepts a fallback chain (QStringList) and plays the
+        // first group that has motions for the loaded model.
 #ifdef OAI_LIVE2D_SUPPORT
         if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
-            m_live2dEngine->playAnimation(action.animation,
+            m_live2dEngine->playAnimationChain(action.animation,
                 active ? Live2DAnimationEngine::HighPriority
                        : Live2DAnimationEngine::NormalPriority);
         } else
 #endif
         if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
-            m_lottieEngine->playAnimation(action.animation,
+            // Lottie + sprite engines take a single name — try the first
+            // entry in the chain; they don't have the multi-group concept.
+            m_lottieEngine->playAnimation(action.animation.first(),
                 active ? LottieAnimationEngine::HighPriority
                        : LottieAnimationEngine::NormalPriority);
         } else if (m_engine) {
-            m_engine->playAnimation(action.animation,
+            m_engine->playAnimation(action.animation.first(),
                 active ? SpriteAnimationEngine::HighPriority
                        : SpriteAnimationEngine::NormalPriority);
         }
@@ -98,44 +102,78 @@ void EventRouter::routeEvent(const QJsonObject &event)
     }
 }
 
+void EventRouter::triggerEvent(const QString &eventName)
+{
+    // Synthetic local event (e.g. "user.click") — bypass IPC validation
+    // and dispatch directly. Wraps the same animation-fallback logic as
+    // routeEvent() so mouse interaction respects the manifest's eventMap.
+    if (!m_eventMap.contains(eventName)) {
+        return;
+    }
+    const EventAction action = m_eventMap.value(eventName);
+    if (action.animation.isEmpty()) return;
+
+#ifdef OAI_LIVE2D_SUPPORT
+    if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
+        m_live2dEngine->playAnimationChain(action.animation, Live2DAnimationEngine::HighPriority);
+        return;
+    }
+#endif
+    if (m_lottieEngine && m_lottieEngine->hasAnimations()) {
+        m_lottieEngine->playAnimation(action.animation.first(), LottieAnimationEngine::HighPriority);
+    } else if (m_engine) {
+        m_engine->playAnimation(action.animation.first(), SpriteAnimationEngine::HighPriority);
+    }
+}
+
 void EventRouter::initEventMap()
 {
     // Canonical animation names (skin-agnostic):
     //   greet, idle, think, work, alert, celebrate, rest, send, attention
     // Each skin maps these to actual animation names in SpriteAnimationEngine.
+    // Values are wrapped in QStringList — single-name chains, since these
+    // sprite-sheet defaults don't need fallback semantics. Live2D packs that
+    // provide their own eventMap can supply richer chains.
 
     // Session events
-    m_eventMap["session.start"] = {"greet", tr("Session started"), tr("Let's get to work!")};
-    m_eventMap["session.end"] = {"rest", tr("Session ended"), tr("Good job today!")};
-    m_eventMap["session.idle"] = {"rest", "", ""};
-    m_eventMap["session.error"] = {"alert", tr("Oops!"), tr("Something went wrong. Check the logs!")};
+    m_eventMap["session.start"] = {{"greet"}, tr("Session started"), tr("Let's get to work!")};
+    m_eventMap["session.end"] = {{"rest"}, tr("Session ended"), tr("Good job today!")};
+    m_eventMap["session.idle"] = {{"rest"}, "", ""};
+    m_eventMap["session.error"] = {{"alert"}, tr("Oops!"), tr("Something went wrong. Check the logs!")};
 
     // Prompt
-    m_eventMap["prompt.submitted"] = {"think", tr("Thinking..."), tr("Give me a moment to process that.")};
+    m_eventMap["prompt.submitted"] = {{"think"}, tr("Thinking..."), tr("Give me a moment to process that.")};
 
     // Tool events
-    m_eventMap["tool.before"] = {"work", tr("Tool running"), tr("Executing command...")};
-    m_eventMap["tool.after"] = {"", tr("Done!"), tr("Command completed successfully.")};
-    m_eventMap["tool.failed"] = {"alert", tr("Tool failed"), tr("The command didn't work. Try again?")};
+    m_eventMap["tool.before"] = {{"work"}, tr("Tool running"), tr("Executing command...")};
+    m_eventMap["tool.after"] = {{}, tr("Done!"), tr("Command completed successfully.")};
+    m_eventMap["tool.failed"] = {{"alert"}, tr("Tool failed"), tr("The command didn't work. Try again?")};
 
     // Permission events
-    m_eventMap["permission.requested"] = {"attention", tr("Permission needed"), tr("Please approve the requested action.")};
-    m_eventMap["permission.denied"] = {"alert", tr("Denied"), tr("Permission was denied.")};
-    m_eventMap["permission.response"] = {"", "", ""};
+    m_eventMap["permission.requested"] = {{"attention"}, tr("Permission needed"), tr("Please approve the requested action.")};
+    m_eventMap["permission.denied"] = {{"alert"}, tr("Denied"), tr("Permission was denied.")};
+    m_eventMap["permission.response"] = {{}, "", ""};
 
     // Subagent events
-    m_eventMap["subagent.started"] = {"work", tr("Subagent started"), tr("A helper is working on a task.")};
-    m_eventMap["subagent.stopped"] = {"", tr("Subagent done"), tr("The helper has finished.")};
+    m_eventMap["subagent.started"] = {{"work"}, tr("Subagent started"), tr("A helper is working on a task.")};
+    m_eventMap["subagent.stopped"] = {{}, tr("Subagent done"), tr("The helper has finished.")};
 
     // Notification
-    m_eventMap["notification.sent"] = {"", tr("Notification"), tr("You have a new message!")};
+    m_eventMap["notification.sent"] = {{}, tr("Notification"), tr("You have a new message!")};
 
     // File events
-    m_eventMap["file.edited"] = {"send", tr("File saved"), tr("Your changes have been saved.")};
-    m_eventMap["file.watched"] = {"", "", ""};
+    m_eventMap["file.edited"] = {{"send"}, tr("File saved"), tr("Your changes have been saved.")};
+    m_eventMap["file.watched"] = {{}, "", ""};
 
     // Todo
-    m_eventMap["todo.updated"] = {"celebrate", tr("Task complete!"), tr("Nice work checking off that todo!")};
+    m_eventMap["todo.updated"] = {{"celebrate"}, tr("Task complete!"), tr("Nice work checking off that todo!")};
+
+    // Synthetic local events for mouse interaction. Live2D pack manifests
+    // typically supply chains like ["TouchBody","TouchHead","Tap"]; sprite
+    // packs use generic "tap"/"doubleclick" animation names. The chain is
+    // declared by the manifest, not the engine.
+    m_eventMap["user.click"] = {{"tap"}, "", ""};
+    m_eventMap["user.doubleclick"] = {{"doubleclick", "tap"}, "", ""};
 }
 
 void EventRouter::retranslateUi()
@@ -165,15 +203,15 @@ void EventRouter::loadFromCharacterPack(const CharacterPack *pack)
     // Merge pack animation names into existing event map, preserving tip text
     for (auto it = eventMap.begin(); it != eventMap.end(); ++it) {
         const QString eventName = it.key();
-        const QString animationName = it.value();
+        const QStringList animationChain = it.value();
 
         if (m_eventMap.contains(eventName)) {
-            // Update animation but keep existing tip text
-            m_eventMap[eventName].animation = animationName;
+            // Update animation chain but keep existing tip text
+            m_eventMap[eventName].animation = animationChain;
         } else {
             // New event not in defaults — add with animation only
             EventAction action;
-            action.animation = animationName;
+            action.animation = animationChain;
             m_eventMap[eventName] = action;
         }
     }

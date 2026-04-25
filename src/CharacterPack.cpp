@@ -490,11 +490,23 @@ bool CharacterPack::parseEventMap(const QJsonObject &map)
 {
     for (auto it = map.begin(); it != map.end(); ++it) {
         const QString eventName = it.key();
-        // Empty-string animation is valid (Cubism models with an unnamed
-        // motion group); don't reject the whole manifest on that.
-        m_eventMap[eventName] = it.value().toString();
+        const QJsonValue value = it.value();
+        QStringList chain;
+        // Accept either a string ("Tap") or an array (["Login","Tap","Idle"]).
+        // The engine will try each in order and play the first non-empty one,
+        // so a manifest can declare its own fallback semantics without the
+        // engine knowing anything about specific group names.
+        if (value.isArray()) {
+            for (const QJsonValue &v : value.toArray()) {
+                const QString s = v.toString();
+                if (!s.isEmpty()) chain.append(s);
+            }
+        } else {
+            const QString s = value.toString();
+            if (!s.isEmpty()) chain.append(s);
+        }
+        m_eventMap[eventName] = chain;
     }
-
     return true;
 }
 

@@ -28,6 +28,39 @@ RAW_BASE = f"https://raw.githubusercontent.com/{REPO}/master"
 # Filename prefixes that mark a motion as ambient/idle. Everything else is Tap.
 IDLE_PREFIXES = ("idle", "home", "main_", "stand", "wait")
 
+# Semantic motion-group classification: motion-file stem prefix → group name.
+# Order matters — first match wins (so 'mission_complete' beats 'mission').
+# Groups not in this map fall through to "Tap" (the catch-all).
+SEMANTIC_GROUPS = (
+    # (stem_prefix_tuple, group_name, role)
+    (("idle",),                  "Idle",            "idle"),       # cycled when nothing else
+    (("home", "main_", "stand"), "Standby",         "idle"),       # rare ambient variety
+    (("wait",),                  "Standby",         "idle"),
+    (("login",),                 "Login",           "event"),      # session.start
+    (("mail",),                  "Mail",            "event"),      # notification.sent
+    (("mission_complete",),      "MissionComplete", "event"),      # todo.updated, session.end+
+    (("mission",),               "Mission",         "event"),      # tool.before
+    (("complete",),              "Complete",        "event"),      # tool.after
+    (("wedding",),               "Wedding",         "event"),      # subagent.stopped (milestone)
+    (("touch_special",),         "TouchSpecial",    "interaction"),# user double-click maybe
+    (("touch_head",),            "TouchHead",       "interaction"),# permission.requested
+    (("touch_body",),            "TouchBody",       "interaction"),# generic mouse click
+    (("touch",),                 "TouchBody",       "interaction"),# bare 'touch'
+    (("flick",),                 "Flick",           "interaction"),
+    (("effect",),                "Effect",          "interaction"),
+)
+
+
+def classify_motion_stem(stem: str) -> tuple[str, str]:
+    """Return (group_name, role) for a motion-file stem.
+    role ∈ {'idle', 'event', 'interaction', 'tap'}.
+    Defaults to ('Tap', 'tap') for unknown stems."""
+    s = stem.lower()
+    for prefixes, group, role in SEMANTIC_GROUPS:
+        if any(s.startswith(p) for p in prefixes):
+            return group, role
+    return "Tap", "tap"
+
 
 def gh_list(upstream_path: str, *, retries: int = 4):
     """List directory entries via the gh contents API. Retries on transient
@@ -74,32 +107,47 @@ def download_file(upstream_path: str, dst: Path, *, retries: int = 4) -> None:
 
 
 def patch_model3(model3_path: Path) -> None:
-    """Normalize a model3.json's motion groups into Idle / Tap so the runtime
-    eventMap (which references those names) actually finds something to play.
+    """Normalize a model3.json's motion groups into a semantic taxonomy so the
+    runtime can route different events to motions of different *kinds*
+    (Login, Complete, Mail, Wedding, TouchHead, ...) instead of dumping
+    everything into a binary Idle/Tap split.
 
-    Three upstream layouts need flattening:
+    Three upstream layouts get flattened into the same target shape:
 
-    1) **Single anonymous group `""`** (z23, abercrombie). Cubism allows
-       motions with no group name; we split that bag into Idle / Tap based on
-       filename.
+    1) **Single anonymous group `""`** (z23, abercrombie). Motions with no
+       group name; we classify each by filename.
+    2) **Many per-file groups** (adalbert, albion). One group per motion
+       named after the file (`complete`, `effect`, `home`, `idle1`...).
+       Same filename classification.
+    3) **No `Motions` key at all** (helena). Scan the `motions/` dir on
+       disk and build groups from filenames.
 
-    2) **Many per-file groups** (adalbert, albion). Each motion sits in its
-       own group named after the file (`complete`, `effect`, `home`, `idle`,
-       `idle1`...). The model still loads — Cubism's group lookup is
-       case-sensitive though, so events that ask for `Idle`/`Tap` either fall
-       back to the alphabetically first group or play nothing. We collapse
-       those groups into Idle / Tap by the same filename heuristic so the
-       eventMap behaves predictably.
+    Output groups (only those with at least one motion are emitted):
+        Idle / Standby            — ambient, fed into idlePool
+        Login / Mission /
+        MissionComplete /
+        Complete / Mail / Wedding — event-triggered
+        TouchBody / TouchHead /
+        TouchSpecial / Flick /
+        Effect                    — user interaction
+        Tap                       — catch-all containing every non-idle
+                                    motion, so legacy eventMaps that
+                                    reference "Tap" still find something.
 
-    3) **No `Motions` key at all** (helena). The model3.json declares no
-       motions even though `motions/` on disk has files. We scan the dir
-       and build Idle / Tap from the filenames.
-
-    A `Motions` block that already has named, multi-entry groups (e.g.
-    Cubism Free Sample's `Tap` + `Idle`) is left alone."""
+    A `Motions` block that is *already* in the new taxonomy (has any of
+    Login/Complete/Mail/etc.) is left alone — re-running the script over a
+    pack that's already been patched is a no-op."""
     data = json.loads(model3_path.read_text(encoding="utf-8"))
     refs = data.setdefault("FileReferences", {})
     motions = refs.get("Motions", {})
+
+    # Idempotency: short-circuit only when a *new-taxonomy-specific* group is
+    # present (Login/Mail/Mission/etc.). Idle and Tap exist in both the old
+    # binary taxonomy and the new one, so seeing them alone means an older
+    # patch ran and we should re-patch to upgrade.
+    new_only_names = {g[1] for g in SEMANTIC_GROUPS} - {"Idle", "Tap"}
+    if new_only_names & set(motions.keys()):
+        return
 
     keys = list(motions.keys())
     is_single_anon = (keys == [""])
@@ -108,15 +156,17 @@ def patch_model3(model3_path: Path) -> None:
         and "Idle" not in motions and "Tap" not in motions
         and all(len(v) <= 2 for v in motions.values())
     )
-    # Case 3: no Motions block but motion files exist on disk
+    is_legacy_idle_tap = (set(keys) <= {"Idle", "Tap"} and motions)
     is_missing_block = (not motions)
+
     motions_dir = model3_path.parent / "motions"
     disk_motions = sorted(motions_dir.glob("*.motion3.json")) if motions_dir.is_dir() else []
     if is_missing_block and not disk_motions:
-        return  # genuinely no motions; nothing to do
-    if not (is_single_anon or is_per_file or is_missing_block):
-        return  # already has named multi-entry groups; leave alone
+        return  # genuinely nothing to do
+    if not (is_single_anon or is_per_file or is_legacy_idle_tap or is_missing_block):
+        return  # has named multi-entry groups we don't recognise — leave alone
 
+    # Flatten to a single list of motion entries.
     if is_missing_block:
         flat = [
             {"File": f"motions/{m.name}", "FadeInTime": 0.5, "FadeOutTime": 0.5}
@@ -128,25 +178,37 @@ def patch_model3(model3_path: Path) -> None:
             flat.extend(entries)
 
     seen = set()
-    idle, tap = [], []
+    buckets: dict[str, list] = {}
+    tap_pool = []
     for entry in flat:
         f = entry.get("File", "")
         if not f or f in seen:
             continue
         seen.add(f)
         stem = Path(f).stem.lower()
-        bucket = idle if any(stem.startswith(p) for p in IDLE_PREFIXES) else tap
-        bucket.append({"File": f, "FadeInTime": 0.5, "FadeOutTime": 0.5})
+        group, role = classify_motion_stem(stem)
+        rec = {"File": f, "FadeInTime": 0.5, "FadeOutTime": 0.5}
+        buckets.setdefault(group, []).append(rec)
+        # Catch-all Tap pool covers everything that isn't ambient idle, so a
+        # legacy eventMap still resolves something even if its target group
+        # has no motions in this pack.
+        if role != "idle":
+            tap_pool.append(rec)
 
-    new_groups = {}
-    if idle:
-        new_groups["Idle"] = idle
-    if tap:
-        new_groups["Tap"] = tap
-    if not new_groups:
-        return
+    if tap_pool and "Tap" not in buckets:
+        buckets["Tap"] = tap_pool
 
-    refs["Motions"] = new_groups
+    if not buckets:
+        return  # nothing classifiable
+
+    # Stable output ordering: Idle first, then alphabetical for the rest.
+    ordered = {}
+    if "Idle" in buckets:
+        ordered["Idle"] = buckets.pop("Idle")
+    for k in sorted(buckets):
+        ordered[k] = buckets[k]
+
+    refs["Motions"] = ordered
     model3_path.write_text(
         json.dumps(data, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -244,25 +306,40 @@ def write_manifest(pack_dir: Path, local_id: str, name_en: str, name_zh: str,
             "frameWidth": 300,
             "frameHeight": 300,
         },
-        "idlePool": [{"name": "Idle", "weight": 5}],
+        # Idle pool weights what plays during ambient cycling. The engine
+        # falls back to "Idle" alone if nothing here exists in the model.
+        "idlePool": [
+            {"name": "Idle",    "weight": 8},  # bread-and-butter ambient
+            {"name": "Standby", "weight": 3},  # variety: home / main_* / stand
+            {"name": "Mail",    "weight": 1},  # rare flavour: checking mail
+            {"name": "Wedding", "weight": 1},  # very rare flourish
+        ],
+        # Each event maps to a fallback chain of motion-group names. The
+        # engine has no hardcoded knowledge of what these groups mean — it
+        # tries each in order and plays the first one with motions. Manifests
+        # declare their own semantics here. "Tap" is the catch-all that
+        # patch_model3 always emits, so it's a safe last fallback.
         "eventMap": {
-            "session.start":        "Tap",
-            "session.end":          "Idle",
-            "session.idle":         "Idle",
-            "session.error":        "Tap",
-            "prompt.submitted":     "Idle",
-            "tool.before":          "Idle",
-            "tool.after":           "Tap",
-            "tool.failed":          "Tap",
-            "permission.requested": "Tap",
-            "permission.denied":    "Tap",
-            "permission.response":  "Idle",
-            "subagent.started":     "Idle",
-            "subagent.stopped":     "Idle",
-            "notification.sent":    "Tap",
-            "file.edited":          "Idle",
-            "file.watched":         "Idle",
-            "todo.updated":         "Tap",
+            "session.start":        ["Login",           "Tap"],
+            "session.end":          ["MissionComplete", "Idle"],
+            "session.idle":         ["Idle"],
+            "session.error":        ["Tap"],
+            "prompt.submitted":     ["Mission",         "Tap"],
+            "tool.before":          ["Mission",         "Tap"],
+            "tool.after":           ["Complete",        "Tap"],
+            "tool.failed":          ["Tap"],
+            "permission.requested": ["TouchHead",       "Tap"],
+            "permission.denied":    ["Tap"],
+            "permission.response":  ["Idle"],
+            "subagent.started":     ["Mission",         "Tap"],
+            "subagent.stopped":     ["Wedding",         "MissionComplete", "Tap"],
+            "notification.sent":    ["Mail",            "Tap"],
+            "file.edited":          ["Idle"],
+            "file.watched":         ["Idle"],
+            "todo.updated":         ["MissionComplete", "Complete", "Tap"],
+            # Mouse interaction routed through the same eventMap as IPC events.
+            "user.click":           ["TouchBody",       "TouchHead", "Tap"],
+            "user.doubleclick":     ["TouchSpecial",    "TouchBody", "Tap"],
         },
     }
     if not manifest["nameLocalized"]:

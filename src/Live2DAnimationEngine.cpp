@@ -640,21 +640,19 @@ void Live2DAnimationEngine::setPointerTarget(float x, float y)
     if (m_cubismModel) m_cubismModel->setDragging(x, y);
 }
 
-void Live2DAnimationEngine::tap()
+void Live2DAnimationEngine::playAnimationChain(const QStringList &chain, Priority priority)
 {
     if (!m_modelLoaded || !m_cubismModel) return;
-    // Prefer the canonical tap-style names; fall back to any non-Idle group.
-    QString group;
-    for (const QString &candidate : QStringList{"TapBody", "Tap", "Tap@Body"}) {
-        if (m_motionGroups.contains(candidate)) { group = candidate; break; }
-    }
-    if (group.isEmpty()) {
-        for (const QString &g : m_motionGroups) {
-            if (!g.isEmpty() && g != "Idle") { group = g; break; }
+    // Try each group in order; play the first one that has motions for the
+    // loaded model. The engine has zero knowledge of what specific group
+    // names mean — the manifest's eventMap declares the chain, this is just
+    // the dispatcher. If every group in the chain is missing, do nothing.
+    for (const QString &name : chain) {
+        if (name.isEmpty()) continue;
+        if (m_cubismModel->motionCount(name) > 0) {
+            playAnimation(name, priority);
+            return;
         }
-    }
-    if (!group.isEmpty()) {
-        playAnimation(group, HighPriority);
     }
 }
 

@@ -10,6 +10,7 @@
 #include "TipBubbleWidget.h"
 #include "SettingsPanelWidget.h"
 #include "SystemTray.h"
+#include "EventRouter.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -203,14 +204,16 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
             }
             emit positionChanged(pos());
         } else if (isInPetRect(event->pos())) {
-#ifdef OAI_LIVE2D_SUPPORT
-            if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
-                m_live2dEngine->tap();
+            // Route mouse-click through EventRouter so the manifest's
+            // eventMap declares the fallback chain — engine has no
+            // hardcoded knowledge of group names like "TouchBody"/"Tap".
+            if (m_eventRouter) {
+                m_eventRouter->triggerEvent(QStringLiteral("user.click"));
                 showRandomGreeting();
                 QWidget::mouseReleaseEvent(event);
                 return;
             }
-#endif
+            // Fallback for sprite packs without an event router wired.
             const QStringList clickAnims = {"click1", "click2"};
             const QString anim = clickAnims.at(QRandomGenerator::global()->bounded(clickAnims.size()));
             m_engine->playAnimation(anim, SpriteAnimationEngine::HighPriority);
@@ -223,14 +226,12 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
-#ifdef OAI_LIVE2D_SUPPORT
-        if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
-            m_live2dEngine->tap();
+        if (m_eventRouter) {
+            m_eventRouter->triggerEvent(QStringLiteral("user.doubleclick"));
             showRandomGreeting();
             QWidget::mouseDoubleClickEvent(event);
             return;
         }
-#endif
         const QStringList dblAnims = {"doubleclick1", "doubleclick2"};
         const QString anim = dblAnims.at(QRandomGenerator::global()->bounded(dblAnims.size()));
         m_engine->playAnimation(anim, SpriteAnimationEngine::HighPriority);

@@ -4,13 +4,13 @@
   "name": "Natori",
   "author": "Live2D Inc. (Sample Model)",
   "version": "1.0.0",
-  "description": "Natori — an expressive Live2D character from Live2D Cubism SDK samples",
+  "description": "Natori — Live2D character imported from upstream collection. Asset rights belong to the original game studio.",
   "preview": "preview.png",
   "tags": [
     "live2d",
     "natori"
   ],
-  "license": "Live2D Free Material License",
+  "license": "Asset rights belong to original studio; personal use only",
   "category": "originals",
   "minAppVersion": "2.0.0",
   "character": {
@@ -22,26 +22,94 @@
   "idlePool": [
     {
       "name": "Idle",
-      "weight": 5
+      "weight": 8
+    },
+    {
+      "name": "Standby",
+      "weight": 3
+    },
+    {
+      "name": "Mail",
+      "weight": 1
+    },
+    {
+      "name": "Wedding",
+      "weight": 1
     }
   ],
   "eventMap": {
-    "session.start": "TapBody",
-    "session.end": "Idle",
-    "session.idle": "Idle",
-    "session.error": "TapBody",
-    "prompt.submitted": "Idle",
-    "tool.before": "Idle",
-    "tool.after": "TapBody",
-    "tool.failed": "TapBody",
-    "permission.requested": "TapBody",
-    "permission.denied": "TapBody",
-    "permission.response": "Idle",
-    "subagent.started": "Idle",
-    "subagent.stopped": "Idle",
-    "notification.sent": "TapBody",
-    "file.edited": "Idle",
-    "file.watched": "Idle",
-    "todo.updated": "TapBody"
+    "session.start": [
+      "Login",
+      "Tap"
+    ],
+    "session.end": [
+      "MissionComplete",
+      "Idle"
+    ],
+    "session.idle": [
+      "Idle"
+    ],
+    "session.error": [
+      "Tap"
+    ],
+    "prompt.submitted": [
+      "Mission",
+      "Tap"
+    ],
+    "tool.before": [
+      "Mission",
+      "Tap"
+    ],
+    "tool.after": [
+      "Complete",
+      "Tap"
+    ],
+    "tool.failed": [
+      "Tap"
+    ],
+    "permission.requested": [
+      "TouchHead",
+      "Tap"
+    ],
+    "permission.denied": [
+      "Tap"
+    ],
+    "permission.response": [
+      "Idle"
+    ],
+    "subagent.started": [
+      "Mission",
+      "Tap"
+    ],
+    "subagent.stopped": [
+      "Wedding",
+      "MissionComplete",
+      "Tap"
+    ],
+    "notification.sent": [
+      "Mail",
+      "Tap"
+    ],
+    "file.edited": [
+      "Idle"
+    ],
+    "file.watched": [
+      "Idle"
+    ],
+    "todo.updated": [
+      "MissionComplete",
+      "Complete",
+      "Tap"
+    ],
+    "user.click": [
+      "TouchBody",
+      "TouchHead",
+      "Tap"
+    ],
+    "user.doubleclick": [
+      "TouchSpecial",
+      "TouchBody",
+      "Tap"
+    ]
   }
 }

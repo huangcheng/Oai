@@ -164,9 +164,12 @@ public:
     const AnimationDef *animation(const QString &name) const;
 
     /**
-     * @brief Get event-to-animation mapping
+     * @brief Get event-to-animation mapping. Each value is a fallback chain
+     *        of group/animation names tried in order — the first non-empty
+     *        one is played. Single-string manifests are normalized to a
+     *        one-element list during parse.
      */
-    const QMap<QString, QString> &eventMap() const { return m_eventMap; }
+    const QMap<QString, QStringList> &eventMap() const { return m_eventMap; }
 
     /**
      * @brief Get effect triggers (animation name -> effect name)
@@ -243,7 +246,7 @@ private:
     Metadata m_metadata;
     CharacterConfig m_characterConfig;
     QMap<QString, AnimationDef> m_animations;
-    QMap<QString, QString> m_eventMap;
+    QMap<QString, QStringList> m_eventMap;
     QMap<QString, QString> m_effectTriggers;
     QVector<IdleEntry> m_idlePool;
 };

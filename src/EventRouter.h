@@ -39,12 +39,19 @@ public slots:
     void routeEvent(const QJsonObject &event);
     void retranslateUi();
 
+    /**
+     * @brief Trigger a named event without going through IPC validation.
+     * Used for synthetic local events like "user.click" so mouse interaction
+     * shares the same eventMap-driven dispatch path as remote IPC events.
+     */
+    void triggerEvent(const QString &eventName);
+
 private:
     void initEventMap();
     bool validateEvent(const QJsonObject &event) const;
 
     struct EventAction {
-        QString animation;  // sprite sheet animation name (snake_case, mapped by engine)
+        QStringList animation;  // fallback chain — first non-empty group wins
         QString tipTitle;
         QString tipBody;
     };

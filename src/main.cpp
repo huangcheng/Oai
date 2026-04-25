@@ -257,6 +257,10 @@ int main(int argc, char *argv[])
 #endif
     eventRouter.setTipBubble(w.tipBubbleWidget());
     eventRouter.setTipsEngine(&tipsEngine);
+    // MainWindow uses the router for mouse-driven local events (user.click /
+    // user.doubleclick) so the manifest's eventMap declares the chain
+    // instead of MainWindow + the engine guessing.
+    w.setEventRouter(&eventRouter);
 
     // Load event mappings from active sprite pack
     if (packManager.activePack()) {

@@ -71,11 +71,14 @@ public:
     void setPointerTarget(float x, float y);
 
     /**
-     * @brief Play a tap-style reaction motion. Picks the best available
-     *        active group from the loaded model: TapBody > Tap > Tap@Body >
-     *        first non-Idle group. No-op if the model has no such group.
+     * @brief Play the first non-empty motion group in the chain.
+     * The engine has zero knowledge of what specific group names mean —
+     * the manifest's eventMap declares the chain, this is just the
+     * dispatcher. No-op if every group in the chain is missing or empty.
+     * Mouse clicks should route through EventRouter::triggerEvent("user.click")
+     * so the manifest can declare the chain instead of the engine guessing.
      */
-    void tap();
+    void playAnimationChain(const QStringList &chain, Priority priority);
 
     /**
      * @brief Render the current frame into a QPainter target rect.
