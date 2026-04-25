@@ -7,6 +7,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
 #include <QApplication>
 #include <QPainter>
 #include <QDebug>
@@ -192,6 +193,9 @@ void SystemTray::refreshPackMenu()
     }
 
     m_packMenu->clear();
+    delete m_packActionGroup;
+    m_packActionGroup = new QActionGroup(this);
+    m_packActionGroup->setExclusive(true);
 
     if (!m_packManager) {
         return;
@@ -205,6 +209,7 @@ void SystemTray::refreshPackMenu()
         action->setData(pack.id);
         action->setCheckable(true);
         action->setChecked(pack.id == activeId);
+        m_packActionGroup->addAction(action);
         connect(action, &QAction::triggered, this, &SystemTray::onPackActionTriggered);
     }
 }

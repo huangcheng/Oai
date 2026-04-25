@@ -8,6 +8,7 @@ class QSystemTrayIcon;
 class QMenu;
 class QWidget;
 class QAction;
+class QActionGroup;
 class CharacterPackManager;
 class UpdateChecker;
 
@@ -42,6 +43,7 @@ private:
     QSystemTrayIcon *m_trayIcon = nullptr;
     QMenu *m_trayMenu = nullptr;
     QMenu *m_packMenu = nullptr;
+    QActionGroup *m_packActionGroup = nullptr;
     QWidget *m_mainWindow = nullptr;
     QAction *m_toggleAction = nullptr;
     QAction *m_quitAction = nullptr;
