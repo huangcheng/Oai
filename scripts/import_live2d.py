@@ -422,12 +422,22 @@ PICKS = [
 import re
 
 # Whitelist: raw upstream folder name -> (category_id, local_id_prefix).
-# Categories not listed here (NSFW, oversized, Cubism-2-only) are skipped.
+# Categories not listed here (NSFW, oversized, Cubism-2-only, or naming-poor)
+# are skipped on bulk imports.
+#
+# Excluded on purpose:
+#   '少女前线 girls Frontline'        — upstream uses gun codenames / sequential
+#                                       IDs (gf_at4, gf_bgm_71, gf_1...);
+#                                       no character-name mapping in the dirs.
+#   '少女次元'                         — sequential numeric IDs (sd_001..050);
+#                                       same problem.
+#   '为美好的世界献上祝福！Fantastic Days'  — internal numeric IDs
+#                                       (ks_1004107...); same problem.
+# These can be re-added if a future curator hand-maps the IDs to character
+# names via PICKS-style tuples; bulk auto-import produces unhelpful labels
+# like 'Sd 042' / 'Ks 1124100'.
 LOCAL_CATEGORIES = {
     '碧蓝航线 Azue Lane':                 ('azur_lane',       'al_'),
-    '少女前线 girls Frontline':            ('girls_frontline', 'gf_'),
-    '少女次元':                            ('idol_dimension',  'sd_'),
-    '为美好的世界献上祝福！Fantastic Days': ('konosuba',        'ks_'),
     'Live2D':                              ('live2d_samples',  'l2d_'),
 }
 
