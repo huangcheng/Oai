@@ -50,6 +50,9 @@ foreach(test_src ${TEST_SOURCES})
         ${CMAKE_SOURCE_DIR}/src
         ${rlottie_SOURCE_DIR}/inc
     )
-    target_compile_definitions(${test_name} PRIVATE SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(${test_name} PRIVATE
+        SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+        PROJECT_VERSION="${PROJECT_VERSION}"
+    )
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
