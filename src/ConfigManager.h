@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPoint>
 #include <QString>
+#include <QSettings>
 
 class ConfigManager : public QObject
 {
@@ -53,7 +54,7 @@ signals:
     void ipcEndpointChanged(const QString &endpoint);
 
 private:
-    QString configFilePath() const;
+    QSettings m_settings;
 
     QPoint m_windowPosition;
     QString m_language = "en";

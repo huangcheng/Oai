@@ -1,108 +1,57 @@
 #include "ConfigManager.h"
 
-#include <QStandardPaths>
-#include <QDir>
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QDebug>
 
 QString ConfigManager::defaultEndpoint()
 {
-    // TCP localhost — same on all platforms. Port 52847 is chosen from the
-    // IANA dynamic/private range (49152-65535) to avoid conflicts with
-    // registered services.
     return QStringLiteral("127.0.0.1:52847");
 }
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
+    , m_settings(QSettings::IniFormat, QSettings::UserScope, "Oai", "Oai")
     , m_ipcEndpoint(defaultEndpoint())
 {
 }
 
 void ConfigManager::load()
 {
-    const QString path = configFilePath();
-    QFile file(path);
-
-    if (!file.exists()) {
+    if (!m_settings.contains("language")) {
         qDebug() << "No config file found, using defaults";
         return;
     }
 
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Failed to open config file:" << path;
-        return;
-    }
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
-    file.close();
-
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "Config parse error:" << error.errorString();
-        return;
-    }
-
-    QJsonObject obj = doc.object();
-
     // Window position
-    if (obj.contains("windowX") && obj.contains("windowY")) {
-        m_windowPosition = QPoint(obj["windowX"].toInt(), obj["windowY"].toInt());
-    }
+    m_windowPosition.setX(m_settings.value("windowX", 0).toInt());
+    m_windowPosition.setY(m_settings.value("windowY", 0).toInt());
 
     // Language
-    if (obj.contains("language")) {
-        m_language = obj["language"].toString();
-    }
+    m_language = m_settings.value("language", "en").toString();
 
     // Auto-start
-    if (obj.contains("autoStart")) {
-        m_autoStart = obj["autoStart"].toBool();
-    }
+    m_autoStart = m_settings.value("autoStart", false).toBool();
 
-    // IPC endpoint override
-    if (obj.contains("ipcEndpoint")) {
-        m_ipcEndpoint = obj["ipcEndpoint"].toString();
-    } else if (obj.contains("ipcSocketPath")) {
-        // Backward compat with old config field name
-        m_ipcEndpoint = obj["ipcSocketPath"].toString();
+    // IPC endpoint
+    QString endpoint = m_settings.value("ipcEndpoint").toString();
+    if (!endpoint.isEmpty()) {
+        m_ipcEndpoint = endpoint;
     }
 
     // Last-selected character pack
-    if (obj.contains("activePackId")) {
-        m_activePackId = obj["activePackId"].toString();
-    }
+    m_activePackId = m_settings.value("activePackId").toString();
 
-    qDebug() << "Config loaded from:" << path;
+    qDebug() << "Config loaded from:" << m_settings.fileName();
 }
 
 void ConfigManager::save()
 {
-    const QString path = configFilePath();
-    QDir().mkpath(QFileInfo(path).absolutePath());
-
-    QJsonObject obj;
-    obj["windowX"] = m_windowPosition.x();
-    obj["windowY"] = m_windowPosition.y();
-    obj["language"] = m_language;
-    obj["autoStart"] = m_autoStart;
-    obj["ipcEndpoint"] = m_ipcEndpoint;
-    obj["activePackId"] = m_activePackId;
-
-    QJsonDocument doc(obj);
-
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "Failed to write config file:" << path;
-        return;
-    }
-
-    file.write(doc.toJson(QJsonDocument::Indented));
-    file.close();
-
-    qDebug() << "Config saved to:" << path;
+    m_settings.setValue("windowX", m_windowPosition.x());
+    m_settings.setValue("windowY", m_windowPosition.y());
+    m_settings.setValue("language", m_language);
+    m_settings.setValue("autoStart", m_autoStart);
+    m_settings.setValue("ipcEndpoint", m_ipcEndpoint);
+    m_settings.setValue("activePackId", m_activePackId);
+    m_settings.sync();
 }
 
 void ConfigManager::setWindowPosition(const QPoint &pos)
@@ -155,10 +104,4 @@ void ConfigManager::setIpcPort(quint16 port)
         save();
         emit ipcEndpointChanged(m_ipcEndpoint);
     }
-}
-
-QString ConfigManager::configFilePath() const
-{
-    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
-           + "/Oai/config.json";
 }
