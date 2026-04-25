@@ -233,7 +233,13 @@ endif()
 
 # --- Executable --------------------------------------------------------------
 if(WIN32)
-    set(PLATFORM_SOURCES assets/oai.rc)
+    # VERSIONINFO + icon resource: configure_file substitutes
+    # @PROJECT_VERSION@ etc. so right-click → Properties → Details on
+    # Oai.exe shows the same version that's compiled in.
+    configure_file(${CMAKE_SOURCE_DIR}/assets/oai.rc.in
+                   ${CMAKE_BINARY_DIR}/oai.rc
+                   @ONLY)
+    set(PLATFORM_SOURCES ${CMAKE_BINARY_DIR}/oai.rc)
 endif()
 
 qt_add_executable(Oai

@@ -1,0 +1,46 @@
+// Generated from assets/oai.rc.in by configure_file().
+// Versioning is sourced from `project(Oai VERSION x.y.z)` in CMakeLists.txt
+// so the FILEVERSION / PRODUCTVERSION fields stay in lock-step with the
+// app version automatically.
+
+#include <windows.h>
+
+IDI_ICON1 ICON "@CMAKE_SOURCE_DIR@/assets/oai.ico"
+
+#define VER_FILEVERSION             @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+#define VER_FILEVERSION_STR         "@PROJECT_VERSION@.0\0"
+#define VER_PRODUCTVERSION          @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+#define VER_PRODUCTVERSION_STR      "@PROJECT_VERSION@\0"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     VER_FILEVERSION
+PRODUCTVERSION  VER_PRODUCTVERSION
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        // 040904B0 = US English, Unicode (codepage 1200). Single-block is
+        // the standard pattern for Windows binaries; the user-visible
+        // strings here are mostly metadata that doesn't really need
+        // localization for the .exe itself (the in-app UI handles that).
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "HUANG Cheng"
+            VALUE "FileDescription",  "Oai Desktop Pet"
+            VALUE "FileVersion",      VER_FILEVERSION_STR
+            VALUE "InternalName",     "Oai"
+            VALUE "LegalCopyright",   "(C) 2026 HUANG Cheng. All rights reserved."
+            VALUE "OriginalFilename", "Oai.exe"
+            VALUE "ProductName",      "Oai Desktop Pet"
+            VALUE "ProductVersion",   VER_PRODUCTVERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END
