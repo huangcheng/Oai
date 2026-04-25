@@ -7,10 +7,19 @@ QString ConfigManager::defaultEndpoint()
     return QStringLiteral("127.0.0.1:52847");
 }
 
+QString ConfigManager::defaultUpdateEndpoint()
+{
+    // Aliyun-hosted Erlang/OTP UDP server — see .claude/skills/oai-server/.
+    // Override with `updateServerEndpoint=host:port` in QSettings to point
+    // at a local server during development.
+    return QStringLiteral("101.133.144.133:9340");
+}
+
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
     , m_settings(QSettings::IniFormat, QSettings::UserScope, "Oai", "Oai")
     , m_ipcEndpoint(defaultEndpoint())
+    , m_updateServerEndpoint(defaultUpdateEndpoint())
 {
 }
 
@@ -37,6 +46,12 @@ void ConfigManager::load()
         m_ipcEndpoint = endpoint;
     }
 
+    // Update-server endpoint (UDP daemon for version checks)
+    QString upd = m_settings.value("updateServerEndpoint").toString();
+    if (!upd.isEmpty()) {
+        m_updateServerEndpoint = upd;
+    }
+
     // Last-selected character pack
     m_activePackId = m_settings.value("activePackId").toString();
 
@@ -50,6 +65,7 @@ void ConfigManager::save()
     m_settings.setValue("language", m_language);
     m_settings.setValue("autoStart", m_autoStart);
     m_settings.setValue("ipcEndpoint", m_ipcEndpoint);
+    m_settings.setValue("updateServerEndpoint", m_updateServerEndpoint);
     m_settings.setValue("activePackId", m_activePackId);
     m_settings.sync();
 }
@@ -103,5 +119,14 @@ void ConfigManager::setIpcPort(quint16 port)
         m_ipcEndpoint = newEndpoint;
         save();
         emit ipcEndpointChanged(m_ipcEndpoint);
+    }
+}
+
+void ConfigManager::setUpdateServerEndpoint(const QString &endpoint)
+{
+    if (m_updateServerEndpoint != endpoint) {
+        m_updateServerEndpoint = endpoint;
+        save();
+        emit updateServerEndpointChanged(m_updateServerEndpoint);
     }
 }

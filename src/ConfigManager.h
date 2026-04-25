@@ -46,12 +46,26 @@ public:
      */
     void setIpcPort(quint16 port);
 
+    /**
+     * Returns the UDP endpoint for the version-check / update server.
+     * Format: "host:port", e.g. "101.133.144.133:9340". Stored under the
+     * `updateServerEndpoint` key in QSettings; falls back to
+     * defaultUpdateEndpoint() when unset so production stays operable
+     * without forcing every user to write a config file.
+     */
+    QString updateServerEndpoint() const { return m_updateServerEndpoint; }
+    void setUpdateServerEndpoint(const QString &endpoint);
+
     /** Default IPC endpoint (used when config has no override). */
     static QString defaultEndpoint();
+
+    /** Default update-server endpoint (Aliyun host serving the Erlang UDP daemon). */
+    static QString defaultUpdateEndpoint();
 
 signals:
     void languageChanged(const QString &lang);
     void ipcEndpointChanged(const QString &endpoint);
+    void updateServerEndpointChanged(const QString &endpoint);
 
 private:
     QSettings m_settings;
@@ -60,6 +74,7 @@ private:
     QString m_language = "en";
     bool m_autoStart = false;
     QString m_ipcEndpoint;
+    QString m_updateServerEndpoint;
     QString m_activePackId;
 };
 

@@ -1,103 +1,199 @@
 #include "UpdateChecker.h"
+#include "ConfigManager.h"
 
+#include <QUdpSocket>
+#include <QTimer>
+#include <QHostInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
-#include <QNetworkRequest>
+#include <QRandomGenerator>
+#include <QtEndian>
 #include <QDebug>
 
-UpdateChecker::UpdateChecker(QObject *parent)
+UpdateChecker::UpdateChecker(ConfigManager *config, QObject *parent)
     : QObject(parent)
-    , m_networkManager(new QNetworkAccessManager(this))
+    , m_config(config)
+    , m_socket(new QUdpSocket(this))
+    , m_timeout(new QTimer(this))
 {
-    connect(m_networkManager, &QNetworkAccessManager::finished,
-            this, &UpdateChecker::onReplyFinished);
+    m_timeout->setSingleShot(true);
+    m_timeout->setInterval(CHECK_TIMEOUT_MS);
+    connect(m_timeout, &QTimer::timeout, this, &UpdateChecker::onTimeout);
+    connect(m_socket, &QUdpSocket::readyRead, this, &UpdateChecker::onReadyRead);
+    // Bind to an ephemeral local port; replies come back to it.
+    if (!m_socket->bind(QHostAddress::AnyIPv4, 0)) {
+        qWarning() << "UpdateChecker: failed to bind UDP socket:" << m_socket->errorString();
+    }
 }
 
 QString UpdateChecker::currentVersion()
 {
-    // Version from CMakeLists.txt project() command
     return QStringLiteral(PROJECT_VERSION);
+}
+
+QString UpdateChecker::platformTag()
+{
+#if defined(Q_OS_WIN)
+    return QStringLiteral("windows");
+#elif defined(Q_OS_MAC)
+    return QStringLiteral("macos");
+#elif defined(Q_OS_LINUX)
+    return QStringLiteral("linux");
+#else
+    return QStringLiteral("unknown");
+#endif
+}
+
+quint16 UpdateChecker::crc16ccitt(const QByteArray &data)
+{
+    quint16 crc = 0xFFFF;
+    for (auto byte : data) {
+        crc ^= static_cast<quint8>(byte) << 8;
+        for (int i = 0; i < 8; ++i) {
+            if (crc & 0x8000) crc = static_cast<quint16>((crc << 1) ^ 0x1021);
+            else              crc = static_cast<quint16>(crc << 1);
+        }
+    }
+    return crc;
+}
+
+QByteArray UpdateChecker::encodeCheck(quint16 seq) const
+{
+    QJsonObject payloadObj;
+    payloadObj.insert(QStringLiteral("current_version"), currentVersion());
+    payloadObj.insert(QStringLiteral("platform"), platformTag());
+    const QByteArray payload = QJsonDocument(payloadObj).toJson(QJsonDocument::Compact);
+
+    QByteArray header;
+    header.reserve(10);
+    header.append('O').append('A').append('I').append(static_cast<char>(0x01));   // magic
+    header.append(static_cast<char>(0x01));                                        // protocol version
+    header.append(static_cast<char>(CMD_CHECK));                                   // command
+    char seqBytes[2]; qToBigEndian<quint16>(seq, seqBytes);  header.append(seqBytes, 2);
+    char lenBytes[2]; qToBigEndian<quint16>(static_cast<quint16>(payload.size()), lenBytes); header.append(lenBytes, 2);
+
+    QByteArray packet = header + payload;
+    char crcBytes[2]; qToBigEndian<quint16>(crc16ccitt(packet), crcBytes);
+    packet.append(crcBytes, 2);
+    return packet;
 }
 
 void UpdateChecker::checkForUpdates()
 {
-    qDebug() << "UpdateChecker: Checking for updates...";
+    if (m_inFlight) {
+        qDebug() << "UpdateChecker: check already in flight, ignoring duplicate request";
+        return;
+    }
+    if (!m_config) {
+        emit checkFailed(QStringLiteral("no ConfigManager"));
+        return;
+    }
 
-    QUrl url(GITHUB_API_URL);
-    QNetworkRequest request(url);
-    request.setRawHeader("Accept", "application/vnd.github.v3+json");
-    request.setRawHeader("User-Agent", "Oai-Desktop-Pet");
+    const QString endpoint = m_config->updateServerEndpoint();
+    const int colon = endpoint.lastIndexOf(':');
+    if (colon <= 0) {
+        emit checkFailed(QStringLiteral("invalid updateServerEndpoint: %1").arg(endpoint));
+        return;
+    }
+    const QString host = endpoint.left(colon);
+    const quint16 port = endpoint.mid(colon + 1).toUShort();
+    if (port == 0) {
+        emit checkFailed(QStringLiteral("invalid port in updateServerEndpoint: %1").arg(endpoint));
+        return;
+    }
 
-    m_networkManager->get(request);
+    m_pendingSeq = static_cast<quint16>(QRandomGenerator::global()->bounded(1, 0x10000));
+    const QByteArray packet = encodeCheck(m_pendingSeq);
+
+    QHostAddress addr(host);
+    if (addr.isNull()) {
+        // Resolve hostname synchronously — endpoints are typically literal IPs
+        // and the lookup is rare (manual user trigger), so blocking is fine.
+        const QHostInfo info = QHostInfo::fromName(host);
+        if (info.error() != QHostInfo::NoError || info.addresses().isEmpty()) {
+            emit checkFailed(QStringLiteral("dns lookup failed for %1: %2")
+                                 .arg(host, info.errorString()));
+            return;
+        }
+        addr = info.addresses().first();
+    }
+
+    qDebug() << "UpdateChecker: CHECK to" << addr.toString() << ":" << port
+             << "seq=" << m_pendingSeq << "current=" << currentVersion();
+    const qint64 sent = m_socket->writeDatagram(packet, addr, port);
+    if (sent != packet.size()) {
+        emit checkFailed(QStringLiteral("UDP send failed: %1").arg(m_socket->errorString()));
+        return;
+    }
+    m_inFlight = true;
+    m_timeout->start();
 }
 
-void UpdateChecker::onReplyFinished(QNetworkReply *reply)
+void UpdateChecker::onReadyRead()
 {
-    if (reply->error() != QNetworkReply::NoError) {
-        QString error = reply->errorString();
-        qWarning() << "UpdateChecker: Network error:" << error;
-        emit checkFailed(error);
-        reply->deleteLater();
+    while (m_socket->hasPendingDatagrams()) {
+        QByteArray buf;
+        buf.resize(static_cast<int>(m_socket->pendingDatagramSize()));
+        m_socket->readDatagram(buf.data(), buf.size());
+
+        // Validate framing: 10-byte header + N-byte payload + 2-byte CRC trailer.
+        if (buf.size() < 12) { qWarning() << "UpdateChecker: packet too short"; continue; }
+        if (buf[0] != 'O' || buf[1] != 'A' || buf[2] != 'I' || buf[3] != 0x01) {
+            qWarning() << "UpdateChecker: bad magic"; continue;
+        }
+        const quint8 cmd = static_cast<quint8>(buf[5]);
+        const quint16 seq = qFromBigEndian<quint16>(buf.constData() + 6);
+        const quint16 len = qFromBigEndian<quint16>(buf.constData() + 8);
+        if (10 + len + 2 != static_cast<quint16>(buf.size())) {
+            qWarning() << "UpdateChecker: length mismatch"; continue;
+        }
+        const quint16 wireCrc = qFromBigEndian<quint16>(buf.constData() + 10 + len);
+        const quint16 calcCrc = crc16ccitt(buf.left(10 + len));
+        if (wireCrc != calcCrc) {
+            qWarning() << "UpdateChecker: CRC mismatch wire=" << Qt::hex << wireCrc
+                       << "calc=" << calcCrc; continue;
+        }
+        // Drop replies that don't match our outstanding request.
+        if (!m_inFlight || seq != m_pendingSeq) {
+            qDebug() << "UpdateChecker: stale/unexpected seq" << seq << "expected" << m_pendingSeq;
+            continue;
+        }
+
+        // Stop the timeout — we got a valid reply for our request.
+        m_timeout->stop();
+        m_inFlight = false;
+
+        if (cmd != CMD_ANNOUNCE) {
+            emit checkFailed(QStringLiteral("unexpected command in reply: %1").arg(cmd));
+            return;
+        }
+        const QByteArray payload = buf.mid(10, len);
+        QJsonParseError perr{};
+        const QJsonDocument doc = QJsonDocument::fromJson(payload, &perr);
+        if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
+            emit checkFailed(QStringLiteral("malformed ANNOUNCE: %1").arg(perr.errorString()));
+            return;
+        }
+        const QJsonObject obj = doc.object();
+        const bool available = obj.value(QStringLiteral("available")).toBool(false);
+        const QString cur = currentVersion();
+        if (available) {
+            const QString latest = obj.value(QStringLiteral("latest_version")).toString();
+            qDebug() << "UpdateChecker: update available — current=" << cur << "latest=" << latest;
+            emit updateAvailable(cur, latest, QString{});  // v1 protocol carries no URL
+        } else {
+            qDebug() << "UpdateChecker: no update available";
+            emit noUpdateAvailable(cur);
+        }
         return;
     }
+}
 
-    QByteArray data = reply->readAll();
-    reply->deleteLater();
-
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
-        QString error = parseError.errorString();
-        qWarning() << "UpdateChecker: JSON parse error:" << error;
-        emit checkFailed(error);
-        return;
-    }
-
-    QJsonObject release = doc.object();
-    QString tagName = release.value("tag_name").toString();
-    QString downloadUrl;
-
-    // Find the download URL for the current platform
-    QJsonArray assets = release.value("assets").toArray();
-    for (const QJsonValue &asset : assets) {
-        QJsonObject assetObj = asset.toObject();
-        QString name = assetObj.value("name").toString().toLower();
-
-#ifdef Q_OS_WIN
-        if (name.contains("windows") || name.contains("win") || name.endsWith(".exe")) {
-            downloadUrl = assetObj.value("browser_download_url").toString();
-            break;
-        }
-#elif defined(Q_OS_MAC)
-        if (name.contains("macos") || name.contains("darwin") || name.endsWith(".dmg")) {
-            downloadUrl = assetObj.value("browser_download_url").toString();
-            break;
-        }
-#elif defined(Q_OS_LINUX)
-        if (name.contains("linux") || name.endsWith(".tar.gz")) {
-            downloadUrl = assetObj.value("browser_download_url").toString();
-            break;
-        }
-#endif
-    }
-
-    // If no platform-specific asset found, use the first asset
-    if (downloadUrl.isEmpty() && !assets.isEmpty()) {
-        downloadUrl = assets[0].toObject().value("browser_download_url").toString();
-    }
-
-    // Compare versions
-    QString currentVer = currentVersion();
-    QString latestVer = tagName.startsWith("v") ? tagName.mid(1) : tagName;
-
-    qDebug() << "UpdateChecker: Current:" << currentVer << "Latest:" << latestVer;
-
-    if (latestVer != currentVer) {
-        qDebug() << "UpdateChecker: Update available!";
-        emit updateAvailable(currentVer, latestVer, downloadUrl);
-    } else {
-        qDebug() << "UpdateChecker: Already up to date.";
-        emit noUpdateAvailable(currentVer);
-    }
+void UpdateChecker::onTimeout()
+{
+    if (!m_inFlight) return;
+    m_inFlight = false;
+    qWarning() << "UpdateChecker: no reply from update server within"
+               << CHECK_TIMEOUT_MS << "ms";
+    emit checkFailed(QStringLiteral("no reply from update server (timeout)"));
 }

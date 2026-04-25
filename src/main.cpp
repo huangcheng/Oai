@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
     w.setSystemTray(&tray);
 
     // --- Update checker -------------------------------------------------------
-    UpdateChecker updateChecker;
+    UpdateChecker updateChecker(&config);
     tray.setUpdateChecker(&updateChecker);
 
     // Check for updates on startup (delayed to not block UI)
