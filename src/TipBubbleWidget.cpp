@@ -214,10 +214,10 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
         QFont msgFont("HarmonyOS Sans SC", 12);
         painter.setFont(msgFont);
         painter.setPen(QColor(0x1A, 0x1A, 0x1A));
-        QFontMetrics fm(msgFont);
-        QString wrappedText = fm.elidedText(m_message, Qt::ElideRight, m_messageRect.width());
+        // Word-wrap, no elide. calculateTextLayout() already sized
+        // m_messageRect to fit the wrapped text height.
         painter.drawText(m_messageRect.translated(ox, oy),
-                         Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, wrappedText);
+                         Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, m_message);
         painter.restore();
     }
 
@@ -356,21 +356,21 @@ void TipBubbleWidget::calculateTextLayout()
     // Calculate title height
     int titleHeight = m_title.isEmpty() ? 0 : titleFm.height();
 
-    // Calculate message width with word wrap
+    // Calculate message width with word wrap (no elide — long text grows
+    // the bubble vertically rather than being truncated to "...").
     int textWidth = MAX_BUBBLE_WIDTH - (PADDING_H * 2);
-    QString wrappedMsg = msgFm.elidedText(m_message, Qt::ElideRight, textWidth);
 
     // Calculate message bounding rect
     QRect msgBounding = msgFm.boundingRect(0, 0, textWidth, 1000,
                                             Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap,
-                                            wrappedMsg);
+                                            m_message);
     int msgHeight = msgBounding.height();
 
     // Calculate source label height
     int sourceHeight = m_source.isEmpty() ? 0 : sourceFm.height();
 
     // Calculate total bubble dimensions
-    int contentWidth = qMax(titleFm.horizontalAdvance(m_title), msgFm.horizontalAdvance(wrappedMsg));
+    int contentWidth = qMax(titleFm.horizontalAdvance(m_title), msgBounding.width());
     if (!m_source.isEmpty()) {
         contentWidth = qMax(contentWidth, sourceFm.horizontalAdvance(m_source));
     }

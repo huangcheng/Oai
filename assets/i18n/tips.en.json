@@ -1,0 +1,38 @@
+{
+  "events": {
+    "session.start":        {"title": "Session started",      "body": "Let's get to work!"},
+    "session.end":          {"title": "Session ended",        "body": "Good job today!"},
+    "session.idle":         {"title": "",                     "body": ""},
+    "session.error":        {"title": "Oops!",                "body": "Something went wrong. Check the logs!"},
+    "prompt.submitted":     {"title": "Thinking…",            "body": "Give me a moment to process that."},
+    "tool.before":          {"title": "Tool running",         "body": "Executing command…"},
+    "tool.after":           {"title": "Done!",                "body": "Command completed successfully."},
+    "tool.failed":          {"title": "Tool failed",          "body": "The command didn't work. Try again?"},
+    "permission.requested": {"title": "Permission needed",    "body": "Please approve the requested action."},
+    "permission.denied":    {"title": "Denied",               "body": "Permission was denied."},
+    "permission.response":  {"title": "",                     "body": ""},
+    "subagent.started":     {"title": "Subagent started",     "body": "A helper is working on a task."},
+    "subagent.stopped":     {"title": "Subagent done",        "body": "The helper has finished."},
+    "notification.sent":    {"title": "Notification",         "body": "You have a new message!"},
+    "file.edited":          {"title": "File saved",           "body": "Your changes have been saved."},
+    "file.watched":         {"title": "",                     "body": ""},
+    "todo.updated":         {"title": "Task complete!",       "body": "Nice work checking off that todo!"}
+  },
+  "greetings": [
+    {"title": "Hi there!",   "body": "Need any help today?"},
+    {"title": "Hey!",        "body": "I'm watching you code. Don't mess up!"},
+    {"title": "Hello!",      "body": "Ready to build something amazing?"},
+    {"title": "Psst…",       "body": "Remember to save your work often!"},
+    {"title": "Yo!",         "body": "That code looks pretty good. Keep it up!"},
+    {"title": "Hi!",         "body": "Let me know if you need a second pair of eyes."},
+    {"title": "Hey there!",  "body": "Don't forget to take breaks and stretch!"},
+    {"title": "Hiya!",       "body": "Coffee break? I'm just a click away."},
+    {"title": "Oh hello!",   "body": "I see you're coding. Want a tip?"},
+    {"title": "Greetings!",  "body": "The code is strong with this one."}
+  ],
+  "messages": {
+    "about":               {"title": "About",                "body": "Oai Desktop Pet\nv1.2.0\n© 2026 HUANG Cheng"},
+    "pack.installed":      {"title": "Pack Installed",       "body": "Sprite pack installed successfully!"},
+    "pack.install_failed": {"title": "Installation Failed",  "body": "Failed to install sprite pack."}
+  }
+}

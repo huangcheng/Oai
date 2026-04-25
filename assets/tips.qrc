@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/i18n">
+        <file>i18n/tips.en.json</file>
+        <file>i18n/tips.zh_CN.json</file>
+    </qresource>
+</RCC>

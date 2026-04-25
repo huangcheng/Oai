@@ -1,0 +1,38 @@
+{
+  "events": {
+    "session.start":        {"title": "会话已开始",     "body": "开始干活吧！"},
+    "session.end":          {"title": "会话已结束",     "body": "今天干得不错！"},
+    "session.idle":         {"title": "",               "body": ""},
+    "session.error":        {"title": "哎呀！",         "body": "出了点问题，查看一下日志吧！"},
+    "prompt.submitted":     {"title": "思考中…",        "body": "让我想想。"},
+    "tool.before":          {"title": "工具运行中",     "body": "正在执行命令…"},
+    "tool.after":           {"title": "完成！",         "body": "命令执行成功。"},
+    "tool.failed":          {"title": "工具失败",       "body": "命令没有成功，要再试一次吗？"},
+    "permission.requested": {"title": "需要授权",       "body": "请批准所请求的操作。"},
+    "permission.denied":    {"title": "已拒绝",         "body": "权限被拒绝了。"},
+    "permission.response":  {"title": "",               "body": ""},
+    "subagent.started":     {"title": "子代理已启动",   "body": "一个助手正在处理任务。"},
+    "subagent.stopped":     {"title": "子代理完成",     "body": "助手已完成任务。"},
+    "notification.sent":    {"title": "通知",           "body": "你有一条新消息！"},
+    "file.edited":          {"title": "文件已保存",     "body": "你的修改已保存。"},
+    "file.watched":         {"title": "",               "body": ""},
+    "todo.updated":         {"title": "任务完成！",     "body": "干得漂亮，又完成了一项待办！"}
+  },
+  "greetings": [
+    {"title": "你好呀！",   "body": "今天需要点什么帮助吗？"},
+    {"title": "嘿！",       "body": "我在看你写代码哦，可别写错啦！"},
+    {"title": "你好！",     "body": "准备好造点厉害的东西了吗？"},
+    {"title": "嘘…",        "body": "记得经常保存你的工作！"},
+    {"title": "哟！",       "body": "代码看起来不错，继续保持！"},
+    {"title": "嗨！",       "body": "需要找另一双眼睛帮你看看的话告诉我。"},
+    {"title": "嘿嘿！",     "body": "别忘了休息一下，伸伸懒腰！"},
+    {"title": "嗨呀！",     "body": "要不要喝杯咖啡？我就在这儿。"},
+    {"title": "诶你来啦！", "body": "看你正在写代码，要听点小建议吗？"},
+    {"title": "你好！",     "body": "代码原力与你同在。"}
+  ],
+  "messages": {
+    "about":               {"title": "关于",       "body": "Oai 桌面宠物\nv1.2.0\n© 2026 HUANG Cheng"},
+    "pack.installed":      {"title": "安装成功",   "body": "角色包安装成功！"},
+    "pack.install_failed": {"title": "安装失败",   "body": "角色包安装失败。"}
+  }
+}

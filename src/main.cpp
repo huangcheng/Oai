@@ -29,6 +29,8 @@
 #include <QTextStream>
 #include <QTimer>
 
+#include "TipsCatalog.h"
+
 static QString configDir() {
     // QStandardPaths::ConfigLocation already resolves to <APPDATA>/<Org>/<App>
     // on Windows and the equivalent on macOS/Linux — no extra suffix needed.
@@ -92,6 +94,10 @@ int main(int argc, char *argv[])
     // --- Translations --------------------------------------------------------
     QTranslator translator;
     QString lang = config.language();
+    // Bootstrap the JSON tip catalog before MainWindow / EventRouter are
+    // built so the very first bubble (e.g. session.start announce) already
+    // has localized text.
+    TipsCatalog::instance().setLocale(lang.isEmpty() ? QStringLiteral("en") : lang);
     if (!lang.isEmpty() && lang != "en") {
         const QString baseName = "Oai_" + lang;
         if (translator.load(":/i18n/" + baseName)) {

@@ -11,6 +11,7 @@
 #include "SettingsPanelWidget.h"
 #include "SystemTray.h"
 #include "EventRouter.h"
+#include "TipsCatalog.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -262,7 +263,8 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
-        m_tipBubble->showBubble(tr("About"), tr("Oai Desktop Pet\nv1.2.0"), TipBubbleWidget::TipBubble);
+        const auto t = TipsCatalog::instance().message(QStringLiteral("about"));
+        m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
     });
 
     menu.addSeparator();
@@ -299,19 +301,11 @@ void MainWindow::dropEvent(QDropEvent *event)
         const QString filePath = url.toLocalFile();
         if (filePath.endsWith(".opk", Qt::CaseInsensitive)) {
             // Install the pack
-            if (m_packManager->installPack(filePath)) {
-                m_tipBubble->showBubble(
-                    tr("Pack Installed"),
-                    tr("Sprite pack installed successfully!"),
-                    TipBubbleWidget::TipBubble
-                );
-            } else {
-                m_tipBubble->showBubble(
-                    tr("Installation Failed"),
-                    tr("Failed to install sprite pack."),
-                    TipBubbleWidget::TipBubble
-                );
-            }
+            const QString msgId = m_packManager->installPack(filePath)
+                                      ? QStringLiteral("pack.installed")
+                                      : QStringLiteral("pack.install_failed");
+            const auto t = TipsCatalog::instance().message(msgId);
+            m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
         }
     }
 
@@ -470,6 +464,7 @@ void MainWindow::reloadTranslator(const QString &lang)
 void MainWindow::onLanguageChanged(const QString &lang)
 {
     reloadTranslator(lang);
+    TipsCatalog::instance().setLocale(lang);
     if (m_packManager) {
         m_packManager->setActiveLocale(lang);
     }
@@ -483,24 +478,8 @@ void MainWindow::onLanguageChanged(const QString &lang)
 void MainWindow::showRandomGreeting()
 {
     if (!m_tipBubble) return;
-
-    struct Greeting {
-        const char *title;
-        const char *message;
-    };
-    static const Greeting greetings[] = {
-        {QT_TR_NOOP("Hi there!"), QT_TR_NOOP("Need any help today?")},
-        {QT_TR_NOOP("Hey!"), QT_TR_NOOP("I'm watching you code. Don't mess up!")},
-        {QT_TR_NOOP("Hello!"), QT_TR_NOOP("Ready to build something amazing?")},
-        {QT_TR_NOOP("Psst..."), QT_TR_NOOP("Remember to save your work often!")},
-        {QT_TR_NOOP("Yo!"), QT_TR_NOOP("That code looks pretty good. Keep it up!")},
-        {QT_TR_NOOP("Hi!"), QT_TR_NOOP("Let me know if you need a second pair of eyes.")},
-        {QT_TR_NOOP("Hey there!"), QT_TR_NOOP("Don't forget to take breaks and stretch!")},
-        {QT_TR_NOOP("Hiya!"), QT_TR_NOOP("Coffee break? I'm just a click away.")},
-        {QT_TR_NOOP("Oh hello!"), QT_TR_NOOP("I see you're coding. Want a tip?")},
-        {QT_TR_NOOP("Greetings!"), QT_TR_NOOP("The code is strong with this one.")},
-    };
-
-    const int idx = QRandomGenerator::global()->bounded(static_cast<int>(sizeof(greetings) / sizeof(greetings[0])));
-    m_tipBubble->showBubble(tr(greetings[idx].title), tr(greetings[idx].message), TipBubbleWidget::TipBubble);
+    const auto g = TipsCatalog::instance().randomGreeting();
+    if (!g.title.isEmpty()) {
+        m_tipBubble->showBubble(g.title, g.body, TipBubbleWidget::TipBubble);
+    }
 }

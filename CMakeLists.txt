@@ -264,6 +264,8 @@ qt_add_executable(Oai
     src/EventRouter.h
     src/TipsEngine.cpp
     src/TipsEngine.h
+    src/TipsCatalog.cpp
+    src/TipsCatalog.h
     src/ConfigManager.cpp
     src/ConfigManager.h
     src/SystemTray.cpp
@@ -290,6 +292,17 @@ qt_add_resources(Oai "icons"
     BASE "assets/icons"
     FILES
         assets/icons/oai.png
+)
+
+# Per-locale tip messages (event tips + random greetings). Authoring lives
+# in plain JSON instead of Qt's .ts/.qm so non-engineers can add a language
+# by dropping in another `tips.<locale>.json`.
+qt_add_resources(Oai "tips_i18n"
+    PREFIX "/i18n"
+    BASE "assets"
+    FILES
+        assets/i18n/tips.en.json
+        assets/i18n/tips.zh_CN.json
 )
 
 # --- Translations ------------------------------------------------------------

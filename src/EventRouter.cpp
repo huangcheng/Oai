@@ -7,6 +7,7 @@
 #include "CharacterPack.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
+#include "TipsCatalog.h"
 
 #include <QJsonObject>
 #include <QDebug>
@@ -96,9 +97,11 @@ void EventRouter::routeEvent(const QJsonObject &event)
         }
     }
 
-    // Show tip with source label
-    if (!action.tipTitle.isEmpty() && m_tipBubble) {
-        m_tipBubble->showBubble(action.tipTitle, action.tipBody, TipBubbleWidget::TipBubble, sourceLabel);
+    // Tip text — pulled from TipsCatalog (per-locale JSON). Empty title means
+    // this event doesn't surface a bubble (e.g. session.idle, file.watched).
+    const TipsCatalog::Tip tip = TipsCatalog::instance().eventTip(eventName);
+    if (!tip.title.isEmpty() && m_tipBubble) {
+        m_tipBubble->showBubble(tip.title, tip.body, TipBubbleWidget::TipBubble, sourceLabel);
     }
 }
 
@@ -128,52 +131,39 @@ void EventRouter::triggerEvent(const QString &eventName)
 
 void EventRouter::initEventMap()
 {
-    // Canonical animation names (skin-agnostic):
-    //   greet, idle, think, work, alert, celebrate, rest, send, attention
-    // Each skin maps these to actual animation names in SpriteAnimationEngine.
-    // Values are wrapped in QStringList — single-name chains, since these
-    // sprite-sheet defaults don't need fallback semantics. Live2D packs that
-    // provide their own eventMap can supply richer chains.
+    // Animation chains only — tip text is pulled per-event from
+    // TipsCatalog at dispatch time so the JSON catalog is the single
+    // source of truth for tip copy (and authors can add a locale
+    // without re-running lupdate / lrelease).
+    using SL = QStringList;
 
-    // Session events
-    m_eventMap["session.start"] = {{"greet"}, tr("Session started"), tr("Let's get to work!")};
-    m_eventMap["session.end"] = {{"rest"}, tr("Session ended"), tr("Good job today!")};
-    m_eventMap["session.idle"] = {{"rest"}, "", ""};
-    m_eventMap["session.error"] = {{"alert"}, tr("Oops!"), tr("Something went wrong. Check the logs!")};
-
-    // Prompt
-    m_eventMap["prompt.submitted"] = {{"think"}, tr("Thinking..."), tr("Give me a moment to process that.")};
-
-    // Tool events
-    m_eventMap["tool.before"] = {{"work"}, tr("Tool running"), tr("Executing command...")};
-    m_eventMap["tool.after"] = {{}, tr("Done!"), tr("Command completed successfully.")};
-    m_eventMap["tool.failed"] = {{"alert"}, tr("Tool failed"), tr("The command didn't work. Try again?")};
-
-    // Permission events
-    m_eventMap["permission.requested"] = {{"attention"}, tr("Permission needed"), tr("Please approve the requested action.")};
-    m_eventMap["permission.denied"] = {{"alert"}, tr("Denied"), tr("Permission was denied.")};
-    m_eventMap["permission.response"] = {{}, "", ""};
-
-    // Subagent events
-    m_eventMap["subagent.started"] = {{"work"}, tr("Subagent started"), tr("A helper is working on a task.")};
-    m_eventMap["subagent.stopped"] = {{}, tr("Subagent done"), tr("The helper has finished.")};
-
-    // Notification
-    m_eventMap["notification.sent"] = {{}, tr("Notification"), tr("You have a new message!")};
-
-    // File events
-    m_eventMap["file.edited"] = {{"send"}, tr("File saved"), tr("Your changes have been saved.")};
-    m_eventMap["file.watched"] = {{}, "", ""};
-
-    // Todo
-    m_eventMap["todo.updated"] = {{"celebrate"}, tr("Task complete!"), tr("Nice work checking off that todo!")};
+    // Sprite-pack defaults: each engine maps these canonical names to
+    // its own animations. Live2D pack manifests override with their
+    // own chains via CharacterPack::eventMap().
+    m_eventMap["session.start"]        = {SL{"greet"},      "", ""};
+    m_eventMap["session.end"]          = {SL{"rest"},       "", ""};
+    m_eventMap["session.idle"]         = {SL{"rest"},       "", ""};
+    m_eventMap["session.error"]        = {SL{"alert"},      "", ""};
+    m_eventMap["prompt.submitted"]     = {SL{"think"},      "", ""};
+    m_eventMap["tool.before"]          = {SL{"work"},       "", ""};
+    m_eventMap["tool.after"]           = {SL{},             "", ""};
+    m_eventMap["tool.failed"]          = {SL{"alert"},      "", ""};
+    m_eventMap["permission.requested"] = {SL{"attention"},  "", ""};
+    m_eventMap["permission.denied"]    = {SL{"alert"},      "", ""};
+    m_eventMap["permission.response"]  = {SL{},             "", ""};
+    m_eventMap["subagent.started"]     = {SL{"work"},       "", ""};
+    m_eventMap["subagent.stopped"]     = {SL{},             "", ""};
+    m_eventMap["notification.sent"]    = {SL{},             "", ""};
+    m_eventMap["file.edited"]          = {SL{"send"},       "", ""};
+    m_eventMap["file.watched"]         = {SL{},             "", ""};
+    m_eventMap["todo.updated"]         = {SL{"celebrate"},  "", ""};
 
     // Synthetic local events for mouse interaction. Live2D pack manifests
     // typically supply chains like ["TouchBody","TouchHead","Tap"]; sprite
     // packs use generic "tap"/"doubleclick" animation names. The chain is
     // declared by the manifest, not the engine.
-    m_eventMap["user.click"] = {{"tap"}, "", ""};
-    m_eventMap["user.doubleclick"] = {{"doubleclick", "tap"}, "", ""};
+    m_eventMap["user.click"]       = {SL{"tap"}, "", ""};
+    m_eventMap["user.doubleclick"] = {SL{"doubleclick", "tap"}, "", ""};
 }
 
 void EventRouter::retranslateUi()
