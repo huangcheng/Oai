@@ -29,13 +29,16 @@
 #include <QActionGroup>
 #include <QTransform>
 
-// All UI fonts in this panel are HarmonyOS Sans SC. The default style strategy
-// can fall back to bitmap rendering at small sizes on Windows; PreferAntialias
-// keeps the glyphs smoothed regardless of subpixel-positioning quirks.
+// All UI fonts in this panel are HarmonyOS Sans SC. The panel is translucent,
+// so Windows can't apply ClearType subpixel AA — Qt falls back to grayscale.
+// PreferAntialias keeps glyphs smoothed regardless of subpixel-positioning
+// quirks; PreferNoHinting avoids stroke-snapping that mangles CJK glyphs at
+// small point sizes.
 static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
 {
     QFont f(QStringLiteral("HarmonyOS Sans SC"), pointSize, weight);
     f.setStyleStrategy(QFont::PreferAntialias);
+    f.setHintingPreference(QFont::PreferNoHinting);
     return f;
 }
 

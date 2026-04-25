@@ -79,6 +79,9 @@ void SystemTray::setupMenu()
 #endif
     QFont menuFont("HarmonyOS Sans SC", menuFontSize);
     menuFont.setStyleStrategy(QFont::PreferAntialias);
+    // CJK strokes look mangled with default hinting on Windows; let the
+    // rasterizer place glyphs by AA only.
+    menuFont.setHintingPreference(QFont::PreferNoHinting);
 
     m_trayMenu = new QMenu();
     m_trayMenu->setFont(menuFont);
