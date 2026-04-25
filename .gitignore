@@ -37,6 +37,35 @@ Thumbs.db
 # Installer staging — populated by `cmake --build . --target package_installer`
 # (qt deploy + opks). Build output, not source.
 installer/packages/*/data/
+
+# Imported character packs — regenerated locally by
+#   git submodule update --init thirdparty/upstream-live2d
+#   cmake --build build --target import_packs
+# Only the 21 first-party packs below are tracked; everything else under
+# assets/packs/ is treated as a build artifact derived from the upstream
+# submodule. See scripts/import_live2d.py for the import pipeline.
+/assets/packs/*
+!/assets/packs/chitose/
+!/assets/packs/epsilon/
+!/assets/packs/furina/
+!/assets/packs/gantzert_felixander/
+!/assets/packs/haru/
+!/assets/packs/haru_greeter/
+!/assets/packs/haruto/
+!/assets/packs/hibiki/
+!/assets/packs/hiyori/
+!/assets/packs/izumi/
+!/assets/packs/kei/
+!/assets/packs/koharu/
+!/assets/packs/mao/
+!/assets/packs/mark/
+!/assets/packs/miara/
+!/assets/packs/miku/
+!/assets/packs/natori/
+!/assets/packs/ren/
+!/assets/packs/rice/
+!/assets/packs/unitychan/
+!/assets/packs/wanko/
 /.qmake.cache
 /.qmake.stash
 

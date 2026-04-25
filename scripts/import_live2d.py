@@ -504,6 +504,28 @@ def bulk_import_local(clone_root: Path, out_dir: Path, cap_per_cat: int,
     Returns (imported, skipped)."""
     imported = 0
     skipped = 0
+
+    # Phase A: hand-curated PICKS first (so they get nice English+Chinese
+    # names instead of the auto-generated pinyin-derived ones).
+    for upstream_path, local_id, name_en, name_zh in PICKS:
+        pack_src = clone_root / upstream_path
+        if not pack_src.is_dir():
+            skipped += 1
+            continue  # upstream removed/renamed since PICKS was authored
+        # PICKS only covers Azur Lane today
+        ok = import_local_pack(
+            pack_src, local_id, name_en=name_en, name_zh=name_zh,
+            category="azur_lane",
+            author=f"Imported from github.com/{REPO}",
+            out_dir=out_dir,
+        )
+        if ok:
+            imported += 1
+            print(f"  [+] {local_id:32s} ({pack_src.name})")
+        else:
+            skipped += 1
+
+    # Phase B: bulk per-category, skipping anything PICKS already covered.
     for raw_cat, (cat_id, prefix) in LOCAL_CATEGORIES.items():
         cat_root = clone_root / raw_cat
         if not cat_root.is_dir():

@@ -4,3 +4,6 @@
 [submodule "thirdparty/CubismNativeSamples"]
 	path = thirdparty/CubismNativeSamples
 	url = https://github.com/Live2D/CubismNativeSamples.git
+[submodule "thirdparty/upstream-live2d"]
+	path = thirdparty/upstream-live2d
+	url = https://github.com/Eikanya/Live2d-model

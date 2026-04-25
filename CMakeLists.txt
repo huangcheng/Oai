@@ -417,14 +417,37 @@ file(MAKE_DIRECTORY ${PACKS_DIR})
 
 set(ALL_PACK_OPKS "")
 
+# --- Optional: bulk-import packs from the upstream submodule ---------------
+# The 21 first-party packs in assets/packs/ are tracked in git. Everything
+# else (Azur Lane, Girls Frontline, Idol Dimension, Konosuba, Live2D Free
+# Material samples) is a build artifact regenerated from the upstream repo:
+#
+#   git submodule update --init thirdparty/upstream-live2d
+#   cmake --build build --target import_packs
+#   cmake --build build --target generate_packs   # then build .opks
+#
+# `import_packs` is a manual target — it is NOT part of the default build,
+# so a fresh clone without the submodule still builds Oai.exe + the 21
+# original .opks fine.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/thirdparty/upstream-live2d/.git)
+    add_custom_target(import_packs
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/import_live2d.py
+                --local ${CMAKE_SOURCE_DIR}/thirdparty/upstream-live2d
+                --cap 50
+                --out-dir ${CMAKE_SOURCE_DIR}/assets/packs
+        COMMENT "Importing Live2D packs from upstream submodule (curated PICKS + bulk per-category)"
+        USES_TERMINAL
+        VERBATIM)
+endif()
+
 # Live2D packs (model3.json + moc3 + textures/ + motions/ + optional physics/pose/expressions)
 # These ship the whole pack directory, so we enumerate files with GLOB_RECURSE
 # and archive paths relative to the pack root.
 #
 # Auto-discovered: any directory under assets/packs/ with a manifest.json is
 # treated as a pack. CONFIGURE_DEPENDS makes CMake re-glob when files change,
-# so `python scripts/import_live2d.py --local <clone>` followed by a build
-# picks up new packs without editing this file.
+# so running `import_packs` and rebuilding picks up new packs automatically.
 file(GLOB _PACK_MANIFESTS CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/assets/packs/*/manifest.json)
 set(LIVE2D_PACKS "")

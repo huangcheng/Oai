@@ -27,6 +27,23 @@ Oai supports customizable characters through sprite packs (`.opk` files). Each p
 2. **Manual**: Copy `.opk` to `~/.config/Oai/packs/`
 3. **Built-in**: Official packs are generated during build
 
+### Pulling community Live2D packs from the upstream submodule
+
+The 21 first-party packs in `assets/packs/` (Live2D Free Material samples + Furina + UnityChan) are the only ones tracked in git. Additional Azur Lane / Girls' Frontline / Idol Dimension / Konosuba characters live in the upstream community archive at [Eikanya/Live2d-model](https://github.com/Eikanya/Live2d-model), which we pin as a submodule under `thirdparty/upstream-live2d/`. To bring them in:
+
+```bash
+# One-time: fetch the upstream archive (~16 GB, slow)
+git submodule update --init --depth=1 thirdparty/upstream-live2d
+
+# Run the import (curated PICKS + bulk per-category, ~50 per category)
+cmake --build build --target import_packs
+
+# Generate the .opk archives from the imported source dirs
+cmake --build build --target generate_packs
+```
+
+Imported packs land in `assets/packs/<id>/` (gitignored) — local only, regenerable from the submodule. Asset rights belong to the original game studios; treat as personal-use only.
+
 ### Creating Packs
 
 See `schemas/character-pack-v1.schema.json` for the pack format specification.
