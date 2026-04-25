@@ -125,7 +125,9 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
 
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHints(QPainter::Antialiasing |
+                           QPainter::TextAntialiasing |
+                           QPainter::SmoothPixmapTransform, true);
 
     // Bubble body rect offset by shadow margin
     const QRectF body(SHADOW_BLUR, SHADOW_BLUR,
@@ -198,9 +200,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_title.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont titleFont("HarmonyOS Sans SC", 12, QFont::Black);
-        titleFont.setStyleStrategy(QFont::PreferAntialias);
-        painter.setFont(titleFont);
+        painter.setFont(makeTitleFont());
         painter.setPen(Qt::black);
         painter.drawText(m_titleRect.translated(ox, oy),
                          Qt::AlignLeft | Qt::AlignVCenter, m_title);
@@ -211,8 +211,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_message.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont msgFont("HarmonyOS Sans SC", 12);
-        painter.setFont(msgFont);
+        painter.setFont(makeMessageFont());
         painter.setPen(QColor(0x1A, 0x1A, 0x1A));
         // Word-wrap, no elide. calculateTextLayout() already sized
         // m_messageRect to fit the wrapped text height.
@@ -225,8 +224,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     if (!m_source.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont sourceFont("HarmonyOS Sans SC", 10);
-        painter.setFont(sourceFont);
+        painter.setFont(makeSourceFont());
         painter.setPen(QColor(0x88, 0x88, 0x88));
         painter.drawText(m_sourceRect.translated(ox, oy),
                          Qt::AlignLeft | Qt::AlignVCenter, m_source);
@@ -342,12 +340,9 @@ void TipBubbleWidget::startExitAnimation()
 
 void TipBubbleWidget::calculateTextLayout()
 {
-    QFont titleFont("HarmonyOS Sans SC", 12, QFont::Bold);
-    QFont msgFont("HarmonyOS Sans SC", 12);
-    QFont sourceFont("HarmonyOS Sans SC", 10);
-    titleFont.setStyleStrategy(QFont::PreferAntialias);
-    msgFont.setStyleStrategy(QFont::PreferAntialias);
-    sourceFont.setStyleStrategy(QFont::PreferAntialias);
+    const QFont titleFont   = makeTitleFont();
+    const QFont msgFont     = makeMessageFont();
+    const QFont sourceFont  = makeSourceFont();
 
     QFontMetrics titleFm(titleFont);
     QFontMetrics msgFm(msgFont);
@@ -433,4 +428,33 @@ void TipBubbleWidget::updateBubblePath()
                    << QPoint(tailCenterX, m_bubbleRect.top() - TAIL_HEIGHT)
                    << QPoint(tailCenterX + TAIL_WIDTH / 2, m_bubbleRect.top());
     }
+}
+
+// Translucent windows on Windows can't use ClearType subpixel AA, so the
+// goal here is the cleanest grayscale rendering possible: explicit AA
+// strategy + no hinting (avoids stroke-snapping that mangles CJK glyphs)
+// + a real Bold weight (Black is synthesized for HarmonyOS Sans SC and
+// looks grainy at 12pt).
+QFont TipBubbleWidget::makeTitleFont()
+{
+    QFont f(QStringLiteral("HarmonyOS Sans SC"), 12, QFont::Bold);
+    f.setStyleStrategy(QFont::PreferAntialias);
+    f.setHintingPreference(QFont::PreferNoHinting);
+    return f;
+}
+
+QFont TipBubbleWidget::makeMessageFont()
+{
+    QFont f(QStringLiteral("HarmonyOS Sans SC"), 12);
+    f.setStyleStrategy(QFont::PreferAntialias);
+    f.setHintingPreference(QFont::PreferNoHinting);
+    return f;
+}
+
+QFont TipBubbleWidget::makeSourceFont()
+{
+    QFont f(QStringLiteral("HarmonyOS Sans SC"), 10);
+    f.setStyleStrategy(QFont::PreferAntialias);
+    f.setHintingPreference(QFont::PreferNoHinting);
+    return f;
 }

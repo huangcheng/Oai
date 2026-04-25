@@ -50,6 +50,12 @@ private:
     void calculateTextLayout();
     void updateBubblePath();
 
+    // Font factories — single source of truth so paintEvent and
+    // calculateTextLayout never disagree on weight/strategy/hinting.
+    static QFont makeTitleFont();
+    static QFont makeMessageFont();
+    static QFont makeSourceFont();
+
     QString m_title;
     QString m_message;
     QString m_source;
