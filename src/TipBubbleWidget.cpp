@@ -199,6 +199,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
         painter.save();
         painter.setOpacity(m_opacity);
         QFont titleFont("HarmonyOS Sans SC", 12, QFont::Black);
+        titleFont.setStyleStrategy(QFont::PreferAntialias);
         painter.setFont(titleFont);
         painter.setPen(Qt::black);
         painter.drawText(m_titleRect.translated(ox, oy),
@@ -344,6 +345,9 @@ void TipBubbleWidget::calculateTextLayout()
     QFont titleFont("HarmonyOS Sans SC", 12, QFont::Bold);
     QFont msgFont("HarmonyOS Sans SC", 12);
     QFont sourceFont("HarmonyOS Sans SC", 10);
+    titleFont.setStyleStrategy(QFont::PreferAntialias);
+    msgFont.setStyleStrategy(QFont::PreferAntialias);
+    sourceFont.setStyleStrategy(QFont::PreferAntialias);
 
     QFontMetrics titleFm(titleFont);
     QFontMetrics msgFm(msgFont);

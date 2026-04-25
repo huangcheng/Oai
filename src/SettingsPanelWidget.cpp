@@ -26,6 +26,16 @@
 #include <QListView>
 #include <QTransform>
 
+// All UI fonts in this panel are HarmonyOS Sans SC. The default style strategy
+// can fall back to bitmap rendering at small sizes on Windows; PreferAntialias
+// keeps the glyphs smoothed regardless of subpixel-positioning quirks.
+static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
+{
+    QFont f(QStringLiteral("HarmonyOS Sans SC"), pointSize, weight);
+    f.setStyleStrategy(QFont::PreferAntialias);
+    return f;
+}
+
 SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     : QWidget(parent)
     , m_config(config)
@@ -126,13 +136,12 @@ void SettingsPanelWidget::setupUi()
     titleRow->setSpacing(4);
 
     m_titleLabel = new QLabel(tr("Settings"), m_contentWidget);
-    QFont titleFont("HarmonyOS Sans SC", 10, QFont::Bold);
-    m_titleLabel->setFont(titleFont);
+    m_titleLabel->setFont(harmonyFont(10, QFont::Bold));
     m_titleLabel->setStyleSheet("color: black; background: transparent;");
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_closeButton = new QPushButton(tr("×"), m_contentWidget);
-    m_closeButton->setFont(QFont("HarmonyOS Sans SC", 12, QFont::Bold));
+    m_closeButton->setFont(harmonyFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
     m_closeButton->setStyleSheet(R"(
@@ -162,18 +171,18 @@ void SettingsPanelWidget::setupUi()
 
     // Language row: label + combo
     m_langLabel = new QLabel(tr("Language"), m_contentWidget);
-    m_langLabel->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_langLabel->setFont(harmonyFont(10));
     m_langLabel->setStyleSheet("color: black; background: transparent;");
     m_langLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_langCombo = new QComboBox(m_contentWidget);
     // Force Qt-drawn popup instead of native macOS popup (native ignores stylesheets)
     auto *listView = new QListView(m_langCombo);
-    listView->setFont(QFont("HarmonyOS Sans SC", 10));
+    listView->setFont(harmonyFont(10));
     m_langCombo->setView(listView);
     m_langCombo->addItem(tr("English"), "en");
     m_langCombo->addItem(tr("简体中文"), "zh_CN");
-    m_langCombo->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_langCombo->setFont(harmonyFont(10));
     m_langCombo->setFixedHeight(24);
 
     // Generate a small down-arrow pixmap
@@ -238,7 +247,7 @@ void SettingsPanelWidget::setupUi()
 
     // Auto-start row: label + checkbox
     m_autoStartLabel = new QLabel(tr("Launch at Login"), m_contentWidget);
-    m_autoStartLabel->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_autoStartLabel->setFont(harmonyFont(10));
     m_autoStartLabel->setStyleSheet("color: black; background: transparent;");
     m_autoStartLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
@@ -265,12 +274,12 @@ void SettingsPanelWidget::setupUi()
 
     // Port row: label + input
     m_portLabel = new QLabel(tr("Port"), m_contentWidget);
-    m_portLabel->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_portLabel->setFont(harmonyFont(10));
     m_portLabel->setStyleSheet("color: black; background: transparent;");
     m_portLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_portInput = new QLineEdit(m_contentWidget);
-    m_portInput->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_portInput->setFont(harmonyFont(10));
     m_portInput->setText(QString::number(m_config->ipcPort()));
     m_portInput->setMaxLength(5);
     m_portInput->setFixedHeight(24);
@@ -288,15 +297,15 @@ void SettingsPanelWidget::setupUi()
 
     // Pack selection row: label + combo
     m_packLabel = new QLabel(tr("Pet"), m_contentWidget);
-    m_packLabel->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_packLabel->setFont(harmonyFont(10));
     m_packLabel->setStyleSheet("color: black; background: transparent;");
     m_packLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_packCombo = new QComboBox(m_contentWidget);
     auto *packListView = new QListView(m_packCombo);
-    packListView->setFont(QFont("HarmonyOS Sans SC", 10));
+    packListView->setFont(harmonyFont(10));
     m_packCombo->setView(packListView);
-    m_packCombo->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_packCombo->setFont(harmonyFont(10));
     m_packCombo->setFixedHeight(24);
     m_packCombo->setStyleSheet(QStringLiteral(R"(
         QComboBox {
