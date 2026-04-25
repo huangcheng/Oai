@@ -307,6 +307,7 @@ void SettingsPanelWidget::setupUi()
     m_packButton = new QToolButton(m_contentWidget);
     m_packButton->setFont(harmonyFont(10));
     m_packButton->setFixedHeight(24);
+    m_packButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_packButton->setPopupMode(QToolButton::InstantPopup);
     m_packButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_packButton->setText(tr("(no pack)"));

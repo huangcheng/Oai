@@ -356,6 +356,18 @@ v1.2.0</translation>
         <source>Pet</source>
         <translation>宠物</translation>
     </message>
+    <message>
+        <source>(no pack)</source>
+        <translation>（未选择）</translation>
+    </message>
+    <message>
+        <source>Originals</source>
+        <translation>原版</translation>
+    </message>
+    <message>
+        <source>Azur Lane</source>
+        <translation>碧蓝航线</translation>
+    </message>
 </context>
 <context>
     <name>SystemTray</name>
@@ -380,6 +392,14 @@ v1.2.0</translation>
         <location filename="src/SystemTray.cpp" line="224"/>
         <source>Pet</source>
         <translation>宠物</translation>
+    </message>
+    <message>
+        <source>Originals</source>
+        <translation>原版</translation>
+    </message>
+    <message>
+        <source>Azur Lane</source>
+        <translation>碧蓝航线</translation>
     </message>
     <message>
         <location filename="src/SystemTray.cpp" line="107"/>
