@@ -66,6 +66,8 @@ installer/packages/*/data/
 !/assets/packs/rice/
 !/assets/packs/unitychan/
 !/assets/packs/wanko/
+!/assets/packs/little_demon/
+!/assets/packs/yumi/
 /.qmake.cache
 /.qmake.stash
 

@@ -582,10 +582,29 @@ bool Live2DAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
         m_idleWeights.append(entry.weight);
     }
 
-    // If no idle pool defined, use "Idle" group if available
-    if (m_idleAnims.isEmpty() && m_motionGroups.contains("Idle")) {
-        m_idleAnims.append("Idle");
-        m_idleWeights.append(1);
+    // If no idle pool entries survived (or none were declared), fall back
+    // to whatever the model has so the pet doesn't sit motionless. Order:
+    //   "Idle" → "Tap" → first non-empty group of any kind.
+    // Sparse VTube Studio packs (yumi has only Tap) and Cubism Free Sample
+    // packs (Idle only) both wind up with at least one cycling group.
+    if (m_idleAnims.isEmpty()) {
+        for (const QString &candidate : {QStringLiteral("Idle"), QStringLiteral("Tap")}) {
+            if (m_motionGroups.contains(candidate)
+                && m_cubismModel->motionCount(candidate) > 0) {
+                m_idleAnims.append(candidate);
+                m_idleWeights.append(1);
+                break;
+            }
+        }
+    }
+    if (m_idleAnims.isEmpty()) {
+        for (const QString &g : m_motionGroups) {
+            if (!g.isEmpty() && m_cubismModel->motionCount(g) > 0) {
+                m_idleAnims.append(g);
+                m_idleWeights.append(1);
+                break;
+            }
+        }
     }
 
     // Start idle
