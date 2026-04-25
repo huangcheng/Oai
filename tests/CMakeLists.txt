@@ -55,4 +55,17 @@ foreach(test_src ${TEST_SOURCES})
         PROJECT_VERSION="${PROJECT_VERSION}"
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
+
+    # On Windows the Qt6 DLLs live in Qt's bin/, which is not on the PATH that
+    # ctest inherits — without this, the test exe exits 0xc0000135 (DLL not
+    # found) before main() runs. Prepend Qt's bin dir to PATH for the test.
+    if(WIN32)
+        get_target_property(_qt_qmake_loc Qt6::qmake IMPORTED_LOCATION)
+        get_filename_component(_qt_bin_dir "${_qt_qmake_loc}" DIRECTORY)
+        # Escape ';' in $ENV{PATH} so CMake doesn't split it as a list when
+        # serialising the ENVIRONMENT property.
+        string(REPLACE ";" "\\;" _ctest_path "$ENV{PATH}")
+        set_tests_properties(${test_name} PROPERTIES
+            ENVIRONMENT "PATH=${_qt_bin_dir}\\;${_ctest_path}")
+    endif()
 endforeach()
