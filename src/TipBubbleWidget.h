@@ -70,14 +70,15 @@ private:
     static constexpr int TIP_DISMISS_MS = 12000;
 
     // Styling
-    static constexpr int PADDING_H = 8;       // horizontal padding
-    static constexpr int PADDING_V = 6;        // vertical padding
-    static constexpr int CORNER_RADIUS = 2;    // rounded corner radius
+    static constexpr int PADDING_H = 14;       // horizontal padding
+    static constexpr int PADDING_V = 10;        // vertical padding
+    static constexpr int CORNER_RADIUS = 4;     // sharp-ish corners (P5 feel)
     static constexpr int TAIL_WIDTH = 16;       // base of tail triangle
-    static constexpr int TAIL_HEIGHT = 12;      // height of tail triangle
-    static constexpr int TAIL_OFFSET_FROM_RIGHT = 25; // tail position from right edge
-    static constexpr int MAX_BUBBLE_WIDTH = 200;
-    static constexpr int SHADOW_OFFSET = 1;     // hard shadow offset
+    static constexpr int TAIL_HEIGHT = 10;      // height of tail triangle
+    static constexpr int MAX_BUBBLE_WIDTH = 220;
+    static constexpr int SHADOW_BLUR = 10;      // shadow spread
+    static constexpr int BORDER_WIDTH = 3;      // bold border
+    static constexpr int SKEW_PX = 4;           // parallelogram skew offset
 
     const QWidget *m_anchoredPet = nullptr;
     QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)

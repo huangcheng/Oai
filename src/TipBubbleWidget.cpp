@@ -68,9 +68,9 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
     // Calculate text layout and bubble dimensions
     calculateTextLayout();
 
-    // Set widget size
-    int totalWidth = m_bubbleRect.width();
-    int totalHeight = m_bubbleRect.height() + TAIL_HEIGHT;
+    // Set widget size: bubble + tail + shadow margin on all sides
+    int totalWidth = m_bubbleRect.width() + SHADOW_BLUR * 2;
+    int totalHeight = m_bubbleRect.height() + TAIL_HEIGHT + SHADOW_BLUR * 2;
     setFixedSize(totalWidth, totalHeight);
 
     // Position relative to pet
@@ -120,103 +120,110 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
 
     QPainter painter(this);
-    // NO antialiasing — Win98 was pixel-crisp
-    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Asymmetric tail: right edge nearly vertical, left edge sharply sloped
-    // This makes the tail "point" diagonally toward Qlippy like a real speech bubble
-    int tailRightX = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT;
-    int tailTipX = tailRightX + 2;  // tip just slightly right of the vertical edge
-    int tailLeftX = tailRightX - TAIL_WIDTH; // left edge is far left, creating the slope
+    // Bubble body rect offset by shadow margin
+    const QRectF body(SHADOW_BLUR, SHADOW_BLUR,
+                      m_bubbleRect.width(), m_bubbleRect.height());
+    const qreal r = CORNER_RADIUS;
+    const qreal sk = SKEW_PX;  // parallelogram skew
 
-    // Build a single continuous path: rounded rect body + tail triangle
-    const int r = CORNER_RADIUS;
-    const QRect &b = m_bubbleRect;
+    // Build skewed bubble path (parallelogram with slight rounded corners)
+    // Top edge shifted right by sk, bottom edge stays — gives a dynamic lean
+    QPainterPath bubblePath;
+    bubblePath.moveTo(body.left() + sk + r, body.top());
+    bubblePath.lineTo(body.right() + sk - r, body.top());
+    bubblePath.quadTo(body.right() + sk, body.top(), body.right() + sk, body.top() + r);
+    bubblePath.lineTo(body.right(), body.bottom() - r);
+    bubblePath.quadTo(body.right(), body.bottom(), body.right() - r, body.bottom());
+    bubblePath.lineTo(body.left() + r, body.bottom());
+    bubblePath.quadTo(body.left(), body.bottom(), body.left(), body.bottom() - r);
+    bubblePath.lineTo(body.left() + sk, body.top() + r);
+    bubblePath.quadTo(body.left() + sk, body.top(), body.left() + sk + r, body.top());
+    bubblePath.closeSubpath();
 
-    QPainterPath path;
+    // Build tail: angular, offset to match the skew energy
+    int tailBaseX = body.center().x() + 10;  // slightly off-center
+    QPainterPath tailPath;
     if (m_tailDown) {
-        // Start top-left, go clockwise
-        path.moveTo(b.left() + r, b.top());
-        path.lineTo(b.right() - r, b.top());
-        path.quadTo(b.right(), b.top(), b.right(), b.top() + r);
-        path.lineTo(b.right(), b.bottom() - r);
-        path.quadTo(b.right(), b.bottom(), b.right() - r, b.bottom());
-        // Bottom edge: run right-to-left along the bottom
-        // At tailRightX, the nearly-vertical right edge drops to the tip
-        path.lineTo(tailRightX, b.bottom());
-        path.lineTo(tailTipX, b.bottom() + TAIL_HEIGHT); // tip: slightly right, mostly down
-        path.lineTo(tailLeftX, b.bottom());               // left base: far left = steep slope
-        // Continue bottom edge to left corner
-        path.lineTo(b.left() + r, b.bottom());
-        path.quadTo(b.left(), b.bottom(), b.left(), b.bottom() - r);
-        path.lineTo(b.left(), b.top() + r);
-        path.quadTo(b.left(), b.top(), b.left() + r, b.top());
+        tailPath.moveTo(tailBaseX - TAIL_WIDTH / 2.0, body.bottom());
+        tailPath.lineTo(tailBaseX + 2, body.bottom() + TAIL_HEIGHT);  // tip slightly right
+        tailPath.lineTo(tailBaseX + TAIL_WIDTH / 2.0, body.bottom());
     } else {
-        // Tail points up: mirror of above
-        path.moveTo(b.left() + r, b.bottom());
-        path.lineTo(b.right() - r, b.bottom());
-        path.quadTo(b.right(), b.bottom(), b.right(), b.bottom() - r);
-        path.lineTo(b.right(), b.top() + r);
-        path.quadTo(b.right(), b.top(), b.right() - r, b.top());
-        // Top edge: right-to-left
-        path.lineTo(tailRightX, b.top());
-        path.lineTo(tailTipX, b.top() - TAIL_HEIGHT);
-        path.lineTo(tailLeftX, b.top());
-        path.lineTo(b.left() + r, b.top());
-        path.quadTo(b.left(), b.top(), b.left(), b.top() + r);
-        path.lineTo(b.left(), b.bottom() - r);
-        path.quadTo(b.left(), b.bottom(), b.left() + r, b.bottom());
+        tailPath.moveTo(tailBaseX - TAIL_WIDTH / 2.0, body.top());
+        tailPath.lineTo(tailBaseX + 2, body.top() - TAIL_HEIGHT);
+        tailPath.lineTo(tailBaseX + TAIL_WIDTH / 2.0, body.top());
     }
-    path.closeSubpath();
+    tailPath.closeSubpath();
 
-    // Draw hard shadow (solid black, no blur, offset by SHADOW_OFFSET)
+    QPainterPath combined = bubblePath.united(tailPath);
+
+    // Draw bold shadow: dark, offset down-right for a punchy "pop" effect
     painter.save();
-    painter.setOpacity(m_opacity);
-    QPainterPath shadowPath = path;
-    shadowPath.translate(SHADOW_OFFSET, SHADOW_OFFSET);
-    painter.fillPath(shadowPath, Qt::black);
+    painter.setOpacity(m_opacity * 0.35);
+    painter.setPen(Qt::NoPen);
+    QPainterPath shadowPath = combined;
+    shadowPath.translate(3, 4);
+    painter.setBrush(Qt::black);
+    painter.drawPath(shadowPath);
     painter.restore();
 
-    // Draw bubble background (#FFFFE1)
+    // Draw bubble: white fill + thick black border
     painter.save();
     painter.setOpacity(m_opacity);
-    painter.fillPath(path, QColor(255, 255, 225));
-    painter.strokePath(path, QPen(Qt::black, 1));
+    painter.setPen(QPen(Qt::black, BORDER_WIDTH, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+    painter.setBrush(Qt::white);
+    painter.drawPath(combined);
     painter.restore();
 
-    // Draw title text (bold)
+    // Red accent stripe at top of bubble
+    painter.save();
+    painter.setOpacity(m_opacity);
+    painter.setClipPath(combined);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0xE0, 0x1A, 0x2B));  // Persona red
+    painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
+    painter.restore();
+
+    // Offset for text drawing (shifted by shadow margin)
+    const int ox = SHADOW_BLUR;
+    const int oy = SHADOW_BLUR;
+
+    // Draw title text — bold, black
     if (!m_title.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont titleFont("HarmonyOS Sans SC", 11, QFont::Bold);
+        QFont titleFont("HarmonyOS Sans SC", 12, QFont::Black);
         painter.setFont(titleFont);
         painter.setPen(Qt::black);
-        painter.drawText(m_titleRect, Qt::AlignLeft | Qt::AlignVCenter, m_title);
+        painter.drawText(m_titleRect.translated(ox, oy),
+                         Qt::AlignLeft | Qt::AlignVCenter, m_title);
         painter.restore();
     }
 
-    // Draw message text (normal weight)
+    // Draw message text
     if (!m_message.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont msgFont("HarmonyOS Sans SC", 11);
+        QFont msgFont("HarmonyOS Sans SC", 12);
         painter.setFont(msgFont);
-        painter.setPen(Qt::black);
-
+        painter.setPen(QColor(0x1A, 0x1A, 0x1A));
         QFontMetrics fm(msgFont);
         QString wrappedText = fm.elidedText(m_message, Qt::ElideRight, m_messageRect.width());
-        painter.drawText(m_messageRect, Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, wrappedText);
+        painter.drawText(m_messageRect.translated(ox, oy),
+                         Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, wrappedText);
         painter.restore();
     }
 
-    // Draw source label (small gray text)
+    // Draw source label — subtle gray
     if (!m_source.isEmpty()) {
         painter.save();
         painter.setOpacity(m_opacity);
-        QFont sourceFont("HarmonyOS Sans SC", 9);
+        QFont sourceFont("HarmonyOS Sans SC", 10);
         painter.setFont(sourceFont);
-        painter.setPen(QColor(120, 120, 120));
-        painter.drawText(m_sourceRect, Qt::AlignLeft | Qt::AlignVCenter, m_source);
+        painter.setPen(QColor(0x88, 0x88, 0x88));
+        painter.drawText(m_sourceRect.translated(ox, oy),
+                         Qt::AlignLeft | Qt::AlignVCenter, m_source);
         painter.restore();
     }
 }
@@ -243,14 +250,12 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
     int petTop      = petGlobalPos.y() + anchor.y();
     int petBottom   = petGlobalPos.y() + anchor.y() + anchor.height();
 
-    // Calculate bubble position: align tail tip with pet center, not bubble center
-    // Tail tip X in widget coords = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT + 2
-    int tailTipLocalX = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT + 2;
-    int bubbleX = petCenterX - tailTipLocalX;
+    // Calculate bubble position: center bubble horizontally on pet center
+    int bubbleX = petCenterX - width() / 2;
 
     // Overlap the pet slightly so the tail feels attached, not floating
-    constexpr int PET_OVERLAP = 6;
-    int bubbleY = petTop - m_bubbleRect.height() - TAIL_HEIGHT + PET_OVERLAP;
+    constexpr int PET_OVERLAP = 4;
+    int bubbleY = petTop - m_bubbleRect.height() - TAIL_HEIGHT - SHADOW_BLUR + PET_OVERLAP;
 
     m_tailDown = true; // default: tail points down
 
@@ -260,7 +265,7 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
         QRect screenRect = screen->availableGeometry();
         if (bubbleY < screenRect.top()) {
             // Not enough room above — place below pet with same overlap
-            bubbleY = petBottom + TAIL_HEIGHT - PET_OVERLAP;
+            bubbleY = petBottom + TAIL_HEIGHT + SHADOW_BLUR - PET_OVERLAP;
             m_tailDown = false;
         }
     }
@@ -310,9 +315,9 @@ void TipBubbleWidget::startExitAnimation()
 
 void TipBubbleWidget::calculateTextLayout()
 {
-    QFont titleFont("HarmonyOS Sans SC", 11, QFont::Bold);
-    QFont msgFont("HarmonyOS Sans SC", 11);
-    QFont sourceFont("HarmonyOS Sans SC", 9);
+    QFont titleFont("HarmonyOS Sans SC", 12, QFont::Bold);
+    QFont msgFont("HarmonyOS Sans SC", 12);
+    QFont sourceFont("HarmonyOS Sans SC", 10);
 
     QFontMetrics titleFm(titleFont);
     QFontMetrics msgFm(msgFont);
@@ -344,10 +349,10 @@ void TipBubbleWidget::calculateTextLayout()
 
     // Ensure minimum height
     if (!m_title.isEmpty() && msgHeight > 0) {
-        bubbleHeight += 2; // Small spacing between title and message
+        bubbleHeight += 4; // Spacing between title and message
     }
     if (sourceHeight > 0) {
-        bubbleHeight += 2; // Small spacing before source label
+        bubbleHeight += 4; // Spacing before source label
     }
 
     m_bubbleRect.setWidth(bubbleWidth);
@@ -374,7 +379,7 @@ void TipBubbleWidget::calculateTextLayout()
 
     // Calculate source rect
     if (!m_source.isEmpty()) {
-        currentY += 2; // spacing
+        currentY += 4; // spacing
         m_sourceRect = QRect(PADDING_H, currentY,
                              bubbleWidth - PADDING_H * 2, sourceHeight);
     } else {
@@ -384,20 +389,18 @@ void TipBubbleWidget::calculateTextLayout()
 
 void TipBubbleWidget::updateBubblePath()
 {
-    // Asymmetric tail: right edge nearly vertical, left edge sloped
-    int tailRightX = m_bubbleRect.right() - TAIL_OFFSET_FROM_RIGHT;
-    int tailTipX = tailRightX + 2;
-    int tailLeftX = tailRightX - TAIL_WIDTH;
+    // Symmetric tail centered on bubble
+    int tailCenterX = m_bubbleRect.width() / 2;
 
     if (m_tailDown) {
         m_tailPoly.clear();
-        m_tailPoly << QPoint(tailLeftX, m_bubbleRect.bottom())
-                   << QPoint(tailTipX, m_bubbleRect.bottom() + TAIL_HEIGHT)
-                   << QPoint(tailRightX, m_bubbleRect.bottom());
+        m_tailPoly << QPoint(tailCenterX - TAIL_WIDTH / 2, m_bubbleRect.bottom())
+                   << QPoint(tailCenterX, m_bubbleRect.bottom() + TAIL_HEIGHT)
+                   << QPoint(tailCenterX + TAIL_WIDTH / 2, m_bubbleRect.bottom());
     } else {
         m_tailPoly.clear();
-        m_tailPoly << QPoint(tailLeftX, m_bubbleRect.top())
-                   << QPoint(tailTipX, m_bubbleRect.top() - TAIL_HEIGHT)
-                   << QPoint(tailRightX, m_bubbleRect.top());
+        m_tailPoly << QPoint(tailCenterX - TAIL_WIDTH / 2, m_bubbleRect.top())
+                   << QPoint(tailCenterX, m_bubbleRect.top() - TAIL_HEIGHT)
+                   << QPoint(tailCenterX + TAIL_WIDTH / 2, m_bubbleRect.top());
     }
 }

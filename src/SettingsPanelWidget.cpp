@@ -7,6 +7,7 @@
 #include <QPainterPath>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QFrame>
@@ -39,7 +40,7 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
 #endif
 
-    setFixedSize(PANEL_WIDTH + SHADOW_OFFSET, PANEL_HEIGHT + SHADOW_OFFSET);
+    setFixedSize(PANEL_WIDTH + SHADOW_BLUR * 2, PANEL_HEIGHT + SHADOW_BLUR * 2);
 
     setupUi();
 
@@ -64,29 +65,54 @@ void SettingsPanelWidget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
 
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw shadow (solid black, no blur, 4px offset)
-    painter.fillRect(SHADOW_OFFSET, SHADOW_OFFSET,
-                     PANEL_WIDTH, PANEL_HEIGHT,
-                     Qt::black);
+    const QRectF body(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
+    const qreal r = CORNER_RADIUS;
+    const qreal sk = SKEW_PX;
 
-    // Draw panel background (#FFFFE1)
-    QPainterPath path;
-    path.addRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
-    painter.fillPath(path, QColor(255, 255, 225));
+    // Build skewed panel path (matching tip bubble parallelogram)
+    QPainterPath panelPath;
+    panelPath.moveTo(body.left() + sk + r, body.top());
+    panelPath.lineTo(body.right() + sk - r, body.top());
+    panelPath.quadTo(body.right() + sk, body.top(), body.right() + sk, body.top() + r);
+    panelPath.lineTo(body.right(), body.bottom() - r);
+    panelPath.quadTo(body.right(), body.bottom(), body.right() - r, body.bottom());
+    panelPath.lineTo(body.left() + r, body.bottom());
+    panelPath.quadTo(body.left(), body.bottom(), body.left(), body.bottom() - r);
+    panelPath.lineTo(body.left() + sk, body.top() + r);
+    panelPath.quadTo(body.left() + sk, body.top(), body.left() + sk + r, body.top());
+    panelPath.closeSubpath();
 
-    // Draw panel border (1px black)
-    QPen borderPen(Qt::black, 1);
-    painter.setPen(borderPen);
-    painter.drawRect(0, 0, PANEL_WIDTH - 1, PANEL_HEIGHT - 1);
+    // Bold shadow
+    painter.save();
+    painter.setOpacity(0.35);
+    painter.setPen(Qt::NoPen);
+    QPainterPath shadowPath = panelPath;
+    shadowPath.translate(3, 4);
+    painter.setBrush(Qt::black);
+    painter.drawPath(shadowPath);
+    painter.restore();
+
+    // White fill + thick black border
+    painter.setPen(QPen(Qt::black, BORDER_WIDTH, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+    painter.setBrush(Qt::white);
+    painter.drawPath(panelPath);
+
+    // Red accent stripe at top
+    painter.save();
+    painter.setClipPath(panelPath);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0xE0, 0x1A, 0x2B));
+    painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
+    painter.restore();
 }
 
 void SettingsPanelWidget::setupUi()
 {
     // Create content widget that sits inside the panel area
     m_contentWidget = new QWidget(this);
-    m_contentWidget->setGeometry(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+    m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
     m_contentWidget->setStyleSheet("background: transparent;");
 
     // Main vertical layout for content
@@ -106,17 +132,19 @@ void SettingsPanelWidget::setupUi()
 
     m_closeButton = new QPushButton(tr("×"), m_contentWidget);
     m_closeButton->setFont(QFont("HarmonyOS Sans SC", 12, QFont::Bold));
-    m_closeButton->setFixedSize(20, 20);
+    m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
     m_closeButton->setStyleSheet(R"(
         QPushButton {
             background: transparent;
             border: none;
-            color: black;
+            border-radius: 3px;
+            color: #888;
             padding: 0px;
         }
         QPushButton:hover {
-            background: #CCCCCC;
+            background: #E01A2B;
+            color: white;
         }
     )");
     connect(m_closeButton, &QPushButton::clicked, this, &SettingsPanelWidget::onCloseClicked);
@@ -128,36 +156,33 @@ void SettingsPanelWidget::setupUi()
     m_separator = new QFrame(m_contentWidget);
     m_separator->setFrameShape(QFrame::HLine);
     m_separator->setFrameShadow(QFrame::Plain);
-    m_separator->setStyleSheet("border: none; border-top: 1px solid black; background: transparent;");
+    m_separator->setStyleSheet("border: none; border-top: 2px solid black; background: transparent;");
     m_separator->setFixedHeight(1);
 
     // Language row: label + combo
-    QHBoxLayout *langRow = new QHBoxLayout();
-    langRow->setSpacing(8);
-
     m_langLabel = new QLabel(tr("Language"), m_contentWidget);
-    m_langLabel->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_langLabel->setFont(QFont("HarmonyOS Sans SC", 10));
     m_langLabel->setStyleSheet("color: black; background: transparent;");
     m_langLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_langCombo = new QComboBox(m_contentWidget);
     // Force Qt-drawn popup instead of native macOS popup (native ignores stylesheets)
     auto *listView = new QListView(m_langCombo);
-    listView->setFont(QFont("HarmonyOS Sans SC", 9));
+    listView->setFont(QFont("HarmonyOS Sans SC", 10));
     m_langCombo->setView(listView);
     m_langCombo->addItem(tr("English"), "en");
     m_langCombo->addItem(tr("简体中文"), "zh_CN");
-    m_langCombo->setFont(QFont("HarmonyOS Sans SC", 9));
-    m_langCombo->setFixedHeight(20);
+    m_langCombo->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_langCombo->setFixedHeight(24);
 
-    // Generate a small down-arrow pixmap (Qt stylesheets can't do CSS border-triangles)
+    // Generate a small down-arrow pixmap
     QString arrowPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
-                        + "/qlippy_combo_arrow.png";
+                        + "/oai_combo_arrow.png";
     if (!QFile::exists(arrowPath)) {
         QPixmap arrow(8, 5);
         arrow.fill(Qt::transparent);
         QPainter p(&arrow);
-        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setRenderHint(QPainter::Antialiasing, true);
         p.setBrush(Qt::black);
         p.setPen(Qt::NoPen);
         QPolygon tri;
@@ -170,12 +195,16 @@ void SettingsPanelWidget::setupUi()
     m_langCombo->setStyleSheet(QStringLiteral(R"(
         QComboBox {
             background: white;
-            border: 1px solid black;
-            padding: 1px 4px;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: #2C2C2E;
             min-width: 70px;
         }
         QComboBox::drop-down {
-            border-left: 1px solid black;
+            border-left: 2px solid black;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
             width: 18px;
             subcontrol-origin: padding;
             subcontrol-position: center right;
@@ -187,47 +216,44 @@ void SettingsPanelWidget::setupUi()
         }
         QComboBox QAbstractItemView {
             background: white;
-            color: black;
-            border: 1px solid black;
-            selection-background-color: #000080;
+            color: #2C2C2E;
+            border: 2px solid black;
+            border-radius: 4px;
+            selection-background-color: #E01A2B;
             selection-color: white;
             outline: none;
         }
         QComboBox QAbstractItemView::item {
-            color: black;
-            padding: 2px 4px;
+            color: #2C2C2E;
+            padding: 3px 6px;
         }
         QComboBox QAbstractItemView::item:selected {
-            background: #000080;
+            background: #E01A2B;
             color: white;
         }
     )").arg(arrowPath));
     connect(m_langCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsPanelWidget::onLanguageChanged);
 
-    langRow->addWidget(m_langLabel, 1);
-    langRow->addWidget(m_langCombo, 0);
-
     // Auto-start row: label + checkbox
-    QHBoxLayout *autoStartRow = new QHBoxLayout();
-    autoStartRow->setSpacing(8);
-
     m_autoStartLabel = new QLabel(tr("Launch at Login"), m_contentWidget);
-    m_autoStartLabel->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_autoStartLabel->setFont(QFont("HarmonyOS Sans SC", 10));
     m_autoStartLabel->setStyleSheet("color: black; background: transparent;");
     m_autoStartLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_autoStartCheck = new QCheckBox(m_contentWidget);
-    m_autoStartCheck->setFixedSize(14, 14);
+    m_autoStartCheck->setFixedSize(16, 16);
     m_autoStartCheck->setStyleSheet(R"(
         QCheckBox::indicator {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: white;
-            border: 1px solid black;
+            border: 2px solid black;
+            border-radius: 3px;
         }
         QCheckBox::indicator:checked {
-            background: black;
+            background: #E01A2B;
+            border: 1px solid #E01A2B;
         }
         QCheckBox::indicator:unchecked {
             background: white;
@@ -236,62 +262,54 @@ void SettingsPanelWidget::setupUi()
     connect(m_autoStartCheck, &QCheckBox::toggled,
             this, &SettingsPanelWidget::onAutoStartToggled);
 
-    autoStartRow->addWidget(m_autoStartLabel, 1);
-    autoStartRow->addWidget(m_autoStartCheck, 0, Qt::AlignLeft);
-
     // Port row: label + input
-    QHBoxLayout *portRow = new QHBoxLayout();
-    portRow->setSpacing(8);
-
     m_portLabel = new QLabel(tr("Port"), m_contentWidget);
-    m_portLabel->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_portLabel->setFont(QFont("HarmonyOS Sans SC", 10));
     m_portLabel->setStyleSheet("color: black; background: transparent;");
     m_portLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_portInput = new QLineEdit(m_contentWidget);
-    m_portInput->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_portInput->setFont(QFont("HarmonyOS Sans SC", 10));
     m_portInput->setText(QString::number(m_config->ipcPort()));
     m_portInput->setMaxLength(5);
-    m_portInput->setFixedWidth(60);
-    m_portInput->setFixedHeight(20);
+    m_portInput->setFixedHeight(24);
     m_portInput->setStyleSheet(R"(
         QLineEdit {
             background: white;
-            border: 1px solid black;
-            padding: 1px 4px;
-            color: black;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: #2C2C2E;
         }
     )");
     connect(m_portInput, &QLineEdit::editingFinished,
             this, &SettingsPanelWidget::onPortEditingFinished);
 
-    portRow->addWidget(m_portLabel, 1);
-    portRow->addWidget(m_portInput, 0);
-
     // Pack selection row: label + combo
-    QHBoxLayout *packRow = new QHBoxLayout();
-    packRow->setSpacing(8);
-
     m_packLabel = new QLabel(tr("Pet"), m_contentWidget);
-    m_packLabel->setFont(QFont("HarmonyOS Sans SC", 9));
+    m_packLabel->setFont(QFont("HarmonyOS Sans SC", 10));
     m_packLabel->setStyleSheet("color: black; background: transparent;");
     m_packLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_packCombo = new QComboBox(m_contentWidget);
     auto *packListView = new QListView(m_packCombo);
-    packListView->setFont(QFont("HarmonyOS Sans SC", 9));
+    packListView->setFont(QFont("HarmonyOS Sans SC", 10));
     m_packCombo->setView(packListView);
-    m_packCombo->setFont(QFont("HarmonyOS Sans SC", 9));
-    m_packCombo->setFixedHeight(20);
+    m_packCombo->setFont(QFont("HarmonyOS Sans SC", 10));
+    m_packCombo->setFixedHeight(24);
     m_packCombo->setStyleSheet(QStringLiteral(R"(
         QComboBox {
             background: white;
-            border: 1px solid black;
-            padding: 1px 4px;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: #2C2C2E;
             min-width: 70px;
         }
         QComboBox::drop-down {
-            border-left: 1px solid black;
+            border-left: 2px solid black;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
             width: 18px;
             subcontrol-origin: padding;
             subcontrol-position: center right;
@@ -303,34 +321,44 @@ void SettingsPanelWidget::setupUi()
         }
         QComboBox QAbstractItemView {
             background: white;
-            color: black;
-            border: 1px solid black;
-            selection-background-color: #000080;
+            color: #2C2C2E;
+            border: 2px solid black;
+            border-radius: 4px;
+            selection-background-color: #E01A2B;
             selection-color: white;
             outline: none;
         }
         QComboBox QAbstractItemView::item {
-            color: black;
-            padding: 2px 4px;
+            color: #2C2C2E;
+            padding: 3px 6px;
         }
         QComboBox QAbstractItemView::item:selected {
-            background: #000080;
+            background: #E01A2B;
             color: white;
         }
     )").arg(arrowPath));
     connect(m_packCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsPanelWidget::onPackChanged);
 
-    packRow->addWidget(m_packLabel, 1);
-    packRow->addWidget(m_packCombo, 0);
+    // Grid layout for form rows: labels in col 0, controls in col 1
+    QGridLayout *formGrid = new QGridLayout();
+    formGrid->setHorizontalSpacing(10);
+    formGrid->setVerticalSpacing(VERTICAL_SPACING);
+    formGrid->setColumnStretch(1, 1);  // controls column stretches
+
+    formGrid->addWidget(m_langLabel,       0, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_langCombo,       0, 1);
+    formGrid->addWidget(m_autoStartLabel,  1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_autoStartCheck,  1, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_portLabel,       2, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_portInput,       2, 1);
+    formGrid->addWidget(m_packLabel,       3, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_packCombo,       3, 1);
 
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
-    mainLayout->addLayout(langRow);
-    mainLayout->addLayout(autoStartRow);
-    mainLayout->addLayout(portRow);
-    mainLayout->addLayout(packRow);
+    mainLayout->addLayout(formGrid);
     mainLayout->addStretch(1);
 }
 
@@ -364,8 +392,8 @@ void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
         panelY = qBound(screenRect.top(), panelY, screenRect.bottom() - PANEL_HEIGHT);
     }
 
-    // Account for shadow offset
-    move(panelX - SHADOW_OFFSET, panelY - SHADOW_OFFSET);
+    // Account for shadow margin
+    move(panelX - SHADOW_BLUR, panelY - SHADOW_BLUR);
 }
 
 void SettingsPanelWidget::onCloseClicked()

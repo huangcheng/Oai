@@ -67,11 +67,14 @@ private:
     QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)
 
     // Styling constants
-    static constexpr int PADDING = 12;
-    static constexpr int VERTICAL_SPACING = 10;
-    static constexpr int SHADOW_OFFSET = 4;
-    static constexpr int PANEL_WIDTH = 180;
-    static constexpr int PANEL_HEIGHT = 200;  // Increased for pack selector
+    static constexpr int PADDING = 14;
+    static constexpr int VERTICAL_SPACING = 12;
+    static constexpr int SHADOW_BLUR = 10;
+    static constexpr int CORNER_RADIUS = 4;
+    static constexpr int BORDER_WIDTH = 3;
+    static constexpr int SKEW_PX = 4;
+    static constexpr int PANEL_WIDTH = 230;
+    static constexpr int PANEL_HEIGHT = 210;
 };
 
 #endif // SETTINGSPANELWIDGET_H
