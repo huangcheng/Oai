@@ -56,7 +56,7 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
 
 void SettingsPanelWidget::anchorTo(const QWidget *petWidget)
 {
-    if (petWidget && isVisible()) {
+    if (petWidget) {
         positionRelativeTo(petWidget);
     }
 }
@@ -104,7 +104,7 @@ void SettingsPanelWidget::paintEvent(QPaintEvent *event)
     painter.save();
     painter.setClipPath(panelPath);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0xE0, 0x1A, 0x2B));
+    painter.setBrush(QColor(0xF3, 0x6F, 0x1A));
     painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
     painter.restore();
 }
@@ -144,7 +144,7 @@ void SettingsPanelWidget::setupUi()
             padding: 0px;
         }
         QPushButton:hover {
-            background: #E01A2B;
+            background: #F36F1A;
             color: white;
         }
     )");
@@ -220,7 +220,7 @@ void SettingsPanelWidget::setupUi()
             color: #2C2C2E;
             border: 2px solid black;
             border-radius: 4px;
-            selection-background-color: #E01A2B;
+            selection-background-color: #F36F1A;
             selection-color: white;
             outline: none;
         }
@@ -229,7 +229,7 @@ void SettingsPanelWidget::setupUi()
             padding: 3px 6px;
         }
         QComboBox QAbstractItemView::item:selected {
-            background: #E01A2B;
+            background: #F36F1A;
             color: white;
         }
     )").arg(arrowPath));
@@ -253,8 +253,8 @@ void SettingsPanelWidget::setupUi()
             border-radius: 3px;
         }
         QCheckBox::indicator:checked {
-            background: #E01A2B;
-            border: 1px solid #E01A2B;
+            background: #F36F1A;
+            border: 1px solid #F36F1A;
         }
         QCheckBox::indicator:unchecked {
             background: white;
@@ -325,7 +325,7 @@ void SettingsPanelWidget::setupUi()
             color: #2C2C2E;
             border: 2px solid black;
             border-radius: 4px;
-            selection-background-color: #E01A2B;
+            selection-background-color: #F36F1A;
             selection-color: white;
             outline: none;
         }
@@ -334,7 +334,7 @@ void SettingsPanelWidget::setupUi()
             padding: 3px 6px;
         }
         QComboBox QAbstractItemView::item:selected {
-            background: #E01A2B;
+            background: #F36F1A;
             color: white;
         }
     )").arg(arrowPath));
@@ -541,7 +541,7 @@ void SettingsPanelWidget::refreshPackList()
 
     const auto packs = m_packManager->availablePacks();
     for (const auto &pack : packs) {
-        m_packCombo->addItem(pack.name, pack.id);
+        m_packCombo->addItem(pack.displayName(m_packManager->activeLocale()), pack.id);
     }
 
     // Select active pack
@@ -564,4 +564,8 @@ void SettingsPanelWidget::retranslateUi()
     m_autoStartLabel->setText(tr("Launch at Login"));
     m_portLabel->setText(tr("Port"));
     m_packLabel->setText(tr("Pet"));
+    // Pack labels can switch between English/Chinese on locale change.
+    if (m_packManager) {
+        refreshPackList();
+    }
 }

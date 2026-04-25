@@ -9,6 +9,22 @@
 #include <QDebug>
 #include <QTemporaryDir>
 
+QString CharacterPack::Metadata::displayName(const QString &localeCode) const
+{
+    if (!localeCode.isEmpty()) {
+        if (auto it = nameLocalized.constFind(localeCode); it != nameLocalized.constEnd()) {
+            return it.value();
+        }
+        const QString lang = localeCode.section('_', 0, 0);
+        for (auto it = nameLocalized.constBegin(); it != nameLocalized.constEnd(); ++it) {
+            if (it.key().section('_', 0, 0) == lang) {
+                return it.value();
+            }
+        }
+    }
+    return name;
+}
+
 bool CharacterPack::loadFromDirectory(const QString &packDir)
 {
     QDir dir(packDir);
@@ -211,6 +227,16 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
     m_metadata.name = manifest.value("name").toString();
     m_metadata.author = manifest.value("author").toString();
     m_metadata.version = manifest.value("version").toString();
+
+    // Optional locale-keyed display names: { "zh_CN": "拉菲", "ja_JP": "ラフィー" }
+    const QJsonObject locNames = manifest.value("nameLocalized").toObject();
+    for (auto it = locNames.begin(); it != locNames.end(); ++it) {
+        const QString locale = it.key();
+        const QString value = it.value().toString();
+        if (!locale.isEmpty() && !value.isEmpty()) {
+            m_metadata.nameLocalized.insert(locale, value);
+        }
+    }
 
     if (m_metadata.id.isEmpty() || m_metadata.name.isEmpty() || 
         m_metadata.author.isEmpty() || m_metadata.version.isEmpty()) {

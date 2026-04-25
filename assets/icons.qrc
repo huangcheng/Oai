@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/icons">
-        <file>icons/clippy.png</file>
+        <file>icons/oai.png</file>
     </qresource>
 </RCC>

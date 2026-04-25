@@ -39,13 +39,19 @@ public:
      */
     struct PackInfo {
         QString id;               ///< Unique pack identifier
-        QString name;             ///< Display name
+        QString name;             ///< Display name (fallback / English)
+        QMap<QString, QString> nameLocalized;  ///< Locale code → localized name
         QString author;           ///< Creator name
         QString version;          ///< Pack version
         QString description;      ///< Short description
         QString preview;          ///< Path to preview image
         QString path;             ///< Path to pack directory
         PackSource source;        ///< Where pack is located
+
+        /**
+         * @brief Resolve display name for a locale (exact → language → fallback to `name`).
+         */
+        QString displayName(const QString &localeCode) const;
     };
 
     explicit CharacterPackManager(QObject *parent = nullptr);
@@ -108,6 +114,16 @@ public:
     PackInfo packInfo(const QString &packId) const;
 
     /**
+     * @brief Set the active locale for display-name resolution.
+     *
+     * Consumers (system tray, settings panel) call PackInfo::displayName()
+     * with this code so a runtime language switch shows localized pack names
+     * without re-parsing manifests.
+     */
+    void setActiveLocale(const QString &localeCode) { m_activeLocale = localeCode; }
+    QString activeLocale() const { return m_activeLocale; }
+
+    /**
      * @brief Enable/disable hot-reload
      */
     void setHotReloadEnabled(bool enabled);
@@ -149,6 +165,7 @@ private:
     QString m_builtInDir;
     QString m_userDir;
     QString m_activePackId;
+    QString m_activeLocale;
     CharacterPack *m_activePack = nullptr;
 
     QMap<QString, PackInfo> m_packs;

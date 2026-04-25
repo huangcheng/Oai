@@ -62,6 +62,22 @@ QVector<CharacterPackManager::PackInfo> CharacterPackManager::availablePacks() c
     return m_packs.values().toVector();
 }
 
+QString CharacterPackManager::PackInfo::displayName(const QString &localeCode) const
+{
+    if (!localeCode.isEmpty()) {
+        if (auto it = nameLocalized.constFind(localeCode); it != nameLocalized.constEnd()) {
+            return it.value();
+        }
+        const QString lang = localeCode.section('_', 0, 0);
+        for (auto it = nameLocalized.constBegin(); it != nameLocalized.constEnd(); ++it) {
+            if (it.key().section('_', 0, 0) == lang) {
+                return it.value();
+            }
+        }
+    }
+    return name;
+}
+
 bool CharacterPackManager::switchPack(const QString &packId)
 {
     if (!m_packs.contains(packId)) {
@@ -424,6 +440,14 @@ void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSou
     PackInfo info;
     info.id = packId;
     info.name = manifest.value("name").toString();
+    const QJsonObject locNames = manifest.value("nameLocalized").toObject();
+    for (auto it = locNames.begin(); it != locNames.end(); ++it) {
+        const QString locale = it.key();
+        const QString value = it.value().toString();
+        if (!locale.isEmpty() && !value.isEmpty()) {
+            info.nameLocalized.insert(locale, value);
+        }
+    }
     info.author = manifest.value("author").toString();
     info.version = manifest.value("version").toString();
     info.description = manifest.value("description").toString();

@@ -186,7 +186,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     painter.setOpacity(m_opacity);
     painter.setClipPath(combined);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0xE0, 0x1A, 0x2B));  // Persona red
+    painter.setBrush(QColor(0xF3, 0x6F, 0x1A));  // Persona orange
     painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
     painter.restore();
 

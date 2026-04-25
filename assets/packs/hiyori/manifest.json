@@ -2,6 +2,9 @@
   "formatVersion": "1.0.0",
   "id": "im.cheng.oai.hiyori",
   "name": "Hiyori",
+  "nameLocalized": {
+    "zh_CN": "日和"
+  },
   "author": "Live2D Inc. (Sample Model)",
   "version": "1.0.0",
   "description": "Hiyori — a Live2D Cubism sample character",

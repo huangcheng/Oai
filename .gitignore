@@ -32,7 +32,11 @@ qrc_*.cpp
 Thumbs.db
 *.res
 *.rc
-!assets/qlippy.rc
+!assets/oai.rc
+
+# Installer staging — populated by `cmake --build . --target package_installer`
+# (qt deploy + opks). Build output, not source.
+installer/packages/*/data/
 /.qmake.cache
 /.qmake.stash
 

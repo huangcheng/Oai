@@ -189,6 +189,7 @@ void SystemTray::onPackActionTriggered()
 void SystemTray::refreshPackMenu()
 {
     if (!m_packMenu) {
+        qDebug() << "SystemTray::refreshPackMenu — no packMenu";
         return;
     }
 
@@ -198,20 +199,54 @@ void SystemTray::refreshPackMenu()
     m_packActionGroup->setExclusive(true);
 
     if (!m_packManager) {
+        qDebug() << "SystemTray::refreshPackMenu — no packManager";
         return;
     }
 
     const auto packs = m_packManager->availablePacks();
-    QString activeId = m_packManager->activePackId();
+    const QString activeId = m_packManager->activePackId();
+    const QString locale = m_packManager->activeLocale();
 
+    // Partition by source so the submenu doesn't grow past one screen-height
+    // (Windows QMenu silently scrolls when too long; users miss most items).
+    // Heuristic: anything imported via scripts/import_live2d.py carries an
+    // author string starting with "Imported from github.com/" — treat those
+    // as a separate "Azur Lane" bucket. Everything else is "Originals".
+    QVector<CharacterPackManager::PackInfo> originals, imported;
     for (const auto &pack : packs) {
-        QAction *action = m_packMenu->addAction(pack.name);
-        action->setData(pack.id);
-        action->setCheckable(true);
-        action->setChecked(pack.id == activeId);
-        m_packActionGroup->addAction(action);
-        connect(action, &QAction::triggered, this, &SystemTray::onPackActionTriggered);
+        if (pack.author.startsWith(QStringLiteral("Imported from github.com/"))) {
+            imported.append(pack);
+        } else {
+            originals.append(pack);
+        }
     }
+
+    auto addToSubmenu = [this, &activeId, &locale](QMenu *menu,
+                                                    const QVector<CharacterPackManager::PackInfo> &list) {
+        for (const auto &pack : list) {
+            QAction *action = menu->addAction(pack.displayName(locale));
+            action->setData(pack.id);
+            action->setCheckable(true);
+            action->setChecked(pack.id == activeId);
+            m_packActionGroup->addAction(action);
+            connect(action, &QAction::triggered, this, &SystemTray::onPackActionTriggered);
+        }
+    };
+
+    if (!originals.isEmpty()) {
+        QMenu *originalsMenu = m_packMenu->addMenu(tr("Originals"));
+        originalsMenu->setFont(m_packMenu->font());
+        addToSubmenu(originalsMenu, originals);
+    }
+    if (!imported.isEmpty()) {
+        QMenu *importedMenu = m_packMenu->addMenu(tr("Azur Lane"));
+        importedMenu->setFont(m_packMenu->font());
+        addToSubmenu(importedMenu, imported);
+    }
+
+    qDebug() << "SystemTray::refreshPackMenu — populated"
+             << originals.size() << "Originals +"
+             << imported.size() << "Azur Lane";
 }
 
 void SystemTray::retranslateUi()
@@ -226,4 +261,6 @@ void SystemTray::retranslateUi()
     if (m_quitAction) {
         m_quitAction->setText(tr("Quit"));
     }
+    // Pack labels can switch between English/Chinese on locale change.
+    refreshPackMenu();
 }

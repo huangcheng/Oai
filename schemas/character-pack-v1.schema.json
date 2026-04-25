@@ -19,9 +19,21 @@
     },
     "name": {
       "type": "string",
-      "description": "Display name of the character pack",
+      "description": "Display name of the character pack (fallback / English)",
       "minLength": 1,
       "maxLength": 64
+    },
+    "nameLocalized": {
+      "type": "object",
+      "description": "Optional locale-keyed display names. Keys are POSIX locale codes (e.g. 'zh_CN', 'ja_JP'). The app picks an exact match, then a language-only prefix match (e.g. 'zh' matches 'zh_CN'), and falls back to `name`.",
+      "patternProperties": {
+        "^[a-z]{2,3}(_[A-Z]{2})?$": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "additionalProperties": false
     },
     "author": {
       "type": "string",

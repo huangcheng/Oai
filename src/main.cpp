@@ -23,19 +23,56 @@
 #include <QStandardPaths>
 #include <QScreen>
 #include <QDebug>
+#include <QFile>
 #include <QFontDatabase>
+#include <QMutex>
+#include <QTextStream>
 #include <QTimer>
 
 static QString configDir() {
-    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Oai";
+    // QStandardPaths::ConfigLocation already resolves to <APPDATA>/<Org>/<App>
+    // on Windows and the equivalent on macOS/Linux — no extra suffix needed.
+    return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+}
+
+// Mirror qDebug/qWarning/qInfo to a file next to the executable so a crashed
+// /SUBSYSTEM:WINDOWS run still leaves a trace. Default Qt handler writes to
+// OutputDebugString which is invisible without a debugger attached.
+static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
+                               const QString &msg)
+{
+    static QFile *logFile = nullptr;
+    static QMutex mtx;
+    QMutexLocker lock(&mtx);
+    if (!logFile) {
+        const QString path = QCoreApplication::applicationDirPath() + "/oai_debug.log";
+        logFile = new QFile(path);
+        logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+    }
+    if (!logFile->isOpen()) return;
+    const char *level = "DEBUG";
+    switch (type) {
+        case QtWarningMsg:  level = "WARN";  break;
+        case QtCriticalMsg: level = "CRIT";  break;
+        case QtFatalMsg:    level = "FATAL"; break;
+        case QtInfoMsg:     level = "INFO";  break;
+        default: break;
+    }
+    QTextStream(logFile) << '[' << level << "] " << msg << '\n';
+    logFile->flush();
 }
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    qInstallMessageHandler(fileMessageHandler);  // after QApplication so applicationDirPath() is valid
     a.setApplicationName("Oai");
-    a.setOrganizationName("Oai");
-    a.setWindowIcon(QIcon(":/icons/clippy.png"));
+    // Intentionally not setOrganizationName — QStandardPaths::ConfigLocation
+    // is <APPDATA>/<Org>/<App> on Windows, so setting Org=App="Oai" produces
+    // a redundant Local/Oai/Oai/ nesting. With only the application name set,
+    // we get a clean Local/Oai/. QSettings paths are unaffected because
+    // ConfigManager constructs QSettings with an explicit (org, app) tuple.
+    a.setWindowIcon(QIcon(":/icons/oai.png"));
     a.setQuitOnLastWindowClosed(false); // system tray keeps it alive
 
     // --- Single instance enforcement -----------------------------------------

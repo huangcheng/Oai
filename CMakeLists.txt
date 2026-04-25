@@ -233,7 +233,7 @@ endif()
 
 # --- Executable --------------------------------------------------------------
 if(WIN32)
-    set(PLATFORM_SOURCES assets/qlippy.rc)
+    set(PLATFORM_SOURCES assets/oai.rc)
 endif()
 
 qt_add_executable(Oai
@@ -289,7 +289,7 @@ qt_add_resources(Oai "icons"
     PREFIX "/icons"
     BASE "assets/icons"
     FILES
-        assets/icons/clippy.png
+        assets/icons/oai.png
 )
 
 # --- Translations ------------------------------------------------------------
@@ -422,7 +422,15 @@ set(ALL_PACK_OPKS "")
 # and archive paths relative to the pack root.
 set(LIVE2D_PACKS
     chitose epsilon furina gantzert_felixander haru haru_greeter haruto hibiki
-    hiyori izumi kei koharu mao mark miara miku natori ren rice unitychan wanko)
+    hiyori izumi kei koharu mao mark miara miku natori ren rice unitychan wanko
+    # Azur Lane (JP) imports — see scripts/import_live2d.py
+    z23 abercrombie adalbert albion musashi sirius takao
+    laffey belfast enterprise akagi prinz_eugen
+    bismarck ark_royal
+    # Bulk batch — picks from scripts/import_live2d.py PICKS
+    ajax aldridge allen_m_sumner baltimore black_prince california cleveland
+    eldridge formidable frederick_the_great graf_zeppelin helena jervis
+    mecklenburg nakhimov noshiro ping_hai shoukaku taihou)
 foreach(pack ${LIVE2D_PACKS})
     file(GLOB_RECURSE _${pack}_FILES RELATIVE
         ${CMAKE_SOURCE_DIR}/assets/packs/${pack}
@@ -505,3 +513,113 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT O
 # --- Tests -------------------------------------------------------------------
 enable_testing()
 add_subdirectory(tests)
+
+# --- Qt Installer Framework packaging ---------------------------------------
+# Produces an offline, multilingual installer using QtIFW's binarycreator.
+# Build with:  cmake --build . --target package_installer
+#
+# Locale handling:
+#   * Qt IFW's bundled chrome translations (Next/Cancel/...) auto-load from
+#     the user's system locale — no work needed for those.
+#   * Localized package metadata (DisplayName/Description/License/Title) is
+#     declared inline via xml:lang attributes in installer/config.xml and
+#     installer/packages/<id>/meta/package.xml.
+#   * qsTr() strings inside installscript.qs / LaunchCheckBoxForm.ui pick up
+#     compiled .qm files in the component's meta/ dir; we lrelease them
+#     from installer/translations/*.ts as part of this target.
+find_program(OAI_QTIFW_BINARYCREATOR
+    NAMES binarycreator
+    HINTS
+        $ENV{QTIFW_DIR}/bin
+        "C:/Qt/Tools/QtInstallerFramework/4.11/bin"
+        "C:/Qt/Tools/QtInstallerFramework/4.10/bin"
+        "C:/Qt/Tools/QtInstallerFramework/4.9/bin"
+        "$ENV{HOME}/Qt/Tools/QtInstallerFramework/4.11/bin"
+        "$ENV{HOME}/Qt/Tools/QtInstallerFramework/4.10/bin"
+        "/Applications/Qt/Tools/QtInstallerFramework/4.11/bin"
+        "/opt/Qt/Tools/QtInstallerFramework/4.11/bin"
+    DOC "Path to Qt Installer Framework binarycreator")
+
+if(OAI_QTIFW_BINARYCREATOR)
+    set(OAI_IFW_DIR        ${CMAKE_SOURCE_DIR}/installer)
+    set(OAI_IFW_PKG_ID     im.cheng.oai.desktop)
+    set(OAI_IFW_PKG_META   ${OAI_IFW_DIR}/packages/${OAI_IFW_PKG_ID}/meta)
+    set(OAI_IFW_PKG_DATA   ${OAI_IFW_DIR}/packages/${OAI_IFW_PKG_ID}/data)
+    set(OAI_IFW_STAGE_TS   ${CMAKE_BINARY_DIR}/installer_stage.stamp)
+
+    # Compile installer-specific translations into meta/<basename>.qm.
+    # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
+    set(OAI_IFW_TS_FILES
+        ${OAI_IFW_DIR}/translations/oai_installer_zh_CN.ts)
+
+    set(OAI_IFW_QM_FILES "")
+    foreach(_ts ${OAI_IFW_TS_FILES})
+        get_filename_component(_base ${_ts} NAME_WE)            # oai_installer_zh_CN
+        string(REGEX REPLACE "^oai_installer_" "" _lang ${_base})  # zh_CN
+        # Two outputs: one named for the locale (auto-loaded by IFW for
+        # installscript.qs/UI translations) and one matching config.xml's
+        # <Translation> entry so config-level lookups also resolve.
+        set(_qm_lang   ${OAI_IFW_PKG_META}/${_lang}.qm)
+        set(_qm_named  ${OAI_IFW_DIR}/oai_installer_${_lang}.qm)
+        add_custom_command(
+            OUTPUT  ${_qm_lang} ${_qm_named}
+            COMMAND Qt6::lrelease ${_ts} -qm ${_qm_lang}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_qm_lang} ${_qm_named}
+            DEPENDS ${_ts}
+            COMMENT "lrelease installer translation: ${_lang}"
+            VERBATIM)
+        list(APPEND OAI_IFW_QM_FILES ${_qm_lang} ${_qm_named})
+    endforeach()
+    add_custom_target(installer_translations DEPENDS ${OAI_IFW_QM_FILES})
+
+    # Stage the deployed app into packages/<id>/data/ with a flat layout
+    # (Oai.exe at the root, packs/ next to it) — that matches @TargetDir@
+    # references in installscript.qs and feels native on Windows.
+    add_custom_command(
+        OUTPUT ${OAI_IFW_STAGE_TS}
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OAI_IFW_PKG_DATA}
+        COMMAND ${CMAKE_COMMAND}
+                --install ${CMAKE_BINARY_DIR}
+                --prefix  ${OAI_IFW_PKG_DATA}
+                --config  $<CONFIG>
+        # Flatten the GNUInstallDirs bin/ layer so Oai.exe sits at TargetDir root.
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${OAI_IFW_PKG_DATA}/bin ${OAI_IFW_PKG_DATA}
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/bin
+        # Drop transitive install artifacts (rlottie headers, glew/.a stubs,
+        # CMake configs, pkgconfig) — runtime install doesn't need them.
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/include ${OAI_IFW_PKG_DATA}/lib
+        COMMAND ${CMAKE_COMMAND} -E touch ${OAI_IFW_STAGE_TS}
+        DEPENDS Oai
+        COMMENT "Staging Oai for installer packaging"
+        VERBATIM)
+    add_custom_target(installer_stage DEPENDS ${OAI_IFW_STAGE_TS})
+
+    # Final installer artifact name follows the project version.
+    if(WIN32)
+        set(_installer_ext ".exe")
+    elseif(APPLE)
+        set(_installer_ext ".app")
+    else()
+        set(_installer_ext ".run")
+    endif()
+    set(OAI_INSTALLER_OUTPUT
+        ${CMAKE_BINARY_DIR}/OaiInstaller-${PROJECT_VERSION}${_installer_ext})
+
+    add_custom_target(package_installer
+        COMMAND ${OAI_QTIFW_BINARYCREATOR}
+                --offline-only
+                -c ${OAI_IFW_DIR}/config.xml
+                -p ${OAI_IFW_DIR}/packages
+                ${OAI_INSTALLER_OUTPUT}
+        DEPENDS installer_stage installer_translations
+        COMMENT "Building offline installer: ${OAI_INSTALLER_OUTPUT}"
+        VERBATIM)
+
+    message(STATUS "Qt IFW found: ${OAI_QTIFW_BINARYCREATOR}")
+    message(STATUS "  -> cmake --build . --target package_installer")
+else()
+    message(STATUS
+        "Qt Installer Framework not found — `package_installer` target unavailable. "
+        "Install QtIFW from the Qt online installer or set QTIFW_DIR.")
+endif()

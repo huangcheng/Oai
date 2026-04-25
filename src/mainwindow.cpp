@@ -349,6 +349,8 @@ void MainWindow::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
     if (m_packManager) {
+        m_packManager->setActiveLocale(m_config ? m_config->language() : QString());
+
         connect(m_packManager, &CharacterPackManager::activePackChanged,
                 this, &MainWindow::onActivePackChanged);
 
@@ -467,6 +469,9 @@ void MainWindow::reloadTranslator(const QString &lang)
 void MainWindow::onLanguageChanged(const QString &lang)
 {
     reloadTranslator(lang);
+    if (m_packManager) {
+        m_packManager->setActiveLocale(lang);
+    }
     retranslateUi();
     m_settingsPanel->retranslateUi();
     if (m_systemTray) {

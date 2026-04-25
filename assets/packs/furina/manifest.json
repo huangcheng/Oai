@@ -2,6 +2,9 @@
   "formatVersion": "1.0.0",
   "id": "im.cheng.oai.furina",
   "name": "Furina",
+  "nameLocalized": {
+    "zh_CN": "芙宁娜"
+  },
   "author": "User-imported (VTube Studio model)",
   "version": "1.0.0",
   "description": "Furina — a Live2D character imported from a VTube Studio model",

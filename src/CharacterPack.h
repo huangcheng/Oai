@@ -78,7 +78,8 @@ public:
     struct Metadata {
         QString formatVersion;    ///< Pack format version
         QString id;               ///< Unique identifier (reverse-domain)
-        QString name;             ///< Display name
+        QString name;             ///< Display name (fallback / English)
+        QMap<QString, QString> nameLocalized;  ///< Locale code → localized display name
         QString author;           ///< Creator name
         QString version;          ///< Pack version
         QString description;      ///< Short description
@@ -86,6 +87,14 @@ public:
         QStringList tags;         ///< Search/discovery tags
         QString license;          ///< SPDX license identifier
         QString minAppVersion;    ///< Minimum Oai version required
+
+        /**
+         * @brief Resolve display name for a locale.
+         *
+         * Tries an exact match (e.g. "zh_CN"), then language-only prefix
+         * ("zh" matches "zh_CN" or "zh_TW"), then falls back to `name`.
+         */
+        QString displayName(const QString &localeCode) const;
     };
 
     /**
