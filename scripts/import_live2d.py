@@ -220,13 +220,14 @@ def sanitize_motion(motion_path: Path) -> None:
 
 
 def write_manifest(pack_dir: Path, local_id: str, name_en: str, name_zh: str,
-                   model3_rel: str) -> None:
+                   model3_rel: str, category: str = "azur_lane",
+                   author: str = f"Imported from github.com/{REPO}") -> None:
     manifest = {
         "formatVersion": "1.0.0",
         "id": f"im.cheng.oai.{local_id}",
         "name": name_en,
-        "nameLocalized": {"zh_CN": name_zh},
-        "author": f"Imported from github.com/{REPO}",
+        "nameLocalized": {"zh_CN": name_zh} if name_zh and name_zh != name_en else {},
+        "author": author,
         "version": "1.0.0",
         "description": (
             f"{name_en} — Live2D character imported from upstream collection. "
@@ -235,6 +236,7 @@ def write_manifest(pack_dir: Path, local_id: str, name_en: str, name_zh: str,
         "preview": "preview.png",
         "tags": ["live2d", local_id],
         "license": "Asset rights belong to original studio; personal use only",
+        "category": category,
         "minAppVersion": "2.0.0",
         "character": {
             "type": "live2d",
@@ -263,6 +265,8 @@ def write_manifest(pack_dir: Path, local_id: str, name_en: str, name_zh: str,
             "todo.updated":         "Tap",
         },
     }
+    if not manifest["nameLocalized"]:
+        manifest.pop("nameLocalized")
     (pack_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -316,8 +320,6 @@ def import_model(upstream_path: str, local_id: str, name_en: str,
     print(f"[done] {local_id}: {len(files)} files, model={model3_rel}")
 
 
-# Curated picks. Each tuple is (upstream_path, local_id, name_en, name_zh).
-# All confirmed Cubism 3+ (.moc3 / .model3.json).
 PICKS = [
     ("碧蓝航线 Azue Lane/Azue Lane(JP)/z23",
         'z23',                 'Z23',                   'Z23'),
@@ -410,6 +412,137 @@ PICKS = [
 ]
 
 
+# ----------------------------------------------------------------------------
+# Bulk import from a local clone (no network)
+# ----------------------------------------------------------------------------
+# When the upstream repo is cloned to disk, we can sidestep the flaky
+# raw.githubusercontent.com path entirely and just shutil.copytree each
+# pack into assets/packs/<id>/. Much faster, and supports categories
+# beyond Azur Lane (BanG Dream, Konosuba, Girls Frontline, ...).
+import re
+
+# Whitelist: raw upstream folder name -> (category_id, local_id_prefix).
+# Categories not listed here (NSFW, oversized, Cubism-2-only) are skipped.
+LOCAL_CATEGORIES = {
+    '碧蓝航线 Azue Lane':                 ('azur_lane',       'al_'),
+    '少女前线 girls Frontline':            ('girls_frontline', 'gf_'),
+    '少女次元':                            ('idol_dimension',  'sd_'),
+    '为美好的世界献上祝福！Fantastic Days': ('konosuba',        'ks_'),
+    'Live2D':                              ('live2d_samples',  'l2d_'),
+}
+
+# Already-imported local_ids from PICKS (without prefix). Bulk import skips
+# these so we don't overwrite the curated names.
+_PICKED_IDS = {t[1] for t in PICKS}
+
+
+def _slugify(name: str) -> str:
+    """ASCII slug for use as a local_id segment. Lowercases, replaces
+    non-alphanumerics with underscores, collapses runs."""
+    slug = re.sub(r'[^A-Za-z0-9]+', '_', name).strip('_').lower()
+    return slug or 'pack'
+
+
+def _dedup_pick_dirs(pack_dirs, cap):
+    """For each character base name (dir name with trailing _N stripped),
+    keep the highest-numbered non-`_hx` variant. Then take the first `cap`
+    bases alphabetically — keeps each submenu navigable."""
+    bases = {}
+    ver_re = re.compile(r'_(\d+)(?:_hx)?$')
+    for d in pack_dirs:
+        name = d.name
+        if name.endswith('_hx'):
+            continue
+        m = ver_re.search(name)
+        base = name[:m.start()] if m else name
+        version = int(m.group(1)) if m else 0
+        if base not in bases or bases[base][0] < version:
+            bases[base] = (version, d)
+    chosen = sorted(bases.items())[:cap]
+    return [d for _, (_, d) in chosen]
+
+
+def import_local_pack(pack_src: Path, local_id: str, name_en: str, name_zh: str,
+                      category: str, author: str, out_dir: Path) -> bool:
+    """Copy a pack from a local upstream dir to assets/packs/<local_id>/,
+    apply the same patch + sanitize pipeline as the network importer."""
+    pack_dir = out_dir / local_id
+    if pack_dir.exists():
+        return False  # silent skip — caller can detect via return value
+
+    import shutil
+    shutil.copytree(pack_src, pack_dir)
+
+    model3 = next(pack_dir.rglob("*.model3.json"), None)
+    if not model3:
+        print(f"  [warn] no .model3.json in {local_id}; removing")
+        shutil.rmtree(pack_dir)
+        return False
+    patch_model3(model3)
+    model3_rel = model3.relative_to(pack_dir).as_posix()
+
+    for motion in pack_dir.rglob("*.motion3.json"):
+        sanitize_motion(motion)
+
+    first_texture = next(pack_dir.rglob("textures/*.png"), None)
+    if first_texture is None:
+        first_texture = next(pack_dir.rglob("*.png"), None)
+    if first_texture and first_texture.name != "preview.png":
+        (pack_dir / "preview.png").write_bytes(first_texture.read_bytes())
+
+    write_manifest(pack_dir, local_id, name_en, name_zh, model3_rel,
+                   category=category, author=author)
+    return True
+
+
+def bulk_import_local(clone_root: Path, out_dir: Path, cap_per_cat: int,
+                      max_pack_mb: int = 60) -> tuple[int, int]:
+    """Walk every whitelisted category in `clone_root`, pick up to
+    `cap_per_cat` packs per category (deduped, dropping `_hx` skin variants
+    and over-sized packs), and copy them into out_dir.
+
+    Returns (imported, skipped)."""
+    imported = 0
+    skipped = 0
+    for raw_cat, (cat_id, prefix) in LOCAL_CATEGORIES.items():
+        cat_root = clone_root / raw_cat
+        if not cat_root.is_dir():
+            print(f"[skip] {raw_cat} not found in clone")
+            continue
+
+        # Pack dir = parent of any .moc3 found under the category root.
+        pack_dirs = sorted(set(m.parent for m in cat_root.rglob('*.moc3')))
+        # Filter oversized packs (textures + motions can balloon).
+        pack_dirs = [
+            d for d in pack_dirs
+            if sum(f.stat().st_size for f in d.rglob('*') if f.is_file())
+               < max_pack_mb * 1024 * 1024
+        ]
+        picks = _dedup_pick_dirs(pack_dirs, cap_per_cat)
+        print(f"\n[{cat_id}] {len(picks)} picks (cap {cap_per_cat}, max_pack {max_pack_mb}MB)")
+
+        for src in picks:
+            base = re.sub(r'_(\d+)(?:_hx)?$', '', src.name)
+            local_id = prefix + _slugify(base)
+            if base in _PICKED_IDS or local_id in _PICKED_IDS:
+                skipped += 1
+                continue  # honour curated names from PICKS
+
+            display = base.replace('_', ' ').title()
+            ok = import_local_pack(
+                src, local_id, name_en=display, name_zh=display,
+                category=cat_id,
+                author=f"Imported from github.com/{REPO}",
+                out_dir=out_dir,
+            )
+            if ok:
+                imported += 1
+                print(f"  [+] {local_id:32s} ({src.name})")
+            else:
+                skipped += 1
+    return imported, skipped
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -417,6 +550,12 @@ def main() -> int:
                         help="Where to write packs (default: assets/packs)")
     parser.add_argument("--list", action="store_true",
                         help="Print known picks and exit")
+    parser.add_argument("--local",
+                        help="Bulk-import from a local clone of the upstream "
+                             "repo (e.g. F:/Live2d-model). Skips network and "
+                             "pulls from every whitelisted category.")
+    parser.add_argument("--cap", type=int, default=50,
+                        help="Max packs per category in --local mode (default: 50)")
     parser.add_argument("ids", nargs="*",
                         help="Subset of local_ids to import (default: all)")
     args = parser.parse_args()
@@ -427,6 +566,16 @@ def main() -> int:
         return 0
 
     out_dir = Path(args.out_dir).resolve()
+
+    if args.local:
+        clone_root = Path(args.local).resolve()
+        if not clone_root.is_dir():
+            print(f"[error] --local path is not a directory: {clone_root}", file=sys.stderr)
+            return 2
+        imported, skipped = bulk_import_local(clone_root, out_dir, args.cap)
+        print(f"\n[done] bulk import: {imported} imported, {skipped} skipped")
+        return 0
+
     picks = PICKS if not args.ids else [p for p in PICKS if p[1] in args.ids]
     if not picks:
         print(f"No matching picks for: {args.ids}", file=sys.stderr)

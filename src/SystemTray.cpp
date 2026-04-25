@@ -186,6 +186,21 @@ void SystemTray::onPackActionTriggered()
     }
 }
 
+// Fixed display order for known categories; unknown ones land at the end
+// in their raw-id form. QT_TR_NOOP marks the labels for lupdate without
+// running tr() at static-init time.
+static const struct {
+    const char *id;
+    const char *labelEn;   // QT_TR_NOOP'd
+} kCategoryOrder[] = {
+    { "originals",       QT_TR_NOOP("Originals") },
+    { "azur_lane",       QT_TR_NOOP("Azur Lane") },
+    { "girls_frontline", QT_TR_NOOP("Girls' Frontline") },
+    { "idol_dimension",  QT_TR_NOOP("Idol Dimension") },
+    { "konosuba",        QT_TR_NOOP("Konosuba") },
+    { "live2d_samples",  QT_TR_NOOP("Live2D Samples") },
+};
+
 void SystemTray::refreshPackMenu()
 {
     if (!m_packMenu) {
@@ -207,18 +222,13 @@ void SystemTray::refreshPackMenu()
     const QString activeId = m_packManager->activePackId();
     const QString locale = m_packManager->activeLocale();
 
-    // Partition by source so the submenu doesn't grow past one screen-height
-    // (Windows QMenu silently scrolls when too long; users miss most items).
-    // Heuristic: anything imported via scripts/import_live2d.py carries an
-    // author string starting with "Imported from github.com/" — treat those
-    // as a separate "Azur Lane" bucket. Everything else is "Originals".
-    QVector<CharacterPackManager::PackInfo> originals, imported;
+    // Group packs by category (parser already supplied a default for legacy
+    // manifests via author-string heuristics, so `category` is always set).
+    QMap<QString, QVector<CharacterPackManager::PackInfo>> grouped;
     for (const auto &pack : packs) {
-        if (pack.author.startsWith(QStringLiteral("Imported from github.com/"))) {
-            imported.append(pack);
-        } else {
-            originals.append(pack);
-        }
+        const QString cat = pack.category.isEmpty()
+                                ? QStringLiteral("originals") : pack.category;
+        grouped[cat].append(pack);
     }
 
     auto addToSubmenu = [this, &activeId, &locale](QMenu *menu,
@@ -233,20 +243,26 @@ void SystemTray::refreshPackMenu()
         }
     };
 
-    if (!originals.isEmpty()) {
-        QMenu *originalsMenu = m_packMenu->addMenu(tr("Originals"));
-        originalsMenu->setFont(m_packMenu->font());
-        addToSubmenu(originalsMenu, originals);
+    QSet<QString> seen;
+    for (const auto &c : kCategoryOrder) {
+        const QString id = QString::fromLatin1(c.id);
+        if (!grouped.contains(id)) continue;
+        QMenu *sub = m_packMenu->addMenu(tr(c.labelEn));
+        sub->setFont(m_packMenu->font());
+        addToSubmenu(sub, grouped[id]);
+        seen.insert(id);
     }
-    if (!imported.isEmpty()) {
-        QMenu *importedMenu = m_packMenu->addMenu(tr("Azur Lane"));
-        importedMenu->setFont(m_packMenu->font());
-        addToSubmenu(importedMenu, imported);
+    // Future-proof: any category we haven't enumerated lands at the end
+    // with the raw id as the menu label.
+    for (auto it = grouped.constBegin(); it != grouped.constEnd(); ++it) {
+        if (seen.contains(it.key())) continue;
+        QMenu *sub = m_packMenu->addMenu(it.key());
+        sub->setFont(m_packMenu->font());
+        addToSubmenu(sub, it.value());
     }
 
     qDebug() << "SystemTray::refreshPackMenu — populated"
-             << originals.size() << "Originals +"
-             << imported.size() << "Azur Lane";
+             << packs.size() << "packs across" << grouped.size() << "categories";
 }
 
 void SystemTray::retranslateUi()

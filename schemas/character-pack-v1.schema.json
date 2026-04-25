@@ -69,6 +69,12 @@
       "type": "string",
       "description": "SPDX license identifier"
     },
+    "category": {
+      "type": "string",
+      "description": "Source/franchise grouping for the pack-picker menu (e.g. 'azur_lane', 'girls_frontline', 'konosuba', 'originals'). Free-form ASCII id; UI groups packs by this value. Optional — when absent, the runtime falls back to author-string heuristics for legacy packs.",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 32
+    },
     "minAppVersion": {
       "type": "string",
       "description": "Minimum Oai version required",

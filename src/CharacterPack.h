@@ -86,6 +86,7 @@ public:
         QString preview;          ///< Path to preview image
         QStringList tags;         ///< Search/discovery tags
         QString license;          ///< SPDX license identifier
+        QString category;         ///< Source/franchise grouping (e.g. "azur_lane", "originals")
         QString minAppVersion;    ///< Minimum Oai version required
 
         /**

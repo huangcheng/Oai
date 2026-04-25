@@ -46,6 +46,7 @@ public:
         QString description;      ///< Short description
         QString preview;          ///< Path to preview image
         QString path;             ///< Path to pack directory
+        QString category;         ///< Source/franchise grouping (used by the menu partition)
         PackSource source;        ///< Where pack is located
 
         /**

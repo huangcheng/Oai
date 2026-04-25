@@ -368,6 +368,22 @@ v1.2.0</translation>
         <source>Azur Lane</source>
         <translation>碧蓝航线</translation>
     </message>
+    <message>
+        <source>Girls&apos; Frontline</source>
+        <translation>少女前线</translation>
+    </message>
+    <message>
+        <source>Idol Dimension</source>
+        <translation>少女次元</translation>
+    </message>
+    <message>
+        <source>Konosuba</source>
+        <translation>美好世界</translation>
+    </message>
+    <message>
+        <source>Live2D Samples</source>
+        <translation>Live2D 示例</translation>
+    </message>
 </context>
 <context>
     <name>SystemTray</name>
@@ -400,6 +416,22 @@ v1.2.0</translation>
     <message>
         <source>Azur Lane</source>
         <translation>碧蓝航线</translation>
+    </message>
+    <message>
+        <source>Girls&apos; Frontline</source>
+        <translation>少女前线</translation>
+    </message>
+    <message>
+        <source>Idol Dimension</source>
+        <translation>少女次元</translation>
+    </message>
+    <message>
+        <source>Konosuba</source>
+        <translation>美好世界</translation>
+    </message>
+    <message>
+        <source>Live2D Samples</source>
+        <translation>Live2D 示例</translation>
     </message>
     <message>
         <location filename="src/SystemTray.cpp" line="107"/>

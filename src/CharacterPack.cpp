@@ -248,6 +248,7 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
     m_metadata.description = manifest.value("description").toString();
     m_metadata.preview = manifest.value("preview").toString();
     m_metadata.license = manifest.value("license").toString();
+    m_metadata.category = manifest.value("category").toString();
     m_metadata.minAppVersion = manifest.value("minAppVersion").toString();
 
     // Parse tags

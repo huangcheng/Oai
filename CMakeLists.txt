@@ -420,17 +420,22 @@ set(ALL_PACK_OPKS "")
 # Live2D packs (model3.json + moc3 + textures/ + motions/ + optional physics/pose/expressions)
 # These ship the whole pack directory, so we enumerate files with GLOB_RECURSE
 # and archive paths relative to the pack root.
-set(LIVE2D_PACKS
-    chitose epsilon furina gantzert_felixander haru haru_greeter haruto hibiki
-    hiyori izumi kei koharu mao mark miara miku natori ren rice unitychan wanko
-    # Azur Lane (JP) imports — see scripts/import_live2d.py
-    z23 abercrombie adalbert albion musashi sirius takao
-    laffey belfast enterprise akagi prinz_eugen
-    bismarck ark_royal
-    # Bulk batch — picks from scripts/import_live2d.py PICKS
-    ajax aldridge allen_m_sumner baltimore black_prince california cleveland
-    eldridge formidable frederick_the_great graf_zeppelin helena jervis
-    mecklenburg nakhimov noshiro ping_hai shoukaku taihou)
+#
+# Auto-discovered: any directory under assets/packs/ with a manifest.json is
+# treated as a pack. CONFIGURE_DEPENDS makes CMake re-glob when files change,
+# so `python scripts/import_live2d.py --local <clone>` followed by a build
+# picks up new packs without editing this file.
+file(GLOB _PACK_MANIFESTS CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/assets/packs/*/manifest.json)
+set(LIVE2D_PACKS "")
+foreach(_manifest ${_PACK_MANIFESTS})
+    get_filename_component(_pack_dir ${_manifest} DIRECTORY)
+    get_filename_component(_pack_name ${_pack_dir} NAME)
+    list(APPEND LIVE2D_PACKS ${_pack_name})
+endforeach()
+list(SORT LIVE2D_PACKS)
+list(LENGTH LIVE2D_PACKS _live2d_pack_count)
+message(STATUS "Live2D packs discovered: ${_live2d_pack_count}")
 foreach(pack ${LIVE2D_PACKS})
     file(GLOB_RECURSE _${pack}_FILES RELATIVE
         ${CMAKE_SOURCE_DIR}/assets/packs/${pack}

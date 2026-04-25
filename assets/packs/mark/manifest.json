@@ -11,6 +11,7 @@
     "mark"
   ],
   "license": "Live2D Free Material License",
+  "category": "originals",
   "minAppVersion": "2.0.0",
   "character": {
     "type": "live2d",

@@ -532,13 +532,26 @@ void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
     refreshPackList();
 }
 
+// Mirror SystemTray::kCategoryOrder so the two menu surfaces show the same
+// grouping in the same order. Keeping this in lock-step with the tray.
+static const struct {
+    const char *id;
+    const char *labelEn;
+} kCategoryOrder[] = {
+    { "originals",       QT_TR_NOOP("Originals") },
+    { "azur_lane",       QT_TR_NOOP("Azur Lane") },
+    { "girls_frontline", QT_TR_NOOP("Girls' Frontline") },
+    { "idol_dimension",  QT_TR_NOOP("Idol Dimension") },
+    { "konosuba",        QT_TR_NOOP("Konosuba") },
+    { "live2d_samples",  QT_TR_NOOP("Live2D Samples") },
+};
+
 void SettingsPanelWidget::refreshPackList()
 {
     if (!m_packButton) {
         return;
     }
 
-    // Discard the previous menu so old QAction lambdas don't pile up.
     if (QMenu *old = m_packButton->menu()) {
         m_packButton->setMenu(nullptr);
         old->deleteLater();
@@ -556,16 +569,12 @@ void SettingsPanelWidget::refreshPackList()
     const QString activeId = m_packManager->activePackId();
     const QString locale = m_packManager->activeLocale();
 
-    // Same partition as SystemTray::refreshPackMenu: anything imported via
-    // scripts/import_live2d.py carries an "Imported from github.com/" author;
-    // those go in the "Azur Lane" submenu, the rest in "Originals".
-    QVector<CharacterPackManager::PackInfo> originals, imported;
+    // Group by category (matches SystemTray::refreshPackMenu).
+    QMap<QString, QVector<CharacterPackManager::PackInfo>> grouped;
     for (const auto &pack : packs) {
-        if (pack.author.startsWith(QStringLiteral("Imported from github.com/"))) {
-            imported.append(pack);
-        } else {
-            originals.append(pack);
-        }
+        const QString cat = pack.category.isEmpty()
+                                ? QStringLiteral("originals") : pack.category;
+        grouped[cat].append(pack);
     }
 
     QActionGroup *group = new QActionGroup(menu);
@@ -584,15 +593,20 @@ void SettingsPanelWidget::refreshPackList()
         }
     };
 
-    if (!originals.isEmpty()) {
-        QMenu *sub = menu->addMenu(tr("Originals"));
+    QSet<QString> seen;
+    for (const auto &c : kCategoryOrder) {
+        const QString id = QString::fromLatin1(c.id);
+        if (!grouped.contains(id)) continue;
+        QMenu *sub = menu->addMenu(tr(c.labelEn));
         sub->setFont(m_packButton->font());
-        addToSubmenu(sub, originals);
+        addToSubmenu(sub, grouped[id]);
+        seen.insert(id);
     }
-    if (!imported.isEmpty()) {
-        QMenu *sub = menu->addMenu(tr("Azur Lane"));
+    for (auto it = grouped.constBegin(); it != grouped.constEnd(); ++it) {
+        if (seen.contains(it.key())) continue;
+        QMenu *sub = menu->addMenu(it.key());
         sub->setFont(m_packButton->font());
-        addToSubmenu(sub, imported);
+        addToSubmenu(sub, it.value());
     }
 
     m_packButton->setMenu(menu);

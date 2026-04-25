@@ -453,6 +453,14 @@ void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSou
     info.description = manifest.value("description").toString();
     info.preview = manifest.value("preview").toString();
     info.path = packDir;
+    info.category = manifest.value("category").toString();
+    // Legacy fallback: pre-`category` Azur Lane manifests can be detected
+    // by the import-script-stamped author string.
+    if (info.category.isEmpty()) {
+        info.category = info.author.startsWith(QStringLiteral("Imported from github.com/"))
+                            ? QStringLiteral("azur_lane")
+                            : QStringLiteral("originals");
+    }
     info.source = source;
 
     // Add to packs map (user packs override built-in with same ID)
