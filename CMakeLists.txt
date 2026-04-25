@@ -594,6 +594,22 @@ if(OAI_QTIFW_BINARYCREATOR)
     set(OAI_IFW_PKG_DATA   ${OAI_IFW_DIR}/packages/${OAI_IFW_PKG_ID}/data)
     set(OAI_IFW_STAGE_TS   ${CMAKE_BINARY_DIR}/installer_stage.stamp)
 
+    # Single source of truth for installer version: project(Oai VERSION ...).
+    # config.xml.in / package.xml.in carry @PROJECT_VERSION@ placeholders;
+    # CMake renders them next to the templates so binarycreator's existing
+    # paths (`-c installer/config.xml` etc.) still resolve. Generated copies
+    # are gitignored — only the .in templates are tracked.
+    string(TIMESTAMP _OAI_BUILD_DATE "%Y-%m-%d" UTC)
+    set(OAI_RELEASE_DATE "${_OAI_BUILD_DATE}")
+    configure_file(
+        ${OAI_IFW_DIR}/config.xml.in
+        ${OAI_IFW_DIR}/config.xml
+        @ONLY)
+    configure_file(
+        ${OAI_IFW_PKG_META}/package.xml.in
+        ${OAI_IFW_PKG_META}/package.xml
+        @ONLY)
+
     # Compile installer-specific translations into meta/<basename>.qm.
     # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
     set(OAI_IFW_TS_FILES

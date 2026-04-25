@@ -31,7 +31,7 @@
     {"title": "Greetings!",  "body": "The code is strong with this one."}
   ],
   "messages": {
-    "about":               {"title": "About",                "body": "Oai Desktop Pet\nv1.2.0\n© 2026 HUANG Cheng"},
+    "about":               {"title": "About",                "body": "Oai Desktop Pet\nv{version}\n© 2026 HUANG Cheng"},
     "pack.installed":      {"title": "Pack Installed",       "body": "Sprite pack installed successfully!"},
     "pack.install_failed": {"title": "Installation Failed",  "body": "Failed to install sprite pack."}
   }

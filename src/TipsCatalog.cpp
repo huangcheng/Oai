@@ -7,6 +7,20 @@
 #include <QRandomGenerator>
 #include <QDebug>
 
+namespace {
+// Single hook for all string substitutions surfaced by the catalog.
+// Today only {version} is recognised; add more keys here as needed
+// (build_date, author, etc.) and they show up everywhere automatically.
+TipsCatalog::Tip substitute(TipsCatalog::Tip t)
+{
+    static const QString kVersionMarker = QStringLiteral("{version}");
+    static const QString kVersionValue  = QStringLiteral(PROJECT_VERSION);
+    if (t.title.contains(kVersionMarker)) t.title.replace(kVersionMarker, kVersionValue);
+    if (t.body.contains(kVersionMarker))  t.body.replace(kVersionMarker, kVersionValue);
+    return t;
+}
+} // namespace
+
 TipsCatalog &TipsCatalog::instance()
 {
     static TipsCatalog s_inst;
@@ -37,12 +51,12 @@ TipsCatalog::Tip TipsCatalog::eventTip(const QString &eventName) const
 {
     const Bundle &active = activeBundle();
     if (auto it = active.events.constFind(eventName); it != active.events.constEnd()) {
-        return it.value();
+        return substitute(it.value());
     }
     // Fall back to English for events the active locale didn't translate.
     const Bundle &fb = fallbackBundle();
     if (auto it = fb.events.constFind(eventName); it != fb.events.constEnd()) {
-        return it.value();
+        return substitute(it.value());
     }
     return {};
 }
@@ -52,12 +66,12 @@ TipsCatalog::Tip TipsCatalog::randomGreeting() const
     const Bundle &active = activeBundle();
     if (!active.greetings.isEmpty()) {
         const int idx = QRandomGenerator::global()->bounded(active.greetings.size());
-        return active.greetings.at(idx);
+        return substitute(active.greetings.at(idx));
     }
     const Bundle &fb = fallbackBundle();
     if (!fb.greetings.isEmpty()) {
         const int idx = QRandomGenerator::global()->bounded(fb.greetings.size());
-        return fb.greetings.at(idx);
+        return substitute(fb.greetings.at(idx));
     }
     return {};
 }
@@ -66,11 +80,11 @@ TipsCatalog::Tip TipsCatalog::message(const QString &id) const
 {
     const Bundle &active = activeBundle();
     if (auto it = active.messages.constFind(id); it != active.messages.constEnd()) {
-        return it.value();
+        return substitute(it.value());
     }
     const Bundle &fb = fallbackBundle();
     if (auto it = fb.messages.constFind(id); it != fb.messages.constEnd()) {
-        return it.value();
+        return substitute(it.value());
     }
     return {};
 }

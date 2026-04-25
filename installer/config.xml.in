@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Installer>
     <Name>Oai</Name>
-    <Version>1.2.0</Version>
+    <Version>@PROJECT_VERSION@</Version>
 
     <Title>Oai Desktop Pet</Title>
     <Publisher>HUANG Cheng</Publisher>
@@ -10,7 +10,7 @@
     <WizardStyle>Modern</WizardStyle>
 
     <StartMenuDir>Oai</StartMenuDir>
-    <TargetDir>/Oai</TargetDir>
+    <TargetDir>@ApplicationsDir@/Oai</TargetDir>
 
     <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
 

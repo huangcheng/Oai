@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Oai Desktop Pet</DisplayName>
+    <DisplayName xml:lang="zh_CN">Oai 桌面宠物</DisplayName>
+
+    <Description>A native Qt6/C++ desktop pet that reacts to AI coding tool events.</Description>
+    <Description xml:lang="zh_CN">原生 Qt6/C++ 桌面宠物，能够响应 Claude Code、Codex、OpenCode 等 AI 编程工具的事件。</Description>
+
+    <Version>@PROJECT_VERSION@</Version>
+    <ReleaseDate>@OAI_RELEASE_DATE@</ReleaseDate>
+
+    <Default>true</Default>
+    <Essential>true</Essential>
+    <ForcedInstallation>true</ForcedInstallation>
+
+    <Licenses>
+        <License name="MIT License"  file="license.txt" />
+        <License name="MIT 许可证"   file="license_zh_CN.txt" xml:lang="zh_CN" />
+    </Licenses>
+
+    <Script>installscript.qs</Script>
+</Package>

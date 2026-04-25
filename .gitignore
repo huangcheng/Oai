@@ -37,6 +37,10 @@ Thumbs.db
 # (qt deploy + opks). Build output, not source.
 installer/packages/*/data/
 
+# Generated from .in templates by configure_file; track only the templates.
+installer/config.xml
+installer/packages/*/meta/package.xml
+
 # Imported character packs — regenerated locally by
 #   git submodule update --init thirdparty/upstream-live2d
 #   cmake --build build --target import_packs
