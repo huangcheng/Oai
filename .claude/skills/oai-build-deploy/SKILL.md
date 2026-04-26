@@ -271,6 +271,47 @@ ls installer/packages/im.cheng.oai.desktop/data/Foo.dll  # at root, NOT data/bin
 
 The MSVC Windows path doesn't need this: the `_MD.lib` it links against is the **static** Cubism Core variant, not an import library. Static linkage keeps the runtime DLL out of the picture entirely. macOS / Linux also static-link Cubism (`libLive2DCubismCore.a`) and are similarly unaffected. The install-rule pattern above is specifically for **MinGW + import-library DLLs**.
 
+### 11. Installed Oai.exe crashes with "no Qt platform plugin could be initialized"
+
+```
+Oai
+This application failed to start because no Qt platform plugin could
+be initialized. Reinstalling the application may fix this problem.
+```
+
+The crash means Qt6Core.dll loaded but couldn't locate `qwindows.dll` (the Win32 platform plugin), which lives at `<install>/plugins/platforms/qwindows.dll`. The crash specifically points at a wrong `qt.conf`.
+
+Cause: `windeployqt` writes
+```
+[Paths]
+Prefix = ..
+```
+into `qt.conf` because it assumes `Oai.exe` lives in `<root>/bin/` and Qt should walk up one level to find `<root>/plugins/`. But our staging step (CMakeLists.txt staging custom command) flattens `<root>/bin/` into the data root — the installed layout is `<install>/Oai.exe`, `<install>/plugins/`, `<install>/qt.conf`. With `Prefix = ..` Qt looks for plugins one level *above* the install dir (e.g. `C:\Program Files\plugins\platforms\`) and finds nothing.
+
+Fix already committed (`238d9c7`): generate `qt.conf.flat` at configure time with `Prefix = .` and copy it over the windeployqt-written file in the staging step, after the bin/-flatten. The CMakeLists pattern:
+
+```cmake
+# Configure-time: drop a flat-layout qt.conf in the build dir.
+file(WRITE ${CMAKE_BINARY_DIR}/qt.conf.flat "[Paths]\nPrefix = .\n")
+
+# Build-time: in the installer_stage custom_command, after the bin-flatten:
+COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_BINARY_DIR}/qt.conf.flat
+        ${OAI_IFW_PKG_DATA}/qt.conf
+```
+
+Verify after a rebuild:
+```bash
+cat installer/packages/im.cheng.oai.desktop/data/qt.conf
+# Expected:
+# [Paths]
+# Prefix = .
+```
+
+If it ever regresses to `Prefix = ..`, the copy step in the staging custom_command was reordered to run *before* the windeployqt-driven `cmake --install`. Move it back to fire after the bin/-flatten. The two related staging fixes (`installer_stage` depending on `${ALL_PACK_OPKS}`, `qt.conf.flat` copy after flatten) both target the same custom_command — keep them grouped.
+
+This pitfall is closely related to #4 and #10: every "ships and crashes immediately" bug we've hit on Windows ultimately came from the bin/-flatten step interacting badly with something cmake-install or windeployqt produced. If you're debugging a *new* runtime-load crash on Windows, your first stop is `installer/packages/.../data/` — diff its contents (especially `qt.conf` and the DLL set) against the bin/-flat layout you'd expect at `<install-dir>/`.
+
 ## Cross-platform packaging summary
 
 | Platform | Built artefact | Bundles | Auto-discovered tooling |
