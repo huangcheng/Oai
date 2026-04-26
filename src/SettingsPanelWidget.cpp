@@ -302,7 +302,7 @@ void SettingsPanelWidget::setupUi()
             this, &SettingsPanelWidget::onPortEditingFinished);
 
     // Pack selection row: label + cascading button (mirrors the tray Pet menu)
-    m_packLabel = new QLabel(tr("Pet"), m_contentWidget);
+    m_packLabel = new QLabel(tr("Model"), m_contentWidget);
     m_packLabel->setFont(harmonyFont(10));
     m_packLabel->setStyleSheet("color: black; background: transparent;");
     m_packLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -639,7 +639,7 @@ void SettingsPanelWidget::retranslateUi()
     m_langCombo->setItemText(1, tr("简体中文"));
     m_autoStartLabel->setText(tr("Launch at Login"));
     m_portLabel->setText(tr("Port"));
-    m_packLabel->setText(tr("Pet"));
+    m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {
         refreshPackList();

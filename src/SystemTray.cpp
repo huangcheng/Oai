@@ -101,7 +101,7 @@ void SystemTray::setupMenu()
     m_trayMenu->addSeparator();
 
     // Pack submenu
-    m_packMenu = m_trayMenu->addMenu(tr("Pet"));
+    m_packMenu = m_trayMenu->addMenu(tr("Model"));
     m_packMenu->setFont(menuFont);
 
     m_trayMenu->addSeparator();
@@ -294,7 +294,7 @@ void SystemTray::retranslateUi()
         m_toggleAction->setText(tr("Show/Hide"));
     }
     if (m_packMenu) {
-        m_packMenu->setTitle(tr("Pet"));
+        m_packMenu->setTitle(tr("Model"));
     }
     if (m_quitAction) {
         m_quitAction->setText(tr("Quit"));

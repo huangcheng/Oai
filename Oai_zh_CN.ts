@@ -353,8 +353,8 @@ v1.2.0</translation>
     <message>
         <location filename="src/SettingsPanelWidget.cpp" line="275"/>
         <location filename="src/SettingsPanelWidget.cpp" line="462"/>
-        <source>Pet</source>
-        <translation>宠物</translation>
+        <source>Model</source>
+        <translation>模型</translation>
     </message>
     <message>
         <source>(no pack)</source>
@@ -406,8 +406,8 @@ v1.2.0</translation>
     <message>
         <location filename="src/SystemTray.cpp" line="101"/>
         <location filename="src/SystemTray.cpp" line="224"/>
-        <source>Pet</source>
-        <translation>宠物</translation>
+        <source>Model</source>
+        <translation>模型</translation>
     </message>
     <message>
         <source>Standalone</source>
