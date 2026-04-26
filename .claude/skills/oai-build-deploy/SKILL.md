@@ -227,6 +227,50 @@ git update-index --add --cacheinfo 160000 $SHA thirdparty/upstream-live2d
 git commit -m "build: restore upstream-live2d submodule pin"
 ```
 
+### 10. Installed Oai.exe crashes with "Live2DCubismCore.dll was not found"
+
+```
+Oai.exe - System Error
+The code execution cannot proceed because Live2DCubismCore.dll was not found.
+Reinstalling the program may fix this problem.
+```
+
+Cause: `windeployqt` only handles **Qt's own DLLs and plugins**. For any third-party runtime DLL (Live2D Cubism Core, OpenCV, FFmpeg, etc.), it logs `Adding local dependency …` on noticing the file in the build dir but does **not** copy it into the install staging tree. Without an explicit `install(FILES …)` rule, `cmake --install` then leaves the DLL behind.
+
+Fix already committed (`7ebadcb`) for Cubism Core specifically. The pattern for *any* third-party runtime DLL on Windows MinGW:
+
+```cmake
+# 1. Make the DLL part of the install set so package_installer bundles it.
+install(FILES ${PATH_TO_DLL}/Foo.dll
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# 2. Stage it next to Oai.exe in the build dir so direct-run from
+#    Qt Creator / `./Oai.exe` works without a manual cp.
+add_custom_command(TARGET Oai POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${PATH_TO_DLL}/Foo.dll
+            $<TARGET_FILE_DIR:Oai>
+    VERBATIM)
+```
+
+After applying:
+
+```bash
+# Wipe stale install staging — installer_stage's DEPENDS doesn't track
+# new install() rules, only Oai + ${ALL_PACK_OPKS}.
+rm -rf installer/packages/im.cheng.oai.desktop/data build/installer_stage.stamp
+python scripts/build_release.py
+```
+
+Verify the DLL made it:
+```bash
+ls installer/packages/im.cheng.oai.desktop/data/Foo.dll  # at root, NOT data/bin/
+```
+
+(The staging step flattens `bin/` into the data root — that matches the installer's flat target layout next to `Oai.exe`.)
+
+The MSVC Windows path doesn't need this: the `_MD.lib` it links against is the **static** Cubism Core variant, not an import library. Static linkage keeps the runtime DLL out of the picture entirely. macOS / Linux also static-link Cubism (`libLive2DCubismCore.a`) and are similarly unaffected. The install-rule pattern above is specifically for **MinGW + import-library DLLs**.
+
 ## Cross-platform packaging summary
 
 | Platform | Built artefact | Bundles | Auto-discovered tooling |
