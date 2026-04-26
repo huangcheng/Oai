@@ -119,12 +119,9 @@ set(CUBISM_SDK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeSamples)
 set(CUBISM_FRAMEWORK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeFramework)
 set(CUBISM_CORE_DIR ${CUBISM_SDK_DIR}/Core)
 
-# Hard-fail when the SDK is missing rather than silently producing a binary
-# that ships Live2D packs but can't render any of them — the runtime fallback
-# in MainWindow only helps if a non-Live2D pack is present, and currently
-# every shipped pack is Live2D. Opt out with -DOAI_REQUIRE_LIVE2D=OFF if you
-# really do want a Live2D-less build (e.g. for sprite-pack-only smoke tests).
-option(OAI_REQUIRE_LIVE2D "Fail configure when the Cubism SDK Core is not installed" ON)
+# Live2D is non-optional. Every shipped pack is Live2D, so a build without
+# the SDK produces an Oai.exe that ships unrenderable assets and shows a
+# transparent window at runtime. Refuse to configure rather than ship that.
 
 if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
     message(STATUS "Live2D Cubism SDK found")
@@ -240,37 +237,25 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
 
     set(OAI_HAS_LIVE2D TRUE)
 else()
-    if(OAI_REQUIRE_LIVE2D)
-        message(FATAL_ERROR
-            "\n"
-            "Live2D Cubism SDK Core is not installed.\n"
-            "\n"
-            "Expected:  ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h\n"
-            "\n"
-            "Without it, every shipped pack is unrenderable and Oai's window\n"
-            "will be a transparent rectangle at runtime. To install:\n"
-            "\n"
-            "  1. Download the Cubism SDK for Native (free, requires sign-in):\n"
-            "       https://www.live2d.com/en/sdk/download/native/\n"
-            "  2. Extract the archive's `Core/` folder over\n"
-            "       ${CUBISM_CORE_DIR}/\n"
-            "     so that the path above exists.\n"
-            "  3. Fetch the SDK's bundled GLEW/GLFW (one-time, separate script):\n"
-            "       cd thirdparty/CubismNativeSamples/Samples/OpenGL/thirdParty\n"
-            "       bash scripts/setup_glew_glfw\n"
-            "  4. Re-run configure.\n"
-            "\n"
-            "If you genuinely want a Live2D-less build, opt out with\n"
-            "  cmake -B build -DOAI_REQUIRE_LIVE2D=OFF\n"
-            "(but be aware the runtime currently has no non-Live2D fallback\n"
-            "pack to load).\n")
-    endif()
-    message(WARNING
-        "Live2D Cubism SDK not found at ${CUBISM_CORE_DIR}/include/ — "
-        "building without Live2D support. Every shipped pack is Live2D, so "
-        "the pet window will render blank at runtime until either the SDK "
-        "is installed or a non-Live2D pack is added to assets/packs/.")
-    set(OAI_HAS_LIVE2D FALSE)
+    message(FATAL_ERROR
+        "\n"
+        "Live2D Cubism SDK Core is not installed.\n"
+        "\n"
+        "Expected:  ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h\n"
+        "\n"
+        "The SDK is mandatory — every shipped pack is Live2D, so a build\n"
+        "without it would produce an Oai.exe that renders a transparent\n"
+        "window at runtime. To install:\n"
+        "\n"
+        "  1. Download the Cubism SDK for Native (free, requires sign-in):\n"
+        "       https://www.live2d.com/en/sdk/download/native/\n"
+        "  2. Extract the archive's `Core/` folder over\n"
+        "       ${CUBISM_CORE_DIR}/\n"
+        "     so that the path above exists.\n"
+        "  3. Fetch the SDK's bundled GLEW/GLFW (one-time, separate script):\n"
+        "       cd thirdparty/CubismNativeSamples/Samples/OpenGL/thirdParty\n"
+        "       bash scripts/setup_glew_glfw\n"
+        "  4. Re-run configure.\n")
 endif()
 
 # --- Executable --------------------------------------------------------------
