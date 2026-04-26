@@ -177,6 +177,17 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
                 IMPORTED_IMPLIB ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.lib
                 INTERFACE_INCLUDE_DIRECTORIES ${CUBISM_CORE_DIR}/include
             )
+            # Bundle the runtime DLL into the install tree so the packaged
+            # build can find it. windeployqt only handles Qt's own DLLs;
+            # without this, an installed Oai.exe fails at startup with
+            #   "Live2DCubismCore.dll was not found".
+            install(FILES ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.dll
+                    DESTINATION ${CMAKE_INSTALL_BINDIR})
+            # Also stage it next to Oai.exe in the build dir so a direct-run
+            # (Qt Creator / `./Oai.exe`) works without a manual copy.
+            set(_OAI_CUBISM_RUNTIME_DLL
+                ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.dll
+                CACHE INTERNAL "Cubism runtime DLL to copy beside Oai.exe")
         endif()
     else()
         # Linux
@@ -372,6 +383,17 @@ if(OAI_HAS_LIVE2D)
         target_compile_definitions(Oai PRIVATE CSM_TARGET_MAC_GL)
     elseif(WIN32)
         target_compile_definitions(Oai PRIVATE CSM_TARGET_WIN_GL)
+        # Stage Live2DCubismCore.dll next to Oai.exe in the build dir so
+        # direct-run (Qt Creator / `./Oai.exe`) works. The install rule
+        # above handles the packaged case; this handles dev iteration.
+        if(_OAI_CUBISM_RUNTIME_DLL)
+            add_custom_command(TARGET Oai POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        ${_OAI_CUBISM_RUNTIME_DLL}
+                        $<TARGET_FILE_DIR:Oai>
+                COMMENT "Staging Live2DCubismCore.dll next to Oai.exe"
+                VERBATIM)
+        endif()
     else()
         target_compile_definitions(Oai PRIVATE CSM_TARGET_LINUX_GL)
     endif()
