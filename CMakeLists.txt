@@ -278,6 +278,12 @@ if(WIN32)
                    ${CMAKE_BINARY_DIR}/oai.rc
                    @ONLY)
     set(PLATFORM_SOURCES ${CMAKE_BINARY_DIR}/oai.rc)
+    # MinGW's windres doesn't emit dep info for ICON-included files,
+    # so ninja can't tell oai.rc.obj depends on oai.ico. Without this,
+    # touching oai.ico does NOT rebuild oai.rc.obj — the linked binary
+    # then ships with a stale embedded icon.
+    set_source_files_properties(${CMAKE_BINARY_DIR}/oai.rc PROPERTIES
+        OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/assets/oai.ico)
 endif()
 
 qt_add_executable(Oai
