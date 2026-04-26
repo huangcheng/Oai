@@ -24,6 +24,12 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE INTERNAL "" FORCE)
 # Patch rlottie before building: its ARMv7 NEON assembly is incompatible with Apple Silicon (ARM64)
 FetchContent_GetProperties(rlottie)
 if(NOT rlottie_POPULATED)
+    # FetchContent_Populate is needed (not MakeAvailable) because we patch
+    # rlottie source files between population and add_subdirectory.  Silence
+    # CMP0169 deprecation — the two-step pattern is intentional here.
+    if(POLICY CMP0169)
+        cmake_policy(SET CMP0169 OLD)
+    endif()
     FetchContent_Populate(rlottie)
     if(APPLE)
         # rlottie's ARMv7 NEON assembly is incompatible with Apple Silicon (ARM64/AArch64).
@@ -601,6 +607,11 @@ if(OAI_QTIFW_BINARYCREATOR)
     # are gitignored — only the .in templates are tracked.
     string(TIMESTAMP _OAI_BUILD_DATE "%Y-%m-%d" UTC)
     set(OAI_RELEASE_DATE "${_OAI_BUILD_DATE}")
+    # Qt IFW resolves @ApplicationsDir@ at runtime (C:\Program Files on
+    # Windows, /Applications on macOS, /opt on Linux).  Must pass it
+    # through CMake's configure_file as a literal — define it as a
+    # CMake variable whose *value* is the IFW variable reference.
+    set(IFW_TARGET_DIR "@ApplicationsDir@/Oai")
     configure_file(
         ${OAI_IFW_DIR}/config.xml.in
         ${OAI_IFW_DIR}/config.xml
@@ -661,7 +672,7 @@ if(OAI_QTIFW_BINARYCREATOR)
                 ${CMAKE_SOURCE_DIR}/installer/oai.ini.template
                 ${OAI_IFW_PKG_DATA}/Oai.ini
         COMMAND ${CMAKE_COMMAND} -E touch ${OAI_IFW_STAGE_TS}
-        DEPENDS Oai
+        DEPENDS Oai ${ALL_PACK_OPKS}
         COMMENT "Staging Oai for installer packaging"
         VERBATIM)
     add_custom_target(installer_stage DEPENDS ${OAI_IFW_STAGE_TS})

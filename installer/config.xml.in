@@ -13,7 +13,7 @@
     <!-- Default install location. Resolves to C:\Program Files\Oai on
          64-bit Windows, /Applications/Oai on macOS, /opt/Oai on Linux.
          Users can change it via the wizard's folder picker page. -->
-    <TargetDir>@ApplicationsDir@/Oai</TargetDir>
+    <TargetDir>@IFW_TARGET_DIR@</TargetDir>
 
     <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
 
