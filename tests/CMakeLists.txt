@@ -46,6 +46,11 @@ foreach(test_src ${TEST_SOURCES})
             Qt::Test
             rlottie::rlottie
     )
+    if(WIN32)
+        # TipBubbleWidget.cpp is shared with the main app and uses
+        # DwmSetWindowAttribute to opt out of Win11 DWM chrome.
+        target_link_libraries(${test_name} PRIVATE dwmapi)
+    endif()
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
         ${rlottie_SOURCE_DIR}/inc

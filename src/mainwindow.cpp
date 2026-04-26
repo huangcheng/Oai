@@ -26,7 +26,21 @@
 #include <QMimeData>
 #include <QUrl>
 #include <QTimer>
+#include <QShowEvent>
 #include <algorithm>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <dwmapi.h>
+// Older MinGW SDKs lack the Win11-era attribute IDs; fall back to the
+// numeric values from the Microsoft docs.
+#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
+#define DWMWA_WINDOW_CORNER_PREFERENCE 33
+#endif
+#ifndef DWMWA_SYSTEMBACKDROP_TYPE
+#define DWMWA_SYSTEMBACKDROP_TYPE 38
+#endif
+#endif
 
 MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent)
     : QWidget(parent)
@@ -102,12 +116,40 @@ void MainWindow::setupWindowFlags()
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
+    // Windows DWM otherwise paints a default white background BEFORE
+    // paintEvent runs (TranslucentBackground alone isn't enough on Win32),
+    // and once it sees an opaque rectangle it adds a drop shadow + light
+    // edge — visually a frame around the pet. Suppressing the system
+    // background makes the window genuinely transparent on every platform.
+    setAttribute(Qt::WA_NoSystemBackground, true);
 #ifdef Q_OS_MAC
     // macOS: tool windows are hidden when the app is not active.
     // This keeps the pet visible at all times.
     setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
-    // Ensure the frameless translucent window composites correctly.
-    setAttribute(Qt::WA_NoSystemBackground, true);
+#endif
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+#ifdef Q_OS_WIN
+    // Windows 11's DWM auto-applies rounded corners, a drop shadow, and a
+    // Mica/Acrylic backdrop tint to top-level windows by default — even
+    // frameless tool windows with TranslucentBackground+NoSystemBackground
+    // get the chrome. Opt out per-window via the DWM API. winId() is valid
+    // by showEvent() because the native window has just been realised.
+    HWND hwnd = reinterpret_cast<HWND>(winId());
+    if (hwnd) {
+        const int doNotRound = 1;          // DWMWCP_DONOTROUND
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                              &doNotRound, sizeof(doNotRound));
+        const int backdropNone = 1;        // DWMSBT_NONE (Win11 22H2+)
+        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+                              &backdropNone, sizeof(backdropNone));
+        const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
+        DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
+                              &ncRenderingDisabled, sizeof(ncRenderingDisabled));
+    }
 #endif
 }
 

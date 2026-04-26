@@ -384,6 +384,13 @@ if(OAI_HAS_LIVE2D)
         target_link_libraries(Oai PRIVATE Qt::OpenGLWidgets)
     endif()
 
+    if(WIN32)
+        # dwmapi: DwmSetWindowAttribute() is used in MainWindow::showEvent
+        # to opt out of Windows 11's automatic rounded corners, drop shadow,
+        # and Mica/Acrylic backdrop on the frameless pet window.
+        target_link_libraries(Oai PRIVATE dwmapi)
+    endif()
+
     # Bundle Cubism Framework shader sources as Qt resources.
     # CubismShader_OpenGLES2::LoadShaderProgramFromFile requests paths like
     # "FrameworkShaders/VertShaderSrc.vert"; our loader maps that to

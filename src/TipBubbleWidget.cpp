@@ -6,11 +6,23 @@
 #include <QPropertyAnimation>
 #include <QEasingCurve>
 #include <QPaintEvent>
+#include <QShowEvent>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QRect>
 #include <QPainterPath>
 #include <QWindow>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <dwmapi.h>
+#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
+#define DWMWA_WINDOW_CORNER_PREFERENCE 33
+#endif
+#ifndef DWMWA_SYSTEMBACKDROP_TYPE
+#define DWMWA_SYSTEMBACKDROP_TYPE 38
+#endif
+#endif
 
 TipBubbleWidget::TipBubbleWidget(QWidget *parent)
     : QWidget(parent)
@@ -22,6 +34,10 @@ TipBubbleWidget::TipBubbleWidget(QWidget *parent)
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
+    // Same Win11 DWM workaround as MainWindow — without WA_NoSystemBackground
+    // the system fills the bubble's window with white before paintEvent runs,
+    // and DWM then draws rounded corners + shadow + Mica around it.
+    setAttribute(Qt::WA_NoSystemBackground, true);
 #ifdef Q_OS_MAC
     setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
 #endif
@@ -36,6 +52,25 @@ TipBubbleWidget::~TipBubbleWidget()
 {
     delete m_opacityAnim;
     delete m_slideAnim;
+}
+
+void TipBubbleWidget::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+#ifdef Q_OS_WIN
+    HWND hwnd = reinterpret_cast<HWND>(winId());
+    if (hwnd) {
+        const int doNotRound = 1;          // DWMWCP_DONOTROUND
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                              &doNotRound, sizeof(doNotRound));
+        const int backdropNone = 1;        // DWMSBT_NONE
+        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+                              &backdropNone, sizeof(backdropNone));
+        const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
+        DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
+                              &ncRenderingDisabled, sizeof(ncRenderingDisabled));
+    }
+#endif
 }
 
 void TipBubbleWidget::anchorTo(const QWidget *petWidget)
