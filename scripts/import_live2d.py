@@ -561,16 +561,28 @@ def _dedup_pick_dirs(pack_dirs, cap):
 def _import_filter(_dir: str, names):
     """Names to skip when copying a pack tree.
 
-    Why: Windows-style "Copy of" duplicates ('副本' in the filename) end
-    up in the upstream archive, and `model3.json` never references them.
-    They've also caused intermittent ninja "No rule to make target"
-    failures because their non-ASCII bytes round-trip differently
-    through cmake's dependency cache between configure runs. OS
-    metadata files (.DS_Store, Thumbs.db, desktop.ini) are pure noise.
+    Rule: pack filenames must be pure ASCII. Any non-ASCII byte is
+    skipped, plus a small set of OS metadata files.
+
+    Why: non-ASCII filenames round-trip differently through cmake's
+    dependency cache between configure runs, producing intermittent
+    `ninja: No rule to make target ...` failures (e.g. a Chinese
+    "副本"/"Copy of" duplicate texture re-encoded as mojibake by the
+    second configure pass). Empirically every non-ASCII filename in
+    the upstream archive is either a duplicate, an alternate version,
+    or a "Copy of" — never the canonical asset that model3.json
+    references. If a pack ever does depend on a non-ASCII filename
+    the post-import validation (no model3.json / no first texture)
+    drops the pack cleanly instead of poisoning the build.
     """
     skip = []
     for n in names:
-        if "副本" in n or n in (".DS_Store", "Thumbs.db", "desktop.ini"):
+        try:
+            n.encode("ascii")
+        except UnicodeEncodeError:
+            skip.append(n)
+            continue
+        if n in (".DS_Store", "Thumbs.db", "desktop.ini"):
             skip.append(n)
     return skip
 
