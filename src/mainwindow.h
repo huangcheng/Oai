@@ -97,6 +97,10 @@ private:
 
     // Visibility
     bool m_visible = true;
+
+    // Guard against infinite recursion when auto-skipping Live2D packs
+    // (onActivePackChanged → switchPack → activePackChanged → onActivePackChanged).
+    bool m_skipLive2dFallback = false;
 };
 
 #endif // MAINWINDOW_H

@@ -399,6 +399,37 @@ void MainWindow::onActivePackChanged()
     m_live2dEngine->stop();
 #endif
 
+#ifndef OAI_LIVE2D_SUPPORT
+    // If Live2D support was not compiled in but the selected pack requires
+    // it, warn and auto-skip to the first non-Live2D pack.  Without this
+    // fallback the sprite engine fails silently and the pet window renders
+    // as a fully transparent rectangle.
+    if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
+        qWarning() << "Live2D pack" << pack->metadata().name
+                    << "selected but Live2D support not compiled in."
+                    << "See CONTRIBUTING.md for Cubism SDK Core setup.";
+        // Guard against recursion — switchPack re-emits activePackChanged.
+        if (m_skipLive2dFallback) return;
+        m_skipLive2dFallback = true;
+        if (m_packManager) {
+            const auto packs = m_packManager->availablePacks();
+            for (const auto &info : packs) {
+                if (info.id == pack->metadata().id) continue; // skip the Live2D pack
+                m_packManager->switchPack(info.id);
+                // onActivePackChanged recurses here; if the new pack loads,
+                // one of the engines will be playing and we're done.
+                if (m_lottieEngine->isPlaying() || m_engine->isPlaying()) {
+                    m_skipLive2dFallback = false;
+                    return;
+                }
+            }
+        }
+        m_skipLive2dFallback = false;
+        qWarning() << "No non-Live2D packs available — pet will be invisible";
+        return;
+    }
+#endif
+
 #ifdef OAI_LIVE2D_SUPPORT
     if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
         m_live2dEngine->loadFromCharacterPack(pack);
