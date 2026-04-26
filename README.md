@@ -27,13 +27,13 @@ Oai supports customizable characters through sprite packs (`.opk` files). Each p
 2. **Manual**: Copy `.opk` to `~/.config/Oai/packs/`
 3. **Built-in**: Official packs are generated during build
 
-### Pulling community Live2D packs from the upstream submodule
+### Pulling community Live2D packs from the upstream archive
 
-The 21 first-party packs in `assets/packs/` (Live2D Free Material samples + Furina + UnityChan) are the only ones tracked in git. Additional Azur Lane / Girls' Frontline / Idol Dimension / Konosuba characters live in the upstream community archive at [Eikanya/Live2d-model](https://github.com/Eikanya/Live2d-model), which we pin as a submodule under `thirdparty/upstream-live2d/`. To bring them in:
+The 21 first-party packs in `assets/packs/` (Live2D Free Material samples + Furina + UnityChan) are the only ones tracked in git. Additional Azur Lane / Girls' Frontline / Idol Dimension / Konosuba characters live in the upstream community archive at [Eikanya/Live2d-model](https://github.com/Eikanya/Live2d-model) (~16 GB). To bring them in:
 
 ```bash
-# One-time: fetch the upstream archive (~16 GB, slow)
-git submodule update --init --depth=1 thirdparty/upstream-live2d
+# One-time: clone the upstream archive into the project (shallow to save time/space)
+git clone https://github.com/Eikanya/Live2d-model thirdparty/upstream-live2d --depth=1
 
 # Run the import (curated PICKS + bulk per-category, ~50 per category)
 cmake --build build --target import_packs
@@ -42,7 +42,7 @@ cmake --build build --target import_packs
 cmake --build build --target generate_packs
 ```
 
-Imported packs land in `assets/packs/<id>/` (gitignored) — local only, regenerable from the submodule. Asset rights belong to the original game studios; treat as personal-use only.
+Imported packs land in `assets/packs/<id>/` (gitignored) — local only, regenerable from the upstream clone. Asset rights belong to the original game studios; treat as personal-use only.
 
 ### Creating Packs
 
@@ -339,7 +339,7 @@ The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
 
 ### Live2D character packs
 
-- [Eikanya/Live2d-model](https://github.com/Eikanya/Live2d-model) — Community archive of Live2D Cubism 3+ models from Azur Lane and other titles. Pinned as a submodule under `thirdparty/upstream-live2d/`; `scripts/import_live2d.py --local` populates `assets/packs/` from it on demand. Asset rights belong to the original game studios; treat imports as personal-use only.
+- [Eikanya/Live2d-model](https://github.com/Eikanya/Live2d-model) — Community archive of Live2D Cubism 3+ models from Azur Lane and other titles. Cloned on demand into `thirdparty/upstream-live2d/` (opt-in, ~16 GB); `scripts/import_live2d.py --local` populates `assets/packs/` from it. Asset rights belong to the original game studios; treat imports as personal-use only.
 - [Bilibili: BV1fP411e7fA](https://www.bilibili.com/video/BV1fP411e7fA) — Source of the `little_demon` (小恶魔) and `yumi` VTube Studio model packs in `assets/packs/`. Credit and copyright remain with the original creator.
 
 ### Sprite packs (legacy)

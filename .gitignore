@@ -37,16 +37,21 @@ Thumbs.db
 # (qt deploy + opks). Build output, not source.
 installer/packages/*/data/
 
+# Upstream Live2D community archive (~16 GB). Not a submodule — opt-in clone:
+#   git clone https://github.com/Eikanya/Live2d-model thirdparty/upstream-live2d --depth=1
+# See CONTRIBUTING.md for the full import workflow.
+/thirdparty/upstream-live2d/
+
 # Generated from .in templates by configure_file; track only the templates.
 installer/config.xml
 installer/packages/*/meta/package.xml
 
 # Imported character packs — regenerated locally by
-#   git submodule update --init thirdparty/upstream-live2d
+#   git clone https://github.com/Eikanya/Live2d-model thirdparty/upstream-live2d --depth=1
 #   cmake --build build --target import_packs
 # Only the 21 first-party packs below are tracked; everything else under
 # assets/packs/ is treated as a build artifact derived from the upstream
-# submodule. See scripts/import_live2d.py for the import pipeline.
+# archive. See scripts/import_live2d.py for the import pipeline.
 /assets/packs/*
 !/assets/packs/chitose/
 !/assets/packs/epsilon/

@@ -4,15 +4,3 @@
 [submodule "thirdparty/CubismNativeSamples"]
 	path = thirdparty/CubismNativeSamples
 	url = https://github.com/Live2D/CubismNativeSamples.git
-[submodule "thirdparty/upstream-live2d"]
-	path = thirdparty/upstream-live2d
-	url = https://github.com/Eikanya/Live2d-model
-	# Heads-up: the upstream archive is ~16 GB packed / 33 GB unpacked.
-	# Default `git clone --recurse-submodules` will pull it. To skip:
-	#   git clone <repo>                              # no submodules
-	#   git submodule update --init                   \
-	#     thirdparty/CubismNativeFramework            \
-	#     thirdparty/CubismNativeSamples              # only the small ones
-	# After the submodule is populated, run
-	#   python scripts/import_live2d.py
-	# to bake .opks into assets/packs/.

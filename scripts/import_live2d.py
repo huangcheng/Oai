@@ -558,6 +558,23 @@ def _dedup_pick_dirs(pack_dirs, cap):
     return [d for _, (_, d) in chosen]
 
 
+def _import_filter(_dir: str, names):
+    """Names to skip when copying a pack tree.
+
+    Why: Windows-style "Copy of" duplicates ('副本' in the filename) end
+    up in the upstream archive, and `model3.json` never references them.
+    They've also caused intermittent ninja "No rule to make target"
+    failures because their non-ASCII bytes round-trip differently
+    through cmake's dependency cache between configure runs. OS
+    metadata files (.DS_Store, Thumbs.db, desktop.ini) are pure noise.
+    """
+    skip = []
+    for n in names:
+        if "副本" in n or n in (".DS_Store", "Thumbs.db", "desktop.ini"):
+            skip.append(n)
+    return skip
+
+
 def import_local_pack(pack_src: Path, local_id: str, name_en: str, name_zh: str,
                       category: str, author: str, out_dir: Path) -> bool:
     """Copy a pack from a local upstream dir to assets/packs/<local_id>/,
@@ -567,7 +584,7 @@ def import_local_pack(pack_src: Path, local_id: str, name_en: str, name_zh: str,
         return False  # silent skip — caller can detect via return value
 
     import shutil
-    shutil.copytree(pack_src, pack_dir)
+    shutil.copytree(pack_src, pack_dir, ignore=_import_filter)
 
     model3 = next(pack_dir.rglob("*.model3.json"), None)
     if not model3:
