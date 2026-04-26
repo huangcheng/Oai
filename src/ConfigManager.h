@@ -78,10 +78,12 @@ private:
     QString m_activePackId;
 
     /**
-     * Reflect m_autoStart into the OS's per-user "launch at login" registry
-     * (Windows: HKCU\...\CurrentVersion\Run). No-op on macOS/Linux for now;
-     * those platforms need ~/Library/LaunchAgents/ and
-     * ~/.config/autostart/ respectively, which are not yet implemented.
+     * Reflect m_autoStart into the OS's per-user "launch at login" facility:
+     *   - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Oai
+     *   - macOS:   ~/Library/LaunchAgents/im.cheng.oai.plist (launchd)
+     *   - Linux:   ~/.config/autostart/oai.desktop (XDG autostart)
+     * On AppImage builds the Linux path uses $APPIMAGE rather than the
+     * transient FUSE-mount path returned by applicationFilePath().
      */
     void applyAutoStartToOS(bool enabled);
 };
