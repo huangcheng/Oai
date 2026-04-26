@@ -49,7 +49,9 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
     if (!logFile) {
         const QString path = QCoreApplication::applicationDirPath() + "/oai_debug.log";
         logFile = new QFile(path);
-        logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+        // Failure handled by the isOpen() check below; the cast acknowledges
+        // QFile::open's [[nodiscard]] without obscuring the control flow.
+        (void)logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
     }
     if (!logFile->isOpen()) return;
     const char *level = "DEBUG";
