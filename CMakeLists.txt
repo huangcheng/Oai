@@ -671,6 +671,22 @@ if(OAI_QTIFW_BINARYCREATOR)
         ${OAI_IFW_PKG_META}/package.xml
         @ONLY)
 
+    # Replacement qt.conf for the flat install layout.
+    #
+    # windeployqt assumes Oai.exe lives in <root>/bin/ and writes
+    #   [Paths]
+    #   Prefix = ..
+    # so Qt walks up one level to find <root>/plugins/. Our staging step
+    # below flattens bin/ into the data root (Windows installers conventionally
+    # don't have a bin/ subdir under TargetDir), which leaves
+    # `Prefix = ..` pointing at the *parent* of the install dir — Qt then
+    # can't find qwindows.dll and aborts with
+    #   "This application failed to start because no Qt platform plugin
+    #    could be initialized."
+    # Overwrite qt.conf with a flat-layout version that points Prefix at
+    # the install dir itself.
+    file(WRITE ${CMAKE_BINARY_DIR}/qt.conf.flat "[Paths]\nPrefix = .\n")
+
     # Compile installer-specific translations into meta/<basename>.qm.
     # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
     set(OAI_IFW_TS_FILES
@@ -710,6 +726,11 @@ if(OAI_QTIFW_BINARYCREATOR)
         # Flatten the GNUInstallDirs bin/ layer so Oai.exe sits at TargetDir root.
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${OAI_IFW_PKG_DATA}/bin ${OAI_IFW_PKG_DATA}
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/bin
+        # Replace the bin/-relative qt.conf windeployqt wrote (Prefix=..)
+        # with the flat-layout version (Prefix=.).
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_BINARY_DIR}/qt.conf.flat
+                ${OAI_IFW_PKG_DATA}/qt.conf
         # Drop transitive install artifacts (rlottie headers, glew/.a stubs,
         # CMake configs, pkgconfig) — runtime install doesn't need them.
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/include ${OAI_IFW_PKG_DATA}/lib
