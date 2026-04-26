@@ -1,6 +1,7 @@
 #include "ConfigManager.h"
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QFile>
 #include <QDebug>
 
@@ -66,6 +67,11 @@ void ConfigManager::load()
 
     // Auto-start
     m_autoStart = m_settings.value("autoStart", false).toBool();
+    // Re-apply to the OS on every startup so the registry stays in sync
+    // with the INI even after a reinstall to a different path, a manual
+    // `reg delete`, or a settings sync from another machine. The call is
+    // idempotent — sets/removes the same value either way.
+    applyAutoStartToOS(m_autoStart);
 
     // IPC endpoint
     QString endpoint = m_settings.value("ipcEndpoint").toString();
@@ -119,7 +125,39 @@ void ConfigManager::setAutoStart(bool enabled)
     if (m_autoStart != enabled) {
         m_autoStart = enabled;
         save();
+        applyAutoStartToOS(enabled);
     }
+}
+
+void ConfigManager::applyAutoStartToOS(bool enabled)
+{
+#ifdef Q_OS_WIN
+    // Per-user "launch at login" lives in
+    //   HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
+    // Setting a value there names a program that Windows runs at logon
+    // for the current user. Removing the value disables it. No admin
+    // rights needed because this is HKCU, not HKLM.
+    QSettings runKey(
+        QStringLiteral(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)"),
+        QSettings::NativeFormat);
+    static constexpr QLatin1String kRunValue("Oai");
+
+    if (enabled) {
+        // Quote the path: a default install lands in C:\Program Files\Oai\
+        // (space in the parent), and Windows shell parses the Run value as
+        // a command line, splitting on unquoted whitespace.
+        const QString exe = QDir::toNativeSeparators(
+            QCoreApplication::applicationFilePath());
+        runKey.setValue(kRunValue, QStringLiteral("\"%1\"").arg(exe));
+    } else {
+        runKey.remove(kRunValue);
+    }
+    runKey.sync();
+#else
+    Q_UNUSED(enabled);
+    // TODO(macOS):  ~/Library/LaunchAgents/im.cheng.oai.plist  (launchd)
+    // TODO(Linux):  ~/.config/autostart/oai.desktop            (XDG)
+#endif
 }
 
 void ConfigManager::setActivePackId(const QString &packId)

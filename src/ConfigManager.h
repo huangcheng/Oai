@@ -76,6 +76,14 @@ private:
     QString m_ipcEndpoint;
     QString m_updateServerEndpoint;
     QString m_activePackId;
+
+    /**
+     * Reflect m_autoStart into the OS's per-user "launch at login" registry
+     * (Windows: HKCU\...\CurrentVersion\Run). No-op on macOS/Linux for now;
+     * those platforms need ~/Library/LaunchAgents/ and
+     * ~/.config/autostart/ respectively, which are not yet implemented.
+     */
+    void applyAutoStartToOS(bool enabled);
 };
 
 #endif // CONFIGMANAGER_H
