@@ -312,6 +312,50 @@ If it ever regresses to `Prefix = ..`, the copy step in the staging custom_comma
 
 This pitfall is closely related to #4 and #10: every "ships and crashes immediately" bug we've hit on Windows ultimately came from the bin/-flatten step interacting badly with something cmake-install or windeployqt produced. If you're debugging a *new* runtime-load crash on Windows, your first stop is `installer/packages/.../data/` — diff its contents (especially `qt.conf` and the DLL set) against the bin/-flat layout you'd expect at `<install-dir>/`.
 
+### 12. Edited the icons but the exe still shows the old one
+
+Two distinct caches conspire here.
+
+**a) MinGW windres dependency tracking is incomplete.** `oai.rc` does
+```
+IDI_ICON1 ICON "@CMAKE_SOURCE_DIR@/assets/oai.ico"
+```
+but `windres` doesn't emit a `.d` deps file listing `oai.ico` as an input. Ninja therefore doesn't know to rebuild `oai.rc.obj` when only `oai.ico` changes — and the linked `Oai.exe` ships with the previous icon embedded, even though the on-disk `.ico` is fresh.
+
+Fix already committed (`dcdf212`): make the dep explicit.
+
+```cmake
+set_source_files_properties(${CMAKE_BINARY_DIR}/oai.rc PROPERTIES
+    OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/assets/oai.ico)
+```
+
+If this regresses, the manual recovery is one-shot:
+```bash
+rm build/CMakeFiles/Oai.dir/oai.rc.obj
+python scripts/build_release.py --skip-package
+```
+
+The same caveat applies to any other resource-included file (e.g. a `MANIFEST` referencing an XML, or a `BITMAP` referencing a `.bmp`) — windres + ninja won't track it. When in doubt, add `OBJECT_DEPENDS` for every file the `.rc` references via path.
+
+**b) Windows IconCache survives across rebuilds.** Even with the correct icon embedded, Explorer / taskbar / start menu may still show the old one because Win11 caches per-exe icons in `IconCache.db`. Force a refresh:
+
+```cmd
+ie4uinit.exe -show
+```
+
+Or restart Explorer:
+
+```cmd
+taskkill /f /im explorer.exe & start explorer.exe
+```
+
+Or — since the Oai installer puts the binary at a fixed path (`C:\Program Files\Oai\Oai.exe`) — uninstalling and reinstalling tends to invalidate the cache for that path naturally. The in-app tray icon and the SystemTray-rendered icon load from the qrc resource (`oai.png`), not from the exe's embedded icon, so they refresh as soon as a fresh `Oai.exe` runs — those aren't affected by IconCache, only Explorer's per-exe thumbnails are.
+
+When debugging an "icon won't update" complaint:
+1. `stat` mtimes to check `oai.rc.obj` is newer than `oai.ico` — if not, it's (a).
+2. `Oai.exe` mtime is newer than `oai.rc.obj` — confirms the link picked up the new .obj.
+3. If both check out, it's (b) — kick the IconCache.
+
 ## Cross-platform packaging summary
 
 | Platform | Built artefact | Bundles | Auto-discovered tooling |
