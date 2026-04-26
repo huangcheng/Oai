@@ -4,6 +4,12 @@
 
 function Component()
 {
+    // Pin install location to @ApplicationsDir@/Oai (declared in config.xml).
+    // Hiding TargetDirectory removes the folder picker page entirely; users
+    // can't relocate the install. Admin elevation is still triggered on
+    // Windows because Program Files requires it.
+    installer.setDefaultPageVisible(QInstaller.TargetDirectory, false);
+
     installer.installationFinished.connect(this, Component.prototype.onInstallationFinishedPage);
     installer.finishButtonClicked.connect(this, Component.prototype.onFinishButtonClicked);
 }

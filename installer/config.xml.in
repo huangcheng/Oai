@@ -10,6 +10,10 @@
     <WizardStyle>Modern</WizardStyle>
 
     <StartMenuDir>Oai</StartMenuDir>
+    <!-- Install location is pinned to @ApplicationsDir@/Oai
+         (C:\Program Files\Oai on 64-bit Windows, /Applications/Oai on
+         macOS, /opt/Oai on Linux). The wizard's folder picker is hidden
+         in installscript.qs via setDefaultPageVisible(TargetDirectory). -->
     <TargetDir>@ApplicationsDir@/Oai</TargetDir>
 
     <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
