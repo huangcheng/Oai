@@ -422,23 +422,58 @@ def package_macos(build_dir, version, qt_prefix):
                 shutil.copy2(opk, dst)
                 print(f"  Copied pack: {opk.name}")
 
-    # Ad-hoc sign (allows running on modern macOS without notarization)
+    # Remove unused QML frameworks and plugins that macdeployqt bundles but
+    # which have malformed Mach-O headers, causing LaunchServices error 153.
+    for unwanted in [
+        app_bundle / "Contents" / "PlugIns" / "platforminputcontexts",
+        *app_bundle.glob("Contents/Frameworks/QtQml*.framework"),
+        app_bundle / "Contents" / "Frameworks" / "QtQmlWorkerScript.framework",
+        app_bundle / "Contents" / "Frameworks" / "QtQuick.framework",
+    ]:
+        if unwanted.exists():
+            shutil.rmtree(unwanted)
+            print(f"  Removed unused: {unwanted.name}")
+
+    # Ad-hoc sign bottom-up (allows running on modern macOS without notarization).
+    # --deep alone is unreliable; sign leaf binaries explicitly first.
     codesign = shutil.which("codesign")
     if codesign:
-        run([codesign, "--force", "--deep", "--sign", "-", str(app_bundle)], check=False)
+        import glob as _glob
+        # Sign frameworks and dylibs
+        for pattern in [
+            str(app_bundle / "Contents" / "Frameworks" / "**" / "*.dylib"),
+            str(app_bundle / "Contents" / "Frameworks" / "**" / "Versions" / "A" / "*"),
+            str(app_bundle / "Contents" / "PlugIns" / "**" / "*.dylib"),
+        ]:
+            for f in _glob.glob(pattern, recursive=True):
+                if Path(f).is_file():
+                    run([codesign, "--force", "--sign", "-", f], check=False)
+        # Sign main binary then bundle
+        run([codesign, "--force", "--sign", "-", str(app_bundle / "Contents" / "MacOS" / "Oai")], check=False)
+        run([codesign, "--deep", "--force", "--sign", "-", str(app_bundle)], check=False)
+
     xattr = shutil.which("xattr")
     if xattr:
         run([xattr, "-cr", str(app_bundle)], check=False)
+
+    # Create DMG with Applications symlink for drag-to-install
+    dmg_staging = build_dir / "_dmg_staging"
+    if dmg_staging.exists():
+        shutil.rmtree(dmg_staging)
+    dmg_staging.mkdir()
+    shutil.copytree(app_bundle, dmg_staging / "Oai.app", symlinks=True)
+    (dmg_staging / "Applications").symlink_to("/Applications")
 
     dmg_path = build_dir / f"Oai-{version}.dmg"
     run([
         "hdiutil", "create",
         "-volname", "Oai",
-        "-srcfolder", str(app_bundle),
+        "-srcfolder", str(dmg_staging),
         "-ov",
         "-format", "UDZO",
         str(dmg_path),
     ])
+    shutil.rmtree(dmg_staging)
     print(f"\n[SUCCESS] DMG created: {dmg_path}")
 
 
