@@ -1,0 +1,4 @@
+-sname server
+-setcookie server_cookie_change_me
++K true
++A 4

@@ -46,36 +46,10 @@ installer/packages/*/data/
 installer/config.xml
 installer/packages/*/meta/package.xml
 
-# Imported character packs — regenerated locally by
+# Imported character packs are tracked in-tree (mirrors upstream Eikanya/Live2d-model).
+# Re-importable locally via:
 #   git clone https://github.com/Eikanya/Live2d-model thirdparty/upstream-live2d --depth=1
 #   cmake --build build --target import_packs
-# Only the 21 first-party packs below are tracked; everything else under
-# assets/packs/ is treated as a build artifact derived from the upstream
-# archive. See scripts/import_live2d.py for the import pipeline.
-/assets/packs/*
-!/assets/packs/chitose/
-!/assets/packs/epsilon/
-!/assets/packs/furina/
-!/assets/packs/gantzert_felixander/
-!/assets/packs/haru/
-!/assets/packs/haru_greeter/
-!/assets/packs/haruto/
-!/assets/packs/hibiki/
-!/assets/packs/hiyori/
-!/assets/packs/izumi/
-!/assets/packs/kei/
-!/assets/packs/koharu/
-!/assets/packs/mao/
-!/assets/packs/mark/
-!/assets/packs/miara/
-!/assets/packs/miku/
-!/assets/packs/natori/
-!/assets/packs/ren/
-!/assets/packs/rice/
-!/assets/packs/unitychan/
-!/assets/packs/wanko/
-!/assets/packs/little_demon/
-!/assets/packs/yumi/
 /.qmake.cache
 /.qmake.stash
 

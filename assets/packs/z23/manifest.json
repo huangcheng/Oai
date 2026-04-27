@@ -1,0 +1,131 @@
+{
+  "formatVersion": "1.0.0",
+  "id": "im.cheng.oai.z23",
+  "name": "Z23",
+  "author": "Imported from github.com/Eikanya/Live2d-model",
+  "version": "1.0.0",
+  "description": "Z23 — Live2D character imported from upstream collection. Asset rights belong to the original game studio.",
+  "preview": "preview.png",
+  "tags": [
+    "live2d",
+    "z23"
+  ],
+  "license": "Asset rights belong to original studio; personal use only",
+  "category": "azur_lane",
+  "minAppVersion": "2.0.0",
+  "character": {
+    "type": "live2d",
+    "model": "z23.model3.json",
+    "frameWidth": 300,
+    "frameHeight": 300
+  },
+  "idlePool": [
+    {
+      "name": "Idle",
+      "weight": 4
+    },
+    {
+      "name": "Standby",
+      "weight": 6
+    },
+    {
+      "name": "Login",
+      "weight": 1
+    },
+    {
+      "name": "Mission",
+      "weight": 1
+    },
+    {
+      "name": "Complete",
+      "weight": 1
+    },
+    {
+      "name": "MissionComplete",
+      "weight": 1
+    },
+    {
+      "name": "Mail",
+      "weight": 2
+    },
+    {
+      "name": "Wedding",
+      "weight": 1
+    }
+  ],
+  "eventMap": {
+    "session.start": [
+      "Login",
+      "Tap"
+    ],
+    "session.end": [
+      "MissionComplete",
+      "Idle"
+    ],
+    "session.idle": [
+      "Idle"
+    ],
+    "session.error": [
+      "Tap"
+    ],
+    "prompt.submitted": [
+      "Mission",
+      "Tap"
+    ],
+    "tool.before": [
+      "Mission",
+      "Tap"
+    ],
+    "tool.after": [
+      "Complete",
+      "Tap"
+    ],
+    "tool.failed": [
+      "Tap"
+    ],
+    "permission.requested": [
+      "TouchHead",
+      "Tap"
+    ],
+    "permission.denied": [
+      "Tap"
+    ],
+    "permission.response": [
+      "Idle"
+    ],
+    "subagent.started": [
+      "Mission",
+      "Tap"
+    ],
+    "subagent.stopped": [
+      "Wedding",
+      "MissionComplete",
+      "Tap"
+    ],
+    "notification.sent": [
+      "Mail",
+      "Tap"
+    ],
+    "file.edited": [
+      "Idle"
+    ],
+    "file.watched": [
+      "Idle"
+    ],
+    "todo.updated": [
+      "MissionComplete",
+      "Complete",
+      "Tap"
+    ],
+    "user.click": [
+      "TouchBody",
+      "TouchHead",
+      "Tap"
+    ],
+    "user.doubleclick": [
+      "TouchSpecial",
+      "TouchBody",
+      "Tap"
+    ]
+  }
+}

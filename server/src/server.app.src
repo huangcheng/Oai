@@ -1,0 +1,19 @@
+{application, server,
+ [{description, "Generic UDP Update Server"},
+  {vsn, "0.1.0"},
+  {registered, [server_sup]},
+  {mod, {server_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    jsx
+   ]},
+  {env,[
+      {udp_port, 9340},
+      {udp_workers, 4},
+      {version_file, "../CMakeLists.txt"}
+  ]},
+  {modules, [server_app, server_sup, udp_server, protocol, update_handler]},
+  {licenses, ["MIT"]},
+  {links, []}
+ ]}.
