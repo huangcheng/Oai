@@ -425,15 +425,32 @@ def package_macos(build_dir, version, qt_prefix):
 
     # Remove unused QML frameworks and plugins that macdeployqt bundles but
     # which have malformed Mach-O headers, causing LaunchServices error 153.
+    # QtVirtualKeyboard* depends on QtQml — strip both, since we don't ship
+    # IME functionality and a dangling QtQml dep also breaks signature checks.
     for unwanted in [
         app_bundle / "Contents" / "PlugIns" / "platforminputcontexts",
         *app_bundle.glob("Contents/Frameworks/QtQml*.framework"),
         app_bundle / "Contents" / "Frameworks" / "QtQmlWorkerScript.framework",
         app_bundle / "Contents" / "Frameworks" / "QtQuick.framework",
+        *app_bundle.glob("Contents/Frameworks/QtVirtualKeyboard*.framework"),
     ]:
         if unwanted.exists():
             shutil.rmtree(unwanted)
             print(f"  Removed unused: {unwanted.name}")
+
+    # Strip stray files in Contents/MacOS/ — anything besides the executable
+    # there invalidates the bundle's codesignature ("code object is not signed
+    # at all") and LaunchServices refuses to launch the .app. Common culprit:
+    # a dev-run wrote oai_debug.log next to the binary.
+    macos_dir = app_bundle / "Contents" / "MacOS"
+    for entry in macos_dir.iterdir():
+        if entry.name == "Oai":
+            continue
+        print(f"  Removing stray bundle file: Contents/MacOS/{entry.name}")
+        if entry.is_dir():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
 
     # Ad-hoc sign bottom-up (allows running on modern macOS without notarization).
     # --deep alone is unreliable; sign leaf binaries explicitly first.

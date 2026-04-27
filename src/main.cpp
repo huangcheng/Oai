@@ -47,7 +47,13 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
     static QMutex mtx;
     QMutexLocker lock(&mtx);
     if (!logFile) {
-        const QString path = QCoreApplication::applicationDirPath() + "/oai_debug.log";
+        // Write to a user-writable location, NOT next to the executable:
+        // on macOS the executable lives inside Contents/MacOS/, and any extra
+        // file there invalidates the codesignature ("code object is not signed
+        // at all"), causing LaunchServices to refuse to launch the bundle.
+        const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        QDir().mkpath(dir);
+        const QString path = dir + "/oai_debug.log";
         logFile = new QFile(path);
         // Failure handled by the isOpen() check below; the cast acknowledges
         // QFile::open's [[nodiscard]] without obscuring the control flow.
