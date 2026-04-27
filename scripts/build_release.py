@@ -29,7 +29,8 @@ def run(cmd, **kwargs):
     """Run a command, printing it first."""
     cmd_str = " ".join(str(c) for c in cmd)
     print(f"  -> {cmd_str}")
-    return subprocess.run(cmd, check=True, **kwargs)
+    kwargs.setdefault("check", True)
+    return subprocess.run(cmd, **kwargs)
 
 
 def run_output(cmd, **kwargs):
