@@ -203,17 +203,45 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 
 ## Gateway
 
-Install the CLI gateway globally from GitHub Packages:
+Install the CLI gateway globally from npm:
 
 ```bash
-npm install -g @huangcheng/oai-gateway --registry=https://npm.pkg.github.com
+npm install -g @eastlake/oai-gateway
 ```
 
-Configure your npm to use GitHub Packages for `@huangcheng` scope (one-time setup):
+Verify it can reach a running Oai:
 
 ```bash
-echo "@huangcheng:registry=https://npm.pkg.github.com" >> ~/.npmrc
+oai-gateway --ping
 ```
+
+### Using a Node version manager (fnm / nvm / asdf)
+
+If you installed Node through fnm, nvm, or asdf, the `oai-gateway` command lives in a per-shell shim directory that is **not on PATH** when AI tools spawn hook subprocesses. A bare `oai-gateway` call works in your terminal but silently fails from a hook.
+
+Wrap it in a shell script that locates Node + the gateway CLI by absolute path. Save as `~/.local/bin/oai-gateway-hook` (and `chmod +x`):
+
+```sh
+#!/bin/sh
+# fnm version — adapt the locator block for nvm / asdf
+set -eu
+fnm_root="$HOME/Library/Application Support/fnm/node-versions"
+selected_base=""
+for base in "$fnm_root"/*/installation; do
+  [ -d "$base" ] || continue
+  selected_base="$base"
+done
+[ -z "$selected_base" ] && { echo "no fnm Node installation found" >&2; exit 127; }
+node_bin="$selected_base/bin/node"
+gateway_cli="$selected_base/lib/node_modules/@eastlake/oai-gateway/cli.mjs"
+[ -x "$node_bin" ] || { echo "node not found" >&2; exit 127; }
+[ -f "$gateway_cli" ] || { echo "gateway CLI not found" >&2; exit 127; }
+exec "$node_bin" "$gateway_cli" "$@"
+```
+
+For nvm replace the `fnm_root` block with `node_bin="$HOME/.nvm/versions/node/<version>/bin/node"`. For system Node (Homebrew or distro package) you can skip the wrapper entirely and use `oai-gateway` directly in hooks.
+
+Then reference the wrapper instead of `oai-gateway` in the hook configurations below — e.g. `~/.local/bin/oai-gateway-hook --source claude-code --event session.start`.
 
 ### Claude Code
 
