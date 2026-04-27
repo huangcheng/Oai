@@ -37,15 +37,17 @@ void makeNonActivating(QWidget *widget)
     // (subclassing isn't possible here, but these properties are honored
     // by AppKit when the underlying window is a panel.)
     [nswin setHidesOnDeactivate:NO];
-    // Note: do NOT add NSWindowCollectionBehaviorCanJoinAllSpaces — it
-    // conflicts with NSWindowCollectionBehaviorMoveToActiveSpace which Qt
-    // sets by default on tool windows, and AppKit raises NSInternalInconsistencyException.
-    // Transient + IgnoresCycle alone are enough to stop the bubble from
-    // entering the cmd-` cycle or stealing focus.
-    [nswin setCollectionBehavior:
-        [nswin collectionBehavior]
-        | NSWindowCollectionBehaviorTransient
-        | NSWindowCollectionBehaviorIgnoresCycle];
+    // AppKit raises NSInternalInconsistencyException when the collection
+    // behavior contains conflicting flags. Qt's tool window default sets
+    // MoveToActiveSpace + ParticipatesInCycle, which conflict with the
+    // CanJoinAllSpaces / IgnoresCycle bits we want for a non-activating
+    // bubble. Mask the conflicting bits out *before* OR-ing the new ones.
+    NSWindowCollectionBehavior beh = [nswin collectionBehavior];
+    beh &= ~NSWindowCollectionBehaviorMoveToActiveSpace;
+    beh &= ~NSWindowCollectionBehaviorParticipatesInCycle;
+    beh |= NSWindowCollectionBehaviorTransient;
+    beh |= NSWindowCollectionBehaviorIgnoresCycle;
+    [nswin setCollectionBehavior:beh];
 #else
     Q_UNUSED(widget);
 #endif

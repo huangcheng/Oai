@@ -405,11 +405,29 @@ def package_macos(build_dir, version, qt_prefix):
         sys.exit(1)
 
     macdeployqt = find_macdeployqt(qt_prefix)
+    main_bin = app_bundle / "Contents" / "MacOS" / "Oai"
+    bin_backup = build_dir / "Oai.unmangled"
+    if main_bin.exists():
+        # Save the freshly-linked binary. macdeployqt mangles it (deletes our
+        # baked-in rpath, and partial install_name_tool ops corrupt segment
+        # vmsizes so subsequent install_name_tool runs reject it as malformed).
+        # We restore this clean copy after macdeployqt and rewrite framework
+        # paths ourselves.
+        shutil.copy2(main_bin, bin_backup)
+
     if macdeployqt:
         print(f"  [OK] macdeployqt: {macdeployqt}")
-        run([str(macdeployqt), str(app_bundle)])
+        # macdeployqt aborts on malformed QtQml/virtualkeyboard frameworks
+        # but copies all frameworks into the bundle before failing — that's
+        # all we need from it.
+        run([str(macdeployqt), str(app_bundle)], check=False)
     else:
         print("  [WARNING] macdeployqt not found – relying on cmake install deploy script.")
+
+    # Restore the un-mangled binary on top of macdeployqt's broken one.
+    if bin_backup.exists():
+        shutil.copy2(bin_backup, main_bin)
+        bin_backup.unlink()
 
     # Ensure packs are inside the bundle (CMake target_sources usually does this,
     # but CI also copies explicitly as a safeguard)
@@ -422,21 +440,6 @@ def package_macos(build_dir, version, qt_prefix):
             if not dst.exists():
                 shutil.copy2(opk, dst)
                 print(f"  Copied pack: {opk.name}")
-
-    # Remove unused QML frameworks and plugins that macdeployqt bundles but
-    # which have malformed Mach-O headers, causing LaunchServices error 153.
-    # QtVirtualKeyboard* depends on QtQml — strip both, since we don't ship
-    # IME functionality and a dangling QtQml dep also breaks signature checks.
-    for unwanted in [
-        app_bundle / "Contents" / "PlugIns" / "platforminputcontexts",
-        *app_bundle.glob("Contents/Frameworks/QtQml*.framework"),
-        app_bundle / "Contents" / "Frameworks" / "QtQmlWorkerScript.framework",
-        app_bundle / "Contents" / "Frameworks" / "QtQuick.framework",
-        *app_bundle.glob("Contents/Frameworks/QtVirtualKeyboard*.framework"),
-    ]:
-        if unwanted.exists():
-            shutil.rmtree(unwanted)
-            print(f"  Removed unused: {unwanted.name}")
 
     # Strip stray files in Contents/MacOS/ — anything besides the executable
     # there invalidates the bundle's codesignature ("code object is not signed
@@ -451,6 +454,109 @@ def package_macos(build_dir, version, qt_prefix):
             shutil.rmtree(entry)
         else:
             entry.unlink()
+
+    # Strip the QML / Quick / VirtualKeyboard families macdeployqt bundled.
+    # We're a pure Widgets app, don't need any of these, and their malformed
+    # Mach-O headers also break codesign and LaunchServices.
+    for unwanted in [
+        app_bundle / "Contents" / "PlugIns" / "platforminputcontexts",
+        *app_bundle.glob("Contents/Frameworks/QtQml*.framework"),
+        app_bundle / "Contents" / "Frameworks" / "QtQmlWorkerScript.framework",
+        app_bundle / "Contents" / "Frameworks" / "QtQuick.framework",
+        *app_bundle.glob("Contents/Frameworks/QtVirtualKeyboard*.framework"),
+    ]:
+        if unwanted.exists():
+            shutil.rmtree(unwanted)
+            print(f"  Removed unused: {unwanted.name}")
+
+    # Rewrite framework references from absolute system paths to @rpath on
+    # the restored binary, and add the bundle rpath to the cocoa plugin.
+    # The main binary already has INSTALL_RPATH baked in by CMake, so we
+    # only rewrite -L deps here. Strip ad-hoc signatures first because
+    # install_name_tool refuses to touch signed Mach-Os.
+    install_name_tool = shutil.which("install_name_tool")
+    codesign_path = shutil.which("codesign")
+    otool_path = shutil.which("otool")
+
+    def _rewrite_to_rpath(target):
+        if not (target.exists() and install_name_tool and otool_path):
+            return
+        if codesign_path:
+            run([codesign_path, "--remove-signature", str(target)], check=False)
+        deps = subprocess.run([otool_path, "-L", str(target)],
+                              capture_output=True, text=True, check=False).stdout
+        for line in deps.splitlines()[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            dep = line.split(" (")[0]
+            # Only rewrite Qt frameworks coming from system locations.
+            if "Qt" not in dep:
+                continue
+            if not (dep.startswith("/opt/homebrew/") or dep.startswith("/usr/local/")
+                    or dep.startswith("/Library/")):
+                continue
+            # Build the @rpath form from the framework path:
+            # /opt/homebrew/opt/qtbase/lib/QtCore.framework/Versions/A/QtCore
+            #   -> @rpath/QtCore.framework/Versions/A/QtCore
+            idx = dep.rfind("/Qt")
+            while idx != -1 and ".framework" not in dep[idx:idx+50]:
+                idx = dep.rfind("/Qt", 0, idx)
+            if idx == -1:
+                continue
+            new_dep = "@rpath" + dep[idx:]
+            run([install_name_tool, "-change", dep, new_dep, str(target)],
+                check=False)
+
+    _rewrite_to_rpath(main_bin)
+
+    # macdeployqt corrupts framework binaries when it bails — strips
+    # LC_ID_DYLIB from QtCore.framework/Versions/A/QtCore etc, leaving
+    # dyld with "MH_DYLIB is missing LC_ID_DYLIB" at launch. Re-copy each
+    # framework's main binary from the system Qt prefix, set its ID to
+    # the @rpath form, and rewrite its inter-framework deps to @rpath too.
+    qt_lib_dir = Path(qt_prefix) / "lib"
+    if not qt_lib_dir.exists():
+        qt_lib_dir = Path(qt_prefix) / "share" / "qt" / "lib"
+    bundle_fw = app_bundle / "Contents" / "Frameworks"
+    if install_name_tool and qt_lib_dir.exists():
+        for fw_dir in bundle_fw.glob("Qt*.framework"):
+            fw_name = fw_dir.name.replace(".framework", "")
+            src_bin = qt_lib_dir / fw_dir.name / "Versions" / "A" / fw_name
+            dst_bin = fw_dir / "Versions" / "A" / fw_name
+            if not src_bin.exists() or not dst_bin.exists():
+                continue
+            shutil.copy2(src_bin, dst_bin)
+            if codesign_path:
+                run([codesign_path, "--remove-signature", str(dst_bin)], check=False)
+            new_id = f"@rpath/{fw_dir.name}/Versions/A/{fw_name}"
+            run([install_name_tool, "-id", new_id, str(dst_bin)], check=False)
+            _rewrite_to_rpath(dst_bin)
+
+    # Cocoa plugin needs an rpath added (Qt ships it with @loader_path/.../lib
+    # which is wrong inside the bundle), AND its Qt deps rewritten. Recopy
+    # the plugin binary from system Qt because macdeployqt's failed run
+    # corrupts it (strips LC_ID_DYLIB just like the frameworks).
+    cocoa = app_bundle / "Contents" / "PlugIns" / "platforms" / "libqcocoa.dylib"
+    if install_name_tool and cocoa.exists():
+        # Find the system source (Qt installs plugins under share/qt/plugins or
+        # share/qt6/plugins on Homebrew, or plugins/ inside the prefix).
+        for plug_root in [Path(qt_prefix) / "share" / "qt" / "plugins",
+                          Path(qt_prefix) / "share" / "qt6" / "plugins",
+                          Path(qt_prefix) / "plugins"]:
+            src_cocoa = plug_root / "platforms" / "libqcocoa.dylib"
+            if src_cocoa.exists():
+                shutil.copy2(src_cocoa, cocoa)
+                break
+        if codesign_path:
+            run([codesign_path, "--remove-signature", str(cocoa)], check=False)
+        run([install_name_tool, "-id",
+             "@rpath/PlugIns/platforms/libqcocoa.dylib", str(cocoa)],
+            check=False)
+        run([install_name_tool, "-add_rpath",
+             "@loader_path/../../Frameworks", str(cocoa)],
+            check=False)
+        _rewrite_to_rpath(cocoa)
 
     # Ad-hoc sign bottom-up (allows running on modern macOS without notarization).
     # --deep alone is unreliable; sign leaf binaries explicitly first.

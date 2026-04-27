@@ -572,6 +572,17 @@ install(DIRECTORY ${PACKS_DIR}/
 if(APPLE)
     # AppKit is needed for MacFocusFix.mm (NSWindow / NSPanel APIs).
     target_link_libraries(Oai PRIVATE "-framework AppKit")
+    # Bake the @executable_path rpath into the binary at link time. macdeployqt
+    # is supposed to do this post-build via install_name_tool, but it fails on
+    # malformed bundled QtQml frameworks and aborts before fixing rpath. And
+    # post-build install_name_tool can't run anyway: the linker ad-hoc signs
+    # binaries on Apple Silicon, so install_name_tool refuses with "malformed
+    # object" without first stripping the signature. Embedding rpath at link
+    # time sidesteps both issues.
+    set_target_properties(Oai PROPERTIES
+        INSTALL_RPATH "@executable_path/../Frameworks"
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
     set_target_properties(Oai PROPERTIES
         MACOSX_BUNDLE_ICON_FILE "oai.icns"
         MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.oai"
