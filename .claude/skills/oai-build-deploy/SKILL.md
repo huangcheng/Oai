@@ -356,6 +356,39 @@ When debugging an "icon won't update" complaint:
 2. `Oai.exe` mtime is newer than `oai.rc.obj` — confirms the link picked up the new .obj.
 3. If both check out, it's (b) — kick the IconCache.
 
+### 13. macOS: "The application can't be opened" / LaunchServices error 153
+
+```
+The application cannot be opened for an unexpected reason,
+error=Error Domain=RBSRequestErrorDomain Code=5 "Launch failed."
+NSPOSIXErrorDomain Code=153 "Launchd job spawn failed"
+```
+
+The binary runs fine via `./Oai.app/Contents/MacOS/Oai` but `open Oai.app` (and Finder double-click) fail. Cause: `macdeployqt` bundles QML frameworks (QtQml, QtQmlModels, QtQmlWorkerScript, QtQuick) and the `platforminputcontexts/libqtvirtualkeyboardplugin.dylib` plugin even though Oai is a pure Widgets app. These frameworks have malformed Mach-O headers (`install_name_tool` reports "malformed object") and the virtual keyboard plugin has no `LC_ID_DYLIB`. LaunchServices validates signatures on all embedded binaries before launch — the malformed ones cause a blanket rejection even though the main binary is fine.
+
+Fix (already part of the packaging flow):
+
+```bash
+# After macdeployqt, remove what Oai doesn't need:
+rm -rf Oai.app/Contents/PlugIns/platforminputcontexts
+rm -rf Oai.app/Contents/Frameworks/QtQml*.framework
+rm -rf Oai.app/Contents/Frameworks/QtQmlWorkerScript.framework
+rm -rf Oai.app/Contents/Frameworks/QtQuick.framework
+
+# Sign bottom-up: frameworks/dylibs first, then the main binary, then the bundle
+find Oai.app/Contents/Frameworks -type f \( -name "*.dylib" -o -path "*/Versions/A/*" \) \
+  -exec codesign --force --sign - {} \;
+find Oai.app/Contents/PlugIns -name "*.dylib" \
+  -exec codesign --force --sign - {} \;
+codesign --force --sign - Oai.app/Contents/MacOS/Oai
+codesign --deep --force --sign - Oai.app
+```
+
+Key points:
+- `--deep` alone is not reliable — it doesn't always re-sign nested components whose existing signature is "valid but ad-hoc". Sign leaf binaries explicitly first.
+- The quarantine attribute (`com.apple.quarantine`) is a separate issue: `xattr -r -d com.apple.quarantine Oai.app` removes it, but that alone won't help if signatures are broken.
+- If distributing to other machines without a Developer ID certificate, users will always need the `xattr` step after downloading.
+
 ## Cross-platform packaging summary
 
 | Platform | Built artefact | Bundles | Auto-discovered tooling |
