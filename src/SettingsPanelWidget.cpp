@@ -19,6 +19,8 @@
 #include <QFont>
 #include <QPixmap>
 #include <QShowEvent>
+#include <QStyle>
+#include <QStyleOptionButton>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -52,6 +54,39 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
     f.setStyleStrategy(QFont::PreferAntialias);
     f.setHintingPreference(QFont::PreferNoHinting);
     return f;
+}
+
+namespace {
+// QSS can color the indicator box but cannot draw the tick glyph. Override
+// paintEvent to overlay a checkmark on top of the styled box when checked.
+class CheckMarkBox : public QCheckBox {
+public:
+    using QCheckBox::QCheckBox;
+protected:
+    void paintEvent(QPaintEvent *e) override {
+        QCheckBox::paintEvent(e);
+        if (!isChecked()) return;
+        QStyleOptionButton opt;
+        initStyleOption(&opt);
+        const QRect r = style()->subElementRect(QStyle::SE_CheckBoxIndicator, &opt, this);
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        QPen pen(Qt::white);
+        pen.setWidthF(1.8);
+        pen.setCapStyle(Qt::RoundCap);
+        pen.setJoinStyle(Qt::RoundJoin);
+        p.setPen(pen);
+        const qreal x = r.x();
+        const qreal y = r.y();
+        const qreal w = r.width();
+        const qreal h = r.height();
+        QPainterPath path;
+        path.moveTo(x + w * 0.22, y + h * 0.52);
+        path.lineTo(x + w * 0.42, y + h * 0.72);
+        path.lineTo(x + w * 0.78, y + h * 0.32);
+        p.drawPath(path);
+    }
+};
 }
 
 SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
@@ -293,7 +328,7 @@ void SettingsPanelWidget::setupUi()
     m_autoStartLabel->setStyleSheet("color: black; background: transparent;");
     m_autoStartLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_autoStartCheck = new QCheckBox(m_contentWidget);
+    m_autoStartCheck = new CheckMarkBox(m_contentWidget);
     m_autoStartCheck->setFixedSize(16, 16);
     m_autoStartCheck->setStyleSheet(R"(
         QCheckBox::indicator {

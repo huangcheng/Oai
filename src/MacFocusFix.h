@@ -10,7 +10,11 @@ namespace MacFocusFix {
 // Make this widget's NSWindow non-activating: showing/raising it won't
 // activate the app or steal keyboard focus from the user's foreground app.
 // No-op on non-macOS platforms.
+#ifdef Q_OS_MACOS
 void makeNonActivating(QWidget *widget);
+#else
+inline void makeNonActivating(QWidget *) {}
+#endif
 
 }
 
