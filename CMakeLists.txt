@@ -324,6 +324,8 @@ qt_add_executable(Oai
     src/TipBubbleWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    src/MacFocusFix.h
+    $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
 )
@@ -568,6 +570,8 @@ install(DIRECTORY ${PACKS_DIR}/
 
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
+    # AppKit is needed for MacFocusFix.mm (NSWindow / NSPanel APIs).
+    target_link_libraries(Oai PRIVATE "-framework AppKit")
     set_target_properties(Oai PROPERTIES
         MACOSX_BUNDLE_ICON_FILE "oai.icns"
         MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.oai"

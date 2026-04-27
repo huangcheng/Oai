@@ -18,6 +18,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.h
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h
+    ${CMAKE_SOURCE_DIR}/src/MacFocusFix.h
+    $<$<PLATFORM_ID:Darwin>:${CMAKE_SOURCE_DIR}/src/MacFocusFix.mm>
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.cpp
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.h
     ${CMAKE_SOURCE_DIR}/src/TipsCatalog.cpp
@@ -50,6 +52,10 @@ foreach(test_src ${TEST_SOURCES})
         # TipBubbleWidget.cpp is shared with the main app and uses
         # DwmSetWindowAttribute to opt out of Win11 DWM chrome.
         target_link_libraries(${test_name} PRIVATE dwmapi)
+    endif()
+    if(APPLE)
+        # MacFocusFix.mm uses NSWindow / NSPanel from AppKit.
+        target_link_libraries(${test_name} PRIVATE "-framework AppKit")
     endif()
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src

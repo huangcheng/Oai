@@ -1,4 +1,5 @@
 #include "TipBubbleWidget.h"
+#include "MacFocusFix.h"
 
 #include <QPainter>
 #include <QFont>
@@ -30,6 +31,7 @@ TipBubbleWidget::TipBubbleWidget(QWidget *parent)
     setWindowFlags(
         Qt::FramelessWindowHint |
         Qt::WindowStaysOnTopHint |
+        Qt::Tool |                       // No taskbar entry; on macOS, prevents app activation on show
         Qt::WindowDoesNotAcceptFocus
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
@@ -57,6 +59,9 @@ TipBubbleWidget::~TipBubbleWidget()
 void TipBubbleWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
+    // Promote the underlying NSWindow to a non-activating panel so showing
+    // the bubble never steals keyboard focus from the user's foreground app.
+    MacFocusFix::makeNonActivating(this);
 #ifdef Q_OS_WIN
     HWND hwnd = reinterpret_cast<HWND>(winId());
     if (hwnd) {
@@ -128,7 +133,9 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
         m_opacity = 0.0;
         startEnterAnimation();
         QWidget::show();
-        raise();
+        // Note: do not call raise() here — on macOS it can activate the app
+        // and steal keyboard focus from whatever the user is typing in.
+        // Qt::WindowStaysOnTopHint already keeps the bubble above other windows.
     }
 
     // Reset dismiss timer
