@@ -95,7 +95,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 230;
-    static constexpr int PANEL_HEIGHT = 210;
+    static constexpr int PANEL_HEIGHT = 240;
 };
 
 #endif // SETTINGSPANELWIDGET_H

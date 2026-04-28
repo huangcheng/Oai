@@ -30,3 +30,8 @@ updateServerEndpoint=101.133.144.133:9340
 ; Whether the app launches at user login. Has no effect at first run unless
 ; the per-platform autostart hook is installed.
 ; autoStart=false
+
+; Whether to send anonymous analytics events (GA4 Measurement Protocol).
+; Set to false to disable. When compiled with OAI_ANALYTICS_ENABLED=OFF,
+; this option has no effect and analytics code is not included.
+; analyticsEnabled=true

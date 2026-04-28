@@ -8,6 +8,24 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools 
 
 qt_standard_project_setup()
 
+# --- Analytics provider selection -----------------------------------------------
+set(OAI_ANALYTICS_ENABLED ON CACHE BOOL "Enable analytics compilation")
+set(OAI_ANALYTICS_PROVIDER "ga4" CACHE STRING "Analytics provider (ga4|mock)")
+set_property(CACHE OAI_ANALYTICS_PROVIDER PROPERTY STRINGS ga4 mock)
+set(OAI_ANALYTICS_MEASUREMENT_ID "G-1Y5F7JVJF4" CACHE STRING "GA4 Measurement ID (e.g. G-XXXXXXXXXX)")
+set(OAI_ANALYTICS_API_SECRET "CTWwLksiT7udY9b_WCKpmg" CACHE STRING "GA4 API Secret")
+
+if(OAI_ANALYTICS_ENABLED)
+    message(STATUS "Analytics enabled, provider: ${OAI_ANALYTICS_PROVIDER}")
+    if(OAI_ANALYTICS_PROVIDER STREQUAL "ga4")
+        if(OAI_ANALYTICS_MEASUREMENT_ID STREQUAL "" OR OAI_ANALYTICS_API_SECRET STREQUAL "")
+            message(FATAL_ERROR "GA4 provider requires OAI_ANALYTICS_MEASUREMENT_ID and OAI_ANALYTICS_API_SECRET")
+        endif()
+    endif()
+else()
+    message(STATUS "Analytics disabled — zero binary footprint")
+endif()
+
 # --- rlottie via FetchContent ------------------------------------------------
 include(FetchContent)
 FetchContent_Declare(
@@ -324,6 +342,13 @@ qt_add_executable(Oai
     src/TipBubbleWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    src/AnalyticsTracker.cpp
+    src/AnalyticsTracker.h
+    src/AnalyticsProvider.h
+    $<$<BOOL:${OAI_ANALYTICS_ENABLED}>:src/Ga4Provider.cpp>
+    $<$<BOOL:${OAI_ANALYTICS_ENABLED}>:src/Ga4Provider.h>
+    $<$<BOOL:${OAI_ANALYTICS_ENABLED}>:src/MockProvider.cpp>
+    $<$<BOOL:${OAI_ANALYTICS_ENABLED}>:src/MockProvider.h>
     src/MacFocusFix.h
     $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
     thirdparty/miniz/miniz.c
@@ -337,6 +362,20 @@ target_compile_definitions(Oai PRIVATE
     PROJECT_VERSION="${PROJECT_VERSION}"
     OAI_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
+
+# --- Analytics compile definitions ----------------------------------------------
+if(OAI_ANALYTICS_ENABLED)
+    target_compile_definitions(Oai PRIVATE OAI_ANALYTICS_ENABLED=1)
+    if(OAI_ANALYTICS_PROVIDER STREQUAL "ga4")
+        target_compile_definitions(Oai PRIVATE
+            OAI_ANALYTICS_PROVIDER_GA4=1
+            OAI_ANALYTICS_MEASUREMENT_ID=${OAI_ANALYTICS_MEASUREMENT_ID}
+            OAI_ANALYTICS_API_SECRET=${OAI_ANALYTICS_API_SECRET}
+        )
+    elseif(OAI_ANALYTICS_PROVIDER STREQUAL "mock")
+        target_compile_definitions(Oai PRIVATE OAI_ANALYTICS_PROVIDER_MOCK=1)
+    endif()
+endif()
 
 # --- Icon resource -----------------------------------------------------------
 qt_add_resources(Oai "icons"

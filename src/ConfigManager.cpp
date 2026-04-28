@@ -91,6 +91,9 @@ void ConfigManager::load()
     // Last-selected character pack
     m_activePackId = m_settings.value("activePackId").toString();
 
+    // Analytics (default: enabled)
+    m_analyticsEnabled = m_settings.value("analyticsEnabled", true).toBool();
+
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
 
@@ -103,6 +106,7 @@ void ConfigManager::save()
     m_settings.setValue("ipcEndpoint", m_ipcEndpoint);
     m_settings.setValue("updateServerEndpoint", m_updateServerEndpoint);
     m_settings.setValue("activePackId", m_activePackId);
+    m_settings.setValue("analyticsEnabled", m_analyticsEnabled);
     m_settings.sync();
 }
 
@@ -129,6 +133,15 @@ void ConfigManager::setAutoStart(bool enabled)
         m_autoStart = enabled;
         save();
         applyAutoStartToOS(enabled);
+    }
+}
+
+void ConfigManager::setAnalyticsEnabled(bool enabled)
+{
+    if (m_analyticsEnabled != enabled) {
+        m_analyticsEnabled = enabled;
+        save();
+        emit analyticsEnabledChanged(enabled);
     }
 }
 

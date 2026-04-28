@@ -351,7 +351,8 @@ Config file: `~/.config/Oai/config.json`
   "windowY": 500,
   "language": "en",
   "autoStart": false,
-  "ipcEndpoint": "127.0.0.1:52847"
+  "ipcEndpoint": "127.0.0.1:52847",
+  "analyticsEnabled": true
 }
 ```
 

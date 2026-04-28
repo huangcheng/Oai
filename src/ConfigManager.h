@@ -25,6 +25,9 @@ public:
     bool autoStart() const { return m_autoStart; }
     void setAutoStart(bool enabled);
 
+    bool analyticsEnabled() const { return m_analyticsEnabled; }
+    void setAnalyticsEnabled(bool enabled);
+
     /** Pack ID of the last-selected character pack, or empty on first run. */
     QString activePackId() const { return m_activePackId; }
     void setActivePackId(const QString &packId);
@@ -66,6 +69,7 @@ signals:
     void languageChanged(const QString &lang);
     void ipcEndpointChanged(const QString &endpoint);
     void updateServerEndpointChanged(const QString &endpoint);
+    void analyticsEnabledChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -73,6 +77,7 @@ private:
     QPoint m_windowPosition;
     QString m_language = "en";
     bool m_autoStart = false;
+    bool m_analyticsEnabled = true;
     QString m_ipcEndpoint;
     QString m_updateServerEndpoint;
     QString m_activePackId;
