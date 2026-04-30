@@ -30,6 +30,10 @@ public:
     // Hide with exit animation
     void hideBubble();
 
+    // Suppress mode: silently ignore showBubble() calls in ECG mode
+    void setSuppressed(bool s) { m_suppressed = s; if (s && isVisible()) hideBubble(); }
+    bool isSuppressed() const { return m_suppressed; }
+
     qreal opacity() const { return m_opacity; }
     void setOpacity(qreal o);
     qreal slideOffset() const { return m_slideOffset; }
@@ -61,6 +65,9 @@ private:
     QString m_message;
     QString m_source;
     BubbleType m_type = TipBubble;
+
+    // Suppression flag — set in ECG mode so showBubble() is a silent no-op
+    bool m_suppressed = false;
 
     // Layout
     QRect m_bubbleRect;      // The rounded rectangle part (excludes tail)

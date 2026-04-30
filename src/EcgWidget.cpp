@@ -501,7 +501,24 @@ void EcgWidget::releaseControlAt(QPoint p)
 
 void EcgWidget::mousePressEvent(QMouseEvent *event)
 {
-    pressControlAt(event->pos());
+    if (event->button() == Qt::LeftButton) {
+        const QPoint p = event->pos();
+        // Check if press lands on a control first
+        if (m_pwrRect.contains(p) || m_almRect.contains(p)
+                || m_modeRect.contains(p) || m_sliderRect.contains(p)) {
+            pressControlAt(p);
+        } else {
+            // Chassis area drag
+            const QRect chassis(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
+            if (chassis.contains(p)) {
+                m_isChassisDragging = true;
+                m_dragLastGlobal = event->globalPosition().toPoint();
+                setCursor(Qt::ClosedHandCursor);
+            } else {
+                pressControlAt(p);
+            }
+        }
+    }
     event->accept();
 }
 
@@ -510,12 +527,24 @@ void EcgWidget::mouseMoveEvent(QMouseEvent *event)
     if (m_pressed == PressedControl::SliderDrag) {
         applyVolumeFromSliderX(event->pos().x());
         update();
+    } else if (m_isChassisDragging) {
+        const QPoint globalPos = event->globalPosition().toPoint();
+        const QPoint delta = globalPos - m_dragLastGlobal;
+        m_dragLastGlobal = globalPos;
+        move(pos() + delta);
+        emit dragMoved(delta);
     }
     event->accept();
 }
 
 void EcgWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_isChassisDragging) {
+        m_isChassisDragging = false;
+        unsetCursor();
+        event->accept();
+        return;
+    }
     releaseControlAt(event->pos());
     event->accept();
 }

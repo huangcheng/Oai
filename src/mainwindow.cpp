@@ -79,20 +79,18 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_ecgWidget = new EcgWidget(nullptr); // top-level, like the tip bubble
     m_ecgWidget->setAnchorRect(petRect());
     m_ecgWidget->anchorTo(this);
-    if (m_config->ecgEnabled()) {
-        m_ecgWidget->start();
-    }
 
-    connect(m_config, &ConfigManager::ecgEnabledChanged,
-            this, [this](bool enabled) {
-        if (enabled) {
-            m_ecgWidget->setAnchorRect(petRect());
-            m_ecgWidget->anchorTo(this);
-            m_ecgWidget->start();
-        } else {
-            m_ecgWidget->stop();
-        }
+    // Wire ECG chassis drag so MainWindow tracks the same delta
+    connect(m_ecgWidget, &EcgWidget::dragMoved, this, [this](QPoint delta) {
+        move(pos() + delta);
+        emit positionChanged(pos());
     });
+
+    connect(m_config, &ConfigManager::displayModeChanged,
+            this, &MainWindow::onDisplayModeChanged);
+
+    // Sync initial state once everything is constructed
+    onDisplayModeChanged(m_config->displayMode());
 
     // Connect position change for config persistence
     connect(this, &MainWindow::positionChanged, m_config, &ConfigManager::setWindowPosition);
@@ -377,16 +375,32 @@ void MainWindow::dropEvent(QDropEvent *event)
     event->acceptProposedAction();
 }
 
+void MainWindow::onDisplayModeChanged(ConfigManager::DisplayMode mode)
+{
+    if (mode == ConfigManager::DisplayMode::Ecg) {
+        m_tipBubble->hideBubble();
+        m_tipBubble->setSuppressed(true);
+        hide();
+        if (m_ecgWidget) {
+            m_ecgWidget->setAnchorRect(petRect());
+            m_ecgWidget->anchorTo(this);
+            m_ecgWidget->start();
+        }
+    } else {
+        if (m_ecgWidget) m_ecgWidget->stop();
+        m_tipBubble->setSuppressed(false);
+        show();
+    }
+}
+
 void MainWindow::toggleVisibility()
 {
     m_visible = !m_visible;
     if (m_visible) {
-        show();
-        m_engine->playAnimation("wave", SpriteAnimationEngine::HighPriority);
-        if (m_ecgWidget && m_config->ecgEnabled()) {
-            m_ecgWidget->setAnchorRect(petRect());
-            m_ecgWidget->anchorTo(this);
-            m_ecgWidget->start();
+        // Restore to current mode
+        onDisplayModeChanged(m_config->displayMode());
+        if (m_config->displayMode() == ConfigManager::DisplayMode::Character) {
+            m_engine->playAnimation("wave", SpriteAnimationEngine::HighPriority);
         }
     } else {
         hide();

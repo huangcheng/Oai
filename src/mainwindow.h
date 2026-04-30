@@ -6,12 +6,13 @@
 #include <QTimer>
 #include <QMenu>
 
+#include "ConfigManager.h"
+
 class SpriteAnimationEngine;
 class LottieAnimationEngine;
 #ifdef OAI_LIVE2D_SUPPORT
 class Live2DAnimationEngine;
 #endif
-class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
 class EcgWidget;
@@ -63,6 +64,7 @@ private slots:
     void toggleVisibility();
     void openSettings();
     void onActivePackChanged();
+    void onDisplayModeChanged(ConfigManager::DisplayMode mode);
 
 private:
     void setupWindowFlags();

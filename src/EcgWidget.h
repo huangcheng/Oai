@@ -50,6 +50,9 @@ protected:
 
     friend class TestEcg;
 
+signals:
+    void dragMoved(QPoint deltaGlobal);
+
 private slots:
     void onTick();
 
@@ -74,6 +77,10 @@ private:
     qreal  m_ledPulse = 1.0;
 
     PressedControl m_pressed = PressedControl::None;
+
+    // Chassis drag state
+    QPoint m_dragLastGlobal;
+    bool m_isChassisDragging = false;
 
     QSoundEffect *m_beep = nullptr;
     QTemporaryFile *m_beepFile = nullptr;
