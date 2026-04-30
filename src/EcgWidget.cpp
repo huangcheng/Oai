@@ -6,6 +6,7 @@
 #include <QPaintEvent>
 #include <QShowEvent>
 #include <QMouseEvent>
+#include <QContextMenuEvent>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QWindow>
@@ -546,6 +547,12 @@ void EcgWidget::mouseReleaseEvent(QMouseEvent *event)
         return;
     }
     releaseControlAt(event->pos());
+    event->accept();
+}
+
+void EcgWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    emit contextMenuRequested(event->globalPos());
     event->accept();
 }
 

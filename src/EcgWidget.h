@@ -42,6 +42,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
     // Synthesize the same action a real mouse press/release would, without
     // needing a visible window. Used by tests; not part of the public API.
@@ -52,6 +53,7 @@ protected:
 
 signals:
     void dragMoved(QPoint deltaGlobal);
+    void contextMenuRequested(QPoint globalPos);
 
 private slots:
     void onTick();

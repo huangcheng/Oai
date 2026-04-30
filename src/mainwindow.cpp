@@ -86,6 +86,9 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
         emit positionChanged(pos());
     });
 
+    connect(m_ecgWidget, &EcgWidget::contextMenuRequested,
+            this, &MainWindow::showContextMenu);
+
     connect(m_config, &ConfigManager::displayModeChanged,
             this, &MainWindow::onDisplayModeChanged);
 
@@ -306,8 +309,12 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
+    showContextMenu(event->globalPos());
+}
+
+void MainWindow::showContextMenu(const QPoint &globalPos)
+{
     QMenu menu(this);
-    // Platform-specific font size: macOS uses 13, Windows uses 10
     int menuFontSize = 10;
 #ifdef Q_OS_MAC
     menuFontSize = 13;
@@ -335,7 +342,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
     QAction *quitAction = menu.addAction(tr("Quit"));
     connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
 
-    menu.exec(event->globalPos());
+    menu.exec(globalPos);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)

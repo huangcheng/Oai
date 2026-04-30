@@ -6,32 +6,32 @@
     <message>
         <location filename="src/EcgWidget.cpp" line="190"/>
         <source>ECG MONITOR</source>
-        <translation>心电监护></translation>
+        <translation>心电监护</translation>
     </message>
     <message>
         <location filename="src/EcgWidget.cpp" line="286"/>
         <source>STANDBY</source>
-        <translation>待机></translation>
+        <translation>待机</translation>
     </message>
     <message>
         <location filename="src/EcgWidget.cpp" line="289"/>
         <source>HR %1 BPM</source>
-        <translation>心率 %1 BPM></translation>
+        <translation>心率 %1 BPM</translation>
     </message>
     <message>
         <location filename="src/EcgWidget.cpp" line="299"/>
         <source> (MUTED)</source>
-        <translation>（静音）></translation>
+        <translation>（静音）</translation>
     </message>
     <message>
         <location filename="src/EcgWidget.cpp" line="355"/>
         <source>PWR</source>
-        <translation>PWR></translation>
+        <translation>PWR</translation>
     </message>
     <message>
         <location filename="src/EcgWidget.cpp" line="356"/>
         <source>ALM</source>
-        <translation>ALM></translation>
+        <translation>ALM</translation>
     </message>
 </context>
 <context>
@@ -327,13 +327,13 @@ v1.2.0</translation>
         <location filename="src/SettingsPanelWidget.cpp" line="363"/>
         <location filename="src/SettingsPanelWidget.cpp" line="764"/>
         <source>Mode</source>
-        <translation>模式></translation>
+        <translation>模式</translation>
     </message>
     <message>
         <location filename="src/SettingsPanelWidget.cpp" line="372"/>
         <location filename="src/SettingsPanelWidget.cpp" line="765"/>
         <source>Character</source>
-        <translation>角色></translation>
+        <translation>角色</translation>
     </message>
     <message>
         <location filename="src/SettingsPanelWidget.cpp" line="373"/>

@@ -59,6 +59,7 @@ protected:
 public slots:
     void retranslateUi();
     void onLanguageChanged(const QString &lang);
+    void showContextMenu(const QPoint &globalPos);
 
 private slots:
     void toggleVisibility();
