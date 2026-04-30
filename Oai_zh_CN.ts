@@ -345,6 +345,10 @@ v1.2.0</translation>
         <translation>登录时启动</translation>
     </message>
     <message>
+        <source>ECG Monitor</source>
+        <translation>心电图</translation>
+    </message>
+    <message>
         <location filename="src/SettingsPanelWidget.cpp" line="246"/>
         <location filename="src/SettingsPanelWidget.cpp" line="461"/>
         <source>Port</source>
