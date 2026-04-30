@@ -2,6 +2,39 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
 <context>
+    <name>EcgWidget</name>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="190"/>
+        <source>ECG MONITOR</source>
+        <translation>心电监护></translation>
+    </message>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="286"/>
+        <source>STANDBY</source>
+        <translation>待机></translation>
+    </message>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="289"/>
+        <source>HR %1 BPM</source>
+        <translation>心率 %1 BPM></translation>
+    </message>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="299"/>
+        <source> (MUTED)</source>
+        <translation>（静音）></translation>
+    </message>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="355"/>
+        <source>PWR</source>
+        <translation>PWR></translation>
+    </message>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="356"/>
+        <source>ALM</source>
+        <translation>ALM></translation>
+    </message>
+</context>
+<context>
     <name>EventRouter</name>
     <message>
         <source>Session started</source>
@@ -119,17 +152,17 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="src/mainwindow.cpp" line="321"/>
+        <location filename="src/mainwindow.cpp" line="319"/>
         <source>Hide</source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="321"/>
+        <location filename="src/mainwindow.cpp" line="319"/>
         <source>Show</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="329"/>
+        <location filename="src/mainwindow.cpp" line="327"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
@@ -140,7 +173,7 @@ v1.0.0</source>
 v1.0.0</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="326"/>
+        <location filename="src/mainwindow.cpp" line="324"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
@@ -151,7 +184,7 @@ v1.2.0</source>
 v1.2.0</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="337"/>
+        <location filename="src/mainwindow.cpp" line="335"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
@@ -255,63 +288,75 @@ v1.2.0</translation>
 <context>
     <name>SettingsPanelWidget</name>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="217"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="742"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="222"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="758"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="222"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="743"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="227"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="759"/>
         <source>×</source>
         <translation>×</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="252"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="744"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="257"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="760"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="262"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="745"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="267"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="761"/>
         <source>English</source>
         <translation>English</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="263"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="746"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="268"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="762"/>
         <source>简体中文</source>
         <translation>简体中文</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="328"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="747"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="336"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="763"/>
         <source>Launch at Login</source>
         <translation>登录时启动</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="355"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="748"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="363"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="764"/>
+        <source>Mode</source>
+        <translation>模式></translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="372"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="765"/>
+        <source>Character</source>
+        <translation>角色></translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="373"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="766"/>
         <source>ECG Monitor</source>
         <translation>心电图</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="382"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="749"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="381"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="767"/>
         <source>Port</source>
         <translation>端口</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="405"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="750"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="404"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="768"/>
         <source>Model</source>
         <translation>模型</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="416"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="671"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="737"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="415"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="687"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="753"/>
         <source>(no pack)</source>
         <translation>（未选择）</translation>
     </message>
