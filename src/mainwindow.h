@@ -14,6 +14,7 @@ class Live2DAnimationEngine;
 class ConfigManager;
 class TipBubbleWidget;
 class SettingsPanelWidget;
+class EcgWidget;
 class CharacterPackManager;
 class EventRouter;
 
@@ -79,6 +80,7 @@ private:
     ConfigManager *m_config;
     TipBubbleWidget *m_tipBubble;
     SettingsPanelWidget *m_settingsPanel;
+    EcgWidget *m_ecgWidget = nullptr;
     QTranslator *m_translator;
     SystemTray *m_systemTray = nullptr;
     CharacterPackManager *m_packManager = nullptr;

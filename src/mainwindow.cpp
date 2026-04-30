@@ -9,6 +9,7 @@
 #include "ConfigManager.h"
 #include "TipBubbleWidget.h"
 #include "SettingsPanelWidget.h"
+#include "EcgWidget.h"
 #include "SystemTray.h"
 #include "EventRouter.h"
 #include "TipsCatalog.h"
@@ -75,6 +76,24 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_settingsPanel->setAnchorRect(petRect());
     m_settingsPanel->hide();
 
+    m_ecgWidget = new EcgWidget(nullptr); // top-level, like the tip bubble
+    m_ecgWidget->setAnchorRect(petRect());
+    m_ecgWidget->anchorTo(this);
+    if (m_config->ecgEnabled()) {
+        m_ecgWidget->start();
+    }
+
+    connect(m_config, &ConfigManager::ecgEnabledChanged,
+            this, [this](bool enabled) {
+        if (enabled) {
+            m_ecgWidget->setAnchorRect(petRect());
+            m_ecgWidget->anchorTo(this);
+            m_ecgWidget->start();
+        } else {
+            m_ecgWidget->stop();
+        }
+    });
+
     // Connect position change for config persistence
     connect(this, &MainWindow::positionChanged, m_config, &ConfigManager::setWindowPosition);
 
@@ -85,6 +104,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
         if (m_settingsPanel->isVisible()) {
             m_settingsPanel->setAnchorRect(petRect());
             m_settingsPanel->anchorTo(this);
+        }
+        if (m_ecgWidget && m_ecgWidget->isVisible()) {
+            m_ecgWidget->setAnchorRect(petRect());
+            m_ecgWidget->anchorTo(this);
         }
     });
 
@@ -360,10 +383,16 @@ void MainWindow::toggleVisibility()
     if (m_visible) {
         show();
         m_engine->playAnimation("wave", SpriteAnimationEngine::HighPriority);
+        if (m_ecgWidget && m_config->ecgEnabled()) {
+            m_ecgWidget->setAnchorRect(petRect());
+            m_ecgWidget->anchorTo(this);
+            m_ecgWidget->start();
+        }
     } else {
         hide();
         m_tipBubble->hideBubble();
         m_settingsPanel->hideAnimated();
+        if (m_ecgWidget) m_ecgWidget->hide();
     }
 }
 
@@ -428,6 +457,11 @@ void MainWindow::onActivePackChanged()
         int tipSpace = height() - petRect().height();
         m_petSize = QSize(displayW, displayH);
         setFixedSize(displayW, displayH + tipSpace);
+    }
+
+    if (m_ecgWidget && m_ecgWidget->isVisible()) {
+        m_ecgWidget->setAnchorRect(petRect());
+        m_ecgWidget->anchorTo(this);
     }
 
     // Load animations based on pack type.
@@ -509,6 +543,10 @@ void MainWindow::onActivePackChanged()
             // Re-anchor floating widgets to the newly sized pet rect.
             m_tipBubble->setAnchorRect(petRect());
             m_tipBubble->anchorTo(this);
+            if (m_ecgWidget && m_ecgWidget->isVisible()) {
+                m_ecgWidget->setAnchorRect(petRect());
+                m_ecgWidget->anchorTo(this);
+            }
             update();
         });
     }
