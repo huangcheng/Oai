@@ -121,7 +121,12 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     bool autoStart = m_config->autoStart();
     m_autoStartCheck->setChecked(autoStart);
 
-    m_ecgCheck->setChecked(m_config->ecgEnabled());
+    // Sync mode combo to current config value
+    const int modeIndex = (m_config->displayMode() == ConfigManager::DisplayMode::Ecg) ? 1 : 0;
+    m_modeCombo->setCurrentIndex(modeIndex);
+
+    // Reflect initial pack-row visibility
+    updatePackRowVisibility();
 }
 
 void SettingsPanelWidget::anchorTo(const QWidget *petWidget)
@@ -264,7 +269,7 @@ void SettingsPanelWidget::setupUi()
     m_langCombo->setFont(harmonyFont(10));
     m_langCombo->setFixedHeight(24);
 
-    // Generate a small down-arrow pixmap
+    // Generate a small down-arrow pixmap (shared by both combos)
     QString arrowPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
                         + "/oai_combo_arrow.png";
     if (!QFile::exists(arrowPath)) {
@@ -281,7 +286,8 @@ void SettingsPanelWidget::setupUi()
         arrow.save(arrowPath);
     }
 
-    m_langCombo->setStyleSheet(QStringLiteral(R"(
+    // Shared combo style (language + mode)
+    const QString comboStyleSheet = QStringLiteral(R"(
         QComboBox {
             background: white;
             border: 2px solid black;
@@ -320,7 +326,9 @@ void SettingsPanelWidget::setupUi()
             background: #F36F1A;
             color: white;
         }
-    )").arg(arrowPath));
+    )").arg(arrowPath);
+
+    m_langCombo->setStyleSheet(comboStyleSheet);
     connect(m_langCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsPanelWidget::onLanguageChanged);
 
@@ -351,32 +359,23 @@ void SettingsPanelWidget::setupUi()
     connect(m_autoStartCheck, &QCheckBox::toggled,
             this, &SettingsPanelWidget::onAutoStartToggled);
 
-    // ECG row: label + checkbox
-    m_ecgLabel = new QLabel(tr("ECG Monitor"), m_contentWidget);
-    m_ecgLabel->setFont(harmonyFont(10));
-    m_ecgLabel->setStyleSheet("color: black; background: transparent;");
-    m_ecgLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    // Mode row: label + combo  (Row 2 — replaces old ECG checkbox row)
+    m_modeLabel = new QLabel(tr("Mode"), m_contentWidget);
+    m_modeLabel->setFont(harmonyFont(10));
+    m_modeLabel->setStyleSheet("color: black; background: transparent;");
+    m_modeLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_ecgCheck = new CheckMarkBox(m_contentWidget);
-    m_ecgCheck->setFixedSize(16, 16);
-    m_ecgCheck->setStyleSheet(R"(
-        QCheckBox::indicator {
-            width: 12px;
-            height: 12px;
-            background: white;
-            border: 2px solid black;
-            border-radius: 3px;
-        }
-        QCheckBox::indicator:checked {
-            background: #F36F1A;
-            border: 1px solid #F36F1A;
-        }
-        QCheckBox::indicator:unchecked {
-            background: white;
-        }
-    )");
-    connect(m_ecgCheck, &QCheckBox::toggled,
-            this, &SettingsPanelWidget::onEcgToggled);
+    m_modeCombo = new QComboBox(m_contentWidget);
+    auto *modeListView = new QListView(m_modeCombo);
+    modeListView->setFont(harmonyFont(10));
+    m_modeCombo->setView(modeListView);
+    m_modeCombo->addItem(tr("Character"), "character");
+    m_modeCombo->addItem(tr("ECG Monitor"), "ecg");
+    m_modeCombo->setFont(harmonyFont(10));
+    m_modeCombo->setFixedHeight(24);
+    m_modeCombo->setStyleSheet(comboStyleSheet);
+    connect(m_modeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingsPanelWidget::onModeChanged);
 
     // Port row: label + input
     m_portLabel = new QLabel(tr("Port"), m_contentWidget);
@@ -462,6 +461,11 @@ void SettingsPanelWidget::setupUi()
     )").arg(arrowPath));
 
     // Grid layout for form rows: labels in col 0, controls in col 1
+    // Row 0: Language
+    // Row 1: Launch at Login
+    // Row 2: Mode
+    // Row 3: Port
+    // Row 4: Model (hidden in ECG mode)
     QGridLayout *formGrid = new QGridLayout();
     formGrid->setHorizontalSpacing(10);
     formGrid->setVerticalSpacing(VERTICAL_SPACING);
@@ -471,8 +475,8 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_langCombo,       0, 1);
     formGrid->addWidget(m_autoStartLabel,  1, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_autoStartCheck,  1, 1, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_ecgLabel,        2, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_ecgCheck,        2, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_modeLabel,       2, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_modeCombo,       2, 1);
     formGrid->addWidget(m_portLabel,       3, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_portInput,       3, 1);
     formGrid->addWidget(m_packLabel,       4, 0, Qt::AlignLeft | Qt::AlignVCenter);
@@ -483,6 +487,13 @@ void SettingsPanelWidget::setupUi()
     mainLayout->addWidget(m_separator);
     mainLayout->addLayout(formGrid);
     mainLayout->addStretch(1);
+}
+
+void SettingsPanelWidget::updatePackRowVisibility()
+{
+    const bool isCharacter = (m_config->displayMode() == ConfigManager::DisplayMode::Character);
+    m_packLabel->setVisible(isCharacter);
+    m_packButton->setVisible(isCharacter);
 }
 
 void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
@@ -612,9 +623,14 @@ void SettingsPanelWidget::onAutoStartToggled(bool checked)
     m_config->save();
 }
 
-void SettingsPanelWidget::onEcgToggled(bool checked)
+void SettingsPanelWidget::onModeChanged(int index)
 {
-    m_config->setEcgEnabled(checked);
+    const QString modeData = m_modeCombo->itemData(index).toString();
+    const ConfigManager::DisplayMode mode = (modeData == QStringLiteral("ecg"))
+                                            ? ConfigManager::DisplayMode::Ecg
+                                            : ConfigManager::DisplayMode::Character;
+    m_config->setDisplayMode(mode);
+    updatePackRowVisibility();
 }
 
 void SettingsPanelWidget::onPortEditingFinished()
@@ -745,7 +761,9 @@ void SettingsPanelWidget::retranslateUi()
     m_langCombo->setItemText(0, tr("English"));
     m_langCombo->setItemText(1, tr("简体中文"));
     m_autoStartLabel->setText(tr("Launch at Login"));
-    m_ecgLabel->setText(tr("ECG Monitor"));
+    m_modeLabel->setText(tr("Mode"));
+    m_modeCombo->setItemText(0, tr("Character"));
+    m_modeCombo->setItemText(1, tr("ECG Monitor"));
     m_portLabel->setText(tr("Port"));
     m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.

@@ -53,7 +53,7 @@ private slots:
     void onCloseClicked();
     void onLanguageChanged(int index);
     void onAutoStartToggled(bool checked);
-    void onEcgToggled(bool checked);
+    void onModeChanged(int index);
     void onPortEditingFinished();
 
 private:
@@ -61,6 +61,7 @@ private:
     void positionRelativeTo(const QWidget *pet);
     void refreshPackList();
     void updatePackButtonLabel();
+    void updatePackRowVisibility();
 
     ConfigManager *m_config;
     CharacterPackManager *m_packManager = nullptr;
@@ -73,8 +74,8 @@ private:
     QComboBox *m_langCombo = nullptr;
     QLabel *m_autoStartLabel = nullptr;
     QCheckBox *m_autoStartCheck = nullptr;
-    QLabel *m_ecgLabel = nullptr;
-    QCheckBox *m_ecgCheck = nullptr;
+    QLabel *m_modeLabel = nullptr;
+    QComboBox *m_modeCombo = nullptr;
     QLabel *m_portLabel = nullptr;
     QLineEdit *m_portInput = nullptr;
     QLabel *m_packLabel = nullptr;
