@@ -5,6 +5,7 @@
 #include <QPainterPath>
 #include <QPaintEvent>
 #include <QShowEvent>
+#include <QMouseEvent>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QWindow>
@@ -25,6 +26,21 @@
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 #endif
+
+namespace {
+
+static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
+{
+    QFont f(QStringLiteral("HarmonyOS Sans SC"), pointSize, weight);
+    f.setStyleStrategy(QFont::PreferAntialias);
+    f.setHintingPreference(QFont::PreferNoHinting);
+    return f;
+}
+
+} // namespace
+
+// Linker definition for constexpr arrays declared in the header.
+constexpr double EcgWidget::HR_BPM_OPTIONS[3];
 
 EcgWidget::EcgWidget(QWidget *parent)
     : QWidget(parent)
@@ -48,10 +64,10 @@ EcgWidget::EcgWidget(QWidget *parent)
     m_samples.resize(lcdW);
     m_samples.fill(0.0);
 
+    recomputeLayout();
+
     m_tickTimer.setInterval(TICK_INTERVAL_MS);
     connect(&m_tickTimer, &QTimer::timeout, this, &EcgWidget::onTick);
-
-    // Lazy: skip the audio subsystem until ECG is first enabled.
 }
 
 EcgWidget::~EcgWidget()
@@ -61,6 +77,27 @@ EcgWidget::~EcgWidget()
     delete m_beepFile;
 }
 
+void EcgWidget::recomputeLayout()
+{
+    // All rects in widget-local coordinates (origin = top-left of the full
+    // widget including the SHADOW_BLUR margin).
+    const int panelX = SHADOW_BLUR;
+    const int panelY = SHADOW_BLUR;
+
+    const int controlTop = panelY + TITLE_HEIGHT + LCD_HEIGHT + READOUT_HEIGHT;
+    const int ctrlCenterY = controlTop + CONTROL_HEIGHT / 2;
+
+    const int btnY = ctrlCenterY - BUTTON_H / 2;
+
+    m_pwrRect  = QRect(panelX + 8,                          btnY, BUTTON_W, BUTTON_H);
+    m_almRect  = QRect(m_pwrRect.right() + BUTTON_GAP + 1,  btnY, BUTTON_W, BUTTON_H);
+    m_modeRect = QRect(m_almRect.right() + BUTTON_GAP + 1,  btnY, BUTTON_W, BUTTON_H);
+
+    const int sliderX = panelX + PANEL_WIDTH - 8 - SLIDER_W;
+    const int sliderY = ctrlCenterY - SLIDER_H / 2;
+    m_sliderRect = QRect(sliderX, sliderY, SLIDER_W, SLIDER_H);
+}
+
 void EcgWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
@@ -68,13 +105,13 @@ void EcgWidget::showEvent(QShowEvent *event)
 #ifdef Q_OS_WIN
     HWND hwnd = reinterpret_cast<HWND>(winId());
     if (hwnd) {
-        const int doNotRound = 1;          // DWMWCP_DONOTROUND
+        const int doNotRound = 1;
         DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
                               &doNotRound, sizeof(doNotRound));
-        const int backdropNone = 1;        // DWMSBT_NONE
+        const int backdropNone = 1;
         DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
                               &backdropNone, sizeof(backdropNone));
-        const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
+        const int ncRenderingDisabled = 1;
         DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
                               &ncRenderingDisabled, sizeof(ncRenderingDisabled));
     }
@@ -92,8 +129,8 @@ void EcgWidget::anchorTo(const QWidget *petWidget)
 void EcgWidget::start()
 {
     initAudio();
-    // Sync prevPhase so the first tick after re-show can't fire a false R-peak.
     m_prevPhase = m_phase;
+    m_powerOn = true;
     m_tickTimer.start();
     if (m_anchoredPet) {
         positionRelativeTo(m_anchoredPet);
@@ -114,107 +151,281 @@ void EcgWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing, true);
 
     const QRectF body(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
-    const qreal r = CORNER_RADIUS;
-    const qreal sk = SKEW_PX;
 
-    // Skewed parallelogram path (matches TipBubbleWidget / SettingsPanelWidget).
-    QPainterPath panelPath;
-    panelPath.moveTo(body.left() + sk + r, body.top());
-    panelPath.lineTo(body.right() + sk - r, body.top());
-    panelPath.quadTo(body.right() + sk, body.top(), body.right() + sk, body.top() + r);
-    panelPath.lineTo(body.right(), body.bottom() - r);
-    panelPath.quadTo(body.right(), body.bottom(), body.right() - r, body.bottom());
-    panelPath.lineTo(body.left() + r, body.bottom());
-    panelPath.quadTo(body.left(), body.bottom(), body.left(), body.bottom() - r);
-    panelPath.lineTo(body.left() + sk, body.top() + r);
-    panelPath.quadTo(body.left() + sk, body.top(), body.left() + sk + r, body.top());
-    panelPath.closeSubpath();
-
-    painter.save();
-    painter.setOpacity(0.35);
-    painter.setPen(Qt::NoPen);
-    QPainterPath shadowPath = panelPath;
-    shadowPath.translate(3, 4);
-    painter.setBrush(Qt::black);
-    painter.drawPath(shadowPath);
-    painter.restore();
-
-    painter.setPen(QPen(Qt::black, BORDER_WIDTH, Qt::SolidLine,
-                        Qt::SquareCap, Qt::MiterJoin));
-    painter.setBrush(Qt::white);
-    painter.drawPath(panelPath);
-
-    painter.save();
-    painter.setClipPath(panelPath);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0xF3, 0x6F, 0x1A));
-    painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
-    painter.restore();
-
-    const QRect lcd(SHADOW_BLUR + LCD_PADDING,
-                    SHADOW_BLUR + LCD_PADDING,
-                    PANEL_WIDTH  - LCD_PADDING * 2,
-                    PANEL_HEIGHT - LCD_PADDING * 2);
-
-    painter.save();
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0x05, 0x1F, 0x0A));
-    painter.drawRect(lcd);
-
-    painter.setPen(QPen(QColor(0x00, 0x10, 0x05), 1));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(lcd.adjusted(0, 0, -1, -1));
-
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    for (int x = lcd.left(); x <= lcd.right(); x += 10) {
-        const bool major = ((x - lcd.left()) % 50 == 0);
-        painter.setPen(QPen(major ? QColor(0x2D, 0x7A, 0x4A)
-                                  : QColor(0x15, 0x4D, 0x2E), 1));
-        painter.drawLine(x, lcd.top(), x, lcd.bottom());
+    // --- Drop shadow (straight rect, 35% opacity) ---
+    {
+        QPainterPath shadowPath;
+        shadowPath.addRoundedRect(body.translated(3, 4), CORNER_RADIUS, CORNER_RADIUS);
+        p.save();
+        p.setOpacity(0.35);
+        p.setPen(Qt::NoPen);
+        p.setBrush(Qt::black);
+        p.drawPath(shadowPath);
+        p.restore();
     }
-    for (int y = lcd.top(); y <= lcd.bottom(); y += 10) {
-        const bool major = ((y - lcd.top()) % 20 == 0);
-        painter.setPen(QPen(major ? QColor(0x2D, 0x7A, 0x4A)
-                                  : QColor(0x15, 0x4D, 0x2E), 1));
-        painter.drawLine(lcd.left(), y, lcd.right(), y);
-    }
-    painter.setRenderHint(QPainter::Antialiasing, true);
 
-    if (!m_samples.isEmpty()) {
-        const double midY = lcd.center().y();
-        const double scale = lcd.height() * 0.40; // -1..+1 maps to 80% of LCD
-        QPainterPath trace;
-        for (int i = 0; i < m_samples.size(); ++i) {
-            const int idx = (m_writeHead + i) % m_samples.size();
-            const double v = m_samples[idx];
-            const double x = lcd.left() + i;
-            const double y = midY - v * scale;
-            if (i == 0) trace.moveTo(x, y);
-            else        trace.lineTo(x, y);
+    // --- Chassis outer rounded rect ---
+    QPainterPath chassisPath;
+    chassisPath.addRoundedRect(body, CORNER_RADIUS, CORNER_RADIUS);
+
+    p.setPen(QPen(Qt::black, BORDER_WIDTH, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+    p.setBrush(QColor(0x2A, 0x2A, 0x2A));
+    p.drawPath(chassisPath);
+
+    p.save();
+    p.setClipPath(chassisPath);
+
+    // ----------------------------------------------------------------
+    // Title bar (top 18 px of chassis)
+    // ----------------------------------------------------------------
+    const QRectF titleBar(body.left(), body.top(), body.width(), TITLE_HEIGHT);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(0x2A, 0x2A, 0x2A));
+    p.drawRect(titleBar);
+
+    // "ECG MONITOR" label
+    p.setPen(Qt::white);
+    p.setFont(harmonyFont(9, QFont::Bold));
+    QRectF titleTextRect = titleBar.adjusted(10, 0, -30, 0);
+    p.drawText(titleTextRect, Qt::AlignVCenter | Qt::AlignLeft, tr("ECG MONITOR"));
+
+    // Power LED
+    {
+        const qreal ledCx = body.left() + PANEL_WIDTH - 16;
+        const qreal ledCy = body.top() + TITLE_HEIGHT / 2.0;
+        const qreal baseR = 4.0; // 8 px diameter
+        const qreal pulseR = baseR * m_ledPulse;
+
+        if (m_powerOn) {
+            // Soft glow disc behind the LED
+            p.save();
+            p.setPen(Qt::NoPen);
+            QRadialGradient glow(ledCx, ledCy, pulseR * 2.0);
+            glow.setColorAt(0, QColor(0x4F, 0xFF, 0x7A, 120));
+            glow.setColorAt(1, QColor(0x4F, 0xFF, 0x7A, 0));
+            p.setBrush(glow);
+            p.drawEllipse(QPointF(ledCx, ledCy), pulseR * 2.0, pulseR * 2.0);
+
+            // LED core
+            p.setBrush(QColor(0x4F, 0xFF, 0x7A));
+            p.drawEllipse(QPointF(ledCx, ledCy), pulseR, pulseR);
+            p.restore();
+        } else {
+            p.save();
+            p.setPen(Qt::NoPen);
+            p.setBrush(QColor(0x40, 0x40, 0x40));
+            p.drawEllipse(QPointF(ledCx, ledCy), baseR, baseR);
+            p.restore();
         }
-        painter.setPen(QPen(QColor(0x4F, 0xFF, 0x7A, 90), 4));
-        painter.drawPath(trace);
-        painter.setPen(QPen(QColor(0x4F, 0xFF, 0x7A), 1.6));
-        painter.drawPath(trace);
     }
-    painter.restore();
+
+    // Thin separator line below title bar
+    p.setPen(QPen(Qt::black, 1));
+    p.drawLine(QPointF(body.left(), body.top() + TITLE_HEIGHT),
+               QPointF(body.right(), body.top() + TITLE_HEIGHT));
+
+    // ----------------------------------------------------------------
+    // LCD canvas
+    // ----------------------------------------------------------------
+    const QRect lcd(
+        static_cast<int>(body.left()) + LCD_PADDING,
+        static_cast<int>(body.top()) + TITLE_HEIGHT + LCD_PADDING / 2,
+        PANEL_WIDTH - LCD_PADDING * 2,
+        LCD_HEIGHT - LCD_PADDING
+    );
+
+    p.setPen(Qt::NoPen);
+    p.setBrush(m_powerOn ? QColor(0x05, 0x1F, 0x0A) : QColor(0x08, 0x08, 0x08));
+    p.drawRect(lcd);
+
+    if (m_powerOn) {
+        // Grid
+        p.setRenderHint(QPainter::Antialiasing, false);
+        for (int x = lcd.left(); x <= lcd.right(); x += 10) {
+            const bool major = ((x - lcd.left()) % 50 == 0);
+            p.setPen(QPen(major ? QColor(0x2D, 0x7A, 0x4A)
+                                : QColor(0x15, 0x4D, 0x2E), 1));
+            p.drawLine(x, lcd.top(), x, lcd.bottom());
+        }
+        for (int y = lcd.top(); y <= lcd.bottom(); y += 10) {
+            const bool major = ((y - lcd.top()) % 20 == 0);
+            p.setPen(QPen(major ? QColor(0x2D, 0x7A, 0x4A)
+                                : QColor(0x15, 0x4D, 0x2E), 1));
+            p.drawLine(lcd.left(), y, lcd.right(), y);
+        }
+        p.setRenderHint(QPainter::Antialiasing, true);
+
+        // Trace
+        if (!m_samples.isEmpty()) {
+            const double midY  = lcd.center().y();
+            const double scale = lcd.height() * 0.40;
+            QPainterPath trace;
+            for (int i = 0; i < m_samples.size(); ++i) {
+                const int idx = (m_writeHead + i) % m_samples.size();
+                const double v = m_samples[idx];
+                const double tx = lcd.left() + i;
+                const double ty = midY - v * scale;
+                if (i == 0) trace.moveTo(tx, ty);
+                else        trace.lineTo(tx, ty);
+            }
+            p.setPen(QPen(QColor(0x4F, 0xFF, 0x7A, 90), 4));
+            p.drawPath(trace);
+            p.setPen(QPen(QColor(0x4F, 0xFF, 0x7A), 1.6));
+            p.drawPath(trace);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // HR readout strip
+    // ----------------------------------------------------------------
+    const QRect readout(
+        static_cast<int>(body.left()),
+        static_cast<int>(body.top()) + TITLE_HEIGHT + LCD_HEIGHT,
+        PANEL_WIDTH,
+        READOUT_HEIGHT
+    );
+
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(0x2A, 0x2A, 0x2A));
+    p.drawRect(readout);
+
+    p.setFont(harmonyFont(10, QFont::Bold));
+    if (!m_powerOn) {
+        p.setPen(QColor(0x60, 0x60, 0x60));
+        p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
+                   tr("STANDBY"));
+    } else {
+        const int bpm = static_cast<int>(std::round(currentBpm()));
+        QString text = tr("HR %1 BPM").arg(bpm);
+        if (m_muted) text += tr(" (MUTED)");
+
+        if (m_muted) {
+            // Draw the BPM part green and the "(MUTED)" part red.
+            // Simpler: draw whole string green, then overlay the muted part.
+            p.setPen(QColor(0x4F, 0xFF, 0x7A));
+            const QString bpmText = tr("HR %1 BPM").arg(bpm);
+            p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, bpmText);
+
+            // Measure the base text width to place the muted suffix.
+            QFontMetrics fm(p.font());
+            const int bpmW = fm.horizontalAdvance(bpmText);
+            p.setPen(QColor(0xA0, 0x30, 0x30));
+            p.drawText(readout.adjusted(10 + bpmW, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
+                       tr(" (MUTED)"));
+        } else {
+            p.setPen(QColor(0x4F, 0xFF, 0x7A));
+            p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
+        }
+    }
+
+    // Thin separator above readout
+    p.setPen(QPen(Qt::black, 1));
+    p.drawLine(readout.topLeft(), readout.topRight());
+
+    // ----------------------------------------------------------------
+    // Control panel
+    // ----------------------------------------------------------------
+    const QRect ctrlPanel(
+        static_cast<int>(body.left()),
+        static_cast<int>(body.top()) + TITLE_HEIGHT + LCD_HEIGHT + READOUT_HEIGHT,
+        PANEL_WIDTH,
+        CONTROL_HEIGHT
+    );
+
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(0x3A, 0x3A, 0x3A));
+    p.drawRect(ctrlPanel);
+
+    // Separator line above control panel
+    p.setPen(QPen(Qt::black, 1));
+    p.drawLine(ctrlPanel.topLeft(), ctrlPanel.topRight());
+
+    // Helper lambda — draw one button
+    auto drawButton = [&](const QRect &r, const QString &label, bool isOff,
+                          bool isPressed, bool isMuted = false)
+    {
+        const int yShift = isPressed ? 1 : 0;
+        QRect br = r.translated(0, yShift);
+
+        // Button face
+        QColor fillColor = isOff ? QColor(0xA0, 0xA0, 0xA0)
+                                 : QColor(0xD0, 0xD0, 0xD0);
+        if (isPressed) fillColor = QColor(0x90, 0x90, 0x90);
+
+        p.save();
+        p.setPen(QPen(Qt::black, 1.5));
+        p.setBrush(fillColor);
+        p.drawRoundedRect(br, 3, 3);
+
+        // Button label
+        p.setPen(Qt::black);
+        p.setFont(harmonyFont(9, QFont::Bold));
+        p.drawText(br, Qt::AlignCenter, label);
+
+        // ALM mute indicator: diagonal red bar
+        if (isMuted) {
+            p.setPen(QPen(QColor(0xC0, 0x40, 0x40), 3));
+            p.drawLine(br.topLeft() + QPoint(3, 3),
+                       br.bottomRight() - QPoint(3, 3));
+        }
+
+        p.restore();
+    };
+
+    const bool pwrPressed  = (m_pressed == PressedControl::Pwr);
+    const bool almPressed  = (m_pressed == PressedControl::Alm);
+    const bool modePressed = (m_pressed == PressedControl::Mode);
+
+    drawButton(m_pwrRect,  tr("PWR"),  !m_powerOn, pwrPressed);
+    drawButton(m_almRect,  tr("ALM"),  false,       almPressed, m_muted);
+    const QString modeLabel = QString::number(static_cast<int>(std::round(currentBpm())));
+    drawButton(m_modeRect, modeLabel,  false,       modePressed);
+
+    // --- Volume slider ---
+    {
+        const QRect &sr = m_sliderRect;
+        const int trackH = 4;
+        const int trackY = sr.top() + (sr.height() - trackH) / 2;
+        const QRect track(sr.left(), trackY, sr.width(), trackH);
+
+        // Track background
+        p.save();
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(0x20, 0x20, 0x20));
+        p.drawRoundedRect(track, 2, 2);
+
+        // Filled portion
+        const int thumbX = sr.left() + static_cast<int>((sr.width() - SLIDER_THUMB_W) * m_volume);
+        const int fillW  = thumbX + SLIDER_THUMB_W / 2 - sr.left();
+        if (fillW > 0) {
+            p.setBrush(QColor(0x4F, 0xFF, 0x7A));
+            p.drawRoundedRect(QRect(sr.left(), trackY, fillW, trackH), 2, 2);
+        }
+
+        // Thumb
+        const QRect thumb(thumbX, sr.top(), SLIDER_THUMB_W, sr.height());
+        p.setPen(QPen(Qt::black, 1));
+        p.setBrush(QColor(0xE0, 0xE0, 0xE0));
+        p.drawRoundedRect(thumb, 2, 2);
+
+        p.restore();
+    }
+
+    p.restore(); // end clip
 }
 
 void EcgWidget::positionRelativeTo(const QWidget *pet)
 {
-    if (!pet)
-        return;
+    if (!pet) return;
 
     QRect anchor = m_anchorRect.isValid()
                    ? m_anchorRect
                    : QRect(0, 0, pet->width(), pet->height());
 
-    // Same Qt::Tool macOS quirk as TipBubbleWidget — prefer the native
-    // QWindow position over mapToGlobal/pos which can return stale data.
     QPoint petGlobalPos;
     if (QWindow *w = pet->windowHandle()) {
         petGlobalPos = w->position();
@@ -225,7 +436,7 @@ void EcgWidget::positionRelativeTo(const QWidget *pet)
     const int petTop     = petGlobalPos.y() + anchor.y();
 
     int wx = petCenterX - width() / 2;
-    int wy = petTop - height(); // sits flush above pet
+    int wy = petTop - height();
 
     QScreen *screen = QGuiApplication::screenAt(QPoint(petCenterX, petTop));
     if (screen) {
@@ -238,30 +449,117 @@ void EcgWidget::positionRelativeTo(const QWidget *pet)
 
 void EcgWidget::onTick()
 {
-    const double periodMs = 60.0 * 1000.0 / HEART_RATE_BPM;
-    const double dPhase = static_cast<double>(TICK_INTERVAL_MS) / periodMs;
+    if (!m_powerOn) {
+        // Chassis stays visible but we don't advance the trace.
+        return;
+    }
+
+    const double periodMs = 60.0 * 1000.0 / currentBpm();
+    const double dPhase   = static_cast<double>(TICK_INTERVAL_MS) / periodMs;
 
     m_prevPhase = m_phase;
-    m_phase += dPhase;
+    m_phase    += dPhase;
     if (m_phase >= 1.0) m_phase -= 1.0;
 
     m_samples[m_writeHead] = ecgSample(m_phase);
     m_writeHead = (m_writeHead + 1) % m_samples.size();
 
-    // R-peak edge: phase crossed R_PEAK_PHASE within this tick.
+    // Decay LED pulse each tick.
+    m_ledPulse = qMax(1.0, m_ledPulse - 0.13);
+
     auto crossedR = [&]() {
-        // Handles the wrap case where m_prevPhase > m_phase.
-        if (m_prevPhase <= m_phase) {
+        if (m_prevPhase <= m_phase)
             return m_prevPhase < R_PEAK_PHASE && m_phase >= R_PEAK_PHASE;
-        }
         return R_PEAK_PHASE > m_prevPhase || R_PEAK_PHASE <= m_phase;
     };
-    if (crossedR() && m_beep && m_beep->isLoaded()) {
-        m_beep->play();
+
+    if (crossedR()) {
+        m_ledPulse = 1.4;
+        if (!m_muted && m_beep && m_beep->isLoaded()) {
+            m_beep->play();
+        }
     }
 
     update();
 }
+
+// ---------- mouse helpers ----------
+
+void EcgWidget::applyVolumeFromSliderX(int widgetX)
+{
+    const int trackW = m_sliderRect.width() - SLIDER_THUMB_W;
+    const int rel    = widgetX - m_sliderRect.left() - SLIDER_THUMB_W / 2;
+    m_volume = qBound(0.0, static_cast<double>(rel) / trackW, 1.0);
+    if (m_beep) m_beep->setVolume(static_cast<float>(m_volume));
+}
+
+void EcgWidget::pressControlAt(QPoint p)
+{
+    if (m_pwrRect.contains(p))       m_pressed = PressedControl::Pwr;
+    else if (m_almRect.contains(p))  m_pressed = PressedControl::Alm;
+    else if (m_modeRect.contains(p)) m_pressed = PressedControl::Mode;
+    else if (m_sliderRect.contains(p)) {
+        m_pressed = PressedControl::SliderDrag;
+        applyVolumeFromSliderX(p.x());
+    } else {
+        m_pressed = PressedControl::None;
+    }
+    update();
+}
+
+void EcgWidget::releaseControlAt(QPoint p)
+{
+    switch (m_pressed) {
+    case PressedControl::Pwr:
+        if (m_pwrRect.contains(p)) {
+            m_powerOn = !m_powerOn;
+            if (m_powerOn) {
+                m_prevPhase = m_phase;
+                m_tickTimer.start();
+            } else {
+                m_tickTimer.stop();
+                if (m_beep) m_beep->stop();
+            }
+        }
+        break;
+    case PressedControl::Alm:
+        if (m_almRect.contains(p)) m_muted = !m_muted;
+        break;
+    case PressedControl::Mode:
+        if (m_modeRect.contains(p)) m_hrIndex = (m_hrIndex + 1) % 3;
+        break;
+    case PressedControl::SliderDrag:
+        // Volume was already applied live during drag.
+        break;
+    case PressedControl::None:
+        break;
+    }
+    m_pressed = PressedControl::None;
+    update();
+}
+
+void EcgWidget::mousePressEvent(QMouseEvent *event)
+{
+    pressControlAt(event->pos());
+    event->accept();
+}
+
+void EcgWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_pressed == PressedControl::SliderDrag) {
+        applyVolumeFromSliderX(event->pos().x());
+        update();
+    }
+    event->accept();
+}
+
+void EcgWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    releaseControlAt(event->pos());
+    event->accept();
+}
+
+// ---------- audio ----------
 
 void EcgWidget::initAudio()
 {
@@ -278,16 +576,17 @@ void EcgWidget::initAudio()
     m_beepFile->write(synthesizeBeepWav());
     m_beepFile->flush();
     const QString path = m_beepFile->fileName();
-    m_beepFile->close(); // QSoundEffect needs the file readable, not held open.
+    m_beepFile->close();
 
     m_beep = new QSoundEffect(this);
     m_beep->setSource(QUrl::fromLocalFile(path));
-    m_beep->setVolume(0.4);
+    m_beep->setVolume(static_cast<float>(m_volume));
 }
+
+// ---------- static helpers ----------
 
 double EcgWidget::ecgSample(double phase)
 {
-    // Wrap to [0, 1).
     phase = phase - std::floor(phase);
 
     auto gauss = [](double x, double mu, double sigma) {
@@ -295,8 +594,6 @@ double EcgWidget::ecgSample(double phase)
         return std::exp(-0.5 * z * z);
     };
 
-    // Stylized PQRST. Coefficients tuned for visual recognizability —
-    // not medically accurate, but unmistakable as an ECG trace.
     double v = 0.0;
     v += 0.15 * gauss(phase, 0.15, 0.025); // P wave
     v -= 0.10 * gauss(phase, 0.28, 0.012); // Q dip
@@ -308,17 +605,17 @@ double EcgWidget::ecgSample(double phase)
 
 QByteArray EcgWidget::synthesizeBeepWav()
 {
-    const int sr  = BEEP_SAMPLE_RATE;
-    const int n   = sr * BEEP_DURATION_MS / 1000;
-    const int fade = sr * BEEP_FADE_MS / 1000;
-    const double w = 2.0 * M_PI * BEEP_FREQ_HZ / double(sr);
+    const int    sr   = BEEP_SAMPLE_RATE;
+    const int    n    = sr * BEEP_DURATION_MS / 1000;
+    const int    fade = sr * BEEP_FADE_MS / 1000;
+    const double w    = 2.0 * M_PI * BEEP_FREQ_HZ / double(sr);
 
     QByteArray pcm;
     pcm.reserve(n * 2);
     for (int i = 0; i < n; ++i) {
         double env = 1.0;
-        if (i < fade)             env = double(i) / fade;
-        else if (i > n - fade)    env = double(n - i) / fade;
+        if (i < fade)          env = double(i) / fade;
+        else if (i > n - fade) env = double(n - i) / fade;
         const double s = std::sin(w * i) * env * 0.6;
         const qint16 v = static_cast<qint16>(qBound(-32767.0, s * 32767.0, 32767.0));
         pcm.append(static_cast<char>(v & 0xFF));
@@ -343,13 +640,13 @@ QByteArray EcgWidget::synthesizeBeepWav()
     putU32(36 + pcm.size());
     wav.append("WAVE");
     wav.append("fmt ");
-    putU32(16);            // fmt chunk size
-    putU16(1);             // PCM
-    putU16(1);             // mono
-    putU32(sr);            // sample rate
-    putU32(sr * 2);        // byte rate (mono * 16-bit)
-    putU16(2);             // block align
-    putU16(16);            // bits/sample
+    putU32(16);
+    putU16(1);
+    putU16(1);
+    putU32(sr);
+    putU32(sr * 2);
+    putU16(2);
+    putU16(16);
     wav.append("data");
     putU32(pcm.size());
     wav.append(pcm);
