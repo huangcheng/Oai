@@ -4,6 +4,10 @@ project(Oai VERSION 1.2.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Export compile_commands.json so clangd-based editors (Qt Creator, VS Code,
+# Neovim) can resolve Qt headers without choking on every QObject include.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia LinguistTools Test)
 
 qt_standard_project_setup()

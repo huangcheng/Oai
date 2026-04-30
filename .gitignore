@@ -104,3 +104,4 @@ Testing/
 # agents/) is tracked so the project workflow travels with the repo.
 .claude/settings.local.json
 .claude/local/
+compile_commands.json
