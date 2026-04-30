@@ -18,6 +18,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.h
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h
+    ${CMAKE_SOURCE_DIR}/src/EcgWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/EcgWidget.h
     ${CMAKE_SOURCE_DIR}/src/MacFocusFix.h
     $<$<PLATFORM_ID:Darwin>:${CMAKE_SOURCE_DIR}/src/MacFocusFix.mm>
     ${CMAKE_SOURCE_DIR}/src/TipsEngine.cpp
@@ -46,6 +48,7 @@ foreach(test_src ${TEST_SOURCES})
             Qt::Gui
             Qt::Widgets
             Qt::Network
+            Qt::Multimedia
             Qt::Test
             rlottie::rlottie
     )

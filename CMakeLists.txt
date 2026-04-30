@@ -4,7 +4,7 @@ project(Oai VERSION 1.2.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network LinguistTools Test)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia LinguistTools Test)
 
 qt_standard_project_setup()
 
@@ -324,6 +324,8 @@ qt_add_executable(Oai
     src/TipBubbleWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    src/EcgWidget.cpp
+    src/EcgWidget.h
     src/MacFocusFix.h
     $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
     thirdparty/miniz/miniz.c
@@ -370,6 +372,7 @@ target_link_libraries(Oai
         Qt::Gui
         Qt::Widgets
         Qt::Network
+        Qt::Multimedia
         rlottie::rlottie
 )
 
