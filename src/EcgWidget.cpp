@@ -44,7 +44,6 @@ EcgWidget::EcgWidget(QWidget *parent)
 
     setFixedSize(PANEL_WIDTH + SHADOW_BLUR * 2, PANEL_HEIGHT + SHADOW_BLUR * 2);
 
-    // Sample buffer width = LCD inner width.
     const int lcdW = PANEL_WIDTH - LCD_PADDING * 2;
     m_samples.resize(lcdW);
     m_samples.fill(0.0);
@@ -52,8 +51,7 @@ EcgWidget::EcgWidget(QWidget *parent)
     m_tickTimer.setInterval(TICK_INTERVAL_MS);
     connect(&m_tickTimer, &QTimer::timeout, this, &EcgWidget::onTick);
 
-    // Audio is initialized lazily on first start() to avoid creating a
-    // QSoundEffect for users who never enable the ECG.
+    // Lazy: skip the audio subsystem until ECG is first enabled.
 }
 
 EcgWidget::~EcgWidget()
@@ -94,7 +92,7 @@ void EcgWidget::anchorTo(const QWidget *petWidget)
 void EcgWidget::start()
 {
     initAudio();
-    // Reset phase state; samples are kept (so re-show preserves continuity).
+    // Sync prevPhase so the first tick after re-show can't fire a false R-peak.
     m_prevPhase = m_phase;
     m_tickTimer.start();
     if (m_anchoredPet) {
@@ -136,7 +134,6 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     panelPath.quadTo(body.left() + sk, body.top(), body.left() + sk + r, body.top());
     panelPath.closeSubpath();
 
-    // Bold offset shadow.
     painter.save();
     painter.setOpacity(0.35);
     painter.setPen(Qt::NoPen);
@@ -146,13 +143,11 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     painter.drawPath(shadowPath);
     painter.restore();
 
-    // White fill + thick black border.
     painter.setPen(QPen(Qt::black, BORDER_WIDTH, Qt::SolidLine,
                         Qt::SquareCap, Qt::MiterJoin));
     painter.setBrush(Qt::white);
     painter.drawPath(panelPath);
 
-    // Persona-orange accent stripe at top.
     painter.save();
     painter.setClipPath(panelPath);
     painter.setPen(Qt::NoPen);
@@ -160,24 +155,20 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     painter.drawRect(QRectF(body.left(), body.top(), body.width() + sk, 4));
     painter.restore();
 
-    // LCD canvas.
     const QRect lcd(SHADOW_BLUR + LCD_PADDING,
                     SHADOW_BLUR + LCD_PADDING,
                     PANEL_WIDTH  - LCD_PADDING * 2,
                     PANEL_HEIGHT - LCD_PADDING * 2);
 
-    // LCD background.
     painter.save();
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(0x05, 0x1F, 0x0A));
     painter.drawRect(lcd);
 
-    // Inner border for an LCD bezel feel.
     painter.setPen(QPen(QColor(0x00, 0x10, 0x05), 1));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(lcd.adjusted(0, 0, -1, -1));
 
-    // Grid: 10 px minor, every 5th major.
     painter.setRenderHint(QPainter::Antialiasing, false);
     for (int x = lcd.left(); x <= lcd.right(); x += 10) {
         const bool major = ((x - lcd.left()) % 50 == 0);
@@ -193,8 +184,6 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     }
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Trace: read m_samples starting at m_writeHead (oldest sample) and
-    // walk one pixel per sample across the LCD width.
     if (!m_samples.isEmpty()) {
         const double midY = lcd.center().y();
         const double scale = lcd.height() * 0.40; // -1..+1 maps to 80% of LCD
@@ -207,10 +196,8 @@ void EcgWidget::paintEvent(QPaintEvent *event)
             if (i == 0) trace.moveTo(x, y);
             else        trace.lineTo(x, y);
         }
-        // Soft glow underlay.
         painter.setPen(QPen(QColor(0x4F, 0xFF, 0x7A, 90), 4));
         painter.drawPath(trace);
-        // Crisp top stroke.
         painter.setPen(QPen(QColor(0x4F, 0xFF, 0x7A), 1.6));
         painter.drawPath(trace);
     }
@@ -251,7 +238,6 @@ void EcgWidget::positionRelativeTo(const QWidget *pet)
 
 void EcgWidget::onTick()
 {
-    // Advance phase by (TICK_INTERVAL_MS / period_ms).
     const double periodMs = 60.0 * 1000.0 / HEART_RATE_BPM;
     const double dPhase = static_cast<double>(TICK_INTERVAL_MS) / periodMs;
 
@@ -259,7 +245,6 @@ void EcgWidget::onTick()
     m_phase += dPhase;
     if (m_phase >= 1.0) m_phase -= 1.0;
 
-    // Write the current sample at the head, advance head circularly.
     m_samples[m_writeHead] = ecgSample(m_phase);
     m_writeHead = (m_writeHead + 1) % m_samples.size();
 

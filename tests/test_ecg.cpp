@@ -1,13 +1,3 @@
-/**
- * test_ecg.cpp
- *
- * Unit tests for the ECG monitor component:
- *  - ConfigManager::ecgEnabled persistence + signal
- *  - EcgWidget waveform sampler shape
- *  - WAV synthesis header correctness
- *  - Smoke-test EcgWidget construction
- */
-
 #include <QTest>
 #include <QSignalSpy>
 #include <QStandardPaths>

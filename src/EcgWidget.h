@@ -17,23 +17,14 @@ public:
     explicit EcgWidget(QWidget *parent = nullptr);
     ~EcgWidget() override;
 
-    // Position relative to the pet widget (mirrors TipBubbleWidget's API).
     void anchorTo(const QWidget *petWidget);
     void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
 
-    // Begin / end the timer-driven animation + audio.
-    // start() is idempotent; stop() halts the timer and mutes audio.
+    // start() is idempotent.
     void start();
     void stop();
 
-    // --- Test accessors ------------------------------------------------------
-    // ecgSample(phase) returns the stylized PQRST voltage in [-1, +1] for
-    // a given phase in [0, 1). Pure function — testable in isolation.
     static double ecgSample(double phase);
-
-    // synthesizeBeepWav() returns a complete RIFF WAVE file in memory:
-    // 16-bit signed PCM, mono, BEEP_SAMPLE_RATE Hz, BEEP_DURATION_MS ms,
-    // BEEP_FREQ_HZ tone with BEEP_FADE_MS linear fade in/out.
     static QByteArray synthesizeBeepWav();
 
     double phase() const { return m_phase; }
@@ -50,12 +41,11 @@ private:
     void positionRelativeTo(const QWidget *pet);
     void initAudio();
 
-    // --- State ---------------------------------------------------------------
     QTimer m_tickTimer;
-    QVector<double> m_samples;          // ring of width-many samples for the trace
-    int m_writeHead = 0;                // index in m_samples to overwrite next
-    double m_phase = 0.0;               // current heartbeat phase in [0, 1)
-    double m_prevPhase = 0.0;           // phase at previous tick (for R-peak edge detection)
+    QVector<double> m_samples;
+    int m_writeHead = 0;
+    double m_phase = 0.0;
+    double m_prevPhase = 0.0;
 
     QSoundEffect *m_beep = nullptr;
     QTemporaryFile *m_beepFile = nullptr;
@@ -63,7 +53,6 @@ private:
     const QWidget *m_anchoredPet = nullptr;
     QRect m_anchorRect;
 
-    // --- Styling constants ---------------------------------------------------
     static constexpr int PANEL_WIDTH      = 190;
     static constexpr int PANEL_HEIGHT     = 70;
     static constexpr int SHADOW_BLUR      = 10;
