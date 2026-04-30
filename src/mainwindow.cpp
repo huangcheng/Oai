@@ -106,10 +106,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             m_settingsPanel->setAnchorRect(petRect());
             m_settingsPanel->anchorTo(this);
         }
-        if (m_ecgWidget && m_ecgWidget->isVisible()) {
-            m_ecgWidget->setAnchorRect(petRect());
-            m_ecgWidget->anchorTo(this);
-        }
+        // Note: ECG widget intentionally NOT re-anchored here. In ECG mode
+        // the widget owns its own position via chassis drag, and the
+        // MainWindow position follows the ECG (not the other way around).
+        // Re-anchoring would create a feedback loop that pins ECG in place.
     });
 
     // Connect effect triggers from animation engines

@@ -15,6 +15,7 @@
 #include <QDir>
 #include <QUrl>
 #include <QtMath>
+#include <QJsonObject>
 #include <cmath>
 
 #ifdef Q_OS_WIN
@@ -69,6 +70,26 @@ EcgWidget::EcgWidget(QWidget *parent)
 
     m_tickTimer.setInterval(TICK_INTERVAL_MS);
     connect(&m_tickTimer, &QTimer::timeout, this, &EcgWidget::onTick);
+
+    m_eventDecayTimer.setSingleShot(true);
+    connect(&m_eventDecayTimer, &QTimer::timeout, this, [this]() {
+        m_eventBpm = 0.0;
+        update();
+    });
+
+    m_alarmDecayTimer.setSingleShot(true);
+    connect(&m_alarmDecayTimer, &QTimer::timeout, this, [this]() {
+        m_alarmActive = false;
+        m_alarmFlashOn = false;
+        m_alarmFlashTimer.stop();
+        update();
+    });
+
+    m_alarmFlashTimer.setInterval(300);
+    connect(&m_alarmFlashTimer, &QTimer::timeout, this, [this]() {
+        m_alarmFlashOn = !m_alarmFlashOn;
+        update();
+    });
 }
 
 EcgWidget::~EcgWidget()
@@ -385,6 +406,15 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     }
 
     p.restore(); // end clip
+
+    if (m_alarmActive && m_alarmFlashOn) {
+        QPainterPath alarmRing;
+        alarmRing.addRoundedRect(body, CORNER_RADIUS, CORNER_RADIUS);
+        p.setPen(QPen(QColor(0xC0, 0x40, 0x40), BORDER_WIDTH,
+                      Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+        p.setBrush(Qt::NoBrush);
+        p.drawPath(alarmRing);
+    }
 }
 
 void EcgWidget::positionRelativeTo(const QWidget *pet)
@@ -554,6 +584,51 @@ void EcgWidget::contextMenuEvent(QContextMenuEvent *event)
 {
     emit contextMenuRequested(event->globalPos());
     event->accept();
+}
+
+void EcgWidget::onEvent(const QJsonObject &event)
+{
+    const QString name = event.value(QStringLiteral("event")).toString();
+    if (name.isEmpty()) return;
+
+    // Negative bpm means "no override" (settle to user's manual BPM).
+    double bpm = -1.0;
+    bool alarm = false;
+    int decayMs = 4000;
+
+    if (name == QStringLiteral("session.start"))            { bpm = 90;  decayMs = 5000; }
+    else if (name == QStringLiteral("session.end"))         { bpm = 60;  decayMs = 5000; }
+    else if (name == QStringLiteral("session.idle"))        { bpm = 60;  decayMs = 8000; }
+    else if (name == QStringLiteral("session.error"))       { bpm = 130; alarm = true; decayMs = 6000; }
+    else if (name == QStringLiteral("prompt.submitted"))    { bpm = 95;  decayMs = 3000; }
+    else if (name == QStringLiteral("tool.before"))         { bpm = 85;  decayMs = 4000; }
+    else if (name == QStringLiteral("tool.after"))          { decayMs = 1000; }
+    else if (name == QStringLiteral("tool.failed"))         { bpm = 120; alarm = true; decayMs = 5000; }
+    else if (name == QStringLiteral("permission.requested")){ bpm = 100; alarm = true; decayMs = 5000; }
+    else if (name == QStringLiteral("permission.denied"))   { bpm = 120; alarm = true; decayMs = 5000; }
+    else if (name == QStringLiteral("subagent.started"))    { bpm = 90;  decayMs = 4000; }
+    else if (name == QStringLiteral("subagent.stopped"))    { bpm = 72;  decayMs = 2000; }
+    else return;
+
+    if (bpm > 0) {
+        m_eventBpm = bpm;
+        m_eventDecayTimer.start(decayMs);
+    } else {
+        m_eventBpm = 0.0;
+        m_eventDecayTimer.stop();
+    }
+
+    if (alarm) {
+        m_alarmActive = true;
+        m_alarmFlashOn = true;
+        m_alarmFlashTimer.start();
+        m_alarmDecayTimer.start(decayMs);
+    }
+
+    // Bump the LED on every event so users get instant visual feedback
+    // independent of the next R-peak crossing.
+    m_ledPulse = 1.4;
+    update();
 }
 
 void EcgWidget::initAudio()

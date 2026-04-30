@@ -36,6 +36,7 @@ public:
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
 #endif
     TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
+    EcgWidget *ecgWidget() const { return m_ecgWidget; }
 
     void setSystemTray(SystemTray *tray);
     void setCharacterPackManager(CharacterPackManager *manager);

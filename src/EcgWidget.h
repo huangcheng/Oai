@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QVector>
 #include <QRect>
+#include <QJsonObject>
 
 class QSoundEffect;
 class QTemporaryFile;
@@ -34,7 +35,9 @@ public:
     bool muted() const { return m_muted; }
     int hrIndex() const { return m_hrIndex; }
     double volume() const { return m_volume; }
-    double currentBpm() const { return HR_BPM_OPTIONS[m_hrIndex]; }
+    double currentBpm() const {
+        return m_eventBpm > 0.0 ? m_eventBpm : HR_BPM_OPTIONS[m_hrIndex];
+    }
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -54,6 +57,10 @@ protected:
 signals:
     void dragMoved(QPoint deltaGlobal);
     void contextMenuRequested(QPoint globalPos);
+
+public slots:
+    // Drive heart-rate / alarm reactions from gateway events.
+    void onEvent(const QJsonObject &event);
 
 private slots:
     void onTick();
@@ -83,6 +90,16 @@ private:
     // Chassis drag state
     QPoint m_dragLastGlobal;
     bool m_isChassisDragging = false;
+
+    // Event reactivity: a gateway event temporarily overrides the user's
+    // manual BPM and may raise an alarm flash. m_eventBpm > 0 means the
+    // override is active. Both decay back to baseline via QTimers.
+    double m_eventBpm = 0.0;
+    bool   m_alarmActive = false;
+    QTimer m_eventDecayTimer;
+    QTimer m_alarmDecayTimer;
+    QTimer m_alarmFlashTimer;
+    bool   m_alarmFlashOn = false;
 
     QSoundEffect *m_beep = nullptr;
     QTemporaryFile *m_beepFile = nullptr;
