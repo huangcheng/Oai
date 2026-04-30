@@ -38,21 +38,35 @@ private slots:
     void synthesizeBeepWavHasValidRiffHeader();
 };
 
+static void removeTestConfig()
+{
+    // AppConfigLocation resolves to ~/.config/OaiTests/OaiTests-Ecg/ (directory),
+    // but QSettings IniFormat writes ~/.config/OaiTests/OaiTests-Ecg.ini (file at
+    // the parent level). Remove both so no stale state bleeds between runs.
+    // We also explicitly flush any in-process QSettings cache before removing.
+    {
+        QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                    QStringLiteral("OaiTests"), QStringLiteral("OaiTests-Ecg"));
+        s.clear();
+        s.sync();
+    }
+    const QString cfgDir = QStandardPaths::writableLocation(
+        QStandardPaths::AppConfigLocation);
+    QDir(cfgDir).removeRecursively();
+    QFile::remove(cfgDir + ".ini"); // QSettings IniFormat places it here
+}
+
 void TestEcg::initTestCase()
 {
     // Use an isolated config dir so we don't clobber the real user config.
     QCoreApplication::setOrganizationName("OaiTests");
     QCoreApplication::setApplicationName("OaiTests-Ecg");
-    const QString cfgDir = QStandardPaths::writableLocation(
-        QStandardPaths::AppConfigLocation);
-    QDir(cfgDir).removeRecursively();
+    removeTestConfig();
 }
 
 void TestEcg::cleanupTestCase()
 {
-    const QString cfgDir = QStandardPaths::writableLocation(
-        QStandardPaths::AppConfigLocation);
-    QDir(cfgDir).removeRecursively();
+    removeTestConfig();
 }
 
 void TestEcg::configEcgEnabledDefaultsFalse()
