@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add an optional ICU-style ECG monitor widget that snaps above the character, sharing the Win98 parallelogram frame with the tip bubble and settings panel, and showing a scrolling phosphor-green PQRST trace with a synchronized "beep" on each R-peak.
+**Goal:** Add an optional ICU-style ECG monitor widget that snaps above the character, sharing the P5-style parallelogram frame (bold black border, slight skew, orange accent stripe, drop shadow) with the tip bubble and settings panel, and showing a scrolling phosphor-green PQRST trace with a synchronized "beep" on each R-peak.
 
 **Architecture:** A new top-level frameless `EcgWidget` (peer to `TipBubbleWidget` / `SettingsPanelWidget`) is owned by `MainWindow` and re-anchored on every position change. Its outer frame reuses the existing parallelogram + orange stripe; its interior is a dark-green LCD canvas with a faint grid and a scrolling polyline. A 30 Hz `QTimer` drives phase advancement, sample-buffer rotation, repaint, and R-peak beep playback. Audio is a 60 ms 880 Hz tone synthesized in C++ at startup, written to a `QTemporaryFile`, and triggered via `QSoundEffect`. A new `ecgEnabled` `ConfigManager` flag (default `false`) toggles visibility from a checkbox added to `SettingsPanelWidget`.
 
@@ -677,7 +677,7 @@ Manually verify: nothing visibly broken (the EcgWidget is not yet shown anywhere
 
 ```bash
 git add src/EcgWidget.h src/EcgWidget.cpp CMakeLists.txt tests/CMakeLists.txt
-git commit -m "feat(ecg): add EcgWidget skeleton with shared Win98 parallelogram frame"
+git commit -m "feat(ecg): add EcgWidget skeleton with shared P5 parallelogram frame"
 ```
 
 ---
