@@ -18,9 +18,10 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
 
-    void configEcgEnabledDefaultsFalse();
-    void configEcgEnabledRoundTrips();
-    void configEcgEnabledEmitsSignal();
+    void configDisplayModeDefaultsCharacter();
+    void configDisplayModeRoundTrips();
+    void configDisplayModeEmitsSignal();
+    void configMigratesFromOldEcgEnabledKey();
 
     void ecgSampleHasRPeakNear030();
     void ecgSampleBaselineAwayFromComplex();
@@ -63,39 +64,81 @@ void TestEcg::cleanupTestCase()
     removeTestConfig();
 }
 
-void TestEcg::configEcgEnabledDefaultsFalse()
+void TestEcg::configDisplayModeDefaultsCharacter()
 {
+    removeTestConfig();
     ConfigManager cfg;
     cfg.load();
-    QCOMPARE(cfg.ecgEnabled(), false);
+    QCOMPARE(cfg.displayMode(), ConfigManager::DisplayMode::Character);
 }
 
-void TestEcg::configEcgEnabledRoundTrips()
+void TestEcg::configDisplayModeRoundTrips()
 {
+    removeTestConfig();
     {
         ConfigManager cfg;
         cfg.load();
-        cfg.setEcgEnabled(true);
+        cfg.setDisplayMode(ConfigManager::DisplayMode::Ecg);
         cfg.save();
     }
     {
         ConfigManager cfg2;
         cfg2.load();
-        QCOMPARE(cfg2.ecgEnabled(), true);
+        QCOMPARE(cfg2.displayMode(), ConfigManager::DisplayMode::Ecg);
     }
 }
 
-void TestEcg::configEcgEnabledEmitsSignal()
+void TestEcg::configDisplayModeEmitsSignal()
 {
+    removeTestConfig();
     ConfigManager cfg;
     cfg.load();
-    cfg.setEcgEnabled(false);
-    QSignalSpy spy(&cfg, &ConfigManager::ecgEnabledChanged);
-    cfg.setEcgEnabled(true);
+    // Ensure we start in Character mode
+    cfg.setDisplayMode(ConfigManager::DisplayMode::Character);
+
+    QSignalSpy spy(&cfg, &ConfigManager::displayModeChanged);
+    cfg.setDisplayMode(ConfigManager::DisplayMode::Ecg);
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(spy.at(0).at(0).toBool(), true);
-    cfg.setEcgEnabled(true);
+    QCOMPARE(spy.at(0).at(0).value<ConfigManager::DisplayMode>(),
+             ConfigManager::DisplayMode::Ecg);
+    // Idempotent: setting same value again must not emit
+    cfg.setDisplayMode(ConfigManager::DisplayMode::Ecg);
     QCOMPARE(spy.count(), 1);
+}
+
+void TestEcg::configMigratesFromOldEcgEnabledKey()
+{
+    removeTestConfig();
+
+    // Write the old-style key directly via QSettings
+    {
+        QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                    QStringLiteral("OaiTests"), QStringLiteral("OaiTests-Ecg"));
+        s.setValue("language", "en"); // ensure the file exists (load() short-circuits otherwise)
+        s.setValue("ecgEnabled", true);
+        s.sync();
+    }
+
+    // Load through ConfigManager — should migrate
+    {
+        ConfigManager cfg;
+        cfg.load();
+        QCOMPARE(cfg.displayMode(), ConfigManager::DisplayMode::Ecg);
+
+        // Verify old key was removed and new key written
+        QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                    QStringLiteral("OaiTests"), QStringLiteral("OaiTests-Ecg"));
+        QVERIFY(!s.contains("ecgEnabled"));
+        QVERIFY(s.contains("displayMode"));
+        QCOMPARE(s.value("displayMode").toString(), QStringLiteral("ecg"));
+    }
+
+    // Second load should read the new key cleanly (no old key)
+    {
+        ConfigManager cfg2;
+        cfg2.load();
+        QCOMPARE(cfg2.displayMode(), ConfigManager::DisplayMode::Ecg);
+    }
 }
 
 void TestEcg::ecgSampleHasRPeakNear030()

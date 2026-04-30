@@ -97,8 +97,27 @@ void ConfigManager::load()
     // Last-selected character pack
     m_activePackId = m_settings.value("activePackId").toString();
 
-    // ECG monitor visibility
-    m_ecgEnabled = m_settings.value("ecgEnabled", false).toBool();
+    // Display mode (with migration from old ecgEnabled key)
+    if (m_settings.contains("displayMode")) {
+        const QString modeStr = m_settings.value("displayMode").toString();
+        m_displayMode = (modeStr == QStringLiteral("ecg"))
+                        ? DisplayMode::Ecg
+                        : DisplayMode::Character;
+    } else if (m_settings.contains("ecgEnabled")) {
+        // Migrate from old ecgEnabled boolean
+        m_displayMode = m_settings.value("ecgEnabled", false).toBool()
+                        ? DisplayMode::Ecg
+                        : DisplayMode::Character;
+        // Write new key and remove old one; persist immediately
+        m_settings.setValue("displayMode",
+                            m_displayMode == DisplayMode::Ecg
+                                ? QStringLiteral("ecg")
+                                : QStringLiteral("character"));
+        m_settings.remove("ecgEnabled");
+        m_settings.sync();
+    } else {
+        m_displayMode = DisplayMode::Character;
+    }
 
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
@@ -112,7 +131,10 @@ void ConfigManager::save()
     m_settings.setValue("ipcEndpoint", m_ipcEndpoint);
     m_settings.setValue("updateServerEndpoint", m_updateServerEndpoint);
     m_settings.setValue("activePackId", m_activePackId);
-    m_settings.setValue("ecgEnabled", m_ecgEnabled);
+    m_settings.setValue("displayMode",
+                        m_displayMode == DisplayMode::Ecg
+                            ? QStringLiteral("ecg")
+                            : QStringLiteral("character"));
     m_settings.sync();
 }
 
@@ -287,11 +309,11 @@ void ConfigManager::setUpdateServerEndpoint(const QString &endpoint)
     }
 }
 
-void ConfigManager::setEcgEnabled(bool enabled)
+void ConfigManager::setDisplayMode(DisplayMode mode)
 {
-    if (m_ecgEnabled != enabled) {
-        m_ecgEnabled = enabled;
+    if (m_displayMode != mode) {
+        m_displayMode = mode;
         save();
-        emit ecgEnabledChanged(enabled);
+        emit displayModeChanged(mode);
     }
 }

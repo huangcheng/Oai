@@ -11,6 +11,8 @@ class ConfigManager : public QObject
     Q_OBJECT
 
 public:
+    enum class DisplayMode { Character, Ecg };
+
     explicit ConfigManager(QObject *parent = nullptr);
 
     void load();
@@ -29,9 +31,9 @@ public:
     QString activePackId() const { return m_activePackId; }
     void setActivePackId(const QString &packId);
 
-    /** Whether the ICU-style ECG monitor widget is shown above the pet. */
-    bool ecgEnabled() const { return m_ecgEnabled; }
-    void setEcgEnabled(bool enabled);
+    /** Current display mode: Character (animated pet) or Ecg (ICU monitor widget). */
+    DisplayMode displayMode() const { return m_displayMode; }
+    void setDisplayMode(DisplayMode mode);
 
     /**
      * Returns the TCP endpoint for IPC.
@@ -70,7 +72,7 @@ signals:
     void languageChanged(const QString &lang);
     void ipcEndpointChanged(const QString &endpoint);
     void updateServerEndpointChanged(const QString &endpoint);
-    void ecgEnabledChanged(bool enabled);
+    void displayModeChanged(DisplayMode mode);
 
 private:
     QSettings m_settings;
@@ -81,7 +83,7 @@ private:
     QString m_ipcEndpoint;
     QString m_updateServerEndpoint;
     QString m_activePackId;
-    bool m_ecgEnabled = false;
+    DisplayMode m_displayMode = DisplayMode::Character;
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:
