@@ -707,7 +707,6 @@ void EcgWidget::initAudio()
         m_flatlineBeep = new QSoundEffect(this);
         m_flatlineBeep->setSource(QUrl::fromLocalFile(flatPath));
         m_flatlineBeep->setVolume(static_cast<float>(m_volume));
-        m_flatlineBeep->setLoopCount(QSoundEffect::Infinite);
     }
 }
 

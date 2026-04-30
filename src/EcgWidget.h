@@ -152,10 +152,10 @@ private:
     static constexpr int BEEP_DURATION_MS  = 60;
     static constexpr int BEEP_FADE_MS      = 3;
 
-    // Flatline alarm: continuous 1 s 1000 Hz tone, no fade, looped infinitely.
-    // 1 s × 1000 Hz = 1000 whole cycles, so the loop boundary is silent.
+    // Flatline alarm: ~2 s 1000 Hz tone played once when asystole starts.
+    // 2 s × 1000 Hz = 2000 whole cycles, so the tail crosses zero.
     static constexpr int FLATLINE_FREQ_HZ     = 1000;
-    static constexpr int FLATLINE_DURATION_MS = 1000;
+    static constexpr int FLATLINE_DURATION_MS = 2000;
 };
 
 #endif // ECGWIDGET_H
