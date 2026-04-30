@@ -283,7 +283,6 @@ void EcgWidget::initAudio()
     m_beep = new QSoundEffect(this);
     m_beep->setSource(QUrl::fromLocalFile(path));
     m_beep->setVolume(0.4);
-    m_beep->setLoopCount(1);
 }
 
 double EcgWidget::ecgSample(double phase)

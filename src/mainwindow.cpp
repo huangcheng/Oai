@@ -392,7 +392,7 @@ void MainWindow::toggleVisibility()
         hide();
         m_tipBubble->hideBubble();
         m_settingsPanel->hideAnimated();
-        if (m_ecgWidget) m_ecgWidget->hide();
+        if (m_ecgWidget) m_ecgWidget->stop();
     }
 }
 
