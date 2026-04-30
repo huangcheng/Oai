@@ -582,8 +582,17 @@ if(APPLE)
     # binaries on Apple Silicon, so install_name_tool refuses with "malformed
     # object" without first stripping the signature. Embedding rpath at link
     # time sidesteps both issues.
+    #
+    # The Qt SDK lib dir is appended as a fallback so Qt Creator debug runs
+    # and direct ./Oai.app launches (which don't run macdeployqt) can still
+    # resolve frameworks like QtMultimedia. dyld checks rpaths in order, so
+    # deployed bundles always find their bundled framework first; the SDK
+    # path is only consulted on dev machines that have it.
+    get_target_property(_qt_qmake_loc Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qt_qmake_loc}" DIRECTORY)
+    get_filename_component(_qt_lib_dir "${_qt_bin_dir}/../lib" ABSOLUTE)
     set_target_properties(Oai PROPERTIES
-        INSTALL_RPATH "@executable_path/../Frameworks"
+        INSTALL_RPATH "@executable_path/../Frameworks;${_qt_lib_dir}"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
     set_target_properties(Oai PROPERTIES
