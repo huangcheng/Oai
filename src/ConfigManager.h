@@ -29,6 +29,10 @@ public:
     QString activePackId() const { return m_activePackId; }
     void setActivePackId(const QString &packId);
 
+    /** Whether the ICU-style ECG monitor widget is shown above the pet. */
+    bool ecgEnabled() const { return m_ecgEnabled; }
+    void setEcgEnabled(bool enabled);
+
     /**
      * Returns the TCP endpoint for IPC.
      * Format: "host:port", e.g. "127.0.0.1:52847"
@@ -66,6 +70,7 @@ signals:
     void languageChanged(const QString &lang);
     void ipcEndpointChanged(const QString &endpoint);
     void updateServerEndpointChanged(const QString &endpoint);
+    void ecgEnabledChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -76,6 +81,7 @@ private:
     QString m_ipcEndpoint;
     QString m_updateServerEndpoint;
     QString m_activePackId;
+    bool m_ecgEnabled = false;
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:

@@ -91,6 +91,9 @@ void ConfigManager::load()
     // Last-selected character pack
     m_activePackId = m_settings.value("activePackId").toString();
 
+    // ECG monitor visibility
+    m_ecgEnabled = m_settings.value("ecgEnabled", false).toBool();
+
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
 
@@ -103,6 +106,7 @@ void ConfigManager::save()
     m_settings.setValue("ipcEndpoint", m_ipcEndpoint);
     m_settings.setValue("updateServerEndpoint", m_updateServerEndpoint);
     m_settings.setValue("activePackId", m_activePackId);
+    m_settings.setValue("ecgEnabled", m_ecgEnabled);
     m_settings.sync();
 }
 
@@ -274,5 +278,14 @@ void ConfigManager::setUpdateServerEndpoint(const QString &endpoint)
         m_updateServerEndpoint = endpoint;
         save();
         emit updateServerEndpointChanged(m_updateServerEndpoint);
+    }
+}
+
+void ConfigManager::setEcgEnabled(bool enabled)
+{
+    if (m_ecgEnabled != enabled) {
+        m_ecgEnabled = enabled;
+        save();
+        emit ecgEnabledChanged(enabled);
     }
 }

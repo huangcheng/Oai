@@ -31,6 +31,7 @@ set(OAIPET_LIB_SOURCES
 
 set(TEST_SOURCES
     test_ipc_animations.cpp
+    test_ecg.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
