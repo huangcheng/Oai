@@ -101,6 +101,13 @@ private:
     QTimer m_alarmFlashTimer;
     bool   m_alarmFlashOn = false;
 
+    // Flatline / asystole: after IDLE_TIMEOUT_MS of no events the trace
+    // goes flat, beep stops, readout shows "ASYSTOLE". Any new event
+    // exits this state and restarts the idle countdown.
+    bool   m_flatlined = false;
+    QTimer m_idleTimer;
+    static constexpr int IDLE_TIMEOUT_MS = 60 * 1000;
+
     QSoundEffect *m_beep = nullptr;
     QTemporaryFile *m_beepFile = nullptr;
 

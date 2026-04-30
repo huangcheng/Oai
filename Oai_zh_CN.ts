@@ -4,32 +4,37 @@
 <context>
     <name>EcgWidget</name>
     <message>
-        <location filename="src/EcgWidget.cpp" line="190"/>
+        <location filename="src/EcgWidget.cpp" line="223"/>
         <source>ECG MONITOR</source>
         <translation>心电监护</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="286"/>
+        <location filename="src/EcgWidget.cpp" line="319"/>
         <source>STANDBY</source>
         <translation>待机</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="289"/>
+        <location filename="src/EcgWidget.cpp" line="323"/>
+        <source>ASYSTOLE</source>
+        <translation>心搏停止</translation>
+    </message>
+    <message>
+        <location filename="src/EcgWidget.cpp" line="326"/>
         <source>HR %1 BPM</source>
         <translation>心率 %1 BPM</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="299"/>
+        <location filename="src/EcgWidget.cpp" line="336"/>
         <source> (MUTED)</source>
         <translation>（静音）</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="355"/>
+        <location filename="src/EcgWidget.cpp" line="392"/>
         <source>PWR</source>
         <translation>PWR</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="356"/>
+        <location filename="src/EcgWidget.cpp" line="393"/>
         <source>ALM</source>
         <translation>ALM</translation>
     </message>
@@ -152,17 +157,17 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="src/mainwindow.cpp" line="319"/>
+        <location filename="src/mainwindow.cpp" line="326"/>
         <source>Hide</source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="319"/>
+        <location filename="src/mainwindow.cpp" line="326"/>
         <source>Show</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="327"/>
+        <location filename="src/mainwindow.cpp" line="334"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
@@ -173,7 +178,7 @@ v1.0.0</source>
 v1.0.0</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="324"/>
+        <location filename="src/mainwindow.cpp" line="331"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
@@ -184,7 +189,7 @@ v1.2.0</source>
 v1.2.0</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="335"/>
+        <location filename="src/mainwindow.cpp" line="342"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>

@@ -90,6 +90,15 @@ EcgWidget::EcgWidget(QWidget *parent)
         m_alarmFlashOn = !m_alarmFlashOn;
         update();
     });
+
+    m_idleTimer.setSingleShot(true);
+    m_idleTimer.setInterval(IDLE_TIMEOUT_MS);
+    connect(&m_idleTimer, &QTimer::timeout, this, [this]() {
+        m_flatlined = true;
+        m_samples.fill(0.0);
+        if (m_beep) m_beep->stop();
+        update();
+    });
 }
 
 EcgWidget::~EcgWidget()
@@ -154,6 +163,7 @@ void EcgWidget::start()
     m_prevPhase = m_phase;
     m_powerOn = true;
     m_tickTimer.start();
+    m_idleTimer.start();
     if (m_anchoredPet) {
         positionRelativeTo(m_anchoredPet);
     }
@@ -163,6 +173,7 @@ void EcgWidget::start()
 void EcgWidget::stop()
 {
     m_tickTimer.stop();
+    m_idleTimer.stop();
     if (m_beep) {
         m_beep->stop();
     }
@@ -306,6 +317,10 @@ void EcgWidget::paintEvent(QPaintEvent *event)
         p.setPen(QColor(0x80, 0x80, 0x80));
         p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
                    tr("STANDBY"));
+    } else if (m_flatlined) {
+        p.setPen(QColor(0xC0, 0x40, 0x40));
+        p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
+                   tr("ASYSTOLE"));
     } else {
         const int bpm = static_cast<int>(std::round(currentBpm()));
         const QString bpmText = tr("HR %1 BPM").arg(bpm);
@@ -450,6 +465,13 @@ void EcgWidget::onTick()
 {
     if (!m_powerOn) return;
 
+    if (m_flatlined) {
+        m_samples[m_writeHead] = 0.0;
+        m_writeHead = (m_writeHead + 1) % m_samples.size();
+        update();
+        return;
+    }
+
     const double periodMs = 60.0 * 1000.0 / currentBpm();
     const double dPhase   = static_cast<double>(TICK_INTERVAL_MS) / periodMs;
 
@@ -590,6 +612,10 @@ void EcgWidget::onEvent(const QJsonObject &event)
 {
     const QString name = event.value(QStringLiteral("event")).toString();
     if (name.isEmpty()) return;
+
+    // Any event resets the idle countdown and revives a flatline.
+    m_flatlined = false;
+    m_idleTimer.start();
 
     // Negative bpm means "no override" (settle to user's manual BPM).
     double bpm = -1.0;
