@@ -1,4 +1,6 @@
 #include <QTest>
+#include <QApplication>
+#include <QMouseEvent>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QDir>
@@ -31,7 +33,8 @@ private slots:
     void pwrToggleStopsTimer();
     void almToggleSilencesBeep();
     void modeButtonCyclesBpm();
-    void sliderDragUpdatesVolume();
+    void sliderPressUpdatesVolume();
+    void sliderMoveUpdatesVolume();
 };
 
 static void removeTestConfig()
@@ -170,13 +173,10 @@ void TestEcg::pwrToggleStopsTimer()
     const double phaseB = w.phase();
     QVERIFY(phaseB != phaseA); // ticking advances phase while powered on
 
-    // Simulate PWR button click: press then release on the same rect.
-    // pressControlAt / releaseControlAt are the testability hooks exposed
-    // specifically so headless tests don't need a visible window.
-    const QPoint pwrCenter(w.findChild<QObject*>() ? 0 : 0, 0); // unused; use named helper
-    // Use the public hit-test helpers directly.
-    w.pressControlAt(QPoint(27, 119));  // x=SHADOW_BLUR+8+BUTTON_W/2, y≈ctrl center
-    w.releaseControlAt(QPoint(27, 119));
+    // PWR button center: x=SHADOW_BLUR+8+BUTTON_W/2=37, y≈ctrl center.
+    const QPoint pwrCenter(37, 127);
+    w.pressControlAt(pwrCenter);
+    w.releaseControlAt(pwrCenter);
 
     QVERIFY(!w.powerOn());
 
@@ -233,32 +233,28 @@ void TestEcg::modeButtonCyclesBpm()
     QCOMPARE(w.currentBpm(), 72.0); // 0→1, back to start
 }
 
-void TestEcg::sliderDragUpdatesVolume()
+void TestEcg::sliderPressUpdatesVolume()
+{
+    // Slider rect: x = SHADOW_BLUR + PANEL_WIDTH - 8 - SLIDER_W = 162, width = 60.
+    // For volume=0.5: rel = 0.5 * (SLIDER_W - SLIDER_THUMB_W) = 25; x = 162+5+25 = 192.
+    EcgWidget w;
+    w.pressControlAt(QPoint(192, 127));
+    QVERIFY(std::abs(w.volume() - 0.5) < 0.05);
+    w.releaseControlAt(QPoint(192, 127));
+}
+
+void TestEcg::sliderMoveUpdatesVolume()
 {
     EcgWidget w;
-    // Slider rect: x = SHADOW_BLUR + PANEL_WIDTH - 8 - SLIDER_W = 10 + 220 - 8 - 60 = 162
-    //              width = SLIDER_W = 60
-    // Halfway through the slider track:
-    //   thumbX at 0.5 volume = sliderRect.left + (SLIDER_W - SLIDER_THUMB_W) * 0.5
-    //                        = 162 + (60 - 10) * 0.5 = 162 + 25 = 187
-    // Press at x = 187, which is the midpoint of the track.
-    const int sliderLeft = 162;
-    const int sliderY    = 127; // same ctrl center approx
-
-    // Press at the midpoint of the slider track.
-    // The mapping: rel = x - sliderLeft - SLIDER_THUMB_W/2; volume = rel / (SLIDER_W - SLIDER_THUMB_W)
-    // For volume=0.5: rel = 0.5 * 50 = 25; x = sliderLeft + 25 + 5 = 192
-    const QPoint midSlider(sliderLeft + 5 + 25, sliderY); // x=192
-    w.pressControlAt(midSlider);
+    w.pressControlAt(QPoint(192, 127)); // start at midpoint, ~0.5
     QVERIFY(std::abs(w.volume() - 0.5) < 0.05);
 
-    // Drag to 0.0 (leftmost) — simulate drag by pressing again at the left edge.
-    // rel = leftSlider.x - sliderLeft - SLIDER_THUMB_W/2 = 162+5 - 162 - 5 = 0 → volume=0
-    const QPoint leftSlider(sliderLeft + 5, sliderY);
-    w.pressControlAt(leftSlider);
+    QMouseEvent move(QEvent::MouseMove, QPoint(167, 127), w.mapToGlobal(QPoint(167, 127)),
+                     Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(&w, &move);
     QVERIFY(w.volume() < 0.05);
 
-    w.releaseControlAt(leftSlider);
+    w.releaseControlAt(QPoint(167, 127));
 }
 
 QTEST_MAIN(TestEcg)

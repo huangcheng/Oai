@@ -89,9 +89,9 @@ void EcgWidget::recomputeLayout()
 
     const int btnY = ctrlCenterY - BUTTON_H / 2;
 
-    m_pwrRect  = QRect(panelX + 8,                          btnY, BUTTON_W, BUTTON_H);
-    m_almRect  = QRect(m_pwrRect.right() + BUTTON_GAP + 1,  btnY, BUTTON_W, BUTTON_H);
-    m_modeRect = QRect(m_almRect.right() + BUTTON_GAP + 1,  btnY, BUTTON_W, BUTTON_H);
+    m_pwrRect  = QRect(panelX + 8,                            btnY, BUTTON_W, BUTTON_H);
+    m_almRect  = QRect(m_pwrRect.left() + BUTTON_W + BUTTON_GAP,  btnY, BUTTON_W, BUTTON_H);
+    m_modeRect = QRect(m_almRect.left() + BUTTON_W + BUTTON_GAP,  btnY, BUTTON_W, BUTTON_H);
 
     const int sliderX = panelX + PANEL_WIDTH - 8 - SLIDER_W;
     const int sliderY = ctrlCenterY - SLIDER_H / 2;
@@ -173,64 +173,53 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     chassisPath.addRoundedRect(body, CORNER_RADIUS, CORNER_RADIUS);
 
     p.setPen(QPen(Qt::black, BORDER_WIDTH, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
-    p.setBrush(QColor(0x2A, 0x2A, 0x2A));
+    p.setBrush(Qt::white);
     p.drawPath(chassisPath);
 
     p.save();
     p.setClipPath(chassisPath);
 
-    // ----------------------------------------------------------------
-    // Title bar (top 18 px of chassis)
-    // ----------------------------------------------------------------
     const QRectF titleBar(body.left(), body.top(), body.width(), TITLE_HEIGHT);
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0x2A, 0x2A, 0x2A));
+    p.setBrush(QColor(0xF3, 0x6F, 0x1A));
     p.drawRect(titleBar);
 
-    // "ECG MONITOR" label
     p.setPen(Qt::white);
     p.setFont(harmonyFont(9, QFont::Bold));
     QRectF titleTextRect = titleBar.adjusted(10, 0, -30, 0);
     p.drawText(titleTextRect, Qt::AlignVCenter | Qt::AlignLeft, tr("ECG MONITOR"));
 
-    // Power LED
     {
-        const qreal ledCx = body.left() + PANEL_WIDTH - 16;
-        const qreal ledCy = body.top() + TITLE_HEIGHT / 2.0;
-        const qreal baseR = 4.0; // 8 px diameter
-        const qreal pulseR = baseR * m_ledPulse;
+        const qreal ledCx  = body.left() + PANEL_WIDTH - 16;
+        const qreal ledCy  = body.top() + TITLE_HEIGHT / 2.0;
+        const qreal coreR  = 4.0;                  // 8 px diameter LED core
+        const qreal glowR  = 6.0 * m_ledPulse;     // 12 px glow at rest, 16.8 px at peak
 
         if (m_powerOn) {
-            // Soft glow disc behind the LED
             p.save();
             p.setPen(Qt::NoPen);
-            QRadialGradient glow(ledCx, ledCy, pulseR * 2.0);
-            glow.setColorAt(0, QColor(0x4F, 0xFF, 0x7A, 120));
+            QRadialGradient glow(ledCx, ledCy, glowR);
+            glow.setColorAt(0, QColor(0x4F, 0xFF, 0x7A, 160));
             glow.setColorAt(1, QColor(0x4F, 0xFF, 0x7A, 0));
             p.setBrush(glow);
-            p.drawEllipse(QPointF(ledCx, ledCy), pulseR * 2.0, pulseR * 2.0);
+            p.drawEllipse(QPointF(ledCx, ledCy), glowR, glowR);
 
-            // LED core
             p.setBrush(QColor(0x4F, 0xFF, 0x7A));
-            p.drawEllipse(QPointF(ledCx, ledCy), pulseR, pulseR);
+            p.drawEllipse(QPointF(ledCx, ledCy), coreR, coreR);
             p.restore();
         } else {
             p.save();
             p.setPen(Qt::NoPen);
             p.setBrush(QColor(0x40, 0x40, 0x40));
-            p.drawEllipse(QPointF(ledCx, ledCy), baseR, baseR);
+            p.drawEllipse(QPointF(ledCx, ledCy), coreR, coreR);
             p.restore();
         }
     }
 
-    // Thin separator line below title bar
     p.setPen(QPen(Qt::black, 1));
     p.drawLine(QPointF(body.left(), body.top() + TITLE_HEIGHT),
                QPointF(body.right(), body.top() + TITLE_HEIGHT));
 
-    // ----------------------------------------------------------------
-    // LCD canvas
-    // ----------------------------------------------------------------
     const QRect lcd(
         static_cast<int>(body.left()) + LCD_PADDING,
         static_cast<int>(body.top()) + TITLE_HEIGHT + LCD_PADDING / 2,
@@ -279,9 +268,6 @@ void EcgWidget::paintEvent(QPaintEvent *event)
         }
     }
 
-    // ----------------------------------------------------------------
-    // HR readout strip
-    // ----------------------------------------------------------------
     const QRect readout(
         static_cast<int>(body.left()),
         static_cast<int>(body.top()) + TITLE_HEIGHT + LCD_HEIGHT,
@@ -290,45 +276,33 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     );
 
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0x2A, 0x2A, 0x2A));
+    p.setBrush(Qt::white);
     p.drawRect(readout);
 
     p.setFont(harmonyFont(10, QFont::Bold));
     if (!m_powerOn) {
-        p.setPen(QColor(0x60, 0x60, 0x60));
+        p.setPen(QColor(0x80, 0x80, 0x80));
         p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
                    tr("STANDBY"));
     } else {
         const int bpm = static_cast<int>(std::round(currentBpm()));
-        QString text = tr("HR %1 BPM").arg(bpm);
-        if (m_muted) text += tr(" (MUTED)");
+        const QString bpmText = tr("HR %1 BPM").arg(bpm);
+
+        p.setPen(QColor(0x1A, 0x6A, 0x2A));
+        p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, bpmText);
 
         if (m_muted) {
-            // Draw the BPM part green and the "(MUTED)" part red.
-            // Simpler: draw whole string green, then overlay the muted part.
-            p.setPen(QColor(0x4F, 0xFF, 0x7A));
-            const QString bpmText = tr("HR %1 BPM").arg(bpm);
-            p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, bpmText);
-
-            // Measure the base text width to place the muted suffix.
             QFontMetrics fm(p.font());
             const int bpmW = fm.horizontalAdvance(bpmText);
-            p.setPen(QColor(0xA0, 0x30, 0x30));
+            p.setPen(QColor(0xC0, 0x40, 0x40));
             p.drawText(readout.adjusted(10 + bpmW, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
                        tr(" (MUTED)"));
-        } else {
-            p.setPen(QColor(0x4F, 0xFF, 0x7A));
-            p.drawText(readout.adjusted(10, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
         }
     }
 
-    // Thin separator above readout
     p.setPen(QPen(Qt::black, 1));
     p.drawLine(readout.topLeft(), readout.topRight());
 
-    // ----------------------------------------------------------------
-    // Control panel
-    // ----------------------------------------------------------------
     const QRect ctrlPanel(
         static_cast<int>(body.left()),
         static_cast<int>(body.top()) + TITLE_HEIGHT + LCD_HEIGHT + READOUT_HEIGHT,
@@ -337,14 +311,12 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     );
 
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0x3A, 0x3A, 0x3A));
+    p.setBrush(Qt::white);
     p.drawRect(ctrlPanel);
 
-    // Separator line above control panel
     p.setPen(QPen(Qt::black, 1));
     p.drawLine(ctrlPanel.topLeft(), ctrlPanel.topRight());
 
-    // Helper lambda — draw one button
     auto drawButton = [&](const QRect &r, const QString &label, bool isOff,
                           bool isPressed, bool isMuted = false)
     {
@@ -385,28 +357,24 @@ void EcgWidget::paintEvent(QPaintEvent *event)
     const QString modeLabel = QString::number(static_cast<int>(std::round(currentBpm())));
     drawButton(m_modeRect, modeLabel,  false,       modePressed);
 
-    // --- Volume slider ---
     {
         const QRect &sr = m_sliderRect;
         const int trackH = 4;
         const int trackY = sr.top() + (sr.height() - trackH) / 2;
         const QRect track(sr.left(), trackY, sr.width(), trackH);
 
-        // Track background
         p.save();
         p.setPen(Qt::NoPen);
         p.setBrush(QColor(0x20, 0x20, 0x20));
         p.drawRoundedRect(track, 2, 2);
 
-        // Filled portion
         const int thumbX = sr.left() + static_cast<int>((sr.width() - SLIDER_THUMB_W) * m_volume);
         const int fillW  = thumbX + SLIDER_THUMB_W / 2 - sr.left();
         if (fillW > 0) {
-            p.setBrush(QColor(0x4F, 0xFF, 0x7A));
+            p.setBrush(QColor(0xF3, 0x6F, 0x1A));
             p.drawRoundedRect(QRect(sr.left(), trackY, fillW, trackH), 2, 2);
         }
 
-        // Thumb
         const QRect thumb(thumbX, sr.top(), SLIDER_THUMB_W, sr.height());
         p.setPen(QPen(Qt::black, 1));
         p.setBrush(QColor(0xE0, 0xE0, 0xE0));
@@ -449,10 +417,7 @@ void EcgWidget::positionRelativeTo(const QWidget *pet)
 
 void EcgWidget::onTick()
 {
-    if (!m_powerOn) {
-        // Chassis stays visible but we don't advance the trace.
-        return;
-    }
+    if (!m_powerOn) return;
 
     const double periodMs = 60.0 * 1000.0 / currentBpm();
     const double dPhase   = static_cast<double>(TICK_INTERVAL_MS) / periodMs;
@@ -464,7 +429,6 @@ void EcgWidget::onTick()
     m_samples[m_writeHead] = ecgSample(m_phase);
     m_writeHead = (m_writeHead + 1) % m_samples.size();
 
-    // Decay LED pulse each tick.
     m_ledPulse = qMax(1.0, m_ledPulse - 0.13);
 
     auto crossedR = [&]() {
@@ -482,8 +446,6 @@ void EcgWidget::onTick()
 
     update();
 }
-
-// ---------- mouse helpers ----------
 
 void EcgWidget::applyVolumeFromSliderX(int widgetX)
 {
@@ -529,7 +491,6 @@ void EcgWidget::releaseControlAt(QPoint p)
         if (m_modeRect.contains(p)) m_hrIndex = (m_hrIndex + 1) % 3;
         break;
     case PressedControl::SliderDrag:
-        // Volume was already applied live during drag.
         break;
     case PressedControl::None:
         break;
@@ -559,8 +520,6 @@ void EcgWidget::mouseReleaseEvent(QMouseEvent *event)
     event->accept();
 }
 
-// ---------- audio ----------
-
 void EcgWidget::initAudio()
 {
     if (m_beep) return;
@@ -582,8 +541,6 @@ void EcgWidget::initAudio()
     m_beep->setSource(QUrl::fromLocalFile(path));
     m_beep->setVolume(static_cast<float>(m_volume));
 }
-
-// ---------- static helpers ----------
 
 double EcgWidget::ecgSample(double phase)
 {

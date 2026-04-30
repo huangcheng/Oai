@@ -36,17 +36,19 @@ public:
     double volume() const { return m_volume; }
     double currentBpm() const { return HR_BPM_OPTIONS[m_hrIndex]; }
 
-    // Testability hook: directly invoke hit-test + action logic without
-    // needing a visible window (headless ctest).
-    void pressControlAt(QPoint p);
-    void releaseControlAt(QPoint p);
-
 protected:
     void paintEvent(QPaintEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+
+    // Synthesize the same action a real mouse press/release would, without
+    // needing a visible window. Used by tests; not part of the public API.
+    void pressControlAt(QPoint p);
+    void releaseControlAt(QPoint p);
+
+    friend class TestEcg;
 
 private slots:
     void onTick();
