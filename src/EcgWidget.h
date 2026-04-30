@@ -26,6 +26,7 @@ public:
 
     static double ecgSample(double phase);
     static QByteArray synthesizeBeepWav();
+    static QByteArray synthesizeFlatlineWav();
 
     double phase() const { return m_phase; }
     int sampleCount() const { return m_samples.size(); }
@@ -110,6 +111,8 @@ private:
 
     QSoundEffect *m_beep = nullptr;
     QTemporaryFile *m_beepFile = nullptr;
+    QSoundEffect *m_flatlineBeep = nullptr;
+    QTemporaryFile *m_flatlineBeepFile = nullptr;
 
     const QWidget *m_anchoredPet = nullptr;
     QRect m_anchorRect;
@@ -148,6 +151,11 @@ private:
     static constexpr int BEEP_FREQ_HZ      = 880;
     static constexpr int BEEP_DURATION_MS  = 60;
     static constexpr int BEEP_FADE_MS      = 3;
+
+    // Flatline alarm: continuous 1 s 1000 Hz tone, no fade, looped infinitely.
+    // 1 s × 1000 Hz = 1000 whole cycles, so the loop boundary is silent.
+    static constexpr int FLATLINE_FREQ_HZ     = 1000;
+    static constexpr int FLATLINE_DURATION_MS = 1000;
 };
 
 #endif // ECGWIDGET_H

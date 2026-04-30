@@ -97,6 +97,9 @@ EcgWidget::EcgWidget(QWidget *parent)
         m_flatlined = true;
         m_samples.fill(0.0);
         if (m_beep) m_beep->stop();
+        if (m_flatlineBeep && !m_muted && m_powerOn && m_flatlineBeep->isLoaded()) {
+            m_flatlineBeep->play();
+        }
         update();
     });
 }
@@ -106,6 +109,8 @@ EcgWidget::~EcgWidget()
     m_tickTimer.stop();
     delete m_beep;
     delete m_beepFile;
+    delete m_flatlineBeep;
+    delete m_flatlineBeepFile;
 }
 
 void EcgWidget::recomputeLayout()
@@ -174,9 +179,8 @@ void EcgWidget::stop()
 {
     m_tickTimer.stop();
     m_idleTimer.stop();
-    if (m_beep) {
-        m_beep->stop();
-    }
+    if (m_beep) m_beep->stop();
+    if (m_flatlineBeep) m_flatlineBeep->stop();
     hide();
 }
 
@@ -506,6 +510,7 @@ void EcgWidget::applyVolumeFromSliderX(int widgetX)
     const int rel    = widgetX - m_sliderRect.left() - SLIDER_THUMB_W / 2;
     m_volume = qBound(0.0, static_cast<double>(rel) / trackW, 1.0);
     if (m_beep) m_beep->setVolume(static_cast<float>(m_volume));
+    if (m_flatlineBeep) m_flatlineBeep->setVolume(static_cast<float>(m_volume));
 }
 
 void EcgWidget::pressControlAt(QPoint p)
@@ -534,11 +539,21 @@ void EcgWidget::releaseControlAt(QPoint p)
             } else {
                 m_tickTimer.stop();
                 if (m_beep) m_beep->stop();
+                if (m_flatlineBeep) m_flatlineBeep->stop();
             }
         }
         break;
     case PressedControl::Alm:
-        if (m_almRect.contains(p)) m_muted = !m_muted;
+        if (m_almRect.contains(p)) {
+            m_muted = !m_muted;
+            if (m_flatlineBeep) {
+                if (m_muted) {
+                    m_flatlineBeep->stop();
+                } else if (m_flatlined && m_powerOn && m_flatlineBeep->isLoaded()) {
+                    m_flatlineBeep->play();
+                }
+            }
+        }
         break;
     case PressedControl::Mode:
         if (m_modeRect.contains(p)) m_hrIndex = (m_hrIndex + 1) % 3;
@@ -614,8 +629,10 @@ void EcgWidget::onEvent(const QJsonObject &event)
     if (name.isEmpty()) return;
 
     // Any event resets the idle countdown and revives a flatline.
+    const bool wasFlatlined = m_flatlined;
     m_flatlined = false;
     m_idleTimer.start();
+    if (wasFlatlined && m_flatlineBeep) m_flatlineBeep->stop();
 
     // Negative bpm means "no override" (settle to user's manual BPM).
     double bpm = -1.0;
@@ -677,6 +694,21 @@ void EcgWidget::initAudio()
     m_beep = new QSoundEffect(this);
     m_beep->setSource(QUrl::fromLocalFile(path));
     m_beep->setVolume(static_cast<float>(m_volume));
+
+    m_flatlineBeepFile = new QTemporaryFile(
+        QDir::tempPath() + QStringLiteral("/oai_ecg_flatline_XXXXXX.wav"));
+    m_flatlineBeepFile->setAutoRemove(true);
+    if (m_flatlineBeepFile->open()) {
+        m_flatlineBeepFile->write(synthesizeFlatlineWav());
+        m_flatlineBeepFile->flush();
+        const QString flatPath = m_flatlineBeepFile->fileName();
+        m_flatlineBeepFile->close();
+
+        m_flatlineBeep = new QSoundEffect(this);
+        m_flatlineBeep->setSource(QUrl::fromLocalFile(flatPath));
+        m_flatlineBeep->setVolume(static_cast<float>(m_volume));
+        m_flatlineBeep->setLoopCount(QSoundEffect::Infinite);
+    }
 }
 
 double EcgWidget::ecgSample(double phase)
@@ -711,6 +743,52 @@ QByteArray EcgWidget::synthesizeBeepWav()
         if (i < fade)          env = double(i) / fade;
         else if (i > n - fade) env = double(n - i) / fade;
         const double s = std::sin(w * i) * env * 0.6;
+        const qint16 v = static_cast<qint16>(qBound(-32767.0, s * 32767.0, 32767.0));
+        pcm.append(static_cast<char>(v & 0xFF));
+        pcm.append(static_cast<char>((v >> 8) & 0xFF));
+    }
+
+    QByteArray wav;
+    wav.reserve(44 + pcm.size());
+
+    auto putU32 = [&](quint32 v) {
+        wav.append(char(v & 0xFF));
+        wav.append(char((v >> 8) & 0xFF));
+        wav.append(char((v >> 16) & 0xFF));
+        wav.append(char((v >> 24) & 0xFF));
+    };
+    auto putU16 = [&](quint16 v) {
+        wav.append(char(v & 0xFF));
+        wav.append(char((v >> 8) & 0xFF));
+    };
+
+    wav.append("RIFF");
+    putU32(36 + pcm.size());
+    wav.append("WAVE");
+    wav.append("fmt ");
+    putU32(16);
+    putU16(1);
+    putU16(1);
+    putU32(sr);
+    putU32(sr * 2);
+    putU16(2);
+    putU16(16);
+    wav.append("data");
+    putU32(pcm.size());
+    wav.append(pcm);
+    return wav;
+}
+
+QByteArray EcgWidget::synthesizeFlatlineWav()
+{
+    const int    sr = BEEP_SAMPLE_RATE;
+    const int    n  = sr * FLATLINE_DURATION_MS / 1000;
+    const double w  = 2.0 * M_PI * FLATLINE_FREQ_HZ / double(sr);
+
+    QByteArray pcm;
+    pcm.reserve(n * 2);
+    for (int i = 0; i < n; ++i) {
+        const double s = std::sin(w * i) * 0.5;
         const qint16 v = static_cast<qint16>(qBound(-32767.0, s * 32767.0, 32767.0));
         pcm.append(static_cast<char>(v & 0xFF));
         pcm.append(static_cast<char>((v >> 8) & 0xFF));
