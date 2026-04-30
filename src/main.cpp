@@ -355,11 +355,15 @@ int main(int argc, char *argv[])
     QObject::connect(&config, &ConfigManager::languageChanged,
                      &tipsEngine, &TipsEngine::retranslateUi);
 
-    w.show();
-    w.raise();
+    if (config.displayMode() == ConfigManager::DisplayMode::Character) {
+        w.show();
+        w.raise();
 #ifdef Q_OS_MAC
-    w.activateWindow();
+        w.activateWindow();
 #endif
+    }
+    // In ECG mode the MainWindow stays hidden — MainWindow's constructor
+    // already started the ECG widget via onDisplayModeChanged().
 
     qDebug() << "Oai started — window at" << w.pos() << "size" << w.size();
 
