@@ -23,7 +23,13 @@ QString ConfigManager::defaultUpdateEndpoint()
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
-    , m_settings(QSettings::IniFormat, QSettings::UserScope, "Oai", "Oai")
+    , m_settings(QSettings::IniFormat, QSettings::UserScope,
+                 QCoreApplication::organizationName().isEmpty()
+                     ? QStringLiteral("Oai")
+                     : QCoreApplication::organizationName(),
+                 QCoreApplication::applicationName().isEmpty()
+                     ? QStringLiteral("Oai")
+                     : QCoreApplication::applicationName())
     , m_ipcEndpoint(defaultEndpoint())
     , m_updateServerEndpoint(defaultUpdateEndpoint())
 {
