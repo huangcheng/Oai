@@ -53,6 +53,7 @@ private slots:
     void onCloseClicked();
     void onLanguageChanged(int index);
     void onAutoStartToggled(bool checked);
+    void onEcgToggled(bool checked);
     void onPortEditingFinished();
 
 private:
@@ -72,6 +73,8 @@ private:
     QComboBox *m_langCombo = nullptr;
     QLabel *m_autoStartLabel = nullptr;
     QCheckBox *m_autoStartCheck = nullptr;
+    QLabel *m_ecgLabel = nullptr;
+    QCheckBox *m_ecgCheck = nullptr;
     QLabel *m_portLabel = nullptr;
     QLineEdit *m_portInput = nullptr;
     QLabel *m_packLabel = nullptr;
@@ -95,7 +98,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 230;
-    static constexpr int PANEL_HEIGHT = 210;
+    static constexpr int PANEL_HEIGHT = 250;
 };
 
 #endif // SETTINGSPANELWIDGET_H

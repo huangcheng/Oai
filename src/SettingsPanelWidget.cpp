@@ -120,6 +120,8 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
 
     bool autoStart = m_config->autoStart();
     m_autoStartCheck->setChecked(autoStart);
+
+    m_ecgCheck->setChecked(m_config->ecgEnabled());
 }
 
 void SettingsPanelWidget::anchorTo(const QWidget *petWidget)
@@ -349,6 +351,33 @@ void SettingsPanelWidget::setupUi()
     connect(m_autoStartCheck, &QCheckBox::toggled,
             this, &SettingsPanelWidget::onAutoStartToggled);
 
+    // ECG row: label + checkbox
+    m_ecgLabel = new QLabel(tr("ECG Monitor"), m_contentWidget);
+    m_ecgLabel->setFont(harmonyFont(10));
+    m_ecgLabel->setStyleSheet("color: black; background: transparent;");
+    m_ecgLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_ecgCheck = new CheckMarkBox(m_contentWidget);
+    m_ecgCheck->setFixedSize(16, 16);
+    m_ecgCheck->setStyleSheet(R"(
+        QCheckBox::indicator {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+        }
+        QCheckBox::indicator:checked {
+            background: #F36F1A;
+            border: 1px solid #F36F1A;
+        }
+        QCheckBox::indicator:unchecked {
+            background: white;
+        }
+    )");
+    connect(m_ecgCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onEcgToggled);
+
     // Port row: label + input
     m_portLabel = new QLabel(tr("Port"), m_contentWidget);
     m_portLabel->setFont(harmonyFont(10));
@@ -442,10 +471,12 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_langCombo,       0, 1);
     formGrid->addWidget(m_autoStartLabel,  1, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_autoStartCheck,  1, 1, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_portLabel,       2, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_portInput,       2, 1);
-    formGrid->addWidget(m_packLabel,       3, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_packButton,      3, 1);
+    formGrid->addWidget(m_ecgLabel,        2, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_ecgCheck,        2, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_portLabel,       3, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_portInput,       3, 1);
+    formGrid->addWidget(m_packLabel,       4, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_packButton,      4, 1);
 
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
@@ -581,6 +612,11 @@ void SettingsPanelWidget::onAutoStartToggled(bool checked)
     m_config->save();
 }
 
+void SettingsPanelWidget::onEcgToggled(bool checked)
+{
+    m_config->setEcgEnabled(checked);
+}
+
 void SettingsPanelWidget::onPortEditingFinished()
 {
     const QString text = m_portInput->text().trimmed();
@@ -709,6 +745,7 @@ void SettingsPanelWidget::retranslateUi()
     m_langCombo->setItemText(0, tr("English"));
     m_langCombo->setItemText(1, tr("简体中文"));
     m_autoStartLabel->setText(tr("Launch at Login"));
+    m_ecgLabel->setText(tr("ECG Monitor"));
     m_portLabel->setText(tr("Port"));
     m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.
