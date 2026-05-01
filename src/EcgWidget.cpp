@@ -179,8 +179,14 @@ void EcgWidget::stop()
 {
     m_tickTimer.stop();
     m_idleTimer.stop();
+    m_alarmFlashTimer.stop();
+    m_alarmDecayTimer.stop();
+    m_eventDecayTimer.stop();
     if (m_beep) m_beep->stop();
     if (m_flatlineBeep) m_flatlineBeep->stop();
+    m_flatlined = false;
+    m_alarmActive = false;
+    m_eventBpm = 0.0;
     hide();
 }
 
@@ -625,6 +631,12 @@ void EcgWidget::contextMenuEvent(QContextMenuEvent *event)
 
 void EcgWidget::onEvent(const QJsonObject &event)
 {
+    // Stay completely silent when not the active display: in Character mode
+    // the widget is hidden but the IPC connection is still live, and processing
+    // events here would restart the idle timer and eventually leak a flatline
+    // tone with no widget on screen.
+    if (!isVisible() || !m_powerOn) return;
+
     const QString name = event.value(QStringLiteral("event")).toString();
     if (name.isEmpty()) return;
 
