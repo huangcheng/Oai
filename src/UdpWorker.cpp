@@ -28,7 +28,12 @@ void UdpWorker::start(const QString &endpoint)
     }
 
     QString host = endpoint.left(colonPos);
-    quint16 port = static_cast<quint16>(endpoint.mid(colonPos + 1).toUInt());
+    bool portOk = false;
+    quint16 port = endpoint.mid(colonPos + 1).toUShort(&portOk);
+    if (!portOk || port == 0) {
+        emit errorOccurred("Invalid port (must be 1-65535): " + endpoint.mid(colonPos + 1));
+        return;
+    }
 
     QHostAddress address;
     if (!address.setAddress(host)) {

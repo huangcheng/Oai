@@ -223,7 +223,14 @@ void LottieAnimationEngine::advanceFrame()
 {
     m_elapsedMs += 16.0; // 16ms per tick
 
-    const double frameDuration = 1000.0 / (m_current.frameRate * m_speedMultiplier);
+    // Malformed Lottie files can report frameRate=0; m_speedMultiplier
+    // could also be 0 if a future caller forgets to validate. Either way,
+    // dividing yields inf/NaN and corrupts the elapsed-time accounting.
+    const double rate = m_current.frameRate * m_speedMultiplier;
+    if (rate <= 0.0) {
+        return;
+    }
+    const double frameDuration = 1000.0 / rate;
     if (m_elapsedMs < frameDuration) {
         return; // Not enough time elapsed for next frame
     }
