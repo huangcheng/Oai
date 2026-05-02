@@ -18,6 +18,7 @@
 #include <QMouseEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
+#include <QMessageBox>
 #include <QAction>
 #include <QApplication>
 #include <QRandomGenerator>
@@ -351,7 +352,21 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
         const auto t = TipsCatalog::instance().message(QStringLiteral("about"));
-        m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+        // In Character mode the tip bubble is the natural surface; in ECG
+        // mode it's suppressed, so showBubble() would silently no-op. Fall
+        // back to a modal dialog there so the About action works in both.
+        if (m_tipBubble && !m_tipBubble->isSuppressed()) {
+            m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+        } else {
+            QMessageBox box(this);
+            box.setWindowTitle(t.title);
+            box.setText(t.title);
+            box.setInformativeText(t.body);
+            box.setIconPixmap(QIcon(QStringLiteral(":/icons/oai.png"))
+                                  .pixmap(64, 64));
+            box.setStandardButtons(QMessageBox::Ok);
+            box.exec();
+        }
     });
 
     menu.addSeparator();
