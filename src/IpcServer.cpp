@@ -58,10 +58,15 @@ void IpcServer::stop()
         m_thread->quit();
         // Bound the wait so a wedged worker can't freeze the main thread on
         // shutdown. 5s is generous — UDP socket close is normally instant.
-        if (!m_thread->wait(5000)) {
+        bool finishedCleanly = m_thread->wait(5000);
+        if (!finishedCleanly) {
             qWarning() << "IPC: worker thread did not stop within 5s; forcing termination";
             m_thread->terminate();
             m_thread->wait(1000);
+            // Normal path uses the deleteLater connected to QThread::finished.
+            // After terminate() the event loop is dead, so deleteLater never
+            // runs and m_worker leaks. Free it explicitly here.
+            delete m_worker;
         }
         delete m_thread;
         m_thread = nullptr;

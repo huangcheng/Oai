@@ -256,7 +256,7 @@ void ConfigManager::applyAutoStartToOS(bool enabled)
             out << "[Desktop Entry]\n"
                 << "Type=Application\n"
                 << "Name=Oai\n"
-                << "Exec=" << exe << "\n"
+                << "Exec=\"" << exe << "\"\n"
                 << "Icon=oai\n"
                 << "Terminal=false\n"
                 << "X-GNOME-Autostart-enabled=true\n";

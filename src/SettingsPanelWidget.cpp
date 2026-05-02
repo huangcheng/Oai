@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
+#include <QWindow>
 #include <QLabel>
 #include <QPushButton>
 #include <QFrame>
@@ -502,9 +503,19 @@ void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
         return;
 
     QRect anchor = m_anchorRect.isValid() ? m_anchorRect : QRect(0, 0, pet->width(), pet->height());
-    QPoint petTopLeft = pet->mapToGlobal(anchor.topLeft());
-    int petCenterX = petTopLeft.x() + anchor.width() / 2;
-    int petTop = petTopLeft.y();
+
+    // Same workaround as TipBubbleWidget::positionRelativeTo: macOS Qt::Tool
+    // frameless windows return stale coords from mapToGlobal()/pos() because
+    // their NSWindow position isn't always synced to QWidget. Use the native
+    // QWindow position when available.
+    QPoint petGlobalPos;
+    if (QWindow *w = pet->windowHandle()) {
+        petGlobalPos = w->position();
+    } else {
+        petGlobalPos = pet->mapToGlobal(QPoint(0, 0));
+    }
+    int petCenterX = petGlobalPos.x() + anchor.x() + anchor.width() / 2;
+    int petTop = petGlobalPos.y() + anchor.y();
     int petBottom = petTop + anchor.height();
 
     // Default position: above the pet
@@ -512,7 +523,7 @@ void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
     int panelY = petTop - PANEL_HEIGHT - 5; // 5px gap
 
     // Check if we need to flip below
-    QScreen *screen = QGuiApplication::screenAt(pet->mapToGlobal(QPoint(pet->width() / 2, pet->height() / 2)));
+    QScreen *screen = QGuiApplication::screenAt(QPoint(petCenterX, petTop));
     if (screen) {
         QRect screenRect = screen->availableGeometry();
 

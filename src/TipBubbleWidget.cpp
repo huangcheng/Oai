@@ -127,9 +127,6 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
         }
     }
 
-    // Update bubble path for painting
-    updateBubblePath();
-
     if (alreadyVisible) {
         // Content changed while visible — update text without re-fading
         update();
@@ -322,7 +319,6 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
     }
 
     // Update tail polygon for new position
-    updateBubblePath();
 
     // Clamp to screen boundaries
     if (screen) {
@@ -456,24 +452,6 @@ void TipBubbleWidget::calculateTextLayout()
                              bubbleWidth - PADDING_H * 2, sourceHeight);
     } else {
         m_sourceRect = QRect();
-    }
-}
-
-void TipBubbleWidget::updateBubblePath()
-{
-    // Symmetric tail centered on bubble
-    int tailCenterX = m_bubbleRect.width() / 2;
-
-    if (m_tailDown) {
-        m_tailPoly.clear();
-        m_tailPoly << QPoint(tailCenterX - TAIL_WIDTH / 2, m_bubbleRect.bottom())
-                   << QPoint(tailCenterX, m_bubbleRect.bottom() + TAIL_HEIGHT)
-                   << QPoint(tailCenterX + TAIL_WIDTH / 2, m_bubbleRect.bottom());
-    } else {
-        m_tailPoly.clear();
-        m_tailPoly << QPoint(tailCenterX - TAIL_WIDTH / 2, m_bubbleRect.top())
-                   << QPoint(tailCenterX, m_bubbleRect.top() - TAIL_HEIGHT)
-                   << QPoint(tailCenterX + TAIL_WIDTH / 2, m_bubbleRect.top());
     }
 }
 

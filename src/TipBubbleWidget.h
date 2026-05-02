@@ -6,7 +6,6 @@
 #include <QTimer>
 #include <QPropertyAnimation>
 #include <QRect>
-#include <QPolygon>
 
 class TipBubbleWidget : public QWidget
 {
@@ -53,7 +52,6 @@ private:
     void startEnterAnimation();
     void startExitAnimation();
     void calculateTextLayout();
-    void updateBubblePath();
 
     // Font factories — single source of truth so paintEvent and
     // calculateTextLayout never disagree on weight/strategy/hinting.
@@ -74,7 +72,6 @@ private:
     QRect m_titleRect;       // Where title text is drawn
     QRect m_messageRect;      // Where message text is drawn
     QRect m_sourceRect;       // Where source label is drawn
-    QPolygon m_tailPoly;      // Tail triangle
     bool m_tailDown = true;   // true = tail points down (bubble above pet)
 
     // Animation

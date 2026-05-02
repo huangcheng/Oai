@@ -153,18 +153,30 @@ bool CharacterPackManager::installPack(const QString &archivePath)
         return false;
     }
 
-    // Extract all files to user packs directory
+    // Extract to a sibling .tmp directory first, then atomically rename on
+    // success. Without this, an extraction failure mid-way (disk full,
+    // permission denied, corrupt entry) leaves a half-installed pack at the
+    // final path that next launch will try to load and warn about.
     QString installDir = m_userDir + "/" + packId;
-    QDir().mkpath(installDir);
+    QString stagingDir = installDir + ".tmp";
+
+    // Wipe any leftover staging from a prior interrupted install.
+    QDir(stagingDir).removeRecursively();
+    if (!QDir().mkpath(stagingDir)) {
+        qWarning() << "CharacterPackManager: Failed to create staging dir:" << stagingDir;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
 
     int numFiles = static_cast<int>(mz_zip_reader_get_num_files(&zip));
+    bool extractOk = true;
     for (int i = 0; i < numFiles; ++i) {
         mz_zip_archive_file_stat stat;
         if (!mz_zip_reader_file_stat(&zip, i, &stat))
             continue;
 
         QString entryName = QString::fromUtf8(stat.m_filename);
-        QString destPath = installDir + "/" + entryName;
+        QString destPath = stagingDir + "/" + entryName;
 
         if (mz_zip_reader_is_file_a_directory(&zip, i)) {
             QDir().mkpath(destPath);
@@ -173,11 +185,31 @@ bool CharacterPackManager::installPack(const QString &archivePath)
             QDir().mkpath(QFileInfo(destPath).absolutePath());
             if (!mz_zip_reader_extract_to_file(&zip, i, destPath.toUtf8().constData(), 0)) {
                 qWarning() << "CharacterPackManager: Failed to extract:" << entryName;
+                extractOk = false;
+                break;
             }
         }
     }
 
     mz_zip_reader_end(&zip);
+
+    if (!extractOk) {
+        QDir(stagingDir).removeRecursively();
+        return false;
+    }
+
+    // Atomically replace the existing install (if any) with the staged copy.
+    if (QDir(installDir).exists() && !QDir(installDir).removeRecursively()) {
+        qWarning() << "CharacterPackManager: Failed to remove existing install:" << installDir;
+        QDir(stagingDir).removeRecursively();
+        return false;
+    }
+    if (!QDir().rename(stagingDir, installDir)) {
+        qWarning() << "CharacterPackManager: Failed to rename staging dir to:" << installDir;
+        QDir(stagingDir).removeRecursively();
+        return false;
+    }
+
     qDebug() << "CharacterPackManager: Installed pack" << packId << "to" << installDir;
     return true;
 }
