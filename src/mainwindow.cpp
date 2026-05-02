@@ -128,6 +128,23 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 
 MainWindow::~MainWindow()
 {
+    // Tear down the three top-level widgets (constructed with nullptr parent
+    // so they're separate windows, but tracked here as raw pointer members).
+    // Stop the ECG widget first to halt its timers + audio, otherwise a tick
+    // fired between hide() and delete can touch a widget that's mid-destruct.
+    if (m_ecgWidget) {
+        m_ecgWidget->stop();
+        delete m_ecgWidget;
+        m_ecgWidget = nullptr;
+    }
+    if (m_settingsPanel) {
+        delete m_settingsPanel;
+        m_settingsPanel = nullptr;
+    }
+    if (m_tipBubble) {
+        delete m_tipBubble;
+        m_tipBubble = nullptr;
+    }
 }
 
 void MainWindow::setupWindowFlags()
@@ -419,8 +436,17 @@ void MainWindow::toggleVisibility()
 
 void MainWindow::openSettings()
 {
-    m_settingsPanel->setAnchorRect(petRect());
-    m_settingsPanel->anchorTo(this);
+    // In ECG mode this MainWindow is hidden, so anchoring Settings to its
+    // petRect() lands the panel wherever MainWindow's last known coordinates
+    // were — which is wrong if the user has dragged the ECG away. Anchor to
+    // the ECG widget itself when it's the active display.
+    if (m_ecgWidget && m_ecgWidget->isVisible()) {
+        m_settingsPanel->setAnchorRect(QRect(0, 0, m_ecgWidget->width(), m_ecgWidget->height()));
+        m_settingsPanel->anchorTo(m_ecgWidget);
+    } else {
+        m_settingsPanel->setAnchorRect(petRect());
+        m_settingsPanel->anchorTo(this);
+    }
     m_settingsPanel->showAnimated();
 }
 
@@ -546,7 +572,11 @@ void MainWindow::onActivePackChanged()
     // bubble anchors above that empty space instead of above the character.
     if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
         const float displayScale = pack->characterConfig().displayScale;
-        QTimer::singleShot(500, this, [this, displayScale]() {
+        // Stamp this load attempt so a rapid re-trigger invalidates the
+        // pending crop callback below; only the most recent load applies.
+        const int loadId = ++m_packLoadId;
+        QTimer::singleShot(500, this, [this, displayScale, loadId]() {
+            if (loadId != m_packLoadId) return;        // superseded
             if (!m_live2dEngine) return;
             const QRect b = m_live2dEngine->characterBounds();
             if (b.isNull() || b.isEmpty()) return;

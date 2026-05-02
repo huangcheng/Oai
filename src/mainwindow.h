@@ -108,6 +108,11 @@ private:
     // Guard against infinite recursion when auto-skipping Live2D packs
     // (onActivePackChanged → switchPack → activePackChanged → onActivePackChanged).
     bool m_skipLive2dFallback = false;
+
+    // Monotonic counter for pack load attempts. Each onActivePackChanged()
+    // bumps it; the 500 ms post-load crop lambda compares its captured value
+    // against the current one and bails if it's been superseded.
+    int m_packLoadId = 0;
 };
 
 #endif // MAINWINDOW_H

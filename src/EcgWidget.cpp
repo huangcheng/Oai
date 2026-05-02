@@ -540,10 +540,26 @@ void EcgWidget::releaseControlAt(QPoint p)
         if (m_pwrRect.contains(p)) {
             m_powerOn = !m_powerOn;
             if (m_powerOn) {
+                // Reset every transient flag so power-cycling out of a
+                // flatline / alarm state actually returns to a clean
+                // baseline. Without this, the trace stays flat or the
+                // border keeps flashing until a gateway event arrives.
+                m_flatlined = false;
+                m_alarmActive = false;
+                m_alarmFlashOn = false;
+                m_alarmFlashTimer.stop();
+                m_alarmDecayTimer.stop();
+                m_eventBpm = 0.0;
+                m_eventDecayTimer.stop();
                 m_prevPhase = m_phase;
+                m_idleTimer.start();
                 m_tickTimer.start();
             } else {
                 m_tickTimer.stop();
+                m_idleTimer.stop();
+                m_alarmFlashTimer.stop();
+                m_alarmDecayTimer.stop();
+                m_eventDecayTimer.stop();
                 if (m_beep) m_beep->stop();
                 if (m_flatlineBeep) m_flatlineBeep->stop();
             }

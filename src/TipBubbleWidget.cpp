@@ -118,10 +118,13 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
     if (m_anchoredPet) {
         positionRelativeTo(m_anchoredPet);
     } else {
-        // Default position if no pet anchored
-        QRect screenRect = QGuiApplication::primaryScreen()->availableGeometry();
-        move(screenRect.center().x() - width() / 2,
-             screenRect.center().y() - height() / 2);
+        // Default position if no pet anchored. primaryScreen() can be null
+        // during a headless run or if the only display is being unplugged.
+        if (QScreen *primary = QGuiApplication::primaryScreen()) {
+            QRect screenRect = primary->availableGeometry();
+            move(screenRect.center().x() - width() / 2,
+                 screenRect.center().y() - height() / 2);
+        }
     }
 
     // Update bubble path for painting

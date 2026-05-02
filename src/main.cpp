@@ -237,8 +237,11 @@ int main(int argc, char *argv[])
         const QScreen *screen = bestScreenFor(QRect(savedPos, winSize));
         targetPos = clampedPos(savedPos, screen->availableGeometry());
     } else {
-        // Default: bottom-right corner of primary screen
-        const QRect screen = QApplication::primaryScreen()->availableGeometry();
+        // Default: bottom-right corner of primary screen.
+        // primaryScreen() can return null on a headless / unplug-mid-session
+        // edge case; fall back to (0, 0) rather than dereferencing.
+        const QScreen *primary = QApplication::primaryScreen();
+        const QRect screen = primary ? primary->availableGeometry() : QRect(0, 0, 1280, 800);
         targetPos = QPoint(screen.right() - winSize.width() - posMargin,
                            screen.bottom() - winSize.height() - posMargin);
     }

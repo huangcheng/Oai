@@ -56,7 +56,13 @@ void IpcServer::stop()
         // from the main thread (QSocketNotifier is thread-affine).
         QMetaObject::invokeMethod(m_worker, "stop", Qt::BlockingQueuedConnection);
         m_thread->quit();
-        m_thread->wait();
+        // Bound the wait so a wedged worker can't freeze the main thread on
+        // shutdown. 5s is generous — UDP socket close is normally instant.
+        if (!m_thread->wait(5000)) {
+            qWarning() << "IPC: worker thread did not stop within 5s; forcing termination";
+            m_thread->terminate();
+            m_thread->wait(1000);
+        }
         delete m_thread;
         m_thread = nullptr;
         m_worker = nullptr;
