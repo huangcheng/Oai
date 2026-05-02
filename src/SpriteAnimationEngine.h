@@ -29,7 +29,7 @@ public:
      * @param spriteSheet  Path to map.png (the sprite sheet image)
      * @param animJson     Path to animations.json (frame region definitions)
      */
-    void loadAssets(const QString &spriteSheet, const QString &animJson);
+    bool loadAssets(const QString &spriteSheet, const QString &animJson);
 
     /**
      * @brief Load animations from a sprite pack

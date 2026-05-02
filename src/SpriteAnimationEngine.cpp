@@ -77,12 +77,12 @@ void SpriteAnimationEngine::buildNameMap()
     m_nameMap["lookup"]          = "LookUp";
 }
 
-void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QString &animJsonPath)
+bool SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QString &animJsonPath)
 {
     // Load sprite sheet
     if (!m_spriteSheet.load(spriteSheetPath)) {
         qWarning() << "Failed to load sprite sheet:" << spriteSheetPath;
-        return;
+        return false;
     }
     qDebug() << "Sprite sheet loaded:" << spriteSheetPath
              << "size:" << m_spriteSheet.size();
@@ -96,7 +96,7 @@ void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
     QFile file(animJsonPath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Failed to open animations.json:" << animJsonPath;
-        return;
+        return false;
     }
 
     QJsonParseError error;
@@ -105,7 +105,7 @@ void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
 
     if (error.error != QJsonParseError::NoError) {
         qWarning() << "animations.json parse error:" << error.errorString();
-        return;
+        return false;
     }
 
     QJsonArray anims = doc.array();
@@ -191,6 +191,7 @@ void SpriteAnimationEngine::loadAssets(const QString &spriteSheetPath, const QSt
     m_timer.start();
     // Start idle timer — first idle animation plays after 3 seconds
     m_idleTimer.start();
+    return true;
 }
 
 bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
