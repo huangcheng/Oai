@@ -129,6 +129,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 #ifdef Q_OS_WIN
     // Refresh DWM attributes every 30s — display sleep/wake or DWM restart
     // can drop the corner-preference / backdrop / NC-rendering settings.
+    // We also force a window-style refresh (SWP_FRAMECHANGED) so Windows
+    // re-evaluates the composition surface, and queue a repaint so Qt
+    // re-composites the widget.  The bubble and ECG widgets get the same
+    // treatment so they don't disappear while the pet stays visible.
     m_dwmRefreshTimer = new QTimer(this);
     m_dwmRefreshTimer->setInterval(30000);
     connect(m_dwmRefreshTimer, &QTimer::timeout, this, [this]() {
@@ -143,7 +147,24 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             const int ncRenderingDisabled = 1;
             DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
                                   &ncRenderingDisabled, sizeof(ncRenderingDisabled));
+
+            // Re-apply the Qt attribute that suppresses the system background
+            // paint — DWM restart can silently drop it, leaving a white rect.
+            setAttribute(Qt::WA_NoSystemBackground, true);
+
+            // Force Windows to re-evaluate the window frame / composition.
+            SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                         SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+            // Ensure Qt schedules a repaint; without this the backing store
+            // may stay stale after DWM recreates its composition surface.
+            update();
         }
+
+        // Keep the floating widgets in sync — they have their own native
+        // windows and their DWM attributes can degrade independently.
+        if (m_tipBubble) m_tipBubble->refreshDwmAttributes();
     });
     m_dwmRefreshTimer->start();
 #endif
@@ -216,6 +237,41 @@ void MainWindow::showEvent(QShowEvent *event)
     }
 #endif
 }
+
+#ifdef Q_OS_WIN
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+{
+    if (eventType == "windows_generic_MSG") {
+        MSG *msg = static_cast<MSG *>(message);
+        if (msg->message == WM_DISPLAYCHANGE) {
+            // Display resolution/depth changed (display sleep/wake, monitor
+            // connect/disconnect, RDP session).  DWM may have restarted, so
+            // re-apply attributes immediately instead of waiting for the
+            // 30-second timer.
+            HWND hwnd = reinterpret_cast<HWND>(winId());
+            if (hwnd) {
+                const int doNotRound = 1;
+                DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                                      &doNotRound, sizeof(doNotRound));
+                const int backdropNone = 1;
+                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+                                      &backdropNone, sizeof(backdropNone));
+                const int ncRenderingDisabled = 1;
+                DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
+                                      &ncRenderingDisabled, sizeof(ncRenderingDisabled));
+
+                setAttribute(Qt::WA_NoSystemBackground, true);
+                SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                             SWP_FRAMECHANGED | SWP_NOACTIVATE);
+                update();
+            }
+            if (m_tipBubble) m_tipBubble->refreshDwmAttributes();
+        }
+    }
+    return QWidget::nativeEvent(eventType, message, result);
+}
+#endif
 
 void MainWindow::paintEvent(QPaintEvent * /*event*/)
 {

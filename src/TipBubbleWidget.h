@@ -33,6 +33,10 @@ public:
     void setSuppressed(bool s) { m_suppressed = s; if (s && isVisible()) hideBubble(); }
     bool isSuppressed() const { return m_suppressed; }
 
+    // Re-apply DWM attributes (Windows). Called periodically by MainWindow
+    // to combat DWM attribute loss after long-running sessions.
+    void refreshDwmAttributes();
+
     qreal opacity() const { return m_opacity; }
     void setOpacity(qreal o);
     qreal slideOffset() const { return m_slideOffset; }

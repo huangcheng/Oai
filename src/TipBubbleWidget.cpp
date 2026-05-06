@@ -62,19 +62,34 @@ void TipBubbleWidget::showEvent(QShowEvent *event)
     // Promote the underlying NSWindow to a non-activating panel so showing
     // the bubble never steals keyboard focus from the user's foreground app.
     MacFocusFix::makeNonActivating(this);
+    refreshDwmAttributes();
+}
+
+void TipBubbleWidget::refreshDwmAttributes()
+{
 #ifdef Q_OS_WIN
     HWND hwnd = reinterpret_cast<HWND>(winId());
-    if (hwnd) {
-        const int doNotRound = 1;          // DWMWCP_DONOTROUND
-        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                              &doNotRound, sizeof(doNotRound));
-        const int backdropNone = 1;        // DWMSBT_NONE
-        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                              &backdropNone, sizeof(backdropNone));
-        const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
-        DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                              &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-    }
+    if (!hwnd) return;
+
+    const int doNotRound = 1;          // DWMWCP_DONOTROUND
+    DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                          &doNotRound, sizeof(doNotRound));
+    const int backdropNone = 1;        // DWMSBT_NONE
+    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+                          &backdropNone, sizeof(backdropNone));
+    const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
+    DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
+                          &ncRenderingDisabled, sizeof(ncRenderingDisabled));
+
+    // Force Windows to re-evaluate the window's composition surface.
+    // Without this, DWM can cache stale chrome and leave the bubble
+    // invisible after display sleep/wake or DWM restart.
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                 SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+    // Ensure Qt re-composites the widget on the next event loop iteration.
+    update();
 #endif
 }
 
