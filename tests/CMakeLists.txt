@@ -68,6 +68,7 @@ foreach(test_src ${TEST_SOURCES})
     target_compile_definitions(${test_name} PRIVATE
         SOURCE_DIR="${CMAKE_SOURCE_DIR}"
         PROJECT_VERSION="${PROJECT_VERSION}"
+        OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}"
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
 
