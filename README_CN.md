@@ -356,8 +356,7 @@ oai/
 │   │   └── effects/            # 6 个 Lottie 特效（alert-pulse、confetti……）
 │   └── packs/                  # 一方 Live2D 角色包
 ├── gateways/
-│   ├── oai-gateway/            # @eastlake/oai-gateway CLI（Node.js，零依赖）
-│   └── shared/                 # 旧版共享 IPC 模块
+│   └── oai-gateway/            # @eastlake/oai-gateway CLI（Node.js，零依赖）
 ├── installer/
 │   ├── config.xml.in           # Qt Installer Framework 根配置
 │   ├── oai.ini.template        # 安装器随 Oai.exe 一起分发的便携默认值

@@ -51,7 +51,6 @@ The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips →
 ### Node.js Gateway (gateways/)
 
 - **oai-gateway/** (`@eastlake/oai-gateway`) — CLI tool for sending events and health checks. Contains `lib/ipc.mjs` for the UDP transport layer.
-- **shared/** — Legacy shared IPC module (package `@oai/shared`).
 
 Gateways are pure ES modules (`.mjs`) with zero npm dependencies — only Node.js built-ins. Requires Node.js >= 18.
 

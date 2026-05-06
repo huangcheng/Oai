@@ -346,8 +346,7 @@ oai/
 │   │   └── effects/            # 6 Lottie effects (alert-pulse, confetti, …)
 │   └── packs/                  # First-party Live2D character packs
 ├── gateways/
-│   ├── oai-gateway/            # @eastlake/oai-gateway CLI (Node.js, zero deps)
-│   └── shared/                 # Legacy shared IPC module
+│   └── oai-gateway/            # @eastlake/oai-gateway CLI (Node.js, zero deps)
 ├── installer/
 │   ├── config.xml.in           # Qt Installer Framework root config
 │   ├── oai.ini.template        # Portable defaults shipped next to Oai.exe
