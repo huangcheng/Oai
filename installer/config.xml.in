@@ -19,12 +19,16 @@
 
     <!--
         Qt IFW ships built-in chrome translations (Next/Cancel/...) for many
-        languages including zh_CN; they auto-load from the user's locale.
-        We additionally bundle our own .qm so package-level qsTr() strings
-        compiled from translations/*.ts get picked up too. The .qm files are
-        produced by `lrelease` at build time (see top-level CMakeLists.txt).
+        languages; they auto-load from the user's locale.  We additionally
+        bundle our own .qm files so package-level qsTr() strings compiled from
+        translations/*.ts get picked up too.  The .qm files are produced by
+        `lrelease` at build time (see top-level CMakeLists.txt).
+
+        English is listed explicitly so the installer can be forced to run in
+        English on a Chinese system (e.g., for testing or user preference).
     -->
     <Translations>
+        <Translation>oai_installer_en.qm</Translation>
         <Translation>oai_installer_zh_CN.qm</Translation>
     </Translations>
 </Installer>

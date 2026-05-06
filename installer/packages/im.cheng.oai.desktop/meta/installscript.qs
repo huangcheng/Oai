@@ -59,6 +59,12 @@ Component.prototype.onInstallationFinishedPage = function()
     try {
         if (installer.isInstaller() && installer.status === QInstaller.Success) {
             installer.addWizardPageItem(component, "LaunchCheckBoxForm", QInstaller.InstallationFinished);
+            // The .ui file hard-codes English; override with qsTr() so the
+            // string is picked up by oai_installer_<lang>.qm translations.
+            var form = component.userInterface("LaunchCheckBoxForm");
+            if (form && form.launchCheckBox) {
+                form.launchCheckBox.setText(qsTr("Launch Oai now"));
+            }
         }
     } catch (e) {
         console.log(e);

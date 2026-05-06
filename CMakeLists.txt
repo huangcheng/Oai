@@ -726,7 +726,10 @@ if(OAI_QTIFW_BINARYCREATOR)
 
     # Compile installer-specific translations into meta/<basename>.qm.
     # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
+    # English is listed first so it serves as the fallback when the system
+    # locale does not match any bundled translation.
     set(OAI_IFW_TS_FILES
+        ${OAI_IFW_DIR}/translations/oai_installer_en.ts
         ${OAI_IFW_DIR}/translations/oai_installer_zh_CN.ts)
 
     set(OAI_IFW_QM_FILES "")
