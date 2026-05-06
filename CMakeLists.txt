@@ -20,6 +20,12 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+# rlottie v0.2 defaults LOTTIE_MODULE=ON, which builds rlottie-image-loader as
+# a SHARED library regardless of BUILD_SHARED_LIBS. That produces a separate
+# DLL that cmake --install tries to copy and fails on Windows because the
+# install rules reference a non-existent file. Disabling the module folds
+# stb_image.cpp directly into the static rlottie library.
+set(LOTTIE_MODULE OFF CACHE BOOL "" FORCE)
 # NOTE: rlottie v0.2 does NOT have a RLOTTIE_BUILD_EXAMPLE option.
 # We patch out the example directory below after FetchContent populates it.
 # rlottie declares cmake_minimum_required(3.3) which is incompatible with CMake 4.x
@@ -109,7 +115,7 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
     # Also patch out the example directory — rlottie v0.2 unconditionally builds
     # lottie2gif which Qt Creator auto-detects as a run target.
     string(REPLACE "add_subdirectory(example)"
-                    "# add_subdirectory(example)  # disabled by Qlippy"
+                    "# add_subdirectory(example)  # disabled by Oai"
                     RLOTTIE_CMAKE_PACHED "${RLOTTIE_CMAKE_CONTENT}")
     if(NOT RLOTTIE_CMAKE_CONTENT STREQUAL RLOTTIE_CMAKE_PACHED)
         file(WRITE "${RLOTTIE_CMAKELISTS}" "${RLOTTIE_CMAKE_PACHED}")
@@ -338,10 +344,27 @@ qt_add_executable(Oai
 
 target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# Default endpoint for the version-check / update server. Baked into the
+# binary via OAI_DEFAULT_UPDATE_ENDPOINT and into the shipped Oai.ini via
+# configure_file. Override at configure time, e.g.:
+#   cmake -DOAI_DEFAULT_UPDATE_ENDPOINT=updates.example.com:9340 ..
+# The value is just a default — users can still override at runtime via
+# QSettings (`updateServerEndpoint` key) without rebuilding.
+set(OAI_DEFAULT_UPDATE_ENDPOINT "101.133.144.133:9340" CACHE STRING
+    "Default host:port for the Oai update server")
+
+# Substitute @OAI_DEFAULT_UPDATE_ENDPOINT@ into the portable Oai.ini that
+# the installer ships next to Oai.exe.
+configure_file(
+    ${CMAKE_SOURCE_DIR}/installer/oai.ini.template
+    ${CMAKE_BINARY_DIR}/Oai.ini
+    @ONLY)
+
 # Pass version and source directory to C++ code
 target_compile_definitions(Oai PRIVATE
     PROJECT_VERSION="${PROJECT_VERSION}"
     OAI_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}"
 )
 
 # --- Icon resource -----------------------------------------------------------
@@ -780,7 +803,7 @@ if(OAI_QTIFW_BINARYCREATOR)
         # ipcEndpoint per build flavor without forcing every user to edit
         # their roaming config.
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_SOURCE_DIR}/installer/oai.ini.template
+                ${CMAKE_BINARY_DIR}/Oai.ini
                 ${OAI_IFW_PKG_DATA}/Oai.ini
         COMMAND ${CMAKE_COMMAND} -E touch ${OAI_IFW_STAGE_TS}
         DEPENDS Oai ${ALL_PACK_OPKS}

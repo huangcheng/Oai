@@ -54,10 +54,11 @@ public:
 
     /**
      * Returns the UDP endpoint for the version-check / update server.
-     * Format: "host:port", e.g. "101.133.144.133:9340". Stored under the
-     * `updateServerEndpoint` key in QSettings; falls back to
-     * defaultUpdateEndpoint() when unset so production stays operable
-     * without forcing every user to write a config file.
+     * Format: "host:port". Stored under the `updateServerEndpoint` key in
+     * QSettings; falls back to defaultUpdateEndpoint() (compiled in from
+     * the OAI_DEFAULT_UPDATE_ENDPOINT CMake cache variable) when unset, so
+     * production stays operable without forcing every user to write a
+     * config file.
      */
     QString updateServerEndpoint() const { return m_updateServerEndpoint; }
     void setUpdateServerEndpoint(const QString &endpoint);
@@ -65,7 +66,7 @@ public:
     /** Default IPC endpoint (used when config has no override). */
     static QString defaultEndpoint();
 
-    /** Default update-server endpoint (Aliyun host serving the Erlang UDP daemon). */
+    /** Default update-server endpoint (compiled in from OAI_DEFAULT_UPDATE_ENDPOINT). */
     static QString defaultUpdateEndpoint();
 
 signals:

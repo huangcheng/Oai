@@ -1,3 +1,5 @@
+**English** | [简体中文](README_CN.md)
+
 # Oai Desktop Pet
 
 A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application with a sprite pack engine for customizable characters.
@@ -308,37 +310,58 @@ oai-gateway --source claude-code --event session.start
 ```
 oai/
 ├── CMakeLists.txt              # Build configuration
+├── CLAUDE.md                   # AI-tooling project guide
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md / README_CN.md
+├── Oai_zh_CN.ts                # Simplified Chinese translations
 ├── src/
 │   ├── main.cpp                # Application entry point
 │   ├── mainwindow.h/cpp        # Transparent frameless pet window
-│   ├── SpriteAnimationEngine.h/cpp  # Sprite sheet animation playback
-│   ├── LottieAnimationEngine.h/cpp  # Lottie animation playback
-│   ├── LottieEffectOverlay.h/cpp    # Visual effects overlay
-│   ├── SpritePack.h/cpp        # Sprite pack data structure
-│   ├── SpritePackManager.h/cpp # Pack discovery and management
 │   ├── IpcServer.h/cpp         # UDP IPC server
-│   ├── EventRouter.h/cpp       # Event dispatch and validation
-│   ├── TipsEngine.h/cpp        # Pattern-matching tips engine
-│   ├── ConfigManager.h/cpp     # JSON config persistence
-│   └── SystemTray.h/cpp        # System tray integration
+│   ├── UdpWorker.h/cpp         # UDP worker (runs on a separate QThread)
+│   ├── EventRouter.h/cpp       # Maps 17 canonical events → animation/effect/tip
+│   ├── LottieAnimationEngine.h/cpp  # Primary engine (rlottie)
+│   ├── Live2DAnimationEngine.h/cpp  # Live2D Cubism engine
+│   ├── SpriteAnimationEngine.h/cpp  # Legacy sprite-sheet engine
+│   ├── LottieEffectOverlay.h/cpp    # Visual effects overlay
+│   ├── CharacterPack.h/cpp          # Character pack data structure
+│   ├── CharacterPackManager.h/cpp   # Pack discovery & switching
+│   ├── EcgWidget.h/cpp              # ICU-monitor display mode
+│   ├── TipBubbleWidget.h/cpp        # Win98-style speech bubble
+│   ├── TipsEngine.h/cpp             # Pattern matcher for contextual tips
+│   ├── TipsCatalog.h/cpp            # Tip catalog loader (i18n JSON)
+│   ├── ConfigManager.h/cpp          # Layered config (defaults / portable / user)
+│   ├── SettingsPanelWidget.h/cpp    # Settings panel UI
+│   ├── SystemTray.h/cpp             # System tray integration
+│   ├── UpdateChecker.h/cpp          # Version-check UDP client
+│   └── MacFocusFix.h/.mm            # macOS focus workaround
 ├── assets/
-│   ├── packs/
-│   │   └── clippy/             # Built-in Clippy pack
-│   │       ├── manifest.json
-│   │       ├── sprites/
-│   │       │   ├── map.png     # Sprite sheet
-│   │       │   └── animations.json
-│   │       └── preview.png
-│   └── lottie/
-│       └── effects/            # Visual effects (6 Lottie files)
-├── schemas/
-│   └── character-pack-v1.schema.json  # Character pack format schema
-├── installer/                  # Qt Installation Framework config
+│   ├── animations.json         # Sprite animation definitions
+│   ├── fonts/                  # Bundled HarmonyOS Sans SC
+│   ├── i18n/                   # tips.<locale>.json (event tips + greetings)
+│   ├── icons/                  # App icon
+│   ├── lottie/
+│   │   ├── character/          # 18 Lottie character animations
+│   │   └── effects/            # 6 Lottie effects (alert-pulse, confetti, …)
+│   └── packs/                  # First-party Live2D character packs
 ├── gateways/
-│   ├── shared/                 # Platform-aware IPC transport (Node.js)
-│   │   └── ipc.mjs             # UDP client for 127.0.0.1:52847
-│   └── oai-gateway/           # CLI gateway tool
-└── Oai_zh_CN.ts               # Simplified Chinese translations
+│   ├── oai-gateway/            # @eastlake/oai-gateway CLI (Node.js, zero deps)
+│   └── shared/                 # Legacy shared IPC module
+├── installer/
+│   ├── config.xml.in           # Qt Installer Framework root config
+│   ├── oai.ini.template        # Portable defaults shipped next to Oai.exe
+│   ├── packages/               # IFW package payload (scripts, license, meta)
+│   └── translations/           # Installer UI translations
+├── schemas/
+│   └── character-pack-v1.schema.json   # Character pack format schema
+├── scripts/                    # Build + import helpers (Python)
+├── server/                     # Erlang/OTP UDP update server (rebar3)
+├── tests/                      # Qt Test suite (UDP port 52848)
+└── thirdparty/
+    ├── CubismNativeFramework/  # Submodule — Live2D Cubism SDK
+    ├── CubismNativeSamples/    # Submodule — Cubism samples (build-time only)
+    └── miniz/                  # Vendored zip library (.opk archive support)
 ```
 
 ## Configuration

@@ -15,10 +15,11 @@ QString ConfigManager::defaultEndpoint()
 
 QString ConfigManager::defaultUpdateEndpoint()
 {
-    // Aliyun-hosted Erlang/OTP UDP server — see .claude/skills/oai-server/.
-    // Override with `updateServerEndpoint=host:port` in QSettings to point
-    // at a local server during development.
-    return QStringLiteral("101.133.144.133:9340");
+    // Default host:port comes from OAI_DEFAULT_UPDATE_ENDPOINT, baked in at
+    // CMake-configure time (see CMakeLists.txt). Override at runtime via the
+    // `updateServerEndpoint` key in QSettings to point at a local server
+    // during development without rebuilding.
+    return QStringLiteral(OAI_DEFAULT_UPDATE_ENDPOINT);
 }
 
 ConfigManager::ConfigManager(QObject *parent)

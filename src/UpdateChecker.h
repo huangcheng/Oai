@@ -19,9 +19,10 @@ class ConfigManager;
  * Command 1 (CHECK)    — client sends {"current_version","platform"}
  * Command 2 (ANNOUNCE) — server replies {"available", "latest_version"?}
  *
- * The endpoint is read from ConfigManager::updateServerEndpoint() so the
- * production host (`101.133.144.133:9340`) can be overridden via QSettings
- * for local-server development without rebuilding.
+ * The endpoint is read from ConfigManager::updateServerEndpoint(), which
+ * defaults to the OAI_DEFAULT_UPDATE_ENDPOINT compiled in via CMake and
+ * can be overridden at runtime via QSettings for local-server development
+ * without rebuilding.
  */
 class UpdateChecker : public QObject
 {

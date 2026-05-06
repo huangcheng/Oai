@@ -7,7 +7,7 @@ metadata:
   version: "1.0"
 ---
 
-The Oai project includes a lightweight Erlang/OTP UDP server (`server/`). It currently handles version checking and can be extended for other UDP-based services. It lives on branch `feature/update-server` and is deployed to Aliyun at `101.133.144.133:9340`.
+The Oai project includes a lightweight Erlang/OTP UDP server (`server/`). It currently handles version checking and can be extended for other UDP-based services. It lives on branch `feature/update-server` and is deployed to a public host at `updates.example.com:9340` (the real host:port is configured at build time via the `OAI_DEFAULT_UPDATE_ENDPOINT` CMake cache variable — see `CMakeLists.txt`).
 
 ## When to use
 
@@ -185,7 +185,7 @@ packet = encode(1, 1, payload)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
-sock.sendto(packet, ("101.133.144.133", 9340))
+sock.sendto(packet, ("updates.example.com", 9340))  # replace with your update host
 data, _ = sock.recvfrom(2048)
 print(data)
 ```

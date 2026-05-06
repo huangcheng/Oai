@@ -1325,7 +1325,7 @@ git commit -m "feat(ecg): wire EcgWidget into MainWindow with config-driven togg
 - [ ] **Step 1: Run lupdate to add the new strings to the .ts file**
 
 ```bash
-cd /Users/huangcheng/Projects/Oai && \
+cd "$(git rev-parse --show-toplevel)" && \
   /usr/bin/find . -path ./build -prune -o \( -name '*.cpp' -o -name '*.h' \) -print > /tmp/oai_sources.txt && \
   $(brew --prefix qt@6)/bin/lupdate $(cat /tmp/oai_sources.txt) -ts Oai_zh_CN.ts
 ```
