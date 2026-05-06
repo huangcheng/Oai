@@ -55,6 +55,9 @@ public:
     /** @brief True once loadAssets / loadFromCharacterPack has loaded animations. */
     bool hasAnimations() const { return !m_animations.isEmpty(); }
 
+    /** @brief Always true for sprite engine — no GPU context to lose. */
+    bool lastPaintSuccessful() const { return true; }
+
 signals:
     void effectRequested(const QString &effectName);
     void frameChanged();

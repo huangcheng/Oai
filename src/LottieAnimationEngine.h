@@ -51,6 +51,9 @@ public:
     // Check if engine has any animations loaded
     bool hasAnimations() const { return !m_animations.isEmpty(); }
 
+    /** @brief Always true for Lottie — software renderer, no GPU context to lose. */
+    bool lastPaintSuccessful() const { return true; }
+
 signals:
     void effectRequested(const QString &effectName);
     void frameChanged(); // emitted every tick so parent widget can repaint

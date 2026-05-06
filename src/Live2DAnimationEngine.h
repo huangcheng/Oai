@@ -100,6 +100,11 @@ public:
     int renderWidth() const { return m_renderWidth; }
     int renderHeight() const { return m_renderHeight; }
 
+    /** @brief True if the last render produced a valid non-null image.
+     *         Used by MainWindow to detect GL context loss and fall back
+     *         to another engine. */
+    bool lastPaintSuccessful() const { return m_lastPaintSuccessful; }
+
 signals:
     void frameChanged();
     void effectRequested(const QString &effectName);
@@ -111,6 +116,7 @@ private:
     // --- Cubism helpers ---
     bool initOpenGL();
     void releaseOpenGL();
+    bool recoverOpenGL();
     bool loadModel(const QString &modelJsonPath, const QString &modelDir);
     void releaseModel();
     void renderFrame();
@@ -131,6 +137,7 @@ private:
     mutable QRect m_characterBounds;  // alpha bbox, lazily computed from m_image
     int m_renderWidth = 200;
     int m_renderHeight = 200;
+    bool m_lastPaintSuccessful = false;
 
     // --- Playback state ---
     bool m_modelLoaded = false;

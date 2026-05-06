@@ -505,6 +505,34 @@ void Live2DAnimationEngine::releaseOpenGL()
     m_surface = nullptr;
 }
 
+bool Live2DAnimationEngine::recoverOpenGL()
+{
+    QString savedMotion = m_currentMotion;
+    bool wasPlaying = m_playing;
+
+    releaseOpenGL();
+
+    if (!initOpenGL()) {
+        qWarning() << "Live2D: recoverOpenGL: initOpenGL failed";
+        return false;
+    }
+
+    if (!m_glContext->makeCurrent(m_surface)) {
+        qWarning() << "Live2D: recoverOpenGL: makeCurrent failed";
+        return false;
+    }
+
+    m_cubismModel->setupRenderer(m_renderWidth, m_renderHeight);
+    m_glContext->doneCurrent();
+
+    m_currentMotion = savedMotion;
+    m_playing = wasPlaying;
+    m_lastPaintSuccessful = true;
+
+    qDebug() << "Live2D: OpenGL recovery complete";
+    return true;
+}
+
 void Live2DAnimationEngine::releaseModel()
 {
     delete m_cubismModel;
@@ -659,6 +687,7 @@ void Live2DAnimationEngine::stop()
     m_currentMotion.clear();
     m_image = QImage();  // clear last rendered frame so paint() returns early
     m_characterBounds = QRect();
+    m_lastPaintSuccessful = false;
 }
 
 void Live2DAnimationEngine::setPointerTarget(float x, float y)
@@ -731,6 +760,19 @@ void Live2DAnimationEngine::tick()
 {
     if (!m_modelLoaded || !m_cubismModel || !m_glContext || !m_fbo) return;
 
+#ifdef Q_OS_WIN
+    // Windows: DWM restart, GPU power-state change, or display adapter reset
+    // can invalidate the OpenGL context. Detect and recover silently.
+    if (!m_glContext->isValid()) {
+        qWarning() << "Live2D: GL context lost — attempting recovery";
+        if (!recoverOpenGL()) {
+            qWarning() << "Live2D: GL recovery failed — stopping engine";
+            stop();
+            return;
+        }
+    }
+#endif
+
     // Calculate delta time
     qint64 now = QDateTime::currentMSecsSinceEpoch();
     float deltaSeconds = 0.016f;  // default 16ms
@@ -741,7 +783,11 @@ void Live2DAnimationEngine::tick()
     m_lastTickMs = now;
 
     // Make GL context current
-    m_glContext->makeCurrent(m_surface);
+    if (!m_glContext->makeCurrent(m_surface)) {
+        qWarning() << "Live2D: makeCurrent failed";
+        m_lastPaintSuccessful = false;
+        return;
+    }
 
     // Update model
     m_cubismModel->update(deltaSeconds);
@@ -767,7 +813,16 @@ void Live2DAnimationEngine::tick()
 
 void Live2DAnimationEngine::renderFrame()
 {
-    if (!m_fbo || !m_cubismModel) return;
+    if (!m_fbo || !m_cubismModel) {
+        m_lastPaintSuccessful = false;
+        return;
+    }
+
+    if (!m_fbo->isValid()) {
+        qWarning() << "Live2D: FBO is invalid";
+        m_lastPaintSuccessful = false;
+        return;
+    }
 
     m_fbo->bind();
 
@@ -783,6 +838,8 @@ void Live2DAnimationEngine::renderFrame()
     m_image = m_fbo->toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
     m_fbo->release();
+
+    m_lastPaintSuccessful = !m_image.isNull();
 }
 
 void Live2DAnimationEngine::startNextAnimation()

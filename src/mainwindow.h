@@ -113,6 +113,12 @@ private:
     // bumps it; the 500 ms post-load crop lambda compares its captured value
     // against the current one and bails if it's been superseded.
     int m_packLoadId = 0;
+
+#ifdef Q_OS_WIN
+    // Windows DWM can lose window attributes after long-running sessions
+    // (display sleep/wake, DWM restart). Refresh periodically.
+    QTimer *m_dwmRefreshTimer = nullptr;
+#endif
 };
 
 #endif // MAINWINDOW_H

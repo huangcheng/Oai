@@ -125,6 +125,28 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     connect(m_live2dEngine, &Live2DAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
 #endif
+
+#ifdef Q_OS_WIN
+    // Refresh DWM attributes every 30s — display sleep/wake or DWM restart
+    // can drop the corner-preference / backdrop / NC-rendering settings.
+    m_dwmRefreshTimer = new QTimer(this);
+    m_dwmRefreshTimer->setInterval(30000);
+    connect(m_dwmRefreshTimer, &QTimer::timeout, this, [this]() {
+        HWND hwnd = reinterpret_cast<HWND>(winId());
+        if (hwnd) {
+            const int doNotRound = 1;
+            DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                                  &doNotRound, sizeof(doNotRound));
+            const int backdropNone = 1;
+            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+                                  &backdropNone, sizeof(backdropNone));
+            const int ncRenderingDisabled = 1;
+            DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
+                                  &ncRenderingDisabled, sizeof(ncRenderingDisabled));
+        }
+    });
+    m_dwmRefreshTimer->start();
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -202,10 +224,19 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
 
     const QRect pet = petRect();
 
-    // Draw character animation (Live2D, Lottie, or sprite sheet)
+    // Draw character animation (Live2D, Lottie, or sprite sheet).
+    // On Windows, Live2D's OpenGL context can be invalidated by DWM restart
+    // or GPU power-state changes. Fall back through engines if the current
+    // one fails to produce a frame.
 #ifdef OAI_LIVE2D_SUPPORT
     if (m_live2dEngine && m_live2dEngine->isPlaying()) {
-        m_live2dEngine->paint(&painter, pet);
+        if (m_live2dEngine->lastPaintSuccessful()) {
+            m_live2dEngine->paint(&painter, pet);
+        } else if (m_lottieEngine && m_lottieEngine->isPlaying()) {
+            m_lottieEngine->paint(&painter, pet);
+        } else if (m_engine) {
+            m_engine->paint(&painter, pet);
+        }
     } else
 #endif
     if (m_lottieEngine && m_lottieEngine->isPlaying()) {
