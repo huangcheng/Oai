@@ -52,6 +52,18 @@ public:
      */
     void setIpcPort(quint16 port);
 
+    /** Global shortcut key sequence (e.g. "Ctrl+Shift+O"). */
+    QString globalShortcut() const { return m_globalShortcut; }
+    void setGlobalShortcut(const QString &shortcut);
+
+    /** Whether the global shortcut is enabled. */
+    bool globalShortcutEnabled() const { return m_globalShortcutEnabled; }
+    void setGlobalShortcutEnabled(bool enabled);
+
+    /** Whether mouse tracking hover reactions are enabled. */
+    bool mouseTrackingEnabled() const { return m_mouseTrackingEnabled; }
+    void setMouseTrackingEnabled(bool enabled);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -74,6 +86,8 @@ signals:
     void ipcEndpointChanged(const QString &endpoint);
     void updateServerEndpointChanged(const QString &endpoint);
     void displayModeChanged(DisplayMode mode);
+    void globalShortcutChanged(const QString &shortcut);
+    void mouseTrackingEnabledChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -85,6 +99,9 @@ private:
     QString m_updateServerEndpoint;
     QString m_activePackId;
     DisplayMode m_displayMode = DisplayMode::Character;
+    QString m_globalShortcut = QStringLiteral("Ctrl+Shift+O");
+    bool m_globalShortcutEnabled = true;
+    bool m_mouseTrackingEnabled = true;
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:

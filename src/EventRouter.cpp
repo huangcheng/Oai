@@ -61,6 +61,8 @@ void EventRouter::routeEvent(const QJsonObject &event)
         m_tips->processEvent(eventName, event);
     }
 
+    emit eventProcessed(eventName);
+
     // Look up action mapping
     if (!m_eventMap.contains(eventName)) {
         qDebug() << "EventRouter: No action for event:" << eventName;
@@ -114,7 +116,10 @@ void EventRouter::triggerEvent(const QString &eventName)
         return;
     }
     const EventAction action = m_eventMap.value(eventName);
-    if (action.animation.isEmpty()) return;
+    if (action.animation.isEmpty()) {
+        emit eventProcessed(eventName);
+        return;
+    }
 
 #ifdef OAI_LIVE2D_SUPPORT
     if (m_live2dEngine && m_live2dEngine->hasAnimations()) {
@@ -164,6 +169,8 @@ void EventRouter::initEventMap()
     // declared by the manifest, not the engine.
     m_eventMap["user.click"]       = {SL{"tap"}, "", ""};
     m_eventMap["user.doubleclick"] = {SL{"doubleclick", "tap"}, "", ""};
+    m_eventMap["user.hoverEnter"]  = {SL{"peek"}, "", ""};
+    m_eventMap["user.hoverLeave"]  = {SL{"rest"}, "", ""};
 }
 
 void EventRouter::retranslateUi()

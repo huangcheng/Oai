@@ -16,6 +16,8 @@ class QCheckBox;
 class QLineEdit;
 class QToolButton;
 class QAction;
+class QKeySequenceEdit;
+class QKeySequenceEdit;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -55,6 +57,8 @@ private slots:
     void onAutoStartToggled(bool checked);
     void onModeChanged(int index);
     void onPortEditingFinished();
+    void onShortcutChanged(const QKeySequence &sequence);
+    void onMouseTrackingToggled(bool checked);
 
 private:
     void setupUi();
@@ -62,6 +66,7 @@ private:
     void refreshPackList();
     void updatePackButtonLabel();
     void updatePackRowVisibility();
+    void updateMouseTrackingRowVisibility();
 
     ConfigManager *m_config;
     CharacterPackManager *m_packManager = nullptr;
@@ -80,6 +85,10 @@ private:
     QLineEdit *m_portInput = nullptr;
     QLabel *m_packLabel = nullptr;
     QToolButton *m_packButton = nullptr;
+    QLabel *m_shortcutLabel = nullptr;
+    QKeySequenceEdit *m_shortcutEdit = nullptr;
+    QLabel *m_mouseTrackingLabel = nullptr;
+    QCheckBox *m_mouseTrackingCheck = nullptr;
 
     // Layout container
     QWidget *m_contentWidget = nullptr;
@@ -99,7 +108,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 230;
-    static constexpr int PANEL_HEIGHT = 250;
+    static constexpr int PANEL_HEIGHT = 280;
 };
 
 #endif // SETTINGSPANELWIDGET_H

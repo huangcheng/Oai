@@ -15,6 +15,8 @@
 #include "TipsEngine.h"
 #include "SystemTray.h"
 #include "UpdateChecker.h"
+#include "GlobalShortcutManager.h"
+#include "EmotionEngine.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -362,6 +364,36 @@ int main(int argc, char *argv[])
                      &eventRouter, &EventRouter::retranslateUi);
     QObject::connect(&config, &ConfigManager::languageChanged,
                      &tipsEngine, &TipsEngine::retranslateUi);
+
+    // --- Global shortcut ------------------------------------------------------
+    GlobalShortcutManager shortcutManager;
+    shortcutManager.setShortcut(config.globalShortcut());
+    shortcutManager.setEnabled(config.globalShortcutEnabled());
+    QObject::connect(&shortcutManager, &GlobalShortcutManager::activated,
+                     &w, [&w]() { w.setVisible(!w.isVisible()); });
+    QObject::connect(&shortcutManager, &GlobalShortcutManager::shortcutChanged,
+                     &config, [&config](const QString &s) { config.setGlobalShortcut(s); });
+    QObject::connect(&config, &ConfigManager::globalShortcutChanged,
+                     &shortcutManager, [&shortcutManager](const QString &s) { shortcutManager.setShortcut(s); });
+
+    // --- Emotion engine --------------------------------------------------------
+    EmotionEngine emotionEngine;
+    QObject::connect(&eventRouter, &EventRouter::eventProcessed,
+                     &emotionEngine, &EmotionEngine::processEvent);
+    QObject::connect(&emotionEngine, &EmotionEngine::moodChanged,
+                     &w, [&w](const QString &anim) {
+#ifdef OAI_LIVE2D_SUPPORT
+        if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
+            w.live2dEngine()->playAnimation(anim, Live2DAnimationEngine::NormalPriority);
+            return;
+        }
+#endif
+        if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
+            w.lottieEngine()->playAnimation(anim, LottieAnimationEngine::NormalPriority);
+            return;
+        }
+        w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
+    });
 
     if (config.displayMode() == ConfigManager::DisplayMode::Character) {
         w.show();

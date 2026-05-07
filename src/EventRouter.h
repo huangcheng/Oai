@@ -68,6 +68,10 @@ private:
 
     static const QSet<QString> s_validEvents;
     static const QSet<QString> s_validSources;
+
+signals:
+    /** Emitted after any canonical event is routed (for EmotionEngine). */
+    void eventProcessed(const QString &eventName);
 };
 
 #endif // EVENTROUTER_H

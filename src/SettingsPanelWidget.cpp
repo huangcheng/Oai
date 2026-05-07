@@ -33,6 +33,7 @@
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 #endif
+#include <QKeySequenceEdit>
 #include <QTemporaryDir>
 #include <QDir>
 #include <QStandardPaths>
@@ -483,11 +484,63 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_packLabel,       4, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_packButton,      4, 1);
 
+    // Row 5: Global Shortcut
+    m_shortcutLabel = new QLabel(tr("Shortcut"), m_contentWidget);
+    m_shortcutEdit = new QKeySequenceEdit(QKeySequence(m_config->globalShortcut()), m_contentWidget);
+    m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
+    formGrid->addWidget(m_shortcutLabel, 5, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_shortcutEdit, 5, 1);
+    connect(m_shortcutEdit, &QKeySequenceEdit::keySequenceChanged,
+            this, &SettingsPanelWidget::onShortcutChanged);
+
+    // Row 6: Mouse Tracking (hidden in ECG mode)
+    m_mouseTrackingLabel = new QLabel(tr("Mouse Tracking"), m_contentWidget);
+    m_mouseTrackingLabel->setFont(harmonyFont(10));
+    m_mouseTrackingLabel->setStyleSheet("color: black; background: transparent;");
+    m_mouseTrackingLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_mouseTrackingCheck = new QCheckBox(m_contentWidget);
+    m_mouseTrackingCheck->setChecked(m_config->mouseTrackingEnabled());
+    m_mouseTrackingCheck->setStyleSheet(QStringLiteral(R"(
+        QCheckBox {
+            color: black;
+            background: transparent;
+            spacing: 6px;
+        }
+        QCheckBox::indicator {
+            width: 16px;
+            height: 16px;
+            border: 2px solid black;
+            border-radius: 3px;
+            background: white;
+        }
+        QCheckBox::indicator:checked {
+            background: black;
+        }
+        QCheckBox::indicator:checked::after {
+            content: "";
+            display: block;
+            width: 6px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin: 2px 0 0 4px;
+        }
+    )"));
+    connect(m_mouseTrackingCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onMouseTrackingToggled);
+
+    formGrid->addWidget(m_mouseTrackingLabel, 6, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_mouseTrackingCheck, 6, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
     mainLayout->addLayout(formGrid);
     mainLayout->addStretch(1);
+
+    updateMouseTrackingRowVisibility();
 }
 
 void SettingsPanelWidget::updatePackRowVisibility()
@@ -495,6 +548,13 @@ void SettingsPanelWidget::updatePackRowVisibility()
     const bool isCharacter = (m_config->displayMode() == ConfigManager::DisplayMode::Character);
     m_packLabel->setVisible(isCharacter);
     m_packButton->setVisible(isCharacter);
+}
+
+void SettingsPanelWidget::updateMouseTrackingRowVisibility()
+{
+    const bool isCharacter = (m_config->displayMode() == ConfigManager::DisplayMode::Character);
+    m_mouseTrackingLabel->setVisible(isCharacter);
+    m_mouseTrackingCheck->setVisible(isCharacter);
 }
 
 void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
@@ -642,6 +702,7 @@ void SettingsPanelWidget::onModeChanged(int index)
                                             : ConfigManager::DisplayMode::Character;
     m_config->setDisplayMode(mode);
     updatePackRowVisibility();
+    updateMouseTrackingRowVisibility();
 }
 
 void SettingsPanelWidget::onPortEditingFinished()
@@ -652,9 +713,18 @@ void SettingsPanelWidget::onPortEditingFinished()
     if (ok && port >= 1024 && port <= 65535) {
         m_config->setIpcPort(static_cast<quint16>(port));
     } else {
-        // Revert to current config value
         m_portInput->setText(QString::number(m_config->ipcPort()));
     }
+}
+
+void SettingsPanelWidget::onShortcutChanged(const QKeySequence &sequence)
+{
+    m_config->setGlobalShortcut(sequence.toString());
+}
+
+void SettingsPanelWidget::onMouseTrackingToggled(bool checked)
+{
+    m_config->setMouseTrackingEnabled(checked);
 }
 
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
@@ -776,6 +846,9 @@ void SettingsPanelWidget::retranslateUi()
     m_modeCombo->setItemText(0, tr("Character"));
     m_modeCombo->setItemText(1, tr("ECG Monitor"));
     m_portLabel->setText(tr("Port"));
+    if (m_shortcutLabel) m_shortcutLabel->setText(tr("Shortcut"));
+    if (m_shortcutEdit) m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
+    if (m_mouseTrackingLabel) m_mouseTrackingLabel->setText(tr("Mouse Tracking"));
     m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {

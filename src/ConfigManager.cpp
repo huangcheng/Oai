@@ -120,6 +120,10 @@ void ConfigManager::load()
         m_displayMode = DisplayMode::Character;
     }
 
+    m_globalShortcut = m_settings.value("globalShortcut", m_globalShortcut).toString();
+    m_globalShortcutEnabled = m_settings.value("globalShortcutEnabled", m_globalShortcutEnabled).toBool();
+    m_mouseTrackingEnabled = m_settings.value("mouseTrackingEnabled", m_mouseTrackingEnabled).toBool();
+
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
 
@@ -136,6 +140,9 @@ void ConfigManager::save()
                         m_displayMode == DisplayMode::Ecg
                             ? QStringLiteral("ecg")
                             : QStringLiteral("character"));
+    m_settings.setValue("globalShortcut", m_globalShortcut);
+    m_settings.setValue("globalShortcutEnabled", m_globalShortcutEnabled);
+    m_settings.setValue("mouseTrackingEnabled", m_mouseTrackingEnabled);
     m_settings.sync();
 }
 
@@ -317,4 +324,27 @@ void ConfigManager::setDisplayMode(DisplayMode mode)
         save();
         emit displayModeChanged(mode);
     }
+}
+
+void ConfigManager::setGlobalShortcut(const QString &shortcut)
+{
+    if (m_globalShortcut == shortcut) return;
+    m_globalShortcut = shortcut;
+    save();
+    emit globalShortcutChanged(shortcut);
+}
+
+void ConfigManager::setGlobalShortcutEnabled(bool enabled)
+{
+    if (m_globalShortcutEnabled == enabled) return;
+    m_globalShortcutEnabled = enabled;
+    save();
+}
+
+void ConfigManager::setMouseTrackingEnabled(bool enabled)
+{
+    if (m_mouseTrackingEnabled == enabled) return;
+    m_mouseTrackingEnabled = enabled;
+    save();
+    emit mouseTrackingEnabledChanged(enabled);
 }

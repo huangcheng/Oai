@@ -124,6 +124,13 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
     add_subdirectory(${rlottie_SOURCE_DIR} ${rlottie_BINARY_DIR})
 endif()
 
+# --- QHotkey (global shortcut support) ----------------------------------------
+include(FetchContent)
+FetchContent_Declare(QHotkey
+    GIT_REPOSITORY https://github.com/Skycoder42/QHotkey.git
+    GIT_TAG 1.5.0)
+FetchContent_MakeAvailable(QHotkey)
+
 # --- Live2D Cubism SDK -------------------------------------------------------
 set(CUBISM_SDK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeSamples)
 set(CUBISM_FRAMEWORK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeFramework)
@@ -340,6 +347,10 @@ qt_add_executable(Oai
     $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
+    src/GlobalShortcutManager.cpp
+    src/GlobalShortcutManager.h
+    src/EmotionEngine.cpp
+    src/EmotionEngine.h
 )
 
 target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -401,6 +412,7 @@ target_link_libraries(Oai
         Qt::Network
         Qt::Multimedia
         rlottie::rlottie
+        QHotkey::QHotkey
 )
 
 # rlottie header path (FetchContent puts it in build/_deps)

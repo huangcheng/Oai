@@ -25,6 +25,7 @@
 #include <QTranslator>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QEnterEvent>
 #include <QMimeData>
 #include <QUrl>
 #include <QTimer>
@@ -362,7 +363,27 @@ void MainWindow::leaveEvent(QEvent *event)
 #ifdef OAI_LIVE2D_SUPPORT
     if (m_live2dEngine) m_live2dEngine->setPointerTarget(0.0f, 0.0f);
 #endif
+    if (m_eventRouter && m_config && m_config->mouseTrackingEnabled()) {
+        m_eventRouter->triggerEvent(QStringLiteral("user.hoverLeave"));
+    }
     QWidget::leaveEvent(event);
+}
+
+void MainWindow::enterEvent(QEnterEvent *event)
+{
+#ifdef OAI_LIVE2D_SUPPORT
+    if (m_live2dEngine) {
+        const QRect pr = petRect();
+        const QPointF center = pr.center();
+        m_live2dEngine->setPointerTarget(
+            static_cast<float>(center.x()),
+            static_cast<float>(center.y()));
+    }
+#endif
+    if (m_eventRouter && m_config && m_config->mouseTrackingEnabled()) {
+        m_eventRouter->triggerEvent(QStringLiteral("user.hoverEnter"));
+    }
+    QWidget::enterEvent(event);
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
