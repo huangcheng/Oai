@@ -13,6 +13,7 @@
 #include "SystemTray.h"
 #include "EventRouter.h"
 #include "TipsCatalog.h"
+#include "FullscreenWatcher.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -169,6 +170,30 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     });
     m_dwmRefreshTimer->start();
 #endif
+
+    // Gaming Mode: start fullscreen watcher if enabled at launch
+    m_fullscreenWatcher = new FullscreenWatcher(this);
+    connect(m_fullscreenWatcher, &FullscreenWatcher::fullscreenAppStarted,
+            this, &MainWindow::onFullscreenStarted);
+    connect(m_fullscreenWatcher, &FullscreenWatcher::fullscreenAppStopped,
+            this, &MainWindow::onFullscreenStopped);
+    if (m_config->gamingModeEnabled())
+        m_fullscreenWatcher->start();
+
+    connect(m_config, &ConfigManager::gamingModeEnabledChanged,
+            this, [this](bool enabled) {
+        if (enabled) {
+            m_fullscreenWatcher->start();
+        } else {
+            m_fullscreenWatcher->stop();
+            // Restore windows if they were hidden by Gaming Mode
+            if (m_hiddenByGamingMode) {
+                m_hiddenByGamingMode = false;
+                if (m_visible)
+                    onDisplayModeChanged(m_config->displayMode());
+            }
+        }
+    });
 }
 
 MainWindow::~MainWindow()
@@ -537,6 +562,40 @@ void MainWindow::onDisplayModeChanged(ConfigManager::DisplayMode mode)
         if (m_ecgWidget) m_ecgWidget->stop();
         m_tipBubble->setSuppressed(false);
         show();
+    }
+}
+
+void MainWindow::onFullscreenStarted()
+{
+    // Only hide if the pet is currently visible and not already hidden by us
+    if (!m_hiddenByGamingMode && m_visible) {
+        m_hiddenByGamingMode = true;
+        hide();
+        if (m_tipBubble) {
+            m_tipBubble->hideBubble();
+            m_tipBubble->setSuppressed(true);
+        }
+        if (m_ecgWidget && m_ecgWidget->isVisible())
+            m_ecgWidget->hide();
+        if (m_systemTray)
+            m_systemTray->showGamingModeMessage(true);
+        qDebug() << "MainWindow: Gaming Mode — hiding pet (fullscreen app detected)";
+    }
+}
+
+void MainWindow::onFullscreenStopped()
+{
+    if (m_hiddenByGamingMode) {
+        m_hiddenByGamingMode = false;
+        if (m_visible) {
+            onDisplayModeChanged(m_config->displayMode());
+            if (m_ecgWidget && !m_ecgWidget->isVisible()
+                    && m_config->displayMode() == ConfigManager::DisplayMode::Ecg)
+                m_ecgWidget->show();
+        }
+        if (m_systemTray)
+            m_systemTray->showGamingModeMessage(false);
+        qDebug() << "MainWindow: Gaming Mode — restoring pet (fullscreen app gone)";
     }
 }
 

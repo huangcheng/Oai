@@ -534,6 +534,26 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_mouseTrackingLabel, 6, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_mouseTrackingCheck, 6, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
+    // Row 7: Gaming Mode
+    m_gamingModeLabel = new QLabel(tr("Gaming Mode"), m_contentWidget);
+    m_gamingModeLabel->setFont(harmonyFont(10));
+    m_gamingModeLabel->setStyleSheet("color: black; background: transparent;");
+    m_gamingModeLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_gamingModeCheck = new QCheckBox(m_contentWidget);
+    m_gamingModeCheck->setChecked(m_config->gamingModeEnabled());
+    m_gamingModeCheck->setStyleSheet(m_mouseTrackingCheck->styleSheet());
+    connect(m_gamingModeCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onGamingModeToggled);
+    connect(m_config, &ConfigManager::gamingModeEnabledChanged,
+            this, [this](bool enabled) {
+        QSignalBlocker blocker(m_gamingModeCheck);
+        m_gamingModeCheck->setChecked(enabled);
+    });
+
+    formGrid->addWidget(m_gamingModeLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_gamingModeCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
@@ -727,6 +747,11 @@ void SettingsPanelWidget::onMouseTrackingToggled(bool checked)
     m_config->setMouseTrackingEnabled(checked);
 }
 
+void SettingsPanelWidget::onGamingModeToggled(bool checked)
+{
+    m_config->setGamingModeEnabled(checked);
+}
+
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
@@ -849,6 +874,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_shortcutLabel) m_shortcutLabel->setText(tr("Shortcut"));
     if (m_shortcutEdit) m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
     if (m_mouseTrackingLabel) m_mouseTrackingLabel->setText(tr("Mouse Tracking"));
+    if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
     m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {

@@ -59,6 +59,7 @@ private slots:
     void onPortEditingFinished();
     void onShortcutChanged(const QKeySequence &sequence);
     void onMouseTrackingToggled(bool checked);
+    void onGamingModeToggled(bool checked);
 
 private:
     void setupUi();
@@ -89,6 +90,8 @@ private:
     QKeySequenceEdit *m_shortcutEdit = nullptr;
     QLabel *m_mouseTrackingLabel = nullptr;
     QCheckBox *m_mouseTrackingCheck = nullptr;
+    QLabel *m_gamingModeLabel = nullptr;
+    QCheckBox *m_gamingModeCheck = nullptr;
 
     // Layout container
     QWidget *m_contentWidget = nullptr;
@@ -108,7 +111,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 230;
-    static constexpr int PANEL_HEIGHT = 280;
+    static constexpr int PANEL_HEIGHT = 310;
 };
 
 #endif // SETTINGSPANELWIDGET_H

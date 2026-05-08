@@ -11,13 +11,14 @@ class QAction;
 class QActionGroup;
 class CharacterPackManager;
 class UpdateChecker;
+class ConfigManager;
 
 class SystemTray : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit SystemTray(QWidget *mainWindow, QObject *parent = nullptr);
+    explicit SystemTray(QWidget *mainWindow, ConfigManager *config, QObject *parent = nullptr);
     ~SystemTray() override;
 
     void show();
@@ -28,6 +29,9 @@ public:
 
     // Set update checker
     void setUpdateChecker(UpdateChecker *checker);
+
+    // Show a Gaming Mode hide/restore notification via the tray balloon
+    void showGamingModeMessage(bool hiding);
 
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
@@ -46,10 +50,12 @@ private:
     QActionGroup *m_packActionGroup = nullptr;
     QWidget *m_mainWindow = nullptr;
     QAction *m_toggleAction = nullptr;
+    QAction *m_gamingModeAction = nullptr;
     QAction *m_quitAction = nullptr;
     QAction *m_checkUpdateAction = nullptr;
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
+    ConfigManager *m_config = nullptr;
 };
 
 #endif // SYSTEMTRAY_H

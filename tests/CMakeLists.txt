@@ -28,12 +28,15 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/TipsCatalog.h
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.cpp
     ${CMAKE_SOURCE_DIR}/src/ConfigManager.h
+    ${CMAKE_SOURCE_DIR}/src/FullscreenWatcher.cpp
+    ${CMAKE_SOURCE_DIR}/src/FullscreenWatcher.h
     ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
 )
 
 set(TEST_SOURCES
     test_ipc_animations.cpp
     test_ecg.cpp
+    test_gaming_mode.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
@@ -59,7 +62,8 @@ foreach(test_src ${TEST_SOURCES})
     endif()
     if(APPLE)
         # MacFocusFix.mm uses NSWindow / NSPanel from AppKit.
-        target_link_libraries(${test_name} PRIVATE "-framework AppKit")
+        # FullscreenWatcher.cpp uses CGWindowListCopyWindowInfo from CoreGraphics.
+        target_link_libraries(${test_name} PRIVATE "-framework AppKit" "-framework CoreGraphics")
     endif()
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/src

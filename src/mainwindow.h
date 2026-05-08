@@ -18,6 +18,7 @@ class SettingsPanelWidget;
 class EcgWidget;
 class CharacterPackManager;
 class EventRouter;
+class FullscreenWatcher;
 
 class QTranslator;
 class SystemTray;
@@ -71,6 +72,8 @@ private slots:
     void openSettings();
     void onActivePackChanged();
     void onDisplayModeChanged(ConfigManager::DisplayMode mode);
+    void onFullscreenStarted();
+    void onFullscreenStopped();
 
 private:
     void setupWindowFlags();
@@ -93,6 +96,10 @@ private:
     SystemTray *m_systemTray = nullptr;
     CharacterPackManager *m_packManager = nullptr;
     EventRouter *m_eventRouter = nullptr;
+
+    // Gaming Mode
+    FullscreenWatcher *m_fullscreenWatcher = nullptr;
+    bool m_hiddenByGamingMode = false;
 
     // Drag state
     QPoint m_dragStartPos;

@@ -64,6 +64,10 @@ public:
     bool mouseTrackingEnabled() const { return m_mouseTrackingEnabled; }
     void setMouseTrackingEnabled(bool enabled);
 
+    /** Whether Gaming Mode (auto-hide when a fullscreen app is active) is enabled. */
+    bool gamingModeEnabled() const { return m_gamingModeEnabled; }
+    void setGamingModeEnabled(bool enabled);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -88,6 +92,7 @@ signals:
     void displayModeChanged(DisplayMode mode);
     void globalShortcutChanged(const QString &shortcut);
     void mouseTrackingEnabledChanged(bool enabled);
+    void gamingModeEnabledChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -102,6 +107,7 @@ private:
     QString m_globalShortcut = QStringLiteral("Ctrl+Shift+O");
     bool m_globalShortcutEnabled = true;
     bool m_mouseTrackingEnabled = true;
+    bool m_gamingModeEnabled = false;
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:

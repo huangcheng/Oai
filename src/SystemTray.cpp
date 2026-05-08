@@ -3,6 +3,7 @@
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
 #include "UpdateChecker.h"
+#include "ConfigManager.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -14,9 +15,10 @@
 #include <QPixmap>
 #include <QImage>
 
-SystemTray::SystemTray(QWidget *mainWindow, QObject *parent)
+SystemTray::SystemTray(QWidget *mainWindow, ConfigManager *config, QObject *parent)
     : QObject(parent)
     , m_mainWindow(mainWindow)
+    , m_config(config)
 {
     m_trayIcon = new QSystemTrayIcon(this);
     m_trayIcon->setToolTip(tr("Oai Desktop Pet"));
@@ -97,6 +99,21 @@ void SystemTray::setupMenu()
             }
         }
     });
+
+    // Gaming Mode — checkable toggle
+    m_gamingModeAction = m_trayMenu->addAction(tr("Gaming Mode"));
+    m_gamingModeAction->setCheckable(true);
+    m_gamingModeAction->setChecked(m_config ? m_config->gamingModeEnabled() : false);
+    connect(m_gamingModeAction, &QAction::toggled, this, [this](bool checked) {
+        if (m_config) m_config->setGamingModeEnabled(checked);
+    });
+    if (m_config) {
+        connect(m_config, &ConfigManager::gamingModeEnabledChanged,
+                this, [this](bool enabled) {
+            QSignalBlocker blocker(m_gamingModeAction);
+            m_gamingModeAction->setChecked(enabled);
+        });
+    }
 
     m_trayMenu->addSeparator();
 
@@ -287,11 +304,32 @@ void SystemTray::refreshPackMenu()
              << packs.size() << "packs across" << grouped.size() << "categories";
 }
 
+void SystemTray::showGamingModeMessage(bool hiding)
+{
+    if (!m_trayIcon) return;
+    if (hiding) {
+        m_trayIcon->showMessage(
+            tr("Gaming Mode"),
+            tr("Oai is hiding while you play"),
+            QSystemTrayIcon::Information,
+            3000);
+    } else {
+        m_trayIcon->showMessage(
+            tr("Gaming Mode"),
+            tr("Oai is back!"),
+            QSystemTrayIcon::Information,
+            3000);
+    }
+}
+
 void SystemTray::retranslateUi()
 {
     m_trayIcon->setToolTip(tr("Oai Desktop Pet"));
     if (m_toggleAction) {
         m_toggleAction->setText(tr("Show/Hide"));
+    }
+    if (m_gamingModeAction) {
+        m_gamingModeAction->setText(tr("Gaming Mode"));
     }
     if (m_packMenu) {
         m_packMenu->setTitle(tr("Model"));

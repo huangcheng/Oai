@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
     });
 
     // --- System tray ---------------------------------------------------------
-    SystemTray tray(&w);
+    SystemTray tray(&w, &config);
     tray.show();
     w.setSystemTray(&tray);
 

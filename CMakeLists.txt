@@ -351,6 +351,8 @@ qt_add_executable(Oai
     src/GlobalShortcutManager.h
     src/EmotionEngine.cpp
     src/EmotionEngine.h
+    src/FullscreenWatcher.cpp
+    src/FullscreenWatcher.h
 )
 
 target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -613,7 +615,8 @@ install(DIRECTORY ${PACKS_DIR}/
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
     # AppKit is needed for MacFocusFix.mm (NSWindow / NSPanel APIs).
-    target_link_libraries(Oai PRIVATE "-framework AppKit")
+    # CoreGraphics is needed for FullscreenWatcher.cpp (CGWindowListCopyWindowInfo).
+    target_link_libraries(Oai PRIVATE "-framework AppKit" "-framework CoreGraphics")
     # Bake the @executable_path rpath into the binary at link time. macdeployqt
     # is supposed to do this post-build via install_name_tool, but it fails on
     # malformed bundled QtQml frameworks and aborts before fixing rpath. And
