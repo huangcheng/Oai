@@ -17,6 +17,7 @@
 #include <QLineEdit>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QCoreApplication>
 #include <QFont>
 #include <QPixmap>
 #include <QShowEvent>
@@ -540,9 +541,10 @@ void SettingsPanelWidget::setupUi()
     m_gamingModeLabel->setStyleSheet("color: black; background: transparent;");
     m_gamingModeLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    m_gamingModeCheck = new QCheckBox(m_contentWidget);
+    m_gamingModeCheck = new CheckMarkBox(m_contentWidget);
+    m_gamingModeCheck->setFixedSize(16, 16);
     m_gamingModeCheck->setChecked(m_config->gamingModeEnabled());
-    m_gamingModeCheck->setStyleSheet(m_mouseTrackingCheck->styleSheet());
+    m_gamingModeCheck->setStyleSheet(m_autoStartCheck->styleSheet());
     connect(m_gamingModeCheck, &QCheckBox::toggled,
             this, &SettingsPanelWidget::onGamingModeToggled);
     connect(m_config, &ConfigManager::gamingModeEnabledChanged,
@@ -572,9 +574,9 @@ void SettingsPanelWidget::updatePackRowVisibility()
 
 void SettingsPanelWidget::updateMouseTrackingRowVisibility()
 {
-    const bool isCharacter = (m_config->displayMode() == ConfigManager::DisplayMode::Character);
-    m_mouseTrackingLabel->setVisible(isCharacter);
-    m_mouseTrackingCheck->setVisible(isCharacter);
+    // Row hidden — feature off by default and not user-toggleable.
+    m_mouseTrackingLabel->setVisible(false);
+    m_mouseTrackingCheck->setVisible(false);
 }
 
 void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
@@ -770,12 +772,12 @@ static const struct {
     const char *id;
     const char *labelEn;
 } kCategoryOrder[] = {
-    { "originals",       QT_TR_NOOP("Standalone") },
-    { "azur_lane",       QT_TR_NOOP("Azur Lane") },
-    { "girls_frontline", QT_TR_NOOP("Girls' Frontline") },
-    { "idol_dimension",  QT_TR_NOOP("Idol Dimension") },
-    { "konosuba",        QT_TR_NOOP("Konosuba") },
-    { "live2d_samples",  QT_TR_NOOP("Live2D Samples") },
+    { "originals",       QT_TRANSLATE_NOOP("PackCategories", "Standalone") },
+    { "azur_lane",       QT_TRANSLATE_NOOP("PackCategories", "Azur Lane") },
+    { "girls_frontline", QT_TRANSLATE_NOOP("PackCategories", "Girls' Frontline") },
+    { "idol_dimension",  QT_TRANSLATE_NOOP("PackCategories", "Idol Dimension") },
+    { "konosuba",        QT_TRANSLATE_NOOP("PackCategories", "Konosuba") },
+    { "live2d_samples",  QT_TRANSLATE_NOOP("PackCategories", "Live2D Samples") },
 };
 
 void SettingsPanelWidget::refreshPackList()
@@ -829,7 +831,7 @@ void SettingsPanelWidget::refreshPackList()
     for (const auto &c : kCategoryOrder) {
         const QString id = QString::fromLatin1(c.id);
         if (!grouped.contains(id)) continue;
-        QMenu *sub = menu->addMenu(tr(c.labelEn));
+        QMenu *sub = menu->addMenu(QCoreApplication::translate("PackCategories", c.labelEn));
         sub->setFont(m_packButton->font());
         addToSubmenu(sub, grouped[id]);
         seen.insert(id);

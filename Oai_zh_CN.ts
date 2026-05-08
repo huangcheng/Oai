@@ -4,480 +4,286 @@
 <context>
     <name>EcgWidget</name>
     <message>
-        <location filename="src/EcgWidget.cpp" line="223"/>
+        <location filename="src/EcgWidget.cpp" line="233"/>
         <source>ECG MONITOR</source>
         <translation>心电监护</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="319"/>
+        <location filename="src/EcgWidget.cpp" line="329"/>
         <source>STANDBY</source>
         <translation>待机</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="323"/>
+        <location filename="src/EcgWidget.cpp" line="333"/>
         <source>ASYSTOLE</source>
         <translation>心搏停止</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="326"/>
+        <location filename="src/EcgWidget.cpp" line="336"/>
         <source>HR %1 BPM</source>
         <translation>心率 %1 BPM</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="336"/>
+        <location filename="src/EcgWidget.cpp" line="346"/>
         <source> (MUTED)</source>
         <translation>（静音）</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="392"/>
+        <location filename="src/EcgWidget.cpp" line="402"/>
         <source>PWR</source>
         <translation>PWR</translation>
     </message>
     <message>
-        <location filename="src/EcgWidget.cpp" line="393"/>
+        <location filename="src/EcgWidget.cpp" line="403"/>
         <source>ALM</source>
         <translation>ALM</translation>
     </message>
 </context>
 <context>
-    <name>EventRouter</name>
-    <message>
-        <source>Session started</source>
-        <translation type="vanished">会话已开始</translation>
-    </message>
-    <message>
-        <source>Let&apos;s get to work!</source>
-        <translation type="vanished">开始干活吧！</translation>
-    </message>
-    <message>
-        <source>Session ended</source>
-        <translation type="vanished">会话已结束</translation>
-    </message>
-    <message>
-        <source>Good job today!</source>
-        <translation type="vanished">今天干得不错！</translation>
-    </message>
-    <message>
-        <source>Oops!</source>
-        <translation type="vanished">哎呀！</translation>
-    </message>
-    <message>
-        <source>Something went wrong. Check the logs!</source>
-        <translation type="vanished">出了点问题，查看一下日志吧！</translation>
-    </message>
-    <message>
-        <source>Thinking...</source>
-        <translation type="vanished">思考中…</translation>
-    </message>
-    <message>
-        <source>Give me a moment to process that.</source>
-        <translation type="vanished">让我想想。</translation>
-    </message>
-    <message>
-        <source>Tool running</source>
-        <translation type="vanished">工具运行中</translation>
-    </message>
-    <message>
-        <source>Executing command...</source>
-        <translation type="vanished">正在执行命令…</translation>
-    </message>
-    <message>
-        <source>Done!</source>
-        <translation type="vanished">完成！</translation>
-    </message>
-    <message>
-        <source>Command completed successfully.</source>
-        <translation type="vanished">命令执行成功。</translation>
-    </message>
-    <message>
-        <source>Tool failed</source>
-        <translation type="vanished">工具失败</translation>
-    </message>
-    <message>
-        <source>The command didn&apos;t work. Try again?</source>
-        <translation type="vanished">命令没有成功，要再试一次吗？</translation>
-    </message>
-    <message>
-        <source>Permission needed</source>
-        <translation type="vanished">需要授权</translation>
-    </message>
-    <message>
-        <source>Please approve the requested action.</source>
-        <translation type="vanished">请批准所请求的操作。</translation>
-    </message>
-    <message>
-        <source>Denied</source>
-        <translation type="vanished">已拒绝</translation>
-    </message>
-    <message>
-        <source>Permission was denied.</source>
-        <translation type="vanished">权限被拒绝了。</translation>
-    </message>
-    <message>
-        <source>Subagent started</source>
-        <translation type="vanished">子代理已启动</translation>
-    </message>
-    <message>
-        <source>A helper is working on a task.</source>
-        <translation type="vanished">一个助手正在处理任务。</translation>
-    </message>
-    <message>
-        <source>Subagent done</source>
-        <translation type="vanished">子代理完成</translation>
-    </message>
-    <message>
-        <source>The helper has finished.</source>
-        <translation type="vanished">助手已完成任务。</translation>
-    </message>
-    <message>
-        <source>Notification</source>
-        <translation type="vanished">通知</translation>
-    </message>
-    <message>
-        <source>You have a new message!</source>
-        <translation type="vanished">你有一条新消息！</translation>
-    </message>
-    <message>
-        <source>File saved</source>
-        <translation type="vanished">文件已保存</translation>
-    </message>
-    <message>
-        <source>Your changes have been saved.</source>
-        <translation type="vanished">你的修改已保存。</translation>
-    </message>
-    <message>
-        <source>Task complete!</source>
-        <translation type="vanished">任务完成！</translation>
-    </message>
-    <message>
-        <source>Nice work checking off that todo!</source>
-        <translation type="vanished">干得漂亮，又完成了一项待办！</translation>
-    </message>
-</context>
-<context>
     <name>MainWindow</name>
     <message>
-        <location filename="src/mainwindow.cpp" line="326"/>
+        <location filename="src/mainwindow.cpp" line="477"/>
         <source>Hide</source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="326"/>
+        <location filename="src/mainwindow.cpp" line="477"/>
         <source>Show</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="334"/>
+        <location filename="src/mainwindow.cpp" line="485"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <source>Qlippy Desktop Pet
-v1.0.0</source>
-        <translation type="vanished">Qlippy 桌面宠物
-v1.0.0</translation>
-    </message>
-    <message>
-        <location filename="src/mainwindow.cpp" line="331"/>
+        <location filename="src/mainwindow.cpp" line="482"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <source>Oai Desktop Pet
-v1.2.0</source>
-        <translation type="vanished">Oai 桌面宠物
-v1.2.0</translation>
-    </message>
-    <message>
-        <location filename="src/mainwindow.cpp" line="342"/>
+        <location filename="src/mainwindow.cpp" line="507"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
+</context>
+<context>
+    <name>PackCategories</name>
     <message>
-        <source>Pack Installed</source>
-        <translation type="vanished">安装成功</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="774"/>
+        <location filename="src/SystemTray.cpp" line="235"/>
+        <source>Standalone</source>
+        <translation>独立</translation>
     </message>
     <message>
-        <source>Sprite pack installed successfully!</source>
-        <translation type="vanished">角色包安装成功！</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="775"/>
+        <location filename="src/SystemTray.cpp" line="236"/>
+        <source>Azur Lane</source>
+        <translation>碧蓝航线</translation>
     </message>
     <message>
-        <source>Installation Failed</source>
-        <translation type="vanished">安装失败</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="776"/>
+        <location filename="src/SystemTray.cpp" line="237"/>
+        <source>Girls&apos; Frontline</source>
+        <translation>少女前线</translation>
     </message>
     <message>
-        <source>Failed to install sprite pack.</source>
-        <translation type="vanished">角色包安装失败。</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="777"/>
+        <location filename="src/SystemTray.cpp" line="238"/>
+        <source>Idol Dimension</source>
+        <translation>偶像次元</translation>
     </message>
     <message>
-        <source>Hi there!</source>
-        <translation type="vanished">你好呀！</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="778"/>
+        <location filename="src/SystemTray.cpp" line="239"/>
+        <source>Konosuba</source>
+        <translation>为美好的世界献上祝福！</translation>
     </message>
     <message>
-        <source>Need any help today?</source>
-        <translation type="vanished">今天需要帮忙吗？</translation>
-    </message>
-    <message>
-        <source>Hey!</source>
-        <translation type="vanished">嘿！</translation>
-    </message>
-    <message>
-        <source>I&apos;m watching you code. Don&apos;t mess up!</source>
-        <translation type="vanished">我在看你写代码哦，别出错！</translation>
-    </message>
-    <message>
-        <source>Hello!</source>
-        <translation type="vanished">你好！</translation>
-    </message>
-    <message>
-        <source>Ready to build something amazing?</source>
-        <translation type="vanished">准备好做点厉害的东西了吗？</translation>
-    </message>
-    <message>
-        <source>Psst...</source>
-        <translation type="vanished">嘘…</translation>
-    </message>
-    <message>
-        <source>Remember to save your work often!</source>
-        <translation type="vanished">记得经常保存你的工作！</translation>
-    </message>
-    <message>
-        <source>Yo!</source>
-        <translation type="vanished">哟！</translation>
-    </message>
-    <message>
-        <source>That code looks pretty good. Keep it up!</source>
-        <translation type="vanished">代码写得不错，继续加油！</translation>
-    </message>
-    <message>
-        <source>Hi!</source>
-        <translation type="vanished">嗨！</translation>
-    </message>
-    <message>
-        <source>Let me know if you need a second pair of eyes.</source>
-        <translation type="vanished">需要帮你看看代码的话就告诉我。</translation>
-    </message>
-    <message>
-        <source>Hey there!</source>
-        <translation type="vanished">嗨你好！</translation>
-    </message>
-    <message>
-        <source>Don&apos;t forget to take breaks and stretch!</source>
-        <translation type="vanished">别忘了休息一下，伸伸懒腰！</translation>
-    </message>
-    <message>
-        <source>Hiya!</source>
-        <translation type="vanished">嗨呀！</translation>
-    </message>
-    <message>
-        <source>Coffee break? I&apos;m just a click away.</source>
-        <translation type="vanished">来杯咖啡？点我一下就好。</translation>
-    </message>
-    <message>
-        <source>Oh hello!</source>
-        <translation type="vanished">哦你好！</translation>
-    </message>
-    <message>
-        <source>I see you&apos;re coding. Want a tip?</source>
-        <translation type="vanished">我看你在写代码，要来个小提示吗？</translation>
-    </message>
-    <message>
-        <source>Greetings!</source>
-        <translation type="vanished">你好！</translation>
-    </message>
-    <message>
-        <source>The code is strong with this one.</source>
-        <translation type="vanished">这代码写得有水平。</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="779"/>
+        <location filename="src/SystemTray.cpp" line="240"/>
+        <source>Live2D Samples</source>
+        <translation>Live2D 样例</translation>
     </message>
 </context>
 <context>
     <name>SettingsPanelWidget</name>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="222"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="758"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="225"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="865"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="227"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="759"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="230"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="866"/>
         <source>×</source>
         <translation>×</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="257"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="760"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="260"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="867"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="267"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="761"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="270"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="868"/>
         <source>English</source>
         <translation>English</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="268"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="762"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="271"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="869"/>
         <source>简体中文</source>
         <translation>简体中文</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="336"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="763"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="339"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="870"/>
         <source>Launch at Login</source>
         <translation>登录时启动</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="363"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="764"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="366"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="871"/>
         <source>Mode</source>
         <translation>模式</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="372"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="765"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="375"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="872"/>
         <source>Character</source>
         <translation>角色</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="373"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="766"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="376"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="873"/>
         <source>ECG Monitor</source>
         <translation>心电图</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="381"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="767"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="384"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="874"/>
         <source>Port</source>
         <translation>端口</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="404"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="768"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="407"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="879"/>
         <source>Model</source>
         <translation>模型</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="415"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="687"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="753"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="418"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="794"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="860"/>
         <source>(no pack)</source>
         <translation>（未选择）</translation>
     </message>
     <message>
-        <source>Standalone</source>
-        <translation type="vanished">独立</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="489"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="875"/>
+        <source>Shortcut</source>
+        <translation>快捷键</translation>
     </message>
     <message>
-        <source>Azur Lane</source>
-        <translation type="vanished">碧蓝航线</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="491"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="876"/>
+        <source>Global shortcut to show/hide the pet</source>
+        <translation>用于显示/隐藏宠物的全局快捷键</translation>
     </message>
     <message>
-        <source>Girls&apos; Frontline</source>
-        <translation type="vanished">少女前线</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="498"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="877"/>
+        <source>Mouse Tracking</source>
+        <translation>鼠标追踪</translation>
     </message>
     <message>
-        <source>Idol Dimension</source>
-        <translation type="vanished">少女次元</translation>
-    </message>
-    <message>
-        <source>Konosuba</source>
-        <translation type="vanished">美好世界</translation>
-    </message>
-    <message>
-        <source>Live2D Samples</source>
-        <translation type="vanished">Live2D 示例</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="539"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="878"/>
+        <source>Gaming Mode</source>
+        <translation>游戏模式</translation>
     </message>
 </context>
 <context>
     <name>SystemTray</name>
     <message>
-        <source>Qlippy Desktop Pet</source>
-        <translation type="vanished">Qlippy 桌面宠物</translation>
-    </message>
-    <message>
-        <location filename="src/SystemTray.cpp" line="22"/>
-        <location filename="src/SystemTray.cpp" line="292"/>
+        <location filename="src/SystemTray.cpp" line="24"/>
+        <location filename="src/SystemTray.cpp" line="327"/>
         <source>Oai Desktop Pet</source>
         <translation>Oai 桌面宠物</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="89"/>
-        <location filename="src/SystemTray.cpp" line="294"/>
+        <location filename="src/SystemTray.cpp" line="91"/>
+        <location filename="src/SystemTray.cpp" line="329"/>
         <source>Show/Hide</source>
         <translation>显示/隐藏</translation>
     </message>
     <message>
         <location filename="src/SystemTray.cpp" line="104"/>
-        <location filename="src/SystemTray.cpp" line="297"/>
+        <location filename="src/SystemTray.cpp" line="312"/>
+        <location filename="src/SystemTray.cpp" line="318"/>
+        <location filename="src/SystemTray.cpp" line="332"/>
+        <source>Gaming Mode</source>
+        <translation>游戏模式</translation>
+    </message>
+    <message>
+        <location filename="src/SystemTray.cpp" line="121"/>
+        <location filename="src/SystemTray.cpp" line="335"/>
         <source>Model</source>
         <translation>模型</translation>
     </message>
     <message>
-        <source>Standalone</source>
-        <translation type="vanished">独立</translation>
-    </message>
-    <message>
-        <source>Azur Lane</source>
-        <translation type="vanished">碧蓝航线</translation>
-    </message>
-    <message>
-        <source>Girls&apos; Frontline</source>
-        <translation type="vanished">少女前线</translation>
-    </message>
-    <message>
-        <source>Idol Dimension</source>
-        <translation type="vanished">少女次元</translation>
-    </message>
-    <message>
-        <source>Konosuba</source>
-        <translation type="vanished">美好世界</translation>
-    </message>
-    <message>
-        <source>Live2D Samples</source>
-        <translation type="vanished">Live2D 示例</translation>
-    </message>
-    <message>
-        <location filename="src/SystemTray.cpp" line="110"/>
+        <location filename="src/SystemTray.cpp" line="127"/>
         <source>Check for Updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="122"/>
-        <location filename="src/SystemTray.cpp" line="300"/>
+        <location filename="src/SystemTray.cpp" line="139"/>
+        <location filename="src/SystemTray.cpp" line="338"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="157"/>
+        <location filename="src/SystemTray.cpp" line="174"/>
         <source>Update Available</source>
         <translation>有可用更新</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="158"/>
+        <location filename="src/SystemTray.cpp" line="175"/>
         <source>Version %1 is available (current: %2)</source>
         <translation>版本 %1 可用（当前版本：%2）</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="173"/>
+        <location filename="src/SystemTray.cpp" line="190"/>
         <source>No Updates</source>
         <translation>没有更新</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="174"/>
+        <location filename="src/SystemTray.cpp" line="191"/>
         <source>You are running the latest version (%1)</source>
         <translation>你已经在使用最新版本（%1）</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="191"/>
+        <location filename="src/SystemTray.cpp" line="208"/>
         <source>Update Check Failed</source>
         <translation>检查更新失败</translation>
     </message>
     <message>
-        <location filename="src/SystemTray.cpp" line="192"/>
+        <location filename="src/SystemTray.cpp" line="209"/>
         <source>Could not check for updates: %1</source>
         <translation>无法检查更新：%1</translation>
+    </message>
+    <message>
+        <location filename="src/SystemTray.cpp" line="313"/>
+        <source>Oai is hiding while you play</source>
+        <translation>你玩游戏时 Oai 正在隐藏</translation>
+    </message>
+    <message>
+        <location filename="src/SystemTray.cpp" line="319"/>
+        <source>Oai is back!</source>
+        <translation>Oai 回来啦！</translation>
     </message>
 </context>
 <context>

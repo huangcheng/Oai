@@ -106,7 +106,7 @@ private:
     DisplayMode m_displayMode = DisplayMode::Character;
     QString m_globalShortcut = QStringLiteral("Ctrl+Shift+O");
     bool m_globalShortcutEnabled = true;
-    bool m_mouseTrackingEnabled = true;
+    bool m_mouseTrackingEnabled = false;
     bool m_gamingModeEnabled = false;
 
     /**

@@ -226,18 +226,18 @@ void SystemTray::onPackActionTriggered()
 }
 
 // Fixed display order for known categories; unknown ones land at the end
-// in their raw-id form. QT_TR_NOOP marks the labels for lupdate without
-// running tr() at static-init time.
+// in their raw-id form. QT_TRANSLATE_NOOP marks the labels for lupdate
+// against the SystemTray context without running tr() at static-init time.
 static const struct {
     const char *id;
-    const char *labelEn;   // QT_TR_NOOP'd
+    const char *labelEn;
 } kCategoryOrder[] = {
-    { "originals",       QT_TR_NOOP("Standalone") },
-    { "azur_lane",       QT_TR_NOOP("Azur Lane") },
-    { "girls_frontline", QT_TR_NOOP("Girls' Frontline") },
-    { "idol_dimension",  QT_TR_NOOP("Idol Dimension") },
-    { "konosuba",        QT_TR_NOOP("Konosuba") },
-    { "live2d_samples",  QT_TR_NOOP("Live2D Samples") },
+    { "originals",       QT_TRANSLATE_NOOP("PackCategories", "Standalone") },
+    { "azur_lane",       QT_TRANSLATE_NOOP("PackCategories", "Azur Lane") },
+    { "girls_frontline", QT_TRANSLATE_NOOP("PackCategories", "Girls' Frontline") },
+    { "idol_dimension",  QT_TRANSLATE_NOOP("PackCategories", "Idol Dimension") },
+    { "konosuba",        QT_TRANSLATE_NOOP("PackCategories", "Konosuba") },
+    { "live2d_samples",  QT_TRANSLATE_NOOP("PackCategories", "Live2D Samples") },
 };
 
 void SystemTray::refreshPackMenu()
@@ -286,7 +286,7 @@ void SystemTray::refreshPackMenu()
     for (const auto &c : kCategoryOrder) {
         const QString id = QString::fromLatin1(c.id);
         if (!grouped.contains(id)) continue;
-        QMenu *sub = m_packMenu->addMenu(tr(c.labelEn));
+        QMenu *sub = m_packMenu->addMenu(QCoreApplication::translate("PackCategories", c.labelEn));
         sub->setFont(m_packMenu->font());
         addToSubmenu(sub, grouped[id]);
         seen.insert(id);
@@ -333,6 +333,9 @@ void SystemTray::retranslateUi()
     }
     if (m_packMenu) {
         m_packMenu->setTitle(tr("Model"));
+    }
+    if (m_checkUpdateAction) {
+        m_checkUpdateAction->setText(tr("Check for Updates"));
     }
     if (m_quitAction) {
         m_quitAction->setText(tr("Quit"));

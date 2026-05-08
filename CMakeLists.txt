@@ -4,6 +4,18 @@ project(Oai VERSION 1.2.3 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# On Windows, prefer the real git.exe over any git.cmd wrapper on PATH.
+# cmd.exe wrappers strip ^ as an escape char, breaking FetchContent's
+# `git rev-parse HEAD^0` (it becomes HEAD0 and aborts the update step).
+if(WIN32 AND NOT DEFINED CACHE{GIT_EXECUTABLE})
+    find_program(GIT_EXECUTABLE NAMES git.exe
+        HINTS "$ENV{ProgramFiles}/Git/cmd" "$ENV{ProgramFiles}/Git/bin"
+        NO_CACHE)
+    if(GIT_EXECUTABLE)
+        set(GIT_EXECUTABLE "${GIT_EXECUTABLE}" CACHE FILEPATH "Path to git executable" FORCE)
+    endif()
+endif()
+
 # Export compile_commands.json so clangd-based editors (Qt Creator, VS Code,
 # Neovim) can resolve Qt headers without choking on every QObject include.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

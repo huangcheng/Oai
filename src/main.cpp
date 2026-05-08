@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
         if (translator.load(":/i18n/" + baseName)) {
             a.installTranslator(&translator);
         }
-    } else {
-        // Fall back to system locale
+    } else if (lang.isEmpty()) {
+        // No preference saved yet — fall back to system locale on first launch.
         const QStringList uiLanguages = QLocale::system().uiLanguages();
         for (const QString &locale : uiLanguages) {
             const QString baseName = "Oai_" + QLocale(locale).name();
@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
             }
         }
     }
+    // If lang == "en", install no translator: Qt falls through to source strings.
 
     // --- Locate assets directory ----------------------------------------------
     // Searches upward from the executable to find the assets folder,
