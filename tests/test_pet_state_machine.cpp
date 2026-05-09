@@ -33,6 +33,7 @@ private slots:
     void testWalkingChainHasDirection();
     void testUserDragDoesNotTriggerWalking();
     void testCodexNameMapRebuildsChains();
+    void testExplicitStateMapOverridesNameMap();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -247,6 +248,24 @@ void TestPetStateMachine::testCodexNameMapRebuildsChains()
     QVERIFY(chainSpy.count() >= 1);
     const QStringList chain = chainSpy.last().at(0).toStringList();
     QCOMPARE(chain.first(), QStringLiteral("running"));
+}
+
+void TestPetStateMachine::testExplicitStateMapOverridesNameMap()
+{
+    initFsm();
+    QMap<QString, QStringList> stateMap;
+    stateMap["Working"] = QStringList{"my-busy-anim"};
+    stateMap["Failed"]  = QStringList{"my-error-anim"};
+
+    QMap<QString, QString> nameMap;
+    nameMap["work"] = "ignored-by-explicit-statemap";
+
+    m_fsm->rebuildChainsFromMaps(stateMap, nameMap);
+
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+    m_fsm->onCanonicalEvent("tool.before");
+    QCOMPARE(chainSpy.last().at(0).toStringList().first(),
+             QStringLiteral("my-busy-anim"));
 }
 
 QTEST_MAIN(TestPetStateMachine)

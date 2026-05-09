@@ -188,6 +188,14 @@ public:
     const QMap<QString, QString> &nameMap() const { return m_nameMap; }
 
     /**
+     * @brief Per-state explicit animation chains (optional, pack-author override).
+     *        Keyed by abstract state name ("Working", "Failed", "Greeting", ...).
+     *        When non-empty, takes precedence over `nameMap` for that state in
+     *        PetStateMachine chain resolution.
+     */
+    const QMap<QString, QStringList> &stateMap() const { return m_stateMap; }
+
+    /**
      * @brief Get effect triggers (animation name -> effect name)
      */
     const QMap<QString, QString> &effectTriggers() const { return m_effectTriggers; }
@@ -255,6 +263,7 @@ private:
     bool parseIdlePool(const QJsonArray &pool);
     bool parseEventMap(const QJsonObject &map);
     bool parseEffectTriggers(const QJsonObject &triggers);
+    bool parseStateMap(const QJsonObject &map);
     bool loadAnimationsFromDefinitions(const QString &definitionsPath);
 
     bool m_valid = false;
@@ -266,6 +275,7 @@ private:
     QMap<QString, QString> m_effectTriggers;
     QVector<IdleEntry> m_idlePool;
     QMap<QString, QString> m_nameMap;
+    QMap<QString, QStringList> m_stateMap;
 };
 
 #endif // CHARACTERPACK_H

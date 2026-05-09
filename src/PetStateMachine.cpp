@@ -211,37 +211,54 @@ void PetStateMachine::emitChainFor(State s, Priority priority)
 }
 void PetStateMachine::rebuildChainsFromNameMap(const QMap<QString, QString> &nameMap)
 {
-    // Canonical-name → State mapping. Each State takes the first matching
-    // canonical name from the pack's nameMap, keeps engine defaults as
-    // fallbacks behind it.
-    struct Mapping { State state; QStringList canonicalCandidates; };
+    rebuildChainsFromMaps({}, nameMap);
+}
+
+void PetStateMachine::rebuildChainsFromMaps(const QMap<QString, QStringList> &stateMap,
+                                            const QMap<QString, QString> &nameMap)
+{
+    struct Mapping { State state; const char *stateKey; QStringList canonicalCandidates; };
     const QVector<Mapping> mappings = {
-        {State::Idle,        {"idle", "rest"}},
-        {State::Greeting,    {"greet", "wave", "greeting"}},
-        {State::Thinking,    {"think", "thinking"}},
-        {State::Working,     {"work", "processing", "writing", "searching"}},
-        {State::Reviewing,   {"attention", "gettechy", "getwizardy"}},
-        {State::Failed,      {"alert"}},
-        {State::Celebrating, {"celebrate", "congratulate"}},
+        {State::Idle,        "Idle",        {"idle", "rest"}},
+        {State::Greeting,    "Greeting",    {"greet", "wave", "greeting"}},
+        {State::Thinking,    "Thinking",    {"think", "thinking"}},
+        {State::Working,     "Working",     {"work", "processing", "writing", "searching"}},
+        {State::Reviewing,   "Reviewing",   {"attention", "gettechy", "getwizardy"}},
+        {State::Failed,      "Failed",      {"alert"}},
+        {State::Celebrating, "Celebrating", {"celebrate", "congratulate"}},
     };
+
+    // Stash engine defaults before we overwrite, so we can re-append.
+    QMap<State, QStringList> engineDefaults;
+    for (const auto &m : mappings) {
+        engineDefaults[m.state] = m_chains.value(m.state);
+    }
 
     for (const auto &m : mappings) {
         QStringList chain;
+
+        // 1. Pack-author explicit stateMap (highest priority).
+        const QStringList override = stateMap.value(m.stateKey);
+        for (const QString &name : override) {
+            if (!name.isEmpty() && !chain.contains(name)) chain.append(name);
+        }
+
+        // 2. Translated nameMap entries.
         for (const QString &canonical : m.canonicalCandidates) {
             const QString actual = nameMap.value(canonical);
             if (!actual.isEmpty() && !chain.contains(actual)) {
                 chain.append(actual);
             }
         }
-        // Append engine defaults as later fallbacks.
-        const QStringList defaults = m_chains.value(m.state);
-        for (const QString &name : defaults) {
+
+        // 3. Engine defaults.
+        for (const QString &name : engineDefaults.value(m.state)) {
             if (!chain.contains(name)) chain.append(name);
         }
+
         m_chains[m.state] = chain;
     }
 
-    // Update idle fallback if pack has one.
     const QString packIdle = nameMap.value("idle", nameMap.value("rest"));
     if (!packIdle.isEmpty()) {
         m_idleFallback = packIdle;
@@ -251,7 +268,7 @@ void PetStateMachine::rebuildChainsFromNameMap(const QMap<QString, QString> &nam
 void PetStateMachine::rebuildChainsFromPack(const CharacterPack *pack)
 {
     if (!pack || !pack->isValid()) return;
-    rebuildChainsFromNameMap(pack->nameMap());
+    rebuildChainsFromMaps(pack->stateMap(), pack->nameMap());
 }
 
 void PetStateMachine::onActivePackChanged(const CharacterPack *pack)

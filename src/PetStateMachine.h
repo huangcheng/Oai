@@ -60,6 +60,13 @@ public slots:
     /// name map, the same shape as CharacterPack::nameMap().
     void rebuildChainsFromNameMap(const QMap<QString, QString> &nameMap);
 
+    /// Test seam / production entry: `stateMap` (if non-empty) supplies the
+    /// pack-author override for each State; `nameMap` provides canonical-name
+    /// fallbacks as in rebuildChainsFromNameMap. Engine defaults are appended
+    /// last so a partial override still degrades cleanly.
+    void rebuildChainsFromMaps(const QMap<QString, QStringList> &stateMap,
+                               const QMap<QString, QString> &nameMap);
+
 signals:
     void animationRequested(const QStringList &chain, int priority);
     void stateChanged(PetStateMachine::State newState);

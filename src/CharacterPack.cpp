@@ -508,6 +508,11 @@ bool CharacterPack::parseManifest(const QJsonObject &manifest)
         return false;
     }
 
+    if (!parseStateMap(pickObject("stateMap"))) {
+        qWarning() << "CharacterPack: Failed to parse state map";
+        return false;
+    }
+
     return true;
 }
 
@@ -738,6 +743,26 @@ bool CharacterPack::parseEffectTriggers(const QJsonObject &triggers)
         m_effectTriggers[animationName] = effectName;
     }
 
+    return true;
+}
+
+bool CharacterPack::parseStateMap(const QJsonObject &map)
+{
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        const QString stateName = it.key();
+        const QJsonValue value = it.value();
+        QStringList chain;
+        if (value.isArray()) {
+            for (const QJsonValue &v : value.toArray()) {
+                const QString s = v.toString();
+                if (!s.isEmpty()) chain.append(s);
+            }
+        } else {
+            const QString s = value.toString();
+            if (!s.isEmpty()) chain.append(s);
+        }
+        m_stateMap[stateName] = chain;
+    }
     return true;
 }
 
