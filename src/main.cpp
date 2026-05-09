@@ -16,7 +16,7 @@
 #include "SystemTray.h"
 #include "UpdateChecker.h"
 #include "GlobalShortcutManager.h"
-#include "EmotionEngine.h"
+#include "PetStateMachine.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -31,6 +31,7 @@
 #include <QMutex>
 #include <QTextStream>
 #include <QTimer>
+#include <optional>
 
 #include "TipsCatalog.h"
 
@@ -377,23 +378,58 @@ int main(int argc, char *argv[])
     QObject::connect(&config, &ConfigManager::globalShortcutChanged,
                      &shortcutManager, [&shortcutManager](const QString &s) { shortcutManager.setShortcut(s); });
 
-    // --- Emotion engine --------------------------------------------------------
-    EmotionEngine emotionEngine;
+    // --- Pet state machine ----------------------------------------------------
+    PetStateMachine stateMachine;
+
+    // Gateway events flow EventRouter → FSM. EventRouter still owns tip-text.
     QObject::connect(&eventRouter, &EventRouter::eventProcessed,
-                     &emotionEngine, &EmotionEngine::processEvent);
-    QObject::connect(&emotionEngine, &EmotionEngine::moodChanged,
-                     &w, [&w](const QString &anim) {
+                     &stateMachine,
+                     [&stateMachine](const QString &name) {
+                         stateMachine.onCanonicalEvent(name);
+                     });
+
+    // Window-position deltas drive the Walking overlay.
+    QObject::connect(&w, &MainWindow::positionChanged,
+                     &stateMachine,
+                     [&stateMachine, lastPos = std::optional<QPoint>{}](const QPoint &p) mutable {
+                         if (lastPos.has_value()) {
+                             stateMachine.onPositionChanged(*lastPos, p, /*isUserDrag=*/false);
+                         }
+                         lastPos = p;
+                     });
+
+    // Active pack changes rebuild per-state chains.
+    QObject::connect(&packManager, &CharacterPackManager::activePackChanged,
+                     &stateMachine,
+                     [&stateMachine, &packManager]() {
+                         stateMachine.onActivePackChanged(packManager.activePack());
+                     });
+
+    // FSM-emitted chain → engine fan-out (same shape as the old moodChanged lambda).
+    QObject::connect(&stateMachine, &PetStateMachine::animationRequested,
+                     &w,
+                     [&w](const QStringList &chain, int priority) {
+        if (chain.isEmpty()) return;
 #ifdef OAI_LIVE2D_SUPPORT
         if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
-            w.live2dEngine()->playAnimation(anim, Live2DAnimationEngine::NormalPriority);
+            w.live2dEngine()->playAnimationChain(chain,
+                priority == PetStateMachine::HighPriority
+                    ? Live2DAnimationEngine::HighPriority
+                    : Live2DAnimationEngine::NormalPriority);
             return;
         }
 #endif
         if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
-            w.lottieEngine()->playAnimation(anim, LottieAnimationEngine::NormalPriority);
+            w.lottieEngine()->playAnimation(chain.first(),
+                priority == PetStateMachine::HighPriority
+                    ? LottieAnimationEngine::HighPriority
+                    : LottieAnimationEngine::NormalPriority);
             return;
         }
-        w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
+        w.animationEngine()->playAnimation(chain.first(),
+            priority == PetStateMachine::HighPriority
+                ? SpriteAnimationEngine::HighPriority
+                : SpriteAnimationEngine::NormalPriority);
     });
 
     if (config.displayMode() == ConfigManager::DisplayMode::Character) {

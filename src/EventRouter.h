@@ -70,7 +70,7 @@ private:
     static const QSet<QString> s_validSources;
 
 signals:
-    /** Emitted after any canonical event is routed (for EmotionEngine). */
+    /** Emitted after any canonical event is routed (for PetStateMachine). */
     void eventProcessed(const QString &eventName);
 };
 

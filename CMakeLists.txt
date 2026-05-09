@@ -363,8 +363,6 @@ qt_add_executable(Oai
     thirdparty/miniz/miniz.h
     src/GlobalShortcutManager.cpp
     src/GlobalShortcutManager.h
-    src/EmotionEngine.cpp
-    src/EmotionEngine.h
     src/FullscreenWatcher.cpp
     src/FullscreenWatcher.h
 )
