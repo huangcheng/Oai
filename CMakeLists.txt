@@ -333,6 +333,8 @@ qt_add_executable(Oai
     src/CharacterPack.h
     src/CharacterPackManager.cpp
     src/CharacterPackManager.h
+    src/PetStateMachine.cpp
+    src/PetStateMachine.h
     src/UpdateChecker.cpp
     src/UpdateChecker.h
     src/IpcServer.cpp
