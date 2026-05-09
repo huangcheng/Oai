@@ -14,11 +14,12 @@ class CharacterPack;
 /**
  * @brief Owns "what is the pet doing right now."
  *
- * Eight abstract states map gateway events onto an animation chain that all
+ * Seven abstract states map gateway events onto an animation chain that all
  * pack types resolve into their own animations. Sustained states (Working,
  * Thinking, Reviewing) hold across event bursts via grace timers; one-shot
  * states (Greeting, Failed, Celebrating) play once and return to the saved
- * sustained state. Walking is an overlay driven by position deltas.
+ * sustained state. Walking is an overlay (not a state) driven by position
+ * deltas, layered on top of whichever state is current.
  */
 class PetStateMachine : public QObject
 {
