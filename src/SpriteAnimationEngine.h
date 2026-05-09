@@ -114,6 +114,7 @@ private:
 
     // Name mapping: lowercase/snake_case → PascalCase from animations.json
     QMap<QString, QString> m_nameMap;
+    QMap<QString, QString> m_packNameMap;
     void buildNameMap();
 };
 

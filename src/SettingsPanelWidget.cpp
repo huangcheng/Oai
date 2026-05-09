@@ -762,6 +762,8 @@ void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
         // other path (system tray, hot reload, etc).
         connect(m_packManager, &CharacterPackManager::activePackChanged,
                 this, [this]() { updatePackButtonLabel(); });
+        connect(m_packManager, &CharacterPackManager::packListChanged,
+                this, &SettingsPanelWidget::refreshPackList);
     }
     refreshPackList();
 }
@@ -782,7 +784,9 @@ static const struct {
 
 void SettingsPanelWidget::refreshPackList()
 {
+    qDebug() << "[REFRESH] SettingsPanelWidget::refreshPackList called";
     if (!m_packButton) {
+        qDebug() << "  no pack button";
         return;
     }
 
@@ -793,6 +797,7 @@ void SettingsPanelWidget::refreshPackList()
 
     if (!m_packManager) {
         m_packButton->setText(tr("(no pack)"));
+        qDebug() << "  no pack manager";
         return;
     }
 
@@ -803,6 +808,8 @@ void SettingsPanelWidget::refreshPackList()
     const QString activeId = m_packManager->activePackId();
     const QString locale = m_packManager->activeLocale();
 
+    qDebug() << "  available packs count:" << packs.size() << "activeId:" << activeId;
+
     // Group by category (matches SystemTray::refreshPackMenu).
     QMap<QString, QVector<CharacterPackManager::PackInfo>> grouped;
     for (const auto &pack : packs) {
@@ -811,17 +818,24 @@ void SettingsPanelWidget::refreshPackList()
         grouped[cat].append(pack);
     }
 
+    qDebug() << "  grouped categories:";
+    for (auto it = grouped.constBegin(); it != grouped.constEnd(); ++it) {
+        qDebug() << "    category:" << it.key() << "count:" << it.value().size();
+    }
+
     QActionGroup *group = new QActionGroup(menu);
     group->setExclusive(true);
 
     auto addToSubmenu = [&](QMenu *sub, const QVector<CharacterPackManager::PackInfo> &list) {
         for (const auto &pack : list) {
+            qDebug() << "    adding action for pack id:" << pack.id << "name:" << pack.displayName(locale);
             QAction *action = sub->addAction(pack.displayName(locale));
             action->setCheckable(true);
             action->setChecked(pack.id == activeId);
             group->addAction(action);
             const QString packId = pack.id;
             connect(action, &QAction::triggered, this, [this, packId]() {
+                qDebug() << "[MENU] Action triggered for packId:" << packId;
                 if (m_packManager) m_packManager->switchPack(packId);
             });
         }
@@ -845,6 +859,7 @@ void SettingsPanelWidget::refreshPackList()
 
     m_packButton->setMenu(menu);
     updatePackButtonLabel();
+    qDebug() << "[REFRESH] refreshPackList done, menu set";
 }
 
 void SettingsPanelWidget::updatePackButtonLabel()

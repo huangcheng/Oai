@@ -84,6 +84,16 @@ public:
     QString activePackId() const { return m_activePackId; }
 
     /**
+     * @brief Get built-in packs directory
+     */
+    QString builtInDir() const { return m_builtInDir; }
+
+    /**
+     * @brief Get user packs directory
+     */
+    QString userDir() const { return m_userDir; }
+
+    /**
      * @brief Switch to a different pack
      * @param packId Pack identifier to switch to
      * @return true if switch was successful
@@ -157,11 +167,13 @@ private slots:
 private:
     void discoverPacks();
     void loadPackFromDirectory(const QString &packDir, PackSource source);
-    CharacterPack *createAndLoadPack(const QString &packDir);
+    void loadPackFromCodexPet(const QString &archivePath, PackSource source);
+    CharacterPack *createAndLoadPack(const QString &packPath);
     void setupFileWatcher();
     void cleanupFileWatcher();
     void autoInstallBuiltInPacks();
     QString extractPackIdFromOpk(const QString &opkPath);
+    bool extractCodexPetInfo(const QString &archivePath, PackInfo &outInfo);
 
     QString m_builtInDir;
     QString m_userDir;

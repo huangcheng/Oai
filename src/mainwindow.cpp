@@ -31,7 +31,11 @@
 #include <QUrl>
 #include <QTimer>
 #include <QShowEvent>
+#include <QStandardPaths>
+#include <QDir>
 #include <algorithm>
+
+#include "../thirdparty/miniz/miniz.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -342,7 +346,9 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 
 QRect MainWindow::petRect() const
 {
-    return QRect(0, height() - m_petSize.height(), m_petSize.width(), m_petSize.height());
+    int y = height() - m_petSize.height();
+    if (y < 0) y = 0;
+    return QRect(0, y, m_petSize.width(), m_petSize.height());
 }
 
 bool MainWindow::isInPetRect(const QPoint &pos) const
@@ -510,37 +516,131 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
     menu.exec(globalPos);
 }
 
+bool MainWindow::isValidCodexPet(const QString &filePath) const
+{
+    mz_zip_archive zip{};
+    if (!mz_zip_reader_init_file(&zip, filePath.toUtf8().constData(), 0)) {
+        qWarning() << "MainWindow: isValidCodexPet — cannot open ZIP:" << filePath;
+        return false;
+    }
+
+    int petJsonIdx = mz_zip_reader_locate_file(&zip, "pet.json", nullptr, 0);
+    if (petJsonIdx < 0) {
+        qWarning() << "MainWindow: isValidCodexPet — no pet.json in:" << filePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    size_t petJsonSize = 0;
+    void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
+    mz_zip_reader_end(&zip);
+
+    if (!petJsonData) {
+        qWarning() << "MainWindow: isValidCodexPet — failed to extract pet.json from:" << filePath;
+        return false;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(
+        QByteArray(static_cast<const char *>(petJsonData), static_cast<int>(petJsonSize)));
+    mz_free(petJsonData);
+
+    if (!doc.isObject()) {
+        qWarning() << "MainWindow: isValidCodexPet — invalid JSON in pet.json:" << filePath;
+        return false;
+    }
+
+    const QJsonObject obj = doc.object();
+    QString id = obj.value("id").toString();
+    QString displayName = obj.value("displayName").toString();
+
+    bool valid = !id.isEmpty() && !displayName.isEmpty();
+    if (!valid) {
+        qWarning() << "MainWindow: isValidCodexPet — missing id or displayName in:" << filePath;
+    }
+    return valid;
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    // Accept drag if it contains .opk files
+    qDebug() << "MainWindow: dragEnterEvent";
     if (event->mimeData()->hasUrls()) {
         for (const QUrl &url : event->mimeData()->urls()) {
-            if (url.toLocalFile().endsWith(".opk", Qt::CaseInsensitive)) {
+            QString path = url.toLocalFile();
+            qDebug() << "MainWindow: checking drag path:" << path;
+            if (path.endsWith(".opk", Qt::CaseInsensitive)) {
+                qDebug() << "MainWindow: accepting .opk drag";
                 event->acceptProposedAction();
                 return;
             }
+            if (path.endsWith(".codex-pet", Qt::CaseInsensitive) ||
+                path.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) {
+                bool valid = isValidCodexPet(path);
+                qDebug() << "MainWindow: .codex-pet valid =" << valid;
+                if (valid) {
+                    event->acceptProposedAction();
+                    return;
+                }
+            }
         }
     }
+    qDebug() << "MainWindow: dragEnterEvent ignored";
     event->ignore();
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
 {
     if (!m_packManager) {
+        qWarning() << "MainWindow: dropEvent ignored — no pack manager";
         event->ignore();
         return;
     }
 
     const QList<QUrl> urls = event->mimeData()->urls();
+    qDebug() << "MainWindow: dropEvent with" << urls.size() << "URLs";
+
     for (const QUrl &url : urls) {
         const QString filePath = url.toLocalFile();
+        qDebug() << "MainWindow: dropped file:" << filePath;
+
         if (filePath.endsWith(".opk", Qt::CaseInsensitive)) {
-            // Install the pack
-            const QString msgId = m_packManager->installPack(filePath)
+            const bool installed = m_packManager->installPack(filePath);
+            const QString msgId = installed
                                       ? QStringLiteral("pack.installed")
                                       : QStringLiteral("pack.install_failed");
             const auto t = TipsCatalog::instance().message(msgId);
             m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+            qDebug() << "MainWindow: .opk install" << (installed ? "succeeded" : "failed");
+        } else if ((filePath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
+                    filePath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) &&
+                   isValidCodexPet(filePath)) {
+            QFileInfo fi(filePath);
+            QString userPacksDir = m_packManager->userDir();
+            if (userPacksDir.isEmpty()) {
+                userPacksDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Oai/packs";
+                qWarning() << "MainWindow: userDir empty, falling back to" << userPacksDir;
+            }
+            QDir().mkpath(userPacksDir);
+            QString destFile = userPacksDir + "/" + fi.fileName();
+
+            bool ok = false;
+            if (QFile::exists(destFile)) {
+                QFile::remove(destFile);
+            }
+            ok = QFile::copy(filePath, destFile);
+            qDebug() << "MainWindow: copied .codex-pet to" << destFile << "=" << ok;
+
+            if (ok) {
+                QString builtInDir = m_packManager->builtInDir();
+                QString currentPackId = m_packManager->activePackId();
+                m_packManager->initialize(builtInDir, userPacksDir, currentPackId);
+                const auto t = TipsCatalog::instance().message(QStringLiteral("pack.installed"));
+                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+            } else {
+                const auto t = TipsCatalog::instance().message(QStringLiteral("pack.install_failed"));
+                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+            }
+        } else {
+            qDebug() << "MainWindow: dropped file ignored (not .opk or valid .codex-pet):" << filePath;
         }
     }
 
@@ -664,14 +764,22 @@ void MainWindow::setCharacterPackManager(CharacterPackManager *manager)
 
 void MainWindow::onActivePackChanged()
 {
+    qDebug() << "[ONACTIVE] onActivePackChanged called";
     if (!m_packManager) {
+        qDebug() << "  no pack manager";
         return;
     }
 
     CharacterPack *pack = m_packManager->activePack();
     if (!pack) {
+        qDebug() << "  no active pack";
         return;
     }
+
+    qDebug() << "  Active pack id:" << m_packManager->activePackId()
+             << "name:" << pack->metadata().name
+             << "engineType:" << static_cast<int>(pack->characterConfig().engineType)
+             << "isValid:" << pack->isValid();
 
     // Resize window based on pack frame dimensions × the pack's displayScale.
     // Default displayScale is 1.0 (native resolution). Sprite packs can opt
@@ -685,8 +793,11 @@ void MainWindow::onActivePackChanged()
         const int displayW = static_cast<int>(fw * displayScale);
         const int displayH = static_cast<int>(fh * displayScale);
         int tipSpace = height() - petRect().height();
-        m_petSize = QSize(displayW, displayH);
+        // Resize window first so height() updates before m_petSize changes,
+        // avoiding a transient state where petRect() computes a negative y.
         setFixedSize(displayW, displayH + tipSpace);
+        m_petSize = QSize(displayW, displayH);
+        qDebug() << "  Window resized to:" << displayW << "x" << displayH;
     }
 
     if (m_ecgWidget && m_ecgWidget->isVisible()) {
@@ -772,8 +883,8 @@ void MainWindow::onActivePackChanged()
             const int displayW = static_cast<int>(m_live2dEngine->renderWidth() * displayScale);
             const int displayH = static_cast<int>(srcH * displayScale);
             const int tipSpace = height() - petRect().height();
-            m_petSize = QSize(displayW, displayH);
             setFixedSize(displayW, displayH + tipSpace);
+            m_petSize = QSize(displayW, displayH);
             // Re-anchor floating widgets to the newly sized pet rect.
             m_tipBubble->setAnchorRect(petRect());
             m_tipBubble->anchorTo(this);

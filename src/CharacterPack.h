@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDir>
+#include <QColor>
 
 /**
  * @brief Represents a loaded sprite pack with all its assets and configurations.
@@ -112,6 +113,7 @@ public:
         float displayScale = 1.0f;///< Window-size multiplier over frameWidth/Height (default 1.0).
                                   ///< Sprite sheets can set e.g. 2.0 to render the 124×93 art at 248×186
                                   ///< so it looks comparable in size to 300×300 Live2D packs.
+        QColor colorKey;          ///< Color to treat as transparent (for sprite sheets without alpha)
     };
 
     CharacterPack() = default;
@@ -131,6 +133,13 @@ public:
      * @return true if loaded successfully
      */
     bool loadFromArchive(const QString &archivePath, const QString &extractDir);
+
+    /**
+     * @brief Load a Codex .codex-pet archive
+     * @param archivePath Path to .codex-pet file
+     * @return true if loaded successfully
+     */
+    bool loadFromCodexPet(const QString &archivePath);
 
     /**
      * @brief Check if pack is valid and loaded
@@ -170,6 +179,13 @@ public:
      *        one-element list during parse.
      */
     const QMap<QString, QStringList> &eventMap() const { return m_eventMap; }
+
+    /**
+     * @brief Get canonical-to-actual animation name mappings for this pack.
+     *        Used by sprite engines to resolve canonical names (e.g. "greet")
+     *        to pack-specific animation names (e.g. "waving").
+     */
+    const QMap<QString, QString> &nameMap() const { return m_nameMap; }
 
     /**
      * @brief Get effect triggers (animation name -> effect name)
@@ -249,6 +265,7 @@ private:
     QMap<QString, QStringList> m_eventMap;
     QMap<QString, QString> m_effectTriggers;
     QVector<IdleEntry> m_idlePool;
+    QMap<QString, QString> m_nameMap;
 };
 
 #endif // CHARACTERPACK_H

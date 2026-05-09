@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QRandomGenerator>
 #include <QDebug>
+#include <QColor>
 
 SpriteAnimationEngine::SpriteAnimationEngine(QObject *parent)
     : QObject(parent)
@@ -207,10 +208,10 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
         return false;
     }
 
-    // Clear existing animations
     m_animations.clear();
     m_idleAnims.clear();
     m_idleWeights.clear();
+    m_packNameMap = pack->nameMap();
 
     // Load sprite sheet
     const QString spriteSheetPath = pack->assetPath(pack->characterConfig().spriteSheet);
@@ -221,6 +222,34 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
         return false;
     }
     qDebug() << "SpriteAnimationEngine: Sprite sheet loaded successfully, size:" << m_spriteSheet.size();
+
+    if (pack->characterConfig().colorKey.isValid()) {
+        QImage image = m_spriteSheet.toImage().convertToFormat(QImage::Format_ARGB32);
+        QColor keyColor = pack->characterConfig().colorKey;
+        int keyR = keyColor.red();
+        int keyG = keyColor.green();
+        int keyB = keyColor.blue();
+        int tolerance = 45;
+        int toleranceSq = tolerance * tolerance;
+
+        for (int y = 0; y < image.height(); ++y) {
+            QRgb *row = reinterpret_cast<QRgb*>(image.scanLine(y));
+            for (int x = 0; x < image.width(); ++x) {
+                QRgb pixel = row[x];
+                int diffR = qRed(pixel) - keyR;
+                int diffG = qGreen(pixel) - keyG;
+                int diffB = qBlue(pixel) - keyB;
+                int distanceSq = diffR * diffR + diffG * diffG + diffB * diffB;
+
+                if (distanceSq < toleranceSq) {
+                    row[x] = qRgba(0, 0, 0, 0);
+                }
+            }
+        }
+        m_spriteSheet = QPixmap::fromImage(image);
+        qDebug() << "SpriteAnimationEngine: Applied color key" << pack->characterConfig().colorKey.name()
+                 << "with tolerance" << tolerance;
+    }
 
     // Set frame dimensions from pack
     m_frameWidth = pack->characterConfig().frameWidth;
@@ -296,8 +325,16 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
 
 void SpriteAnimationEngine::playAnimation(const QString &name, Priority priority)
 {
-    // Resolve name via mapping
-    QString actualName = m_nameMap.value(name, name);
+    QString actualName;
+
+    if (m_packNameMap.contains(name)) {
+        actualName = m_packNameMap.value(name);
+    } else {
+        actualName = m_nameMap.value(name, name);
+        if (!m_animations.contains(actualName)) {
+            actualName = name;
+        }
+    }
 
     if (!m_animations.contains(actualName)) {
         qWarning() << "Animation not found:" << name << "(resolved to" << actualName << ")";

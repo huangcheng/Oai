@@ -80,25 +80,36 @@ QString CharacterPackManager::PackInfo::displayName(const QString &localeCode) c
 
 bool CharacterPackManager::switchPack(const QString &packId)
 {
+    qDebug() << "[SWITCH] Attempting switch to packId:" << packId
+             << "m_activePackId current:" << m_activePackId
+             << "available packs count:" << m_packs.size();
     if (!m_packs.contains(packId)) {
-        qWarning() << "CharacterPackManager: Pack not found:" << packId;
+        qWarning() << "CharacterPackManager: Pack not found in m_packs:" << packId;
+        qWarning() << "  Available pack IDs:";
+        for (const auto &key : m_packs.keys()) {
+            qWarning() << "    -" << key;
+        }
         return false;
     }
 
     if (packId == m_activePackId && m_activePack) {
-        // Already active
+        qDebug() << "CharacterPackManager: Pack already active:" << packId;
         return true;
     }
 
     const PackInfo &info = m_packs[packId];
+    qDebug() << "  Pack info: name=" << info.name << "path=" << info.path;
 
     // Load pack if not already loaded
     if (!m_loadedPacks.contains(packId)) {
+        qDebug() << "  Loading pack from path:" << info.path;
         CharacterPack *pack = createAndLoadPack(info.path);
         if (!pack) {
-            qWarning() << "CharacterPackManager: Failed to load pack:" << packId;
+            qWarning() << "CharacterPackManager: createAndLoadPack returned nullptr for:" << packId;
             return false;
         }
+        qDebug() << "  Pack loaded successfully, isValid:" << pack->isValid()
+                 << "engineType:" << static_cast<int>(pack->characterConfig().engineType);
         m_loadedPacks[packId] = pack;
     }
 
@@ -211,6 +222,11 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     }
 
     qDebug() << "CharacterPackManager: Installed pack" << packId << "to" << installDir;
+
+    // Refresh pack list so UI updates immediately
+    discoverPacks();
+    emit packListChanged();
+
     return true;
 }
 
@@ -320,29 +336,32 @@ void CharacterPackManager::discoverPacks()
 {
     m_packs.clear();
 
-    // Scan built-in packs from filesystem
-    if (!m_builtInDir.isEmpty()) {
-        QDir builtInDir(m_builtInDir);
-        if (builtInDir.exists()) {
-            const QFileInfoList entries = builtInDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-            for (const QFileInfo &entry : entries) {
-                loadPackFromDirectory(entry.absoluteFilePath(), PackSource::BuiltIn);
-            }
+    auto scanDir = [&](const QString &dirPath, PackSource source) {
+        QDir dir(dirPath);
+        if (!dir.exists()) return;
+
+        const QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QFileInfo &entry : entries) {
+            loadPackFromDirectory(entry.absoluteFilePath(), source);
         }
+
+        const QStringList codexFilters = {"*.codex-pet", "*.codex-pet.zip"};
+        const QFileInfoList codexFiles = dir.entryInfoList(codexFilters, QDir::Files);
+        for (const QFileInfo &entry : codexFiles) {
+            loadPackFromCodexPet(entry.absoluteFilePath(), source);
+        }
+    };
+
+    if (!m_builtInDir.isEmpty()) {
+        scanDir(m_builtInDir, PackSource::BuiltIn);
     }
 
-    // Scan user packs directory
     if (!m_userDir.isEmpty()) {
-        QDir userDir(m_userDir);
-        if (userDir.exists()) {
-            const QFileInfoList entries = userDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-            for (const QFileInfo &entry : entries) {
-                loadPackFromDirectory(entry.absoluteFilePath(), PackSource::User);
-            }
-        }
+        scanDir(m_userDir, PackSource::User);
     }
 
     qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs";
+    emit packListChanged();
 }
 
 void CharacterPackManager::autoInstallBuiltInPacks()
@@ -372,7 +391,6 @@ void CharacterPackManager::autoInstallBuiltInPacks()
         searchPaths.append(assetsDir.absoluteFilePath("packs"));
     }
 
-    // Search all paths for .opk files
     for (const QString &packsPath : searchPaths) {
         QDir packsDir(packsPath);
         if (!packsDir.exists()) {
@@ -381,25 +399,43 @@ void CharacterPackManager::autoInstallBuiltInPacks()
 
         const QFileInfoList opkFiles = packsDir.entryInfoList({"*.opk"}, QDir::Files);
         for (const QFileInfo &opkFile : opkFiles) {
-            // Extract pack ID from the .opk file
             QString packId = extractPackIdFromOpk(opkFile.absoluteFilePath());
             if (packId.isEmpty()) {
                 continue;
             }
 
-            // Check if already installed
             QString installDir = m_userDir + "/" + packId;
             if (QDir(installDir).exists()) {
                 qDebug() << "CharacterPackManager: Pack already installed:" << packId;
                 continue;
             }
 
-            // Install the pack
             qDebug() << "CharacterPackManager: Auto-installing pack:" << opkFile.fileName();
             if (installPack(opkFile.absoluteFilePath())) {
                 qDebug() << "CharacterPackManager: Successfully installed:" << packId;
             } else {
                 qWarning() << "CharacterPackManager: failed to auto-install:" << opkFile.fileName();
+            }
+        }
+
+        const QFileInfoList codexFiles = packsDir.entryInfoList({"*.codex-pet"}, QDir::Files);
+        for (const QFileInfo &codexFile : codexFiles) {
+            PackInfo info;
+            if (!extractCodexPetInfo(codexFile.absoluteFilePath(), info)) {
+                continue;
+            }
+
+            QString destPath = m_userDir + "/" + info.id + ".codex-pet";
+            if (QFile::exists(destPath)) {
+                qDebug() << "CharacterPackManager: Codex pet already installed:" << info.id;
+                continue;
+            }
+
+            qDebug() << "CharacterPackManager: Auto-installing codex pet:" << codexFile.fileName();
+            if (QFile::copy(codexFile.absoluteFilePath(), destPath)) {
+                qDebug() << "CharacterPackManager: Successfully installed codex pet:" << info.id;
+            } else {
+                qWarning() << "CharacterPackManager: Failed to copy codex pet:" << codexFile.fileName();
             }
         }
     }
@@ -501,11 +537,80 @@ void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSou
     qDebug() << "CharacterPackManager: Found pack:" << info.name << "(" << packId << ")";
 }
 
-CharacterPack *CharacterPackManager::createAndLoadPack(const QString &packDir)
+void CharacterPackManager::loadPackFromCodexPet(const QString &archivePath, PackSource source)
+{
+    PackInfo info;
+    if (!extractCodexPetInfo(archivePath, info)) {
+        return;
+    }
+
+    info.path = archivePath;
+    info.source = source;
+    info.category = "codex";
+
+    m_packs[info.id] = info;
+    qDebug() << "CharacterPackManager: Found Codex pet:" << info.name << "(" << info.id << ")";
+}
+
+bool CharacterPackManager::extractCodexPetInfo(const QString &archivePath, PackInfo &outInfo)
+{
+    mz_zip_archive zip{};
+    if (!mz_zip_reader_init_file(&zip, archivePath.toUtf8().constData(), 0)) {
+        return false;
+    }
+
+    int petJsonIdx = mz_zip_reader_locate_file(&zip, "pet.json", nullptr, 0);
+    if (petJsonIdx < 0) {
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    size_t petJsonSize = 0;
+    void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
+    mz_zip_reader_end(&zip);
+
+    if (!petJsonData) {
+        return false;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(
+        QByteArray(static_cast<const char *>(petJsonData), static_cast<int>(petJsonSize)));
+    mz_free(petJsonData);
+
+    if (!doc.isObject()) {
+        return false;
+    }
+
+    const QJsonObject obj = doc.object();
+    outInfo.id = obj.value("id").toString();
+    outInfo.name = obj.value("displayName").toString();
+    outInfo.description = obj.value("description").toString();
+    outInfo.author = "codex";
+    outInfo.version = "1.0.0";
+
+    if (outInfo.id.isEmpty() || outInfo.name.isEmpty()) {
+        return false;
+    }
+
+    return true;
+}
+
+CharacterPack *CharacterPackManager::createAndLoadPack(const QString &packPath)
 {
     CharacterPack *pack = new CharacterPack();
-    if (!pack->loadFromDirectory(packDir)) {
-        qWarning() << "CharacterPackManager: Failed to load pack from:" << packDir;
+
+    if (packPath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
+        packPath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) {
+        if (!pack->loadFromCodexPet(packPath)) {
+            qWarning() << "CharacterPackManager: Failed to load Codex pet from:" << packPath;
+            delete pack;
+            return nullptr;
+        }
+        return pack;
+    }
+
+    if (!pack->loadFromDirectory(packPath)) {
+        qWarning() << "CharacterPackManager: Failed to load pack from:" << packPath;
         delete pack;
         return nullptr;
     }

@@ -8,6 +8,9 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <QTemporaryDir>
+#include <QImage>
+
+#include "../thirdparty/miniz/miniz.h"
 
 QString CharacterPack::Metadata::displayName(const QString &localeCode) const
 {
@@ -79,6 +82,217 @@ bool CharacterPack::loadFromArchive(const QString &archivePath, const QString &e
     // For now, log a warning and return false
     qWarning() << "CharacterPack: Archive loading not yet implemented:" << archivePath;
     return false;
+}
+
+bool CharacterPack::loadFromCodexPet(const QString &archivePath)
+{
+    mz_zip_archive zip{};
+    if (!mz_zip_reader_init_file(&zip, archivePath.toUtf8().constData(), 0)) {
+        qWarning() << "CharacterPack: Failed to open codex-pet archive:" << archivePath;
+        return false;
+    }
+
+    // --- Read pet.json -------------------------------------------------------
+    int petJsonIdx = mz_zip_reader_locate_file(&zip, "pet.json", nullptr, 0);
+    if (petJsonIdx < 0) {
+        qWarning() << "CharacterPack: No pet.json in codex-pet archive:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    size_t petJsonSize = 0;
+    void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
+    if (!petJsonData) {
+        qWarning() << "CharacterPack: Failed to read pet.json from:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    QJsonDocument petDoc = QJsonDocument::fromJson(
+        QByteArray(static_cast<const char *>(petJsonData), static_cast<int>(petJsonSize)));
+    mz_free(petJsonData);
+
+    if (!petDoc.isObject()) {
+        qWarning() << "CharacterPack: Invalid pet.json in:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    const QJsonObject petObj = petDoc.object();
+
+    // --- Extract spritesheet.webp to temp dir --------------------------------
+    int sheetIdx = mz_zip_reader_locate_file(&zip, "spritesheet.webp", nullptr, 0);
+    if (sheetIdx < 0) {
+        qWarning() << "CharacterPack: No spritesheet.webp in codex-pet archive:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    QTemporaryDir tempDir;
+    if (!tempDir.isValid()) {
+        qWarning() << "CharacterPack: Failed to create temp dir for codex-pet extraction";
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    QString sheetPath = tempDir.path() + "/spritesheet.webp";
+    if (!mz_zip_reader_extract_to_file(&zip, sheetIdx, sheetPath.toUtf8().constData(), 0)) {
+        qWarning() << "CharacterPack: Failed to extract spritesheet.webp from:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
+
+    mz_zip_reader_end(&zip);
+
+    QImage sheetImage(sheetPath);
+    if (sheetImage.isNull()) {
+        qWarning() << "CharacterPack: Failed to load spritesheet image from:" << sheetPath;
+        return false;
+    }
+    if (sheetImage.width() != 1536 || sheetImage.height() != 1872) {
+        qWarning() << "CharacterPack: Codex pet spritesheet has unexpected dimensions"
+                   << sheetImage.size() << "expected 1536x1872";
+        return false;
+    }
+
+    if (!sheetImage.hasAlphaChannel()) {
+        QRgb topLeft = sheetImage.pixel(0, 0);
+        QRgb topRight = sheetImage.pixel(sheetImage.width() - 1, 0);
+        QRgb bottomLeft = sheetImage.pixel(0, sheetImage.height() - 1);
+        QRgb bottomRight = sheetImage.pixel(sheetImage.width() - 1, sheetImage.height() - 1);
+
+        if (topLeft == topRight && topLeft == bottomLeft && topLeft == bottomRight) {
+            m_characterConfig.colorKey = QColor(topLeft);
+            qDebug() << "CharacterPack: Sprite sheet lacks alpha, using color key:"
+                     << m_characterConfig.colorKey.name();
+        } else {
+            qWarning() << "CharacterPack: Sprite sheet has no alpha and inconsistent corners,"
+                       << "background may not be transparent";
+        }
+    }
+
+    m_rootPath = tempDir.path();
+    tempDir.setAutoRemove(false);
+
+    // --- Populate metadata ---------------------------------------------------
+    m_metadata.formatVersion = "1.0.0";
+    m_metadata.id = petObj.value("id").toString();
+    m_metadata.name = petObj.value("displayName").toString();
+    m_metadata.description = petObj.value("description").toString();
+    m_metadata.author = "codex";
+    m_metadata.version = "1.0.0";
+
+    if (m_metadata.id.isEmpty() || m_metadata.name.isEmpty()) {
+        qWarning() << "CharacterPack: Codex pet missing required fields (id/displayName)";
+        return false;
+    }
+
+    // --- Populate character config -------------------------------------------
+    m_characterConfig.engineType = EngineType::SpriteSheet;
+    m_characterConfig.spriteSheet = "spritesheet.webp";
+    m_characterConfig.frameWidth = 192;
+    m_characterConfig.frameHeight = 208;
+    m_characterConfig.displayScale = 1.0f;
+
+    // --- Generate animation defs from the 8×9 atlas --------------------------
+    // Codex pet format: fixed 8 columns × 9 rows, 192×208 cells
+    constexpr int CODEX_COLUMNS = 8;
+    constexpr int CODEX_ROWS = 9;
+    constexpr int CELL_WIDTH = 192;
+    constexpr int CELL_HEIGHT = 208;
+
+    const QVector<int> frameCounts = {6, 8, 8, 4, 5, 8, 6, 6, 6};
+    const QVector<QString> rowNames = {
+        "idle", "running-right", "running-left", "waving",
+        "jumping", "failed", "waiting", "running", "review"
+    };
+    const QVector<QVector<int>> frameDurations = {
+        {280, 110, 110, 140, 140, 320},           // idle
+        {120, 120, 120, 120, 120, 120, 120, 220}, // running-right
+        {120, 120, 120, 120, 120, 120, 120, 220}, // running-left
+        {140, 140, 140, 280},                     // waving
+        {140, 140, 140, 140, 280},                // jumping
+        {140, 140, 140, 140, 140, 140, 140, 240}, // failed
+        {150, 150, 150, 150, 150, 260},           // waiting
+        {120, 120, 120, 120, 120, 220},           // running
+        {150, 150, 150, 150, 150, 280}            // review
+    };
+
+    for (int row = 0; row < CODEX_ROWS; ++row) {
+        AnimationDef anim;
+        anim.name = rowNames[row];
+        anim.type = EngineType::SpriteSheet;
+        anim.loop = true;
+
+        int numFrames = frameCounts[row];
+        for (int col = 0; col < numFrames; ++col) {
+            FrameDef frame;
+            frame.x = col * CELL_WIDTH;
+            frame.y = row * CELL_HEIGHT;
+            frame.w = CELL_WIDTH;
+            frame.h = CELL_HEIGHT;
+            frame.durationMs = frameDurations[row][col];
+            anim.frames.append(frame);
+            anim.totalDurationMs += frame.durationMs;
+        }
+
+        m_animations[anim.name] = anim;
+    }
+
+    // --- Idle pool: only idle for MVP ----------------------------------------
+    IdleEntry idleEntry;
+    idleEntry.animationName = "idle";
+    idleEntry.weight = 1;
+    m_idlePool.append(idleEntry);
+
+    // --- Event map: minimal MVP mapping --------------------------------------
+    m_eventMap["session.error"] = QStringList{"failed"};
+
+    m_nameMap["greet"] = "waving";
+    m_nameMap["idle"] = "idle";
+    m_nameMap["think"] = "waiting";
+    m_nameMap["work"] = "running";
+    m_nameMap["alert"] = "failed";
+    m_nameMap["celebrate"] = "jumping";
+    m_nameMap["rest"] = "idle";
+    m_nameMap["send"] = "waving";
+    m_nameMap["attention"] = "waving";
+    m_nameMap["wave"] = "waving";
+    m_nameMap["explain"] = "running";
+    m_nameMap["thinking"] = "waiting";
+    m_nameMap["congratulate"] = "waving";
+    m_nameMap["sendmail"] = "waving";
+    m_nameMap["getattention"] = "waving";
+    m_nameMap["greeting"] = "waving";
+    m_nameMap["goodbye"] = "waving";
+    m_nameMap["processing"] = "running";
+    m_nameMap["writing"] = "running";
+    m_nameMap["searching"] = "running";
+    m_nameMap["print"] = "running";
+    m_nameMap["save"] = "running";
+    m_nameMap["hide"] = "running-left";
+    m_nameMap["show"] = "running-right";
+    m_nameMap["gettechy"] = "review";
+    m_nameMap["getwizardy"] = "review";
+    m_nameMap["idle1"] = "idle";
+    m_nameMap["idle2"] = "idle";
+    m_nameMap["idle3"] = "idle";
+    m_nameMap["click1"] = "waving";
+    m_nameMap["click2"] = "waving";
+    m_nameMap["doubleclick1"] = "waving";
+    m_nameMap["doubleclick2"] = "waving";
+    m_nameMap["gesture_down"] = "waving";
+    m_nameMap["gesture_up"] = "waving";
+    m_nameMap["gesture_left"] = "running-left";
+    m_nameMap["gesture_right"] = "running-right";
+    m_nameMap["lookdown"] = "idle";
+    m_nameMap["lookleft"] = "idle";
+    m_nameMap["lookright"] = "idle";
+    m_nameMap["lookup"] = "idle";
+
+    m_valid = true;
+    qDebug() << "CharacterPack: Loaded Codex pet" << m_metadata.name << "from" << archivePath;
+    return true;
 }
 
 const CharacterPack::AnimationDef *CharacterPack::animation(const QString &name) const
