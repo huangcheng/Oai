@@ -20,6 +20,8 @@ private slots:
     void testToolBeforeEntersWorking();
     void testWorkingGraceExpiresToIdle();
     void testWorkingGraceExtendsAcrossGaps();
+    void testPromptSubmittedEntersThinking();
+    void testToolBeforeTakesOverFromThinking();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -79,6 +81,22 @@ void TestPetStateMachine::testWorkingGraceExtendsAcrossGaps()
 
     m_fsm->onCanonicalEvent("tool.before");  // new tool, extends again
     QTest::qWait(800);
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+}
+
+void TestPetStateMachine::testPromptSubmittedEntersThinking()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("prompt.submitted");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Thinking);
+}
+
+void TestPetStateMachine::testToolBeforeTakesOverFromThinking()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("prompt.submitted");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Thinking);
+    m_fsm->onCanonicalEvent("tool.before");
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
 }
 

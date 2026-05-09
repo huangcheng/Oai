@@ -43,10 +43,17 @@ void PetStateMachine::onCanonicalEvent(const QString &eventName, const QJsonObje
 {
     Q_UNUSED(payload);
 
+    if (eventName == "prompt.submitted") {
+        m_thinkingTimeout.start();
+        enterBase(State::Thinking, HighPriority);
+        return;
+    }
+
     // Sustained: tool.before / subagent.started / file.edited → Working
     if (eventName == "tool.before"
         || eventName == "subagent.started"
         || eventName == "file.edited") {
+        m_thinkingTimeout.stop();
         enterBase(State::Working, HighPriority);
         m_workingGrace.start();
         return;
@@ -72,7 +79,12 @@ void PetStateMachine::onWorkingGraceExpired()
         enterBase(State::Idle, NormalPriority);
     }
 }
-void PetStateMachine::onThinkingTimeout() {}
+void PetStateMachine::onThinkingTimeout()
+{
+    if (m_baseState == State::Thinking) {
+        enterBase(State::Idle, NormalPriority);
+    }
+}
 void PetStateMachine::onReviewingTimeout() {}
 void PetStateMachine::onOneShotFinished() {}
 
