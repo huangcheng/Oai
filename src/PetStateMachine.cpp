@@ -125,7 +125,10 @@ void PetStateMachine::onSyntheticEvent(const QString &eventName)
             enterOneShot(State::Greeting, NOTIFICATION_ONESHOT_MS);
         }
     }
-    // user.hoverEnter / user.hoverLeave: no-op for now.
+    // Hover events (user.hoverEnter / user.hoverLeave) are accepted but
+    // intentionally ignored: they're not state-changing per the spec.
+    // MainWindow still emits them so a future hover-feedback feature can
+    // hook in here without touching the call sites.
 }
 void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newPos, bool isUserDrag)
 {
@@ -151,6 +154,13 @@ void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newP
         chain.append(m_idleFallback);
     }
     emit animationRequested(chain, static_cast<int>(HighPriority));
+    // NOTE: m_walking is intentionally not reset here. There is no
+    // "motion stopped" detector today; the next event-driven state
+    // transition will emit a fresh chain and override the walking
+    // animation visually. When a real producer (gaming-mode return,
+    // wander timer) lands, add a short-debounce timer that flips
+    // m_walking back to false and re-emits the underlying base state's
+    // chain.
 }
 void PetStateMachine::onWorkingGraceExpired()
 {
