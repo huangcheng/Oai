@@ -3,6 +3,7 @@
 #include "CharacterPack.h"
 
 #include <QDebug>
+#include <QtMath>
 
 PetStateMachine::PetStateMachine(QObject *parent)
     : QObject(parent)
@@ -119,7 +120,31 @@ void PetStateMachine::onCanonicalEvent(const QString &eventName, const QJsonObje
     }
 }
 void PetStateMachine::onSyntheticEvent(const QString &) {}
-void PetStateMachine::onPositionChanged(const QPoint &, const QPoint &, bool) {}
+void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newPos, bool isUserDrag)
+{
+    if (isUserDrag) return;  // user is dragging; no walk overlay
+
+    const int dx = newPos.x() - oldPos.x();
+    const int dy = newPos.y() - oldPos.y();
+    if (qAbs(dx) < WALK_DELTA_THRESHOLD_PX && qAbs(dy) < WALK_DELTA_THRESHOLD_PX) {
+        return;
+    }
+
+    WalkDir dir = (dx >= 0) ? WalkDir::Right : WalkDir::Left;
+    if (m_walking && dir == m_walkDir) {
+        return;  // already walking that direction
+    }
+    m_walking = true;
+    m_walkDir = dir;
+
+    QStringList chain;
+    chain << ((dir == WalkDir::Right) ? "running-right" : "running-left");
+    chain << "walk" << "Walk";
+    if (!chain.contains(m_idleFallback)) {
+        chain.append(m_idleFallback);
+    }
+    emit animationRequested(chain, static_cast<int>(HighPriority));
+}
 void PetStateMachine::onActivePackChanged(const CharacterPack *) {}
 
 void PetStateMachine::onWorkingGraceExpired()

@@ -29,6 +29,9 @@ private slots:
     void testCelebratingOnTodoUpdated();
     void testSessionErrorOneShotFromIdle();
     void testIdleFallbackAppendedToEveryChain();
+    void testPositionChangeFiresWalkingChain();
+    void testWalkingChainHasDirection();
+    void testUserDragDoesNotTriggerWalking();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -189,6 +192,39 @@ void TestPetStateMachine::testIdleFallbackAppendedToEveryChain()
         QVERIFY2(chain.contains("idle"),
                  qPrintable(QString("chain missing idle fallback: %1").arg(chain.join(','))));
     }
+}
+
+void TestPetStateMachine::testPositionChangeFiresWalkingChain()
+{
+    initFsm();
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+
+    m_fsm->onPositionChanged(QPoint(100, 100), QPoint(200, 100), false);
+
+    QVERIFY(chainSpy.count() >= 1);
+    const QStringList chain = chainSpy.last().at(0).toStringList();
+    QVERIFY(chain.contains("running-right"));
+}
+
+void TestPetStateMachine::testWalkingChainHasDirection()
+{
+    initFsm();
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+
+    m_fsm->onPositionChanged(QPoint(200, 100), QPoint(100, 100), false);  // leftward
+
+    QVERIFY(chainSpy.count() >= 1);
+    const QStringList chain = chainSpy.last().at(0).toStringList();
+    QVERIFY(chain.contains("running-left"));
+}
+
+void TestPetStateMachine::testUserDragDoesNotTriggerWalking()
+{
+    initFsm();
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+
+    m_fsm->onPositionChanged(QPoint(100, 100), QPoint(200, 100), true);  // user drag
+    QCOMPARE(chainSpy.count(), 0);
 }
 
 QTEST_MAIN(TestPetStateMachine)
