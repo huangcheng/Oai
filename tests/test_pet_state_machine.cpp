@@ -34,6 +34,7 @@ private slots:
     void testUserDragDoesNotTriggerWalking();
     void testCodexNameMapRebuildsChains();
     void testExplicitStateMapOverridesNameMap();
+    void testFailedOverlayPreservesWorkingGrace();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -266,6 +267,25 @@ void TestPetStateMachine::testExplicitStateMapOverridesNameMap()
     m_fsm->onCanonicalEvent("tool.before");
     QCOMPARE(chainSpy.last().at(0).toStringList().first(),
              QStringLiteral("my-busy-anim"));
+}
+
+void TestPetStateMachine::testFailedOverlayPreservesWorkingGrace()
+{
+    // Working starts; Failed overlay fires; while overlay is showing the
+    // grace clock keeps ticking under it. After the one-shot, Working is
+    // restored AND grace is still running — a quiet 1500ms still drops
+    // to Idle, but a follow-up tool.before within grace stays Working.
+    initFsm();
+    m_fsm->onCanonicalEvent("tool.before");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+
+    m_fsm->onCanonicalEvent("tool.failed");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
+
+    QTest::qWait(2300);  // > NOTIFICATION_ONESHOT_MS so overlay finishes
+    // After overlay, base should be Working (restored from m_savedSustained).
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
 }
 
 QTEST_MAIN(TestPetStateMachine)

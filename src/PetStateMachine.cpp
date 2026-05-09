@@ -175,6 +175,13 @@ void PetStateMachine::onOneShotFinished()
 {
     if (m_overlayState == State::Idle) return;
     m_overlayState = State::Idle;
+    // Restore from saved-sustained because m_baseState may have changed
+    // during the overlay (e.g. a tool.before arrived while Failed was
+    // showing). m_savedSustained holds whatever was active when the
+    // one-shot started.
+    if (m_baseState != m_savedSustained) {
+        m_baseState = m_savedSustained;
+    }
     emit stateChanged(activeState());
     emitChainFor(m_baseState, NormalPriority);
 }
@@ -196,15 +203,13 @@ void PetStateMachine::enterBase(State s, Priority priority)
 }
 void PetStateMachine::enterOneShot(State s, int durationMs)
 {
-    // Save the sustained state so we can restore on completion.
+    // Save the sustained state so we can restore on completion. Grace
+    // timers keep ticking under the overlay so the underlying state's
+    // exit conditions still apply.
     if (m_overlayState == State::Idle) {
         m_savedSustained = m_baseState;
     }
     m_overlayState = s;
-    // Stop grace timers so they don't change base state during the one-shot
-    m_workingGrace.stop();
-    m_thinkingTimeout.stop();
-    m_reviewingTimeout.stop();
     m_oneShotTimer.start(durationMs);
     emit stateChanged(activeState());
     emitChainFor(s, HighPriority);
