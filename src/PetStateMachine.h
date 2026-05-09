@@ -56,6 +56,10 @@ public slots:
     void onPositionChanged(const QPoint &oldPos, const QPoint &newPos, bool isUserDrag);
     void onActivePackChanged(const CharacterPack *pack);
 
+    /// Test seam: rebuild chains directly from a (canonical → pack-actual)
+    /// name map, the same shape as CharacterPack::nameMap().
+    void rebuildChainsFromNameMap(const QMap<QString, QString> &nameMap);
+
 signals:
     void animationRequested(const QStringList &chain, int priority);
     void stateChanged(PetStateMachine::State newState);

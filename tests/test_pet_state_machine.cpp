@@ -32,6 +32,7 @@ private slots:
     void testPositionChangeFiresWalkingChain();
     void testWalkingChainHasDirection();
     void testUserDragDoesNotTriggerWalking();
+    void testCodexNameMapRebuildsChains();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -225,6 +226,27 @@ void TestPetStateMachine::testUserDragDoesNotTriggerWalking()
 
     m_fsm->onPositionChanged(QPoint(100, 100), QPoint(200, 100), true);  // user drag
     QCOMPARE(chainSpy.count(), 0);
+}
+
+void TestPetStateMachine::testCodexNameMapRebuildsChains()
+{
+    initFsm();
+    QMap<QString, QString> nameMap;
+    nameMap["work"] = "running";          // Working → "running"
+    nameMap["alert"] = "failed";          // Failed  → "failed"
+    nameMap["greet"] = "waving";          // Greeting → "waving"
+    nameMap["think"] = "waiting";         // Thinking → "waiting"
+    nameMap["attention"] = "review";      // Reviewing → "review"
+    nameMap["celebrate"] = "jumping";     // Celebrating → "jumping"
+    nameMap["rest"] = "idle";             // idle fallback
+
+    m_fsm->rebuildChainsFromNameMap(nameMap);
+
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+    m_fsm->onCanonicalEvent("tool.before");
+    QVERIFY(chainSpy.count() >= 1);
+    const QStringList chain = chainSpy.last().at(0).toStringList();
+    QCOMPARE(chain.first(), QStringLiteral("running"));
 }
 
 QTEST_MAIN(TestPetStateMachine)

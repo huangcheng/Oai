@@ -145,8 +145,6 @@ void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newP
     }
     emit animationRequested(chain, static_cast<int>(HighPriority));
 }
-void PetStateMachine::onActivePackChanged(const CharacterPack *) {}
-
 void PetStateMachine::onWorkingGraceExpired()
 {
     if (m_baseState == State::Working) {
@@ -211,7 +209,56 @@ void PetStateMachine::emitChainFor(State s, Priority priority)
     }
     emit animationRequested(chain, static_cast<int>(priority));
 }
-void PetStateMachine::rebuildChainsFromPack(const CharacterPack *) {}
+void PetStateMachine::rebuildChainsFromNameMap(const QMap<QString, QString> &nameMap)
+{
+    // Canonical-name → State mapping. Each State takes the first matching
+    // canonical name from the pack's nameMap, keeps engine defaults as
+    // fallbacks behind it.
+    struct Mapping { State state; QStringList canonicalCandidates; };
+    const QVector<Mapping> mappings = {
+        {State::Idle,        {"idle", "rest"}},
+        {State::Greeting,    {"greet", "wave", "greeting"}},
+        {State::Thinking,    {"think", "thinking"}},
+        {State::Working,     {"work", "processing", "writing", "searching"}},
+        {State::Reviewing,   {"attention", "gettechy", "getwizardy"}},
+        {State::Failed,      {"alert"}},
+        {State::Celebrating, {"celebrate", "congratulate"}},
+    };
+
+    for (const auto &m : mappings) {
+        QStringList chain;
+        for (const QString &canonical : m.canonicalCandidates) {
+            const QString actual = nameMap.value(canonical);
+            if (!actual.isEmpty() && !chain.contains(actual)) {
+                chain.append(actual);
+            }
+        }
+        // Append engine defaults as later fallbacks.
+        const QStringList defaults = m_chains.value(m.state);
+        for (const QString &name : defaults) {
+            if (!chain.contains(name)) chain.append(name);
+        }
+        m_chains[m.state] = chain;
+    }
+
+    // Update idle fallback if pack has one.
+    const QString packIdle = nameMap.value("idle", nameMap.value("rest"));
+    if (!packIdle.isEmpty()) {
+        m_idleFallback = packIdle;
+    }
+}
+
+void PetStateMachine::rebuildChainsFromPack(const CharacterPack *pack)
+{
+    if (!pack || !pack->isValid()) return;
+    rebuildChainsFromNameMap(pack->nameMap());
+}
+
+void PetStateMachine::onActivePackChanged(const CharacterPack *pack)
+{
+    rebuildChainsFromPack(pack);
+}
+
 QStringList PetStateMachine::resolveChain(State s) const { return m_chains.value(s); }
 
 QString PetStateMachine::stateName(State s)
