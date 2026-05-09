@@ -49,6 +49,20 @@ void PetStateMachine::onCanonicalEvent(const QString &eventName, const QJsonObje
         return;
     }
 
+    if (eventName == "permission.requested") {
+        m_reviewingTimeout.start();
+        enterBase(State::Reviewing, HighPriority);
+        return;
+    }
+
+    if (eventName == "permission.response") {
+        if (m_baseState == State::Reviewing) {
+            m_reviewingTimeout.stop();
+            enterBase(State::Idle, NormalPriority);
+        }
+        return;
+    }
+
     // Sustained: tool.before / subagent.started / file.edited → Working
     if (eventName == "tool.before"
         || eventName == "subagent.started"
@@ -85,7 +99,12 @@ void PetStateMachine::onThinkingTimeout()
         enterBase(State::Idle, NormalPriority);
     }
 }
-void PetStateMachine::onReviewingTimeout() {}
+void PetStateMachine::onReviewingTimeout()
+{
+    if (m_baseState == State::Reviewing) {
+        enterBase(State::Idle, NormalPriority);
+    }
+}
 void PetStateMachine::onOneShotFinished() {}
 
 void PetStateMachine::enterBase(State s, Priority priority)

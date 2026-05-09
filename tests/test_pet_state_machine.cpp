@@ -22,6 +22,8 @@ private slots:
     void testWorkingGraceExtendsAcrossGaps();
     void testPromptSubmittedEntersThinking();
     void testToolBeforeTakesOverFromThinking();
+    void testPermissionRequestedEntersReviewing();
+    void testPermissionResponseExitsReviewing();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -98,6 +100,22 @@ void TestPetStateMachine::testToolBeforeTakesOverFromThinking()
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Thinking);
     m_fsm->onCanonicalEvent("tool.before");
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+}
+
+void TestPetStateMachine::testPermissionRequestedEntersReviewing()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("permission.requested");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Reviewing);
+}
+
+void TestPetStateMachine::testPermissionResponseExitsReviewing()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("permission.requested");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Reviewing);
+    m_fsm->onCanonicalEvent("permission.response");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
 }
 
 QTEST_MAIN(TestPetStateMachine)
