@@ -3,7 +3,6 @@
 #include "CharacterPack.h"
 
 #include <QDebug>
-#include <QtMath>
 
 PetStateMachine::PetStateMachine(QObject *parent)
     : QObject(parent)
