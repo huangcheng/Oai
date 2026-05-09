@@ -17,6 +17,7 @@ class TestPetStateMachine : public QObject
 
 private slots:
     void testInitialStateIsIdle();
+    void testToolBeforeEntersWorking();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -24,6 +25,7 @@ private:
     void initFsm() {
         delete m_fsm;
         m_fsm = new PetStateMachine(this);
+        qRegisterMetaType<PetStateMachine::State>("PetStateMachine::State");
     }
 };
 
@@ -32,6 +34,24 @@ void TestPetStateMachine::testInitialStateIsIdle()
     initFsm();
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
     QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testToolBeforeEntersWorking()
+{
+    initFsm();
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+    QSignalSpy stateSpy(m_fsm, &PetStateMachine::stateChanged);
+
+    m_fsm->onCanonicalEvent("tool.before");
+
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+    QCOMPARE(stateSpy.count(), 1);
+    QCOMPARE(stateSpy.first().at(0).value<PetStateMachine::State>(),
+             PetStateMachine::State::Working);
+    QCOMPARE(chainSpy.count(), 1);
+    const QStringList chain = chainSpy.first().at(0).toStringList();
+    QVERIFY(!chain.isEmpty());
+    QCOMPARE(chain.first(), QStringLiteral("running"));
 }
 
 QTEST_MAIN(TestPetStateMachine)
