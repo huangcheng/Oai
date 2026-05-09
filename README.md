@@ -17,7 +17,7 @@ A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight
 
 ## Sprite Packs
 
-Oai supports customizable characters through sprite packs (`.opk` files). Each pack contains:
+Oai supports customizable characters through sprite packs (`.opk` files) and Codex pets (`.codex-pet` files). Each pack contains:
 - Sprite sheet or Lottie animations
 - Animation definitions
 - Event-to-animation mappings
@@ -25,9 +25,13 @@ Oai supports customizable characters through sprite packs (`.opk` files). Each p
 
 ### Installing Packs
 
-1. **Drag-and-drop**: Drop `.opk` file onto the pet window
-2. **Manual**: Copy `.opk` to `~/.config/Oai/packs/`
+1. **Drag-and-drop**: Drop `.opk` or `.codex-pet` file onto the pet window
+2. **Manual**: Copy the file to `~/.config/Oai/packs/`
 3. **Built-in**: Official packs are generated during build
+
+### Codex pets
+
+Oai natively reads `.codex-pet` archives produced by the upstream [openai/skills `hatch-pet`](https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md) skill. The format ships a fixed 8×9 atlas (`spritesheet.webp`, 1536×1872 px, 192×208 cells) plus a `pet.json` manifest. Drop the archive on the pet window — Oai auto-detects and renders it without conversion. The 9 animation rows (`idle`, `running-right`, `running-left`, `waving`, `jumping`, `failed`, `waiting`, `running`, `review`) map directly onto the pet state machine.
 
 ### Pulling community Live2D packs from the upstream archive
 
@@ -320,7 +324,8 @@ oai/
 │   ├── mainwindow.h/cpp        # Transparent frameless pet window
 │   ├── IpcServer.h/cpp         # UDP IPC server
 │   ├── UdpWorker.h/cpp         # UDP worker (runs on a separate QThread)
-│   ├── EventRouter.h/cpp       # Maps 17 canonical events → animation/effect/tip
+│   ├── EventRouter.h/cpp       # Validates 17 canonical events; routes tips
+│   ├── PetStateMachine.h/cpp   # FSM owning logical pet state; emits animation chains
 │   ├── LottieAnimationEngine.h/cpp  # Primary engine (rlottie)
 │   ├── Live2DAnimationEngine.h/cpp  # Live2D Cubism engine
 │   ├── SpriteAnimationEngine.h/cpp  # Legacy sprite-sheet engine

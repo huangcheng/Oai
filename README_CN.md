@@ -17,7 +17,7 @@
 
 ## Sprite Packs（角色包）
 
-Oai 通过 sprite pack（`.opk` 文件）支持自定义角色。每个包包含：
+Oai 通过 sprite pack（`.opk` 文件）和 Codex 宠物包（`.codex-pet` 文件）支持自定义角色。每个包包含：
 - Sprite sheet 或 Lottie 动画
 - 动画定义
 - 事件到动画的映射
@@ -25,9 +25,13 @@ Oai 通过 sprite pack（`.opk` 文件）支持自定义角色。每个包包含
 
 ### 安装包
 
-1. **拖拽**：将 `.opk` 文件拖到宠物窗口上
-2. **手动**：将 `.opk` 复制到 `~/.config/Oai/packs/`
+1. **拖拽**：将 `.opk` 或 `.codex-pet` 文件拖到宠物窗口上
+2. **手动**：将文件复制到 `~/.config/Oai/packs/`
 3. **内置**：构建过程中会生成官方包
+
+### Codex 宠物
+
+Oai 原生读取由上游 [openai/skills `hatch-pet`](https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md) skill 生成的 `.codex-pet` 归档。格式由固定 8×9 atlas（`spritesheet.webp`，1536×1872 像素，192×208 单元格）加 `pet.json` manifest 组成。将归档拖到宠物窗口上 —— Oai 会自动识别并直接渲染，无需转换。9 个动画行（`idle`、`running-right`、`running-left`、`waving`、`jumping`、`failed`、`waiting`、`running`、`review`）直接映射到宠物状态机。
 
 ### 从上游档案拉取社区 Live2D 包
 
@@ -330,7 +334,8 @@ oai/
 │   ├── mainwindow.h/cpp        # 透明无边框宠物窗口
 │   ├── IpcServer.h/cpp         # UDP IPC 服务端
 │   ├── UdpWorker.h/cpp         # UDP worker（跑在独立 QThread 上）
-│   ├── EventRouter.h/cpp       # 17 个标准事件 → 动画/特效/提示的映射
+│   ├── EventRouter.h/cpp       # 验证 17 个标准事件，转发提示文案
+│   ├── PetStateMachine.h/cpp   # 宠物状态机 FSM —— 持有逻辑状态，发射动画链
 │   ├── LottieAnimationEngine.h/cpp  # 主动画引擎（rlottie）
 │   ├── Live2DAnimationEngine.h/cpp  # Live2D Cubism 引擎
 │   ├── SpriteAnimationEngine.h/cpp  # 旧版 sprite-sheet 引擎
