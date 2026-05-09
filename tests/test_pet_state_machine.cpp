@@ -24,6 +24,10 @@ private slots:
     void testToolBeforeTakesOverFromThinking();
     void testPermissionRequestedEntersReviewing();
     void testPermissionResponseExitsReviewing();
+    void testFailedOneShotReturnsToWorking();
+    void testGreetingOnlyFromIdle();
+    void testCelebratingOnTodoUpdated();
+    void testSessionErrorOneShotFromIdle();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -115,6 +119,58 @@ void TestPetStateMachine::testPermissionResponseExitsReviewing()
     m_fsm->onCanonicalEvent("permission.requested");
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Reviewing);
     m_fsm->onCanonicalEvent("permission.response");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testFailedOneShotReturnsToWorking()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("tool.before");
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+
+    m_fsm->onCanonicalEvent("tool.failed");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);  // base preserved
+
+    // After the one-shot completes, overlay should clear.
+    QTest::qWait(2200);  // > NOTIFICATION_ONESHOT_MS, used as default duration
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
+}
+
+void TestPetStateMachine::testGreetingOnlyFromIdle()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("session.start");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Greeting);
+
+    // Now mid-session: a second session.start should NOT preempt Working.
+    initFsm();
+    m_fsm->onCanonicalEvent("tool.before");
+    m_fsm->onCanonicalEvent("session.start");  // ignored — not Idle
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Working);
+}
+
+void TestPetStateMachine::testCelebratingOnTodoUpdated()
+{
+    initFsm();
+    QJsonObject payload;
+    payload["status"] = "completed";
+    m_fsm->onCanonicalEvent("todo.updated", payload);
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Celebrating);
+
+    // Updates without "completed" should NOT celebrate.
+    initFsm();
+    QJsonObject other;
+    other["status"] = "in_progress";
+    m_fsm->onCanonicalEvent("todo.updated", other);
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testSessionErrorOneShotFromIdle()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("session.error");
+    QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
 }
 

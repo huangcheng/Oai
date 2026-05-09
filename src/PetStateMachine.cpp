@@ -82,6 +82,41 @@ void PetStateMachine::onCanonicalEvent(const QString &eventName, const QJsonObje
         }
         return;
     }
+
+    // One-shots
+    if (eventName == "session.error"
+        || eventName == "tool.failed"
+        || eventName == "permission.denied") {
+        enterOneShot(State::Failed, NOTIFICATION_ONESHOT_MS);
+        return;
+    }
+
+    if (eventName == "notification.sent") {
+        enterOneShot(State::Reviewing, NOTIFICATION_ONESHOT_MS);
+        return;
+    }
+
+    if (eventName == "todo.updated") {
+        if (payload.value("status").toString() == "completed") {
+            enterOneShot(State::Celebrating, NOTIFICATION_ONESHOT_MS);
+        }
+        return;
+    }
+
+    if (eventName == "session.start") {
+        if (m_baseState == State::Idle && m_overlayState == State::Idle) {
+            enterOneShot(State::Greeting, NOTIFICATION_ONESHOT_MS);
+        }
+        return;
+    }
+
+    if (eventName == "session.end" || eventName == "session.idle") {
+        m_workingGrace.stop();
+        m_thinkingTimeout.stop();
+        m_reviewingTimeout.stop();
+        enterBase(State::Idle, NormalPriority);
+        return;
+    }
 }
 void PetStateMachine::onSyntheticEvent(const QString &) {}
 void PetStateMachine::onPositionChanged(const QPoint &, const QPoint &, bool) {}
@@ -105,7 +140,13 @@ void PetStateMachine::onReviewingTimeout()
         enterBase(State::Idle, NormalPriority);
     }
 }
-void PetStateMachine::onOneShotFinished() {}
+void PetStateMachine::onOneShotFinished()
+{
+    if (m_overlayState == State::Idle) return;
+    m_overlayState = State::Idle;
+    emit stateChanged(activeState());
+    emitChainFor(m_baseState, NormalPriority);
+}
 
 void PetStateMachine::enterBase(State s, Priority priority)
 {
@@ -122,7 +163,21 @@ void PetStateMachine::enterBase(State s, Priority priority)
     emit stateChanged(activeState());
     emitChainFor(s, priority);
 }
-void PetStateMachine::enterOneShot(State, int) {}
+void PetStateMachine::enterOneShot(State s, int durationMs)
+{
+    // Save the sustained state so we can restore on completion.
+    if (m_overlayState == State::Idle) {
+        m_savedSustained = m_baseState;
+    }
+    m_overlayState = s;
+    // Stop grace timers so they don't change base state during the one-shot
+    m_workingGrace.stop();
+    m_thinkingTimeout.stop();
+    m_reviewingTimeout.stop();
+    m_oneShotTimer.start(durationMs);
+    emit stateChanged(activeState());
+    emitChainFor(s, HighPriority);
+}
 void PetStateMachine::emitChainFor(State s, Priority priority)
 {
     QStringList chain = resolveChain(s);
