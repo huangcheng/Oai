@@ -681,8 +681,6 @@ void MainWindow::onFullscreenStarted()
         }
         if (m_ecgWidget && m_ecgWidget->isVisible())
             m_ecgWidget->hide();
-        if (m_systemTray)
-            m_systemTray->showGamingModeMessage(true);
         qDebug() << "MainWindow: Gaming Mode — hiding pet (fullscreen app detected)";
     }
 }
@@ -697,8 +695,6 @@ void MainWindow::onFullscreenStopped()
                     && m_config->displayMode() == ConfigManager::DisplayMode::Ecg)
                 m_ecgWidget->show();
         }
-        if (m_systemTray)
-            m_systemTray->showGamingModeMessage(false);
         qDebug() << "MainWindow: Gaming Mode — restoring pet (fullscreen app gone)";
     }
 }

@@ -279,16 +279,6 @@
         <source>Could not check for updates: %1</source>
         <translation>无法检查更新：%1</translation>
     </message>
-    <message>
-        <location filename="src/SystemTray.cpp" line="313"/>
-        <source>Oai is hiding while you play</source>
-        <translation>你玩游戏时 Oai 正在隐藏</translation>
-    </message>
-    <message>
-        <location filename="src/SystemTray.cpp" line="319"/>
-        <source>Oai is back!</source>
-        <translation>Oai 回来啦！</translation>
-    </message>
 </context>
 <context>
     <name>TipsEngine</name>

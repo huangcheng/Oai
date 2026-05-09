@@ -304,24 +304,6 @@ void SystemTray::refreshPackMenu()
              << packs.size() << "packs across" << grouped.size() << "categories";
 }
 
-void SystemTray::showGamingModeMessage(bool hiding)
-{
-    if (!m_trayIcon) return;
-    if (hiding) {
-        m_trayIcon->showMessage(
-            tr("Gaming Mode"),
-            tr("Oai is hiding while you play"),
-            QSystemTrayIcon::Information,
-            3000);
-    } else {
-        m_trayIcon->showMessage(
-            tr("Gaming Mode"),
-            tr("Oai is back!"),
-            QSystemTrayIcon::Information,
-            3000);
-    }
-}
-
 void SystemTray::retranslateUi()
 {
     m_trayIcon->setToolTip(tr("Oai Desktop Pet"));

@@ -30,9 +30,6 @@ public:
     // Set update checker
     void setUpdateChecker(UpdateChecker *checker);
 
-    // Show a Gaming Mode hide/restore notification via the tray balloon
-    void showGamingModeMessage(bool hiding);
-
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
     void onPackActionTriggered();
