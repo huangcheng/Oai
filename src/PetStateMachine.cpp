@@ -51,6 +51,16 @@ void PetStateMachine::onCanonicalEvent(const QString &eventName, const QJsonObje
         m_workingGrace.start();
         return;
     }
+
+    // Passive: extend Working grace if currently Working.
+    if (eventName == "tool.after"
+        || eventName == "subagent.stopped"
+        || eventName == "file.watched") {
+        if (m_baseState == State::Working) {
+            m_workingGrace.start();  // restart from 0
+        }
+        return;
+    }
 }
 void PetStateMachine::onSyntheticEvent(const QString &) {}
 void PetStateMachine::onPositionChanged(const QPoint &, const QPoint &, bool) {}

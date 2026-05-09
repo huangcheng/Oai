@@ -19,6 +19,7 @@ private slots:
     void testInitialStateIsIdle();
     void testToolBeforeEntersWorking();
     void testWorkingGraceExpiresToIdle();
+    void testWorkingGraceExtendsAcrossGaps();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -65,6 +66,20 @@ void TestPetStateMachine::testWorkingGraceExpiresToIdle()
     QTest::qWait(1700);  // > WORKING_GRACE_MS (1500)
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
     QCOMPARE(stateSpy.count(), 1);
+}
+
+void TestPetStateMachine::testWorkingGraceExtendsAcrossGaps()
+{
+    initFsm();
+    m_fsm->onCanonicalEvent("tool.before");
+    QTest::qWait(800);                       // halfway through grace
+    m_fsm->onCanonicalEvent("tool.after");   // resets grace via passive handler
+    QTest::qWait(800);                       // total 1600ms wall but grace was reset
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
+
+    m_fsm->onCanonicalEvent("tool.before");  // new tool, extends again
+    QTest::qWait(800);
+    QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Working);
 }
 
 QTEST_MAIN(TestPetStateMachine)
