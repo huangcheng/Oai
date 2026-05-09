@@ -56,7 +56,12 @@ void PetStateMachine::onSyntheticEvent(const QString &) {}
 void PetStateMachine::onPositionChanged(const QPoint &, const QPoint &, bool) {}
 void PetStateMachine::onActivePackChanged(const CharacterPack *) {}
 
-void PetStateMachine::onWorkingGraceExpired() {}
+void PetStateMachine::onWorkingGraceExpired()
+{
+    if (m_baseState == State::Working) {
+        enterBase(State::Idle, NormalPriority);
+    }
+}
 void PetStateMachine::onThinkingTimeout() {}
 void PetStateMachine::onReviewingTimeout() {}
 void PetStateMachine::onOneShotFinished() {}
