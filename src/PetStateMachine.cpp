@@ -119,7 +119,15 @@ void PetStateMachine::onCanonicalEvent(const QString &eventName, const QJsonObje
         return;
     }
 }
-void PetStateMachine::onSyntheticEvent(const QString &) {}
+void PetStateMachine::onSyntheticEvent(const QString &eventName)
+{
+    if (eventName == "user.click" || eventName == "user.doubleclick") {
+        if (m_baseState == State::Idle && m_overlayState == State::Idle) {
+            enterOneShot(State::Greeting, NOTIFICATION_ONESHOT_MS);
+        }
+    }
+    // user.hoverEnter / user.hoverLeave: no-op for now.
+}
 void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newPos, bool isUserDrag)
 {
     if (isUserDrag) return;  // user is dragging; no walk overlay

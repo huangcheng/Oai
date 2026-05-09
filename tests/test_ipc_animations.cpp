@@ -22,6 +22,7 @@
 #include "SpriteAnimationEngine.h"
 #include "TipBubbleWidget.h"
 #include "TipsEngine.h"
+#include "PetStateMachine.h"
 
 class TestIpcAnimations : public QObject
 {
@@ -53,6 +54,7 @@ private:
     SpriteAnimationEngine *m_engine = nullptr;
     TipBubbleWidget *m_bubble = nullptr;
     TipsEngine *m_tips = nullptr;
+    PetStateMachine *m_fsm = nullptr;
 
     static constexpr quint16 TEST_PORT = 52848;
     static constexpr const char *TEST_HOST = "127.0.0.1";
@@ -91,9 +93,18 @@ void TestIpcAnimations::initTestCase()
     m_tips->setTipBubble(m_bubble);
 
     m_router = new EventRouter(this);
-    m_router->setAnimationEngine(m_engine);
     m_router->setTipBubble(m_bubble);
     m_router->setTipsEngine(m_tips);
+
+    m_fsm = new PetStateMachine(this);
+    connect(m_router, &EventRouter::eventProcessed,
+            m_fsm, &PetStateMachine::onCanonicalEvent);
+    connect(m_fsm, &PetStateMachine::animationRequested,
+            this, [this](const QStringList &chain, int /*priority*/) {
+        if (!chain.isEmpty() && m_engine) {
+            m_engine->playAnimation(chain.first(), SpriteAnimationEngine::HighPriority);
+        }
+    });
 
     m_ipc = new IpcServer(this);
     connect(m_ipc, &IpcServer::eventReceived, m_router, &EventRouter::routeEvent);

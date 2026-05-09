@@ -14,6 +14,7 @@
 #include "EventRouter.h"
 #include "TipsCatalog.h"
 #include "FullscreenWatcher.h"
+#include "PetStateMachine.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -394,8 +395,10 @@ void MainWindow::leaveEvent(QEvent *event)
 #ifdef OAI_LIVE2D_SUPPORT
     if (m_live2dEngine) m_live2dEngine->setPointerTarget(0.0f, 0.0f);
 #endif
-    if (m_eventRouter && m_config && m_config->mouseTrackingEnabled()) {
-        m_eventRouter->triggerEvent(QStringLiteral("user.hoverLeave"));
+    if (m_config && m_config->mouseTrackingEnabled()) {
+        if (m_stateMachine) {
+            m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverLeave"));
+        }
     }
     QWidget::leaveEvent(event);
 }
@@ -411,8 +414,10 @@ void MainWindow::enterEvent(QEnterEvent *event)
             static_cast<float>(center.y()));
     }
 #endif
-    if (m_eventRouter && m_config && m_config->mouseTrackingEnabled()) {
-        m_eventRouter->triggerEvent(QStringLiteral("user.hoverEnter"));
+    if (m_config && m_config->mouseTrackingEnabled()) {
+        if (m_stateMachine) {
+            m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverEnter"));
+        }
     }
     QWidget::enterEvent(event);
 }
@@ -428,11 +433,10 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
             }
             emit positionChanged(pos());
         } else if (isInPetRect(event->pos())) {
-            // Route mouse-click through EventRouter so the manifest's
-            // eventMap declares the fallback chain — engine has no
-            // hardcoded knowledge of group names like "TouchBody"/"Tap".
-            if (m_eventRouter) {
-                m_eventRouter->triggerEvent(QStringLiteral("user.click"));
+            // Route mouse-click through FSM so the state machine handles
+            // user interaction and can trigger the appropriate animation chain.
+            if (m_stateMachine) {
+                m_stateMachine->onSyntheticEvent(QStringLiteral("user.click"));
                 showRandomGreeting();
                 QWidget::mouseReleaseEvent(event);
                 return;
@@ -450,8 +454,8 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && isInPetRect(event->pos())) {
-        if (m_eventRouter) {
-            m_eventRouter->triggerEvent(QStringLiteral("user.doubleclick"));
+        if (m_stateMachine) {
+            m_stateMachine->onSyntheticEvent(QStringLiteral("user.doubleclick"));
             showRandomGreeting();
             QWidget::mouseDoubleClickEvent(event);
             return;

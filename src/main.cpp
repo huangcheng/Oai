@@ -272,30 +272,11 @@ int main(int argc, char *argv[])
 
     // --- Event router --------------------------------------------------------
     EventRouter eventRouter;
-    eventRouter.setAnimationEngine(w.animationEngine());
-    eventRouter.setLottieEngine(w.lottieEngine());
-#ifdef OAI_LIVE2D_SUPPORT
-    eventRouter.setLive2dEngine(w.live2dEngine());
-#endif
     eventRouter.setTipBubble(w.tipBubbleWidget());
     eventRouter.setTipsEngine(&tipsEngine);
-    // MainWindow uses the router for mouse-driven local events (user.click /
-    // user.doubleclick) so the manifest's eventMap declares the chain
-    // instead of MainWindow + the engine guessing.
+    // MainWindow uses the FSM (via setStateMachine) for mouse-driven synthetic
+    // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);
-
-    // Load event mappings from active sprite pack
-    if (packManager.activePack()) {
-        eventRouter.loadFromCharacterPack(packManager.activePack());
-    }
-
-    // Refresh event mappings when the active pack changes or is reloaded,
-    // otherwise a previous pack's animation names (e.g. Clippy's PascalCase
-    // "Greet"/"Think") leak into the new pack's engine (e.g. Live2D Hiyori).
-    QObject::connect(&packManager, &CharacterPackManager::activePackChanged,
-                     &eventRouter, &EventRouter::loadFromCharacterPack);
-    QObject::connect(&packManager, &CharacterPackManager::packReloaded,
-                     &eventRouter, &EventRouter::loadFromCharacterPack);
 
     // --- IPC server ----------------------------------------------------------
     IpcServer ipcServer;
@@ -381,11 +362,14 @@ int main(int argc, char *argv[])
     // --- Pet state machine ----------------------------------------------------
     PetStateMachine stateMachine;
 
+    // Wire FSM into MainWindow so synthetic events (user.click etc.) reach it.
+    w.setStateMachine(&stateMachine);
+
     // Gateway events flow EventRouter → FSM. EventRouter still owns tip-text.
     QObject::connect(&eventRouter, &EventRouter::eventProcessed,
                      &stateMachine,
-                     [&stateMachine](const QString &name) {
-                         stateMachine.onCanonicalEvent(name);
+                     [&stateMachine](const QString &name, const QJsonObject &payload) {
+                         stateMachine.onCanonicalEvent(name, payload);
                      });
 
     // Window-position deltas drive the Walking overlay.
