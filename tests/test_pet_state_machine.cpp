@@ -28,6 +28,7 @@ private slots:
     void testGreetingOnlyFromIdle();
     void testCelebratingOnTodoUpdated();
     void testSessionErrorOneShotFromIdle();
+    void testIdleFallbackAppendedToEveryChain();
 
 private:
     PetStateMachine *m_fsm = nullptr;
@@ -172,6 +173,22 @@ void TestPetStateMachine::testSessionErrorOneShotFromIdle()
     m_fsm->onCanonicalEvent("session.error");
     QCOMPARE(m_fsm->activeState(), PetStateMachine::State::Failed);
     QCOMPARE(m_fsm->baseState(), PetStateMachine::State::Idle);
+}
+
+void TestPetStateMachine::testIdleFallbackAppendedToEveryChain()
+{
+    initFsm();
+    QSignalSpy chainSpy(m_fsm, &PetStateMachine::animationRequested);
+
+    m_fsm->onCanonicalEvent("tool.before");
+    m_fsm->onCanonicalEvent("session.error");
+
+    QVERIFY(chainSpy.count() >= 2);
+    for (const QList<QVariant> &emission : chainSpy) {
+        const QStringList chain = emission.at(0).toStringList();
+        QVERIFY2(chain.contains("idle"),
+                 qPrintable(QString("chain missing idle fallback: %1").arg(chain.join(','))));
+    }
 }
 
 QTEST_MAIN(TestPetStateMachine)
