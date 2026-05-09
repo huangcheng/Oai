@@ -205,6 +205,10 @@
         <source>Gaming Mode</source>
         <translation>游戏模式</translation>
     </message>
+    <message>
+        <source>Tip Bubbles</source>
+        <translation>气泡提示</translation>
+    </message>
 </context>
 <context>
     <name>SystemTray</name>

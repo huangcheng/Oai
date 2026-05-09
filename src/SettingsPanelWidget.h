@@ -60,6 +60,7 @@ private slots:
     void onShortcutChanged(const QKeySequence &sequence);
     void onMouseTrackingToggled(bool checked);
     void onGamingModeToggled(bool checked);
+    void onTipBubblesToggled(bool checked);
 
 private:
     void setupUi();
@@ -92,6 +93,8 @@ private:
     QCheckBox *m_mouseTrackingCheck = nullptr;
     QLabel *m_gamingModeLabel = nullptr;
     QCheckBox *m_gamingModeCheck = nullptr;
+    QLabel *m_tipBubblesLabel = nullptr;
+    QCheckBox *m_tipBubblesCheck = nullptr;
 
     // Layout container
     QWidget *m_contentWidget = nullptr;

@@ -124,6 +124,7 @@ void ConfigManager::load()
     m_globalShortcutEnabled = m_settings.value("globalShortcutEnabled", m_globalShortcutEnabled).toBool();
     m_mouseTrackingEnabled = m_settings.value("mouseTrackingEnabled", m_mouseTrackingEnabled).toBool();
     m_gamingModeEnabled = m_settings.value("gamingMode", false).toBool();
+    m_tipBubblesEnabled = m_settings.value("tipBubblesEnabled", m_tipBubblesEnabled).toBool();
 
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
@@ -145,6 +146,7 @@ void ConfigManager::save()
     m_settings.setValue("globalShortcutEnabled", m_globalShortcutEnabled);
     m_settings.setValue("mouseTrackingEnabled", m_mouseTrackingEnabled);
     m_settings.setValue("gamingMode", m_gamingModeEnabled);
+    m_settings.setValue("tipBubblesEnabled", m_tipBubblesEnabled);
     m_settings.sync();
 }
 
@@ -357,4 +359,12 @@ void ConfigManager::setGamingModeEnabled(bool enabled)
     m_gamingModeEnabled = enabled;
     save();
     emit gamingModeEnabledChanged(enabled);
+}
+
+void ConfigManager::setTipBubblesEnabled(bool enabled)
+{
+    if (m_tipBubblesEnabled == enabled) return;
+    m_tipBubblesEnabled = enabled;
+    save();
+    emit tipBubblesEnabledChanged(enabled);
 }

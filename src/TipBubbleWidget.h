@@ -29,9 +29,19 @@ public:
     // Hide with exit animation
     void hideBubble();
 
-    // Suppress mode: silently ignore showBubble() calls in ECG mode
-    void setSuppressed(bool s) { m_suppressed = s; if (s && isVisible()) hideBubble(); }
-    bool isSuppressed() const { return m_suppressed; }
+    // Suppression has two independent channels OR'd together: mode (ECG /
+    // gaming auto-hide) and user preference (settings toggle). Either one
+    // turning on hides the bubble; both must be off for it to show again.
+    void setSuppressed(bool s) { setSuppressedByMode(s); }
+    void setSuppressedByMode(bool s) {
+        m_suppressedByMode = s;
+        if (isSuppressed() && isVisible()) hideBubble();
+    }
+    void setSuppressedByUser(bool s) {
+        m_suppressedByUser = s;
+        if (isSuppressed() && isVisible()) hideBubble();
+    }
+    bool isSuppressed() const { return m_suppressedByMode || m_suppressedByUser; }
 
     // Re-apply DWM attributes (Windows). Called periodically by MainWindow
     // to combat DWM attribute loss after long-running sessions.
@@ -68,8 +78,10 @@ private:
     QString m_source;
     BubbleType m_type = TipBubble;
 
-    // Suppression flag — set in ECG mode so showBubble() is a silent no-op
-    bool m_suppressed = false;
+    // Suppression flags — either OR'd channel hides the bubble. mode is
+    // driven by ECG / gaming auto-hide; user is driven by the settings toggle.
+    bool m_suppressedByMode = false;
+    bool m_suppressedByUser = false;
 
     // Layout
     QRect m_bubbleRect;      // The rounded rectangle part (excludes tail)

@@ -556,6 +556,27 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_gamingModeLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_gamingModeCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
+    // Row 8: Tip Bubbles toggle
+    m_tipBubblesLabel = new QLabel(tr("Tip Bubbles"), m_contentWidget);
+    m_tipBubblesLabel->setFont(harmonyFont(10));
+    m_tipBubblesLabel->setStyleSheet("color: black; background: transparent;");
+    m_tipBubblesLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_tipBubblesCheck = new CheckMarkBox(m_contentWidget);
+    m_tipBubblesCheck->setFixedSize(16, 16);
+    m_tipBubblesCheck->setChecked(m_config->tipBubblesEnabled());
+    m_tipBubblesCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+    connect(m_tipBubblesCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onTipBubblesToggled);
+    connect(m_config, &ConfigManager::tipBubblesEnabledChanged,
+            this, [this](bool enabled) {
+        QSignalBlocker blocker(m_tipBubblesCheck);
+        m_tipBubblesCheck->setChecked(enabled);
+    });
+
+    formGrid->addWidget(m_tipBubblesLabel, 8, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_tipBubblesCheck, 8, 1, Qt::AlignLeft | Qt::AlignVCenter);
+
     // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
@@ -754,6 +775,11 @@ void SettingsPanelWidget::onGamingModeToggled(bool checked)
     m_config->setGamingModeEnabled(checked);
 }
 
+void SettingsPanelWidget::onTipBubblesToggled(bool checked)
+{
+    m_config->setTipBubblesEnabled(checked);
+}
+
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {
     m_packManager = manager;
@@ -892,6 +918,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_shortcutEdit) m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
     if (m_mouseTrackingLabel) m_mouseTrackingLabel->setText(tr("Mouse Tracking"));
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
+    if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Tip Bubbles"));
     m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {

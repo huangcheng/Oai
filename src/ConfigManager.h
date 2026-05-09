@@ -68,6 +68,10 @@ public:
     bool gamingModeEnabled() const { return m_gamingModeEnabled; }
     void setGamingModeEnabled(bool enabled);
 
+    /** Whether tip bubbles surface above the pet. Default true. */
+    bool tipBubblesEnabled() const { return m_tipBubblesEnabled; }
+    void setTipBubblesEnabled(bool enabled);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -93,6 +97,7 @@ signals:
     void globalShortcutChanged(const QString &shortcut);
     void mouseTrackingEnabledChanged(bool enabled);
     void gamingModeEnabledChanged(bool enabled);
+    void tipBubblesEnabledChanged(bool enabled);
 
 private:
     QSettings m_settings;
@@ -108,6 +113,7 @@ private:
     bool m_globalShortcutEnabled = true;
     bool m_mouseTrackingEnabled = false;
     bool m_gamingModeEnabled = false;
+    bool m_tipBubblesEnabled = true;
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:

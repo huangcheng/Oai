@@ -278,6 +278,14 @@ int main(int argc, char *argv[])
     // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);
 
+    // Tip-bubble user toggle: apply current value, then track changes live.
+    w.tipBubbleWidget()->setSuppressedByUser(!config.tipBubblesEnabled());
+    QObject::connect(&config, &ConfigManager::tipBubblesEnabledChanged,
+                     w.tipBubbleWidget(),
+                     [bubble = w.tipBubbleWidget()](bool enabled) {
+                         bubble->setSuppressedByUser(!enabled);
+                     });
+
     // --- IPC server ----------------------------------------------------------
     IpcServer ipcServer;
 
