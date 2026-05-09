@@ -192,7 +192,11 @@ bool CharacterPack::loadFromCodexPet(const QString &archivePath)
     m_characterConfig.spriteSheet = "spritesheet.webp";
     m_characterConfig.frameWidth = 192;
     m_characterConfig.frameHeight = 208;
-    m_characterConfig.displayScale = 1.0f;
+    // Render at 124px wide (matches the historical Clippy pet width) — the
+    // SKILL.md 192×208 cell size has no host-display guidance, and rendering
+    // at native resolution makes Codex pets visually dominate the desktop
+    // next to other packs. Source rect stays 192×208, no cell bleed.
+    m_characterConfig.displayScale = 124.0f / 192.0f;
 
     // --- Generate animation defs from the 8×9 atlas --------------------------
     // Codex pet format: fixed 8 columns × 9 rows, 192×208 cells
