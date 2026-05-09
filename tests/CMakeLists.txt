@@ -39,6 +39,7 @@ set(TEST_SOURCES
     test_ipc_animations.cpp
     test_ecg.cpp
     test_gaming_mode.cpp
+    test_pet_state_machine.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
