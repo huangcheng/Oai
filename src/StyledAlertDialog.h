@@ -33,6 +33,14 @@ public:
     void showAlert(const QString &title, const QString &body,
                    const QString &buttonText = QString());
 
+    /**
+     * @brief Show a confirmation dialog with Yes/No buttons and block until dismissed.
+     * @param title   Bold title text.
+     * @param body   Body text.
+     * @return true if user clicked Yes, false if No or closed.
+     */
+    bool execConfirm(const QString &title, const QString &body);
+
     void showAnimated();
 
     /** Animated hide (fade-out + scale-down). */
@@ -53,6 +61,7 @@ protected:
 
 private slots:
     void onOkClicked();
+    void onCancelClicked();
     void onCloseClicked();
 
 private:
@@ -64,12 +73,15 @@ private:
     QLabel *m_bodyLabel = nullptr;
     QPushButton *m_closeButton = nullptr;
     QPushButton *m_okButton = nullptr;
+    QPushButton *m_cancelButton = nullptr;
 
     qreal m_scale = 1.0;
     qreal m_panelOpacity = 1.0;
     QPropertyAnimation *m_scaleAnim = nullptr;
     QPropertyAnimation *m_opacityAnim = nullptr;
 
+    bool m_confirmResult = false;
+    bool m_inConfirmMode = false;
 
     static constexpr int PADDING = 14;
     static constexpr int VERTICAL_SPACING = 12;

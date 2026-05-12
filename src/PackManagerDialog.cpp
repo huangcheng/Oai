@@ -10,7 +10,6 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QFileDialog>
-#include <QMessageBox>
 #include <QPropertyAnimation>
 #include <QGuiApplication>
 #include <QScreen>
@@ -417,9 +416,15 @@ void PackManagerDialog::onAddClicked()
             msg += QLatin1Char('\n') + tr("Failed to install %1 file(s): %2")
                      .arg(failCount).arg(failedFiles.join(", "));
         }
-        QMessageBox::information(this, tr("Installation Complete"), msg);
+        if (!m_alertDialog) {
+            m_alertDialog = new StyledAlertDialog(nullptr);
+        }
+        m_alertDialog->showAlert(tr("Installation Complete"), msg);
     } else if (failCount > 0) {
-        QMessageBox::warning(this, tr("Installation Failed"),
+        if (!m_alertDialog) {
+            m_alertDialog = new StyledAlertDialog(nullptr);
+        }
+        m_alertDialog->showAlert(tr("Installation Failed"),
             tr("Failed to install all selected files: %1")
                 .arg(failedFiles.join(", ")));
     }
@@ -431,7 +436,10 @@ void PackManagerDialog::onDeleteClicked()
 
     QList<QListWidgetItem *> selected = m_listWidget->selectedItems();
     if (selected.isEmpty()) {
-        QMessageBox::information(this, tr("No Selection"),
+        if (!m_alertDialog) {
+            m_alertDialog = new StyledAlertDialog(nullptr);
+        }
+        m_alertDialog->showAlert(tr("No Selection"),
             tr("Please select one or more packs to delete."));
         return;
     }
@@ -460,17 +468,15 @@ void PackManagerDialog::onDeleteClicked()
         return;
     }
 
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
+    StyledAlertDialog confirmDialog(nullptr);
+    bool confirmed = confirmDialog.execConfirm(
         tr("Delete Packs"),
         tr("Are you sure you want to delete the following %1 pack(s)?\n\n%2\n\nThis action cannot be undone.")
             .arg(packIds.size())
-            .arg(packNames.join("\n")),
-        QMessageBox::Yes | QMessageBox::No,
-        QMessageBox::No
+            .arg(packNames.join("\n"))
     );
 
-    if (reply != QMessageBox::Yes) return;
+    if (!confirmed) return;
 
     int successCount = 0;
     int failCount = 0;
@@ -487,12 +493,18 @@ void PackManagerDialog::onDeleteClicked()
     }
 
     if (successCount > 0 && failCount == 0) {
-        QMessageBox::information(this, tr("Delete Complete"),
+        if (!m_alertDialog) {
+            m_alertDialog = new StyledAlertDialog(nullptr);
+        }
+        m_alertDialog->showAlert(tr("Delete Complete"),
             tr("Successfully deleted %1 pack(s).").arg(successCount));
     } else if (failCount > 0) {
         QString msg = tr("Successfully deleted %1 pack(s).").arg(successCount);
         msg += QLatin1Char('\n') + tr("Failed to delete: %1").arg(failedNames.join(", "));
-        QMessageBox::warning(this, tr("Delete Partial"), msg);
+        if (!m_alertDialog) {
+            m_alertDialog = new StyledAlertDialog(nullptr);
+        }
+        m_alertDialog->showAlert(tr("Delete Partial"), msg);
     }
 }
 

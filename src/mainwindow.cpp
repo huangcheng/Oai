@@ -20,7 +20,7 @@
 #include <QMouseEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
-#include <QMessageBox>
+#include "StyledAlertDialog.h"
 #include <QAction>
 #include <QApplication>
 #include <QRandomGenerator>
@@ -501,14 +501,9 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
         if (m_tipBubble && !m_tipBubble->isSuppressed()) {
             m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
         } else {
-            QMessageBox box(this);
-            box.setWindowTitle(t.title);
-            box.setText(t.title);
-            box.setInformativeText(t.body);
-            box.setIconPixmap(QIcon(QStringLiteral(":/icons/oai.png"))
-                                  .pixmap(64, 64));
-            box.setStandardButtons(QMessageBox::Ok);
-            box.exec();
+            StyledAlertDialog *dialog = new StyledAlertDialog(nullptr);
+            connect(dialog, &StyledAlertDialog::dismissed, dialog, &QObject::deleteLater);
+            dialog->showAlert(t.title, t.body);
         }
     });
 

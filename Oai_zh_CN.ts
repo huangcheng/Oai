@@ -431,6 +431,16 @@ Path: %2</source>
         <source>OK</source>
         <translation>确定</translation>
     </message>
+    <message>
+        <location filename="src/StyledAlertDialog.cpp" line="150"/>
+        <source>Yes</source>
+        <translation>是</translation>
+    </message>
+    <message>
+        <location filename="src/StyledAlertDialog.cpp" line="151"/>
+        <source>No</source>
+        <translation>否</translation>
+    </message>
 </context>
 <context>
     <name>TipsEngine</name>

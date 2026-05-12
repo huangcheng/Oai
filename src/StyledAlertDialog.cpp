@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QShowEvent>
+#include <QEventLoop>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -125,7 +126,35 @@ void StyledAlertDialog::setupUi()
     )");
     connect(m_okButton, &QPushButton::clicked, this, &StyledAlertDialog::onOkClicked);
 
+    m_cancelButton = new QPushButton(tr("Cancel"), m_contentWidget);
+    m_cancelButton->setFont(harmonyFont(10));
+    m_cancelButton->setFixedHeight(28);
+    m_cancelButton->setCursor(Qt::PointingHandCursor);
+    m_cancelButton->setStyleSheet(R"(
+        QPushButton {
+            background: white;
+            border: 2px solid #888;
+            border-radius: 3px;
+            padding: 2px 16px;
+            color: #666;
+            min-width: 60px;
+            outline: none;
+        }
+        QPushButton:hover {
+            background: #F36F1A;
+            color: white;
+            border-color: #F36F1A;
+        }
+        QPushButton:pressed {
+            background: #E06516;
+            border-color: #E06516;
+        }
+    )");
+    connect(m_cancelButton, &QPushButton::clicked, this, &StyledAlertDialog::onCancelClicked);
+    m_cancelButton->hide();
+
     buttonRow->addStretch(1);
+    buttonRow->addWidget(m_cancelButton);
     buttonRow->addWidget(m_okButton);
 
     mainLayout->addLayout(titleRow);
@@ -143,8 +172,33 @@ void StyledAlertDialog::showAlert(const QString &title, const QString &body,
     } else {
         m_okButton->setText(tr("OK"));
     }
+    m_cancelButton->hide();
+    m_inConfirmMode = false;
 
     showAnimated();
+}
+
+bool StyledAlertDialog::execConfirm(const QString &title, const QString &body)
+{
+    m_titleLabel->setText(title);
+    m_bodyLabel->setText(body);
+    m_okButton->setText(tr("Yes"));
+    m_cancelButton->setText(tr("No"));
+    m_cancelButton->show();
+    m_inConfirmMode = true;
+    m_confirmResult = false;
+
+    showAnimated();
+
+    QEventLoop loop;
+    connect(this, &StyledAlertDialog::dismissed, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    m_cancelButton->hide();
+    m_okButton->setText(tr("OK"));
+    m_inConfirmMode = false;
+
+    return m_confirmResult;
 }
 
 void StyledAlertDialog::showAnimated()
@@ -295,10 +349,22 @@ void StyledAlertDialog::positionCentered()
 
 void StyledAlertDialog::onOkClicked()
 {
+    if (m_inConfirmMode) {
+        m_confirmResult = true;
+    }
+    hideAnimated();
+}
+
+void StyledAlertDialog::onCancelClicked()
+{
+    m_confirmResult = false;
     hideAnimated();
 }
 
 void StyledAlertDialog::onCloseClicked()
 {
+    if (m_inConfirmMode) {
+        m_confirmResult = false;
+    }
     hideAnimated();
 }
