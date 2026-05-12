@@ -556,8 +556,8 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_gamingModeLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_gamingModeCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
-    // Row 8: Tip Bubbles toggle
-    m_tipBubblesLabel = new QLabel(tr("Tip Bubbles"), m_contentWidget);
+    // Row 8: Event Tips toggle (controls gateway-event-driven tips; system tips always show)
+    m_tipBubblesLabel = new QLabel(tr("Event Tips"), m_contentWidget);
     m_tipBubblesLabel->setFont(harmonyFont(10));
     m_tipBubblesLabel->setStyleSheet("color: black; background: transparent;");
     m_tipBubblesLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -918,7 +918,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_shortcutEdit) m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
     if (m_mouseTrackingLabel) m_mouseTrackingLabel->setText(tr("Mouse Tracking"));
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
-    if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Tip Bubbles"));
+    if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     m_packLabel->setText(tr("Model"));
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {

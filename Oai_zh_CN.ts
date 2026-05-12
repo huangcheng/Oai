@@ -206,8 +206,8 @@
         <translation>游戏模式</translation>
     </message>
     <message>
-        <source>Tip Bubbles</source>
-        <translation>气泡提示</translation>
+        <source>Event Tips</source>
+        <translation>事件提示</translation>
     </message>
 </context>
 <context>

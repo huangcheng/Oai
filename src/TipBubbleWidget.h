@@ -24,7 +24,8 @@ public:
     void setAnchorRect(const QRect &rect) { m_anchorRect = rect; }
 
     // Show bubble with title + message, optionally showing source label
-    void showBubble(const QString &title, const QString &message, BubbleType type = TipBubble, const QString &source = "");
+    // bypassUserSuppression: if true, ignores m_suppressedByUser (for system notifications like pack installation)
+    void showBubble(const QString &title, const QString &message, BubbleType type = TipBubble, const QString &source = "", bool bypassUserSuppression = false);
 
     // Hide with exit animation
     void hideBubble();

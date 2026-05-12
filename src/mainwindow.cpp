@@ -608,7 +608,7 @@ void MainWindow::dropEvent(QDropEvent *event)
                                       ? QStringLiteral("pack.installed")
                                       : QStringLiteral("pack.install_failed");
             const auto t = TipsCatalog::instance().message(msgId);
-            m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+            m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble, "", true);
             qDebug() << "MainWindow: .opk install" << (installed ? "succeeded" : "failed");
         } else if ((filePath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
                     filePath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) &&
@@ -634,10 +634,10 @@ void MainWindow::dropEvent(QDropEvent *event)
                 QString currentPackId = m_packManager->activePackId();
                 m_packManager->initialize(builtInDir, userPacksDir, currentPackId);
                 const auto t = TipsCatalog::instance().message(QStringLiteral("pack.installed"));
-                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble, "", true);
             } else {
                 const auto t = TipsCatalog::instance().message(QStringLiteral("pack.install_failed"));
-                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble, "", true);
             }
         } else {
             qDebug() << "MainWindow: dropped file ignored (not .opk or valid .codex-pet):" << filePath;

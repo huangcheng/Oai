@@ -101,9 +101,10 @@ void TipBubbleWidget::anchorTo(const QWidget *petWidget)
     }
 }
 
-void TipBubbleWidget::showBubble(const QString &title, const QString &message, BubbleType type, const QString &source)
+void TipBubbleWidget::showBubble(const QString &title, const QString &message, BubbleType type, const QString &source, bool bypassUserSuppression)
 {
-    if (isSuppressed()) return;
+    // Check suppression: mode suppression always blocks, but user suppression can be bypassed
+    if (m_suppressedByMode || (m_suppressedByUser && !bypassUserSuppression)) return;
 
     bool alreadyVisible = isVisible() && m_opacity > 0.5;
     bool sameContent = (m_title == title && m_message == message && m_source == source);
