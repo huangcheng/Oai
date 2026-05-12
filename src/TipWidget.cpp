@@ -1,4 +1,4 @@
-#include "TipBubbleWidget.h"
+#include "TipWidget.h"
 #include "MacFocusFix.h"
 
 #include <QPainter>
@@ -25,7 +25,7 @@
 #endif
 #endif
 
-TipBubbleWidget::TipBubbleWidget(QWidget *parent)
+TipWidget::TipWidget(QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(
@@ -47,16 +47,16 @@ TipBubbleWidget::TipBubbleWidget(QWidget *parent)
     m_opacity = 1.0;
 
     // Connect dismiss timer
-    connect(&m_dismissTimer, &QTimer::timeout, this, &TipBubbleWidget::hideBubble);
+    connect(&m_dismissTimer, &QTimer::timeout, this, &TipWidget::hideBubble);
 }
 
-TipBubbleWidget::~TipBubbleWidget()
+TipWidget::~TipWidget()
 {
     delete m_opacityAnim;
     delete m_slideAnim;
 }
 
-void TipBubbleWidget::showEvent(QShowEvent *event)
+void TipWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     // Promote the underlying NSWindow to a non-activating panel so showing
@@ -65,7 +65,7 @@ void TipBubbleWidget::showEvent(QShowEvent *event)
     refreshDwmAttributes();
 }
 
-void TipBubbleWidget::refreshDwmAttributes()
+void TipWidget::refreshDwmAttributes()
 {
 #ifdef Q_OS_WIN
     HWND hwnd = reinterpret_cast<HWND>(winId());
@@ -93,7 +93,7 @@ void TipBubbleWidget::refreshDwmAttributes()
 #endif
 }
 
-void TipBubbleWidget::anchorTo(const QWidget *petWidget)
+void TipWidget::anchorTo(const QWidget *petWidget)
 {
     m_anchoredPet = petWidget;
     if (petWidget && isVisible()) {
@@ -101,7 +101,7 @@ void TipBubbleWidget::anchorTo(const QWidget *petWidget)
     }
 }
 
-void TipBubbleWidget::showBubble(const QString &title, const QString &message, BubbleType type, const QString &source, bool bypassUserSuppression)
+void TipWidget::showBubble(const QString &title, const QString &message, BubbleType type, const QString &source, bool bypassUserSuppression)
 {
     // Check suppression: mode suppression always blocks, but user suppression can be bypassed
     if (m_suppressedByMode || (m_suppressedByUser && !bypassUserSuppression)) return;
@@ -162,25 +162,25 @@ void TipBubbleWidget::showBubble(const QString &title, const QString &message, B
     m_dismissTimer.start(dismissMs);
 }
 
-void TipBubbleWidget::hideBubble()
+void TipWidget::hideBubble()
 {
     m_dismissTimer.stop();
     startExitAnimation();
 }
 
-void TipBubbleWidget::setOpacity(qreal o)
+void TipWidget::setOpacity(qreal o)
 {
     m_opacity = o;
     update();
 }
 
-void TipBubbleWidget::setSlideOffset(qreal o)
+void TipWidget::setSlideOffset(qreal o)
 {
     m_slideOffset = o;
     move(m_targetPos.x(), m_targetPos.y() + static_cast<int>(o));
 }
 
-void TipBubbleWidget::paintEvent(QPaintEvent *event)
+void TipWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
@@ -292,7 +292,7 @@ void TipBubbleWidget::paintEvent(QPaintEvent *event)
     }
 }
 
-void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
+void TipWidget::positionRelativeTo(const QWidget *pet)
 {
     if (!pet)
         return;
@@ -347,7 +347,7 @@ void TipBubbleWidget::positionRelativeTo(const QWidget *pet)
     move(m_targetPos);
 }
 
-void TipBubbleWidget::startEnterAnimation()
+void TipWidget::startEnterAnimation()
 {
     delete m_opacityAnim;
     delete m_slideAnim;
@@ -372,7 +372,7 @@ void TipBubbleWidget::startEnterAnimation()
     m_slideAnim->start();
 }
 
-void TipBubbleWidget::startExitAnimation()
+void TipWidget::startExitAnimation()
 {
     delete m_opacityAnim;
     delete m_slideAnim;
@@ -397,7 +397,7 @@ void TipBubbleWidget::startExitAnimation()
     m_slideAnim->start();
 }
 
-void TipBubbleWidget::calculateTextLayout()
+void TipWidget::calculateTextLayout()
 {
     const QFont titleFont   = makeTitleFont();
     const QFont msgFont     = makeMessageFont();
@@ -476,7 +476,7 @@ void TipBubbleWidget::calculateTextLayout()
 // strategy + no hinting (avoids stroke-snapping that mangles CJK glyphs)
 // + a real Bold weight (Black is synthesized for HarmonyOS Sans SC and
 // looks grainy at 12pt).
-QFont TipBubbleWidget::makeTitleFont()
+QFont TipWidget::makeTitleFont()
 {
     QFont f(QStringLiteral("HarmonyOS Sans SC"), 12, QFont::Bold);
     f.setStyleStrategy(QFont::PreferAntialias);
@@ -484,7 +484,7 @@ QFont TipBubbleWidget::makeTitleFont()
     return f;
 }
 
-QFont TipBubbleWidget::makeMessageFont()
+QFont TipWidget::makeMessageFont()
 {
     QFont f(QStringLiteral("HarmonyOS Sans SC"), 12);
     f.setStyleStrategy(QFont::PreferAntialias);
@@ -492,7 +492,7 @@ QFont TipBubbleWidget::makeMessageFont()
     return f;
 }
 
-QFont TipBubbleWidget::makeSourceFont()
+QFont TipWidget::makeSourceFont()
 {
     QFont f(QStringLiteral("HarmonyOS Sans SC"), 10);
     f.setStyleStrategy(QFont::PreferAntialias);

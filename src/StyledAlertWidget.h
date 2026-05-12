@@ -1,5 +1,5 @@
-#ifndef STYLEDALERTDIALOG_H
-#define STYLEDALERTDIALOG_H
+#ifndef STYLEDALERTWIDGET_H
+#define STYLEDALERTWIDGET_H
 
 #include <QWidget>
 #include <QString>
@@ -13,16 +13,16 @@ class QPushButton;
  *
  * Displays a title, body text, and a single OK button inside a frameless,
  * translucent, skewed-parallelogram-bordered panel — identical to
- * SettingsPanelWidget and PackManagerDialog.
+ * SettingsPanelWidget and PackManagerWidget.
  */
-class StyledAlertDialog : public QWidget
+class StyledAlertWidget : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(qreal panelScale READ panelScale WRITE setPanelScale)
     Q_PROPERTY(qreal panelOpacity READ panelOpacity WRITE setPanelOpacity)
 
 public:
-    explicit StyledAlertDialog(QWidget *parent = nullptr);
+    explicit StyledAlertWidget(QWidget *parent = nullptr);
 
     /**
      * @brief Show the alert dialog with the given title and body text.
@@ -101,4 +101,4 @@ private:
     static constexpr int PANEL_HEIGHT = 180;
 };
 
-#endif // STYLEDALERTDIALOG_H
+#endif // STYLEDALERTWIDGET_H

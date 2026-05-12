@@ -13,7 +13,7 @@ class LottieAnimationEngine;
 #ifdef OAI_LIVE2D_SUPPORT
 class Live2DAnimationEngine;
 #endif
-class TipBubbleWidget;
+class TipWidget;
 class SettingsPanelWidget;
 class EcgWidget;
 class CharacterPackManager;
@@ -37,7 +37,7 @@ public:
 #ifdef OAI_LIVE2D_SUPPORT
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
 #endif
-    TipBubbleWidget *tipBubbleWidget() const { return m_tipBubble; }
+    TipWidget *tipWidget() const { return m_tipWidget; }
     EcgWidget *ecgWidget() const { return m_ecgWidget; }
 
     void setSystemTray(SystemTray *tray);
@@ -92,7 +92,7 @@ private:
     Live2DAnimationEngine *m_live2dEngine = nullptr;
 #endif
     ConfigManager *m_config;
-    TipBubbleWidget *m_tipBubble;
+    TipWidget *m_tipWidget;
     SettingsPanelWidget *m_settingsPanel;
     EcgWidget *m_ecgWidget = nullptr;
     QTranslator *m_translator;

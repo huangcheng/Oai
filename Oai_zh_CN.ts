@@ -287,89 +287,89 @@
     </message>
 </context>
 <context>
-    <name>PackManagerDialog</name>
+    <name>PackManagerWidget</name>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="80"/>
+        <location filename="src/PackManagerWidget.cpp" line="80"/>
         <source>Models Management</source>
         <translation>模型管理</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="162"/>
+        <location filename="src/PackManagerWidget.cpp" line="162"/>
         <source>Add</source>
         <translation>添加</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="188"/>
+        <location filename="src/PackManagerWidget.cpp" line="188"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="387"/>
+        <location filename="src/PackManagerWidget.cpp" line="387"/>
         <source>Pack files (*.opk *.codex-pet)</source>
         <translation>模型文件 (*.opk *.codex-pet)</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="388"/>
+        <location filename="src/PackManagerWidget.cpp" line="388"/>
         <source>OPK files (*.opk)</source>
         <translation>OPK 文件 (*.opk)</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="389"/>
+        <location filename="src/PackManagerWidget.cpp" line="389"/>
         <source>Codex Pet files (*.codex-pet)</source>
         <translation>Codex 宠物文件 (*.codex-pet)</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="390"/>
+        <location filename="src/PackManagerWidget.cpp" line="390"/>
         <source>All files (*)</source>
         <translation>所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="394"/>
+        <location filename="src/PackManagerWidget.cpp" line="394"/>
         <source>Select Pack Files to Install</source>
         <translation>选择要安装的模型文件</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="415"/>
+        <location filename="src/PackManagerWidget.cpp" line="415"/>
         <source>Successfully installed %1 pack(s).</source>
         <translation>成功安装 %1 个模型。</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="417"/>
+        <location filename="src/PackManagerWidget.cpp" line="417"/>
         <source>Failed to install %1 file(s): %2</source>
         <translation>安装失败 %1 个文件：%2</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="420"/>
+        <location filename="src/PackManagerWidget.cpp" line="420"/>
         <source>Installation Complete</source>
         <translation>安装完成</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="422"/>
+        <location filename="src/PackManagerWidget.cpp" line="422"/>
         <source>Installation Failed</source>
         <translation>安装失败</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="423"/>
+        <location filename="src/PackManagerWidget.cpp" line="423"/>
         <source>Failed to install all selected files: %1</source>
         <translation>所有选定文件安装失败：%1</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="434"/>
+        <location filename="src/PackManagerWidget.cpp" line="434"/>
         <source>No Selection</source>
         <translation>未选择</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="435"/>
+        <location filename="src/PackManagerWidget.cpp" line="435"/>
         <source>Please select one or more packs to delete.</source>
         <translation>请选择一个或多个模型进行删除。</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="456"/>
+        <location filename="src/PackManagerWidget.cpp" line="456"/>
         <source>Cannot Delete Active Pet</source>
         <translation>无法删除当前宠物</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="457"/>
+        <location filename="src/PackManagerWidget.cpp" line="457"/>
         <source>"%1" is currently in use and cannot be deleted.
 
 Please switch to another pet first.</source>
@@ -378,12 +378,12 @@ Please switch to another pet first.</source>
 请先切换到其他宠物。</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="465"/>
+        <location filename="src/PackManagerWidget.cpp" line="465"/>
         <source>Delete Packs</source>
         <translation>删除模型</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="466"/>
+        <location filename="src/PackManagerWidget.cpp" line="466"/>
         <source>Are you sure you want to delete the following %1 pack(s)?
 
 %2
@@ -396,27 +396,27 @@ This action cannot be undone.</source>
 此操作不可撤销。</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="490"/>
+        <location filename="src/PackManagerWidget.cpp" line="490"/>
         <source>Delete Complete</source>
         <translation>删除完成</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="491"/>
+        <location filename="src/PackManagerWidget.cpp" line="491"/>
         <source>Successfully deleted %1 pack(s).</source>
         <translation>成功删除 %1 个模型。</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="494"/>
+        <location filename="src/PackManagerWidget.cpp" line="494"/>
         <source>Failed to delete: %1</source>
         <translation>删除失败：%1</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="495"/>
+        <location filename="src/PackManagerWidget.cpp" line="495"/>
         <source>Delete Partial</source>
         <translation>部分删除</translation>
     </message>
     <message>
-        <location filename="src/PackManagerDialog.cpp" line="516"/>
+        <location filename="src/PackManagerWidget.cpp" line="516"/>
         <source>ID: %1
 Path: %2</source>
         <translation>ID: %1
@@ -424,20 +424,20 @@ Path: %2</source>
     </message>
 </context>
 <context>
-    <name>StyledAlertDialog</name>
+    <name>StyledAlertWidget</name>
     <message>
-        <location filename="src/StyledAlertDialog.cpp" line="102"/>
-        <location filename="src/StyledAlertDialog.cpp" line="144"/>
+        <location filename="src/StyledAlertWidget.cpp" line="102"/>
+        <location filename="src/StyledAlertWidget.cpp" line="144"/>
         <source>OK</source>
         <translation>确定</translation>
     </message>
     <message>
-        <location filename="src/StyledAlertDialog.cpp" line="150"/>
+        <location filename="src/StyledAlertWidget.cpp" line="150"/>
         <source>Yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="src/StyledAlertDialog.cpp" line="151"/>
+        <location filename="src/StyledAlertWidget.cpp" line="151"/>
         <source>No</source>
         <translation>否</translation>
     </message>

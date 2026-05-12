@@ -1,11 +1,11 @@
-#ifndef PACKMANAGERDIALOG_H
-#define PACKMANAGERDIALOG_H
+#ifndef PACKMANAGERWIDGET_H
+#define PACKMANAGERWIDGET_H
 
 #include <QWidget>
 #include <QString>
 
 class CharacterPackManager;
-class StyledAlertDialog;
+class StyledAlertWidget;
 class QListWidget;
 class QPushButton;
 class QLabel;
@@ -18,14 +18,14 @@ class QPropertyAnimation;
  * plus Add and Delete buttons for installing/removing packs in batch.
  * Styled to match SettingsPanelWidget (frameless, translucent, skewed border).
  */
-class PackManagerDialog : public QWidget
+class PackManagerWidget : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(qreal panelScale READ panelScale WRITE setPanelScale)
     Q_PROPERTY(qreal panelOpacity READ panelOpacity WRITE setPanelOpacity)
 
 public:
-    explicit PackManagerDialog(CharacterPackManager *manager, QWidget *parent = nullptr);
+    explicit PackManagerWidget(CharacterPackManager *manager, QWidget *parent = nullptr);
 
     void showAnimated();
     void hideAnimated();
@@ -64,7 +64,7 @@ private:
     QListWidget *m_listWidget = nullptr;
     QPushButton *m_addButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
-    StyledAlertDialog *m_alertDialog = nullptr;
+    StyledAlertWidget *m_alertDialog = nullptr;
 
     qreal m_scale = 1.0;
     qreal m_panelOpacity = 1.0;
@@ -82,4 +82,4 @@ private:
     static constexpr int PANEL_HEIGHT = 400;
 };
 
-#endif // PACKMANAGERDIALOG_H
+#endif // PACKMANAGERWIDGET_H

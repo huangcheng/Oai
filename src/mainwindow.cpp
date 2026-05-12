@@ -7,7 +7,7 @@
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
 #include "ConfigManager.h"
-#include "TipBubbleWidget.h"
+#include "TipWidget.h"
 #include "SettingsPanelWidget.h"
 #include "EcgWidget.h"
 #include "SystemTray.h"
@@ -20,7 +20,7 @@
 #include <QMouseEvent>
 #include <QContextMenuEvent>
 #include <QMenu>
-#include "StyledAlertDialog.h"
+#include "StyledAlertWidget.h"
 #include <QAction>
 #include <QApplication>
 #include <QRandomGenerator>
@@ -76,9 +76,9 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 #endif
 
     // Create floating widgets
-    m_tipBubble = new TipBubbleWidget(nullptr); // no parent — separate top-level widget
-    m_tipBubble->setAnchorRect(petRect());
-    m_tipBubble->anchorTo(this);
+    m_tipWidget = new TipWidget(nullptr); // no parent — separate top-level widget
+    m_tipWidget->setAnchorRect(petRect());
+    m_tipWidget->anchorTo(this);
 
     m_settingsPanel = new SettingsPanelWidget(m_config, nullptr);
     m_settingsPanel->setAnchorRect(petRect());
@@ -108,8 +108,8 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 
     // Reposition floating widgets when pet moves
     connect(this, &MainWindow::positionChanged, this, [this](const QPoint &) {
-        m_tipBubble->setAnchorRect(petRect());
-        m_tipBubble->anchorTo(this);
+        m_tipWidget->setAnchorRect(petRect());
+        m_tipWidget->anchorTo(this);
         if (m_settingsPanel->isVisible()) {
             m_settingsPanel->setAnchorRect(petRect());
             m_settingsPanel->anchorTo(this);
@@ -171,7 +171,7 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 
         // Keep the floating widgets in sync — they have their own native
         // windows and their DWM attributes can degrade independently.
-        if (m_tipBubble) m_tipBubble->refreshDwmAttributes();
+        if (m_tipWidget) m_tipWidget->refreshDwmAttributes();
     });
     m_dwmRefreshTimer->start();
 #endif
@@ -216,9 +216,9 @@ MainWindow::~MainWindow()
         delete m_settingsPanel;
         m_settingsPanel = nullptr;
     }
-    if (m_tipBubble) {
-        delete m_tipBubble;
-        m_tipBubble = nullptr;
+    if (m_tipWidget) {
+        delete m_tipWidget;
+        m_tipWidget = nullptr;
     }
 }
 
@@ -297,7 +297,7 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr
                              SWP_FRAMECHANGED | SWP_NOACTIVATE);
                 update();
             }
-            if (m_tipBubble) m_tipBubble->refreshDwmAttributes();
+            if (m_tipWidget) m_tipWidget->refreshDwmAttributes();
         }
     }
     return QWidget::nativeEvent(eventType, message, result);
@@ -332,7 +332,7 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
         m_engine->paint(&painter, pet);
     }
 
-    // (Speech bubbles are now shown via TipBubbleWidget)
+    // (Speech bubbles are now shown via TipWidget)
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
@@ -498,12 +498,12 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
         // In Character mode the tip bubble is the natural surface; in ECG
         // mode it's suppressed, so showBubble() would silently no-op. Fall
         // back to a modal dialog there so the About action works in both.
-        if (m_tipBubble && !m_tipBubble->isSuppressed()) {
-            m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
+        if (m_tipWidget && !m_tipWidget->isSuppressed()) {
+            m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble);
         } else {
-            StyledAlertDialog *dialog = new StyledAlertDialog(nullptr);
+            StyledAlertWidget *dialog = new StyledAlertWidget(nullptr);
             dialog->setPetWindow(this);
-            connect(dialog, &StyledAlertDialog::dismissed, dialog, &QObject::deleteLater);
+            connect(dialog, &StyledAlertWidget::dismissed, dialog, &QObject::deleteLater);
             dialog->showAlert(t.title, t.body);
         }
     });
@@ -608,7 +608,7 @@ void MainWindow::dropEvent(QDropEvent *event)
                                       ? QStringLiteral("pack.installed")
                                       : QStringLiteral("pack.install_failed");
             const auto t = TipsCatalog::instance().message(msgId);
-            m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble, "", true);
+            m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
             qDebug() << "MainWindow: .opk install" << (installed ? "succeeded" : "failed");
         } else if ((filePath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
                     filePath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) &&
@@ -634,10 +634,10 @@ void MainWindow::dropEvent(QDropEvent *event)
                 QString currentPackId = m_packManager->activePackId();
                 m_packManager->initialize(builtInDir, userPacksDir, currentPackId);
                 const auto t = TipsCatalog::instance().message(QStringLiteral("pack.installed"));
-                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble, "", true);
+                m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
             } else {
                 const auto t = TipsCatalog::instance().message(QStringLiteral("pack.install_failed"));
-                m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble, "", true);
+                m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
             }
         } else {
             qDebug() << "MainWindow: dropped file ignored (not .opk or valid .codex-pet):" << filePath;
@@ -650,8 +650,8 @@ void MainWindow::dropEvent(QDropEvent *event)
 void MainWindow::onDisplayModeChanged(ConfigManager::DisplayMode mode)
 {
     if (mode == ConfigManager::DisplayMode::Ecg) {
-        m_tipBubble->hideBubble();
-        m_tipBubble->setSuppressed(true);
+        m_tipWidget->hideBubble();
+        m_tipWidget->setSuppressed(true);
         hide();
         if (m_ecgWidget) {
             m_ecgWidget->setAnchorRect(petRect());
@@ -660,7 +660,7 @@ void MainWindow::onDisplayModeChanged(ConfigManager::DisplayMode mode)
         }
     } else {
         if (m_ecgWidget) m_ecgWidget->stop();
-        m_tipBubble->setSuppressed(false);
+        m_tipWidget->setSuppressed(false);
         show();
     }
 }
@@ -671,9 +671,9 @@ void MainWindow::onFullscreenStarted()
     if (!m_hiddenByGamingMode && m_visible) {
         m_hiddenByGamingMode = true;
         hide();
-        if (m_tipBubble) {
-            m_tipBubble->hideBubble();
-            m_tipBubble->setSuppressed(true);
+        if (m_tipWidget) {
+            m_tipWidget->hideBubble();
+            m_tipWidget->setSuppressed(true);
         }
         if (m_ecgWidget && m_ecgWidget->isVisible())
             m_ecgWidget->hide();
@@ -706,8 +706,8 @@ void MainWindow::toggleVisibility()
         }
     } else {
         hide();
-        m_tipBubble->hideBubble();
-        m_tipBubble->setSuppressed(true);
+        m_tipWidget->hideBubble();
+        m_tipWidget->setSuppressed(true);
         m_settingsPanel->hideAnimated();
         if (m_ecgWidget) m_ecgWidget->stop();
     }
@@ -882,8 +882,8 @@ void MainWindow::onActivePackChanged()
             setFixedSize(displayW, displayH + tipSpace);
             m_petSize = QSize(displayW, displayH);
             // Re-anchor floating widgets to the newly sized pet rect.
-            m_tipBubble->setAnchorRect(petRect());
-            m_tipBubble->anchorTo(this);
+            m_tipWidget->setAnchorRect(petRect());
+            m_tipWidget->anchorTo(this);
             if (m_ecgWidget && m_ecgWidget->isVisible()) {
                 m_ecgWidget->setAnchorRect(petRect());
                 m_ecgWidget->anchorTo(this);
@@ -929,9 +929,9 @@ void MainWindow::onLanguageChanged(const QString &lang)
 
 void MainWindow::showRandomGreeting()
 {
-    if (!m_tipBubble) return;
+    if (!m_tipWidget) return;
     const auto g = TipsCatalog::instance().randomGreeting();
     if (!g.title.isEmpty()) {
-        m_tipBubble->showBubble(g.title, g.body, TipBubbleWidget::TipBubble);
+        m_tipWidget->showBubble(g.title, g.body, TipWidget::TipBubble);
     }
 }

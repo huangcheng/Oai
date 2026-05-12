@@ -1,4 +1,4 @@
-#include "StyledAlertDialog.h"
+#include "StyledAlertWidget.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -32,7 +32,7 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
     return f;
 }
 
-StyledAlertDialog::StyledAlertDialog(QWidget *parent)
+StyledAlertWidget::StyledAlertWidget(QWidget *parent)
     : QWidget(parent, Qt::Window)
 {
     setWindowFlags(
@@ -51,7 +51,7 @@ StyledAlertDialog::StyledAlertDialog(QWidget *parent)
     setupUi();
 }
 
-void StyledAlertDialog::setupUi()
+void StyledAlertWidget::setupUi()
 {
     m_contentWidget = new QWidget(this);
     m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
@@ -87,7 +87,7 @@ void StyledAlertDialog::setupUi()
             color: white;
         }
     )");
-    connect(m_closeButton, &QPushButton::clicked, this, &StyledAlertDialog::onCloseClicked);
+    connect(m_closeButton, &QPushButton::clicked, this, &StyledAlertWidget::onCloseClicked);
 
     titleRow->addWidget(m_titleLabel, 1);
     titleRow->addWidget(m_closeButton);
@@ -125,7 +125,7 @@ void StyledAlertDialog::setupUi()
             border-color: #E06516;
         }
     )");
-    connect(m_okButton, &QPushButton::clicked, this, &StyledAlertDialog::onOkClicked);
+    connect(m_okButton, &QPushButton::clicked, this, &StyledAlertWidget::onOkClicked);
 
     m_cancelButton = new QPushButton(tr("Cancel"), m_contentWidget);
     m_cancelButton->setFont(harmonyFont(10));
@@ -151,7 +151,7 @@ void StyledAlertDialog::setupUi()
             border-color: #E06516;
         }
     )");
-    connect(m_cancelButton, &QPushButton::clicked, this, &StyledAlertDialog::onCancelClicked);
+    connect(m_cancelButton, &QPushButton::clicked, this, &StyledAlertWidget::onCancelClicked);
     m_cancelButton->hide();
 
     buttonRow->addStretch(1);
@@ -163,7 +163,7 @@ void StyledAlertDialog::setupUi()
     mainLayout->addLayout(buttonRow);
 }
 
-void StyledAlertDialog::showAlert(const QString &title, const QString &body,
+void StyledAlertWidget::showAlert(const QString &title, const QString &body,
                                    const QString &buttonText)
 {
     m_titleLabel->setText(title);
@@ -179,7 +179,7 @@ void StyledAlertDialog::showAlert(const QString &title, const QString &body,
     showAnimated();
 }
 
-bool StyledAlertDialog::execConfirm(const QString &title, const QString &body)
+bool StyledAlertWidget::execConfirm(const QString &title, const QString &body)
 {
     m_titleLabel->setText(title);
     m_bodyLabel->setText(body);
@@ -192,7 +192,7 @@ bool StyledAlertDialog::execConfirm(const QString &title, const QString &body)
     showAnimated();
 
     QEventLoop loop;
-    connect(this, &StyledAlertDialog::dismissed, &loop, &QEventLoop::quit);
+    connect(this, &StyledAlertWidget::dismissed, &loop, &QEventLoop::quit);
     loop.exec();
 
     m_cancelButton->hide();
@@ -202,7 +202,7 @@ bool StyledAlertDialog::execConfirm(const QString &title, const QString &body)
     return m_confirmResult;
 }
 
-void StyledAlertDialog::showAnimated()
+void StyledAlertWidget::showAnimated()
 {
     m_scale = 0.9;
     m_panelOpacity = 0.0;
@@ -229,7 +229,7 @@ void StyledAlertDialog::showAnimated()
     m_opacityAnim->start();
 }
 
-void StyledAlertDialog::hideAnimated()
+void StyledAlertWidget::hideAnimated()
 {
     delete m_scaleAnim;
     delete m_opacityAnim;
@@ -253,7 +253,7 @@ void StyledAlertDialog::hideAnimated()
     m_opacityAnim->start();
 }
 
-void StyledAlertDialog::setPanelScale(qreal s)
+void StyledAlertWidget::setPanelScale(qreal s)
 {
     m_scale = s;
     qreal cx = SHADOW_BLUR + PANEL_WIDTH / 2.0;
@@ -266,13 +266,13 @@ void StyledAlertDialog::setPanelScale(qreal s)
     update();
 }
 
-void StyledAlertDialog::setPanelOpacity(qreal o)
+void StyledAlertWidget::setPanelOpacity(qreal o)
 {
     m_panelOpacity = o;
     setWindowOpacity(o);
 }
 
-void StyledAlertDialog::paintEvent(QPaintEvent *event)
+void StyledAlertWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
@@ -316,7 +316,7 @@ void StyledAlertDialog::paintEvent(QPaintEvent *event)
     painter.restore();
 }
 
-void StyledAlertDialog::showEvent(QShowEvent *event)
+void StyledAlertWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
 #ifdef Q_OS_WIN
@@ -340,7 +340,7 @@ void StyledAlertDialog::showEvent(QShowEvent *event)
     }
 }
 
-void StyledAlertDialog::positionCentered()
+void StyledAlertWidget::positionCentered()
 {
     QScreen *screen = QGuiApplication::primaryScreen();
     if (!screen) return;
@@ -352,7 +352,7 @@ void StyledAlertDialog::positionCentered()
     move(x, y);
 }
 
-void StyledAlertDialog::positionRelativeTo(const QWidget *pet)
+void StyledAlertWidget::positionRelativeTo(const QWidget *pet)
 {
     if (!pet) return;
 
@@ -383,7 +383,7 @@ void StyledAlertDialog::positionRelativeTo(const QWidget *pet)
     move(panelX - SHADOW_BLUR, panelY - SHADOW_BLUR);
 }
 
-void StyledAlertDialog::onOkClicked()
+void StyledAlertWidget::onOkClicked()
 {
     if (m_inConfirmMode) {
         m_confirmResult = true;
@@ -391,13 +391,13 @@ void StyledAlertDialog::onOkClicked()
     hideAnimated();
 }
 
-void StyledAlertDialog::onCancelClicked()
+void StyledAlertWidget::onCancelClicked()
 {
     m_confirmResult = false;
     hideAnimated();
 }
 
-void StyledAlertDialog::onCloseClicked()
+void StyledAlertWidget::onCloseClicked()
 {
     if (m_inConfirmMode) {
         m_confirmResult = false;

@@ -103,7 +103,7 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
-    // Same Win11 DWM workaround as MainWindow / TipBubbleWidget — without
+    // Same Win11 DWM workaround as MainWindow / TipWidget — without
     // WA_NoSystemBackground the system fills the panel's window with white
     // before paintEvent runs, and DWM then draws rounded corners + shadow
     // + Mica around it.
@@ -607,7 +607,7 @@ void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
 
     QRect anchor = m_anchorRect.isValid() ? m_anchorRect : QRect(0, 0, pet->width(), pet->height());
 
-    // Same workaround as TipBubbleWidget::positionRelativeTo: macOS Qt::Tool
+    // Same workaround as TipWidget::positionRelativeTo: macOS Qt::Tool
     // frameless windows return stale coords from mapToGlobal()/pos() because
     // their NSWindow position isn't always synced to QWidget. Use the native
     // QWindow position when available.

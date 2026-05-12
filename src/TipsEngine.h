@@ -8,7 +8,7 @@
 #include <QJsonObject>
 
 class SpriteAnimationEngine;
-class TipBubbleWidget;
+class TipWidget;
 
 class TipsEngine : public QObject
 {
@@ -18,7 +18,7 @@ public:
     explicit TipsEngine(QObject *parent = nullptr);
 
     void setAnimationEngine(SpriteAnimationEngine *engine) { m_engine = engine; }
-    void setTipBubble(TipBubbleWidget *bubble) { m_tipBubble = bubble; }
+    void setTipWidget(TipWidget *bubble) { m_tipWidget = bubble; }
 
 public slots:
     void processEvent(const QString &eventName, const QJsonObject &eventData);
@@ -52,7 +52,7 @@ private:
     QVector<PatternMatcher> m_matchers;
 
     SpriteAnimationEngine *m_engine = nullptr;
-    TipBubbleWidget *m_tipBubble = nullptr;
+    TipWidget *m_tipWidget = nullptr;
 };
 
 #endif // TIPSENGINE_H

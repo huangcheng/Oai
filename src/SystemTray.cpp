@@ -4,7 +4,7 @@
 #include "CharacterPack.h"
 #include "UpdateChecker.h"
 #include "ConfigManager.h"
-#include "PackManagerDialog.h"
+#include "PackManagerWidget.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -345,7 +345,7 @@ void SystemTray::retranslateUi()
 void SystemTray::onManageModelsClicked()
 {
     if (!m_packManagerDialog) {
-        m_packManagerDialog = new PackManagerDialog(m_packManager, nullptr);
+        m_packManagerDialog = new PackManagerWidget(m_packManager, nullptr);
         m_packManagerDialog->setPetWindow(m_mainWindow);
     }
     // Defer show until the tray menu has fully closed — on macOS showing a

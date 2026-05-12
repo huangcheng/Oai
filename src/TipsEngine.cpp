@@ -1,6 +1,6 @@
 #include "TipsEngine.h"
 #include "SpriteAnimationEngine.h"
-#include "TipBubbleWidget.h"
+#include "TipWidget.h"
 
 #include <QJsonObject>
 #include <QDateTime>
@@ -47,9 +47,9 @@ void TipsEngine::processEvent(const QString &eventName, const QJsonObject &event
         if (matcher.matcher(events)) {
             m_lastTriggered[matcher.name] = QDateTime::currentDateTime();
 
-            if (m_tipBubble) {
-                m_tipBubble->showBubble(matcher.tipTitle, matcher.tipBody,
-                                        TipBubbleWidget::TipBubble);
+            if (m_tipWidget) {
+                m_tipWidget->showBubble(matcher.tipTitle, matcher.tipBody,
+                                        TipWidget::TipBubble);
             }
             if (m_engine && m_engine->hasAnimations() && !matcher.animation.isEmpty()) {
                 // TipsEngine ships sprite-era animation names (wave, explain,

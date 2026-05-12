@@ -16,8 +16,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/CharacterPack.h
     ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.cpp
     ${CMAKE_SOURCE_DIR}/src/CharacterPackManager.h
-    ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.cpp
-    ${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h
+    ${CMAKE_SOURCE_DIR}/src/TipWidget.cpp
+    ${CMAKE_SOURCE_DIR}/src/TipWidget.h
     ${CMAKE_SOURCE_DIR}/src/EcgWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/EcgWidget.h
     ${CMAKE_SOURCE_DIR}/src/MacFocusFix.h
@@ -59,7 +59,7 @@ foreach(test_src ${TEST_SOURCES})
             rlottie::rlottie
     )
     if(WIN32)
-        # TipBubbleWidget.cpp is shared with the main app and uses
+        # TipWidget.cpp is shared with the main app and uses
         # DwmSetWindowAttribute to opt out of Win11 DWM chrome.
         target_link_libraries(${test_name} PRIVATE dwmapi)
     endif()

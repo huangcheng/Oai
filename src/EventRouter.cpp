@@ -1,5 +1,5 @@
 #include "EventRouter.h"
-#include "TipBubbleWidget.h"
+#include "TipWidget.h"
 #include "TipsEngine.h"
 #include "TipsCatalog.h"
 
@@ -39,8 +39,8 @@ void EventRouter::routeEvent(const QJsonObject &event)
     emit eventProcessed(eventName, event);
 
     const TipsCatalog::Tip tip = TipsCatalog::instance().eventTip(eventName);
-    if (!tip.title.isEmpty() && m_tipBubble) {
-        m_tipBubble->showBubble(tip.title, tip.body, TipBubbleWidget::TipBubble, sourceLabel);
+    if (!tip.title.isEmpty() && m_tipWidget) {
+        m_tipWidget->showBubble(tip.title, tip.body, TipWidget::TipBubble, sourceLabel);
     }
 }
 

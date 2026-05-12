@@ -10,7 +10,7 @@
 #include "LottieEffectOverlay.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
-#include "TipBubbleWidget.h"
+#include "TipWidget.h"
 #include "EcgWidget.h"
 #include "TipsEngine.h"
 #include "SystemTray.h"
@@ -278,21 +278,21 @@ int main(int argc, char *argv[])
     // --- Tips engine ---------------------------------------------------------
     TipsEngine tipsEngine;
     tipsEngine.setAnimationEngine(w.animationEngine());
-    tipsEngine.setTipBubble(w.tipBubbleWidget());
+    tipsEngine.setTipWidget(w.tipWidget());
 
     // --- Event router --------------------------------------------------------
     EventRouter eventRouter;
-    eventRouter.setTipBubble(w.tipBubbleWidget());
+    eventRouter.setTipWidget(w.tipWidget());
     eventRouter.setTipsEngine(&tipsEngine);
     // MainWindow uses the FSM (via setStateMachine) for mouse-driven synthetic
     // events; EventRouter no longer owns animation dispatch.
     w.setEventRouter(&eventRouter);
 
     // Tip-bubble user toggle: apply current value, then track changes live.
-    w.tipBubbleWidget()->setSuppressedByUser(!config.tipBubblesEnabled());
+    w.tipWidget()->setSuppressedByUser(!config.tipBubblesEnabled());
     QObject::connect(&config, &ConfigManager::tipBubblesEnabledChanged,
-                     w.tipBubbleWidget(),
-                     [bubble = w.tipBubbleWidget()](bool enabled) {
+                     w.tipWidget(),
+                     [bubble = w.tipWidget()](bool enabled) {
                          bubble->setSuppressedByUser(!enabled);
                      });
 
@@ -307,14 +307,14 @@ int main(int argc, char *argv[])
     QObject::connect(&ipcServer, &IpcServer::eventReceived,
                      w.ecgWidget(), &EcgWidget::onEvent);
 
-    // IPC tips → TipBubbleWidget directly
+    // IPC tips → TipWidget directly
     QObject::connect(&ipcServer, &IpcServer::tipReceived,
                      &w, [&w](const QJsonObject &tip) {
         const QString title = tip.value("title").toString("Tip");
         const QString body = tip.value("body").toString();
         const QString anim = tip.value("animation").toString();
 
-        w.tipBubbleWidget()->showBubble(title, body, TipBubbleWidget::TipBubble);
+        w.tipWidget()->showBubble(title, body, TipWidget::TipBubble);
 
         if (anim.isEmpty()) return;
 

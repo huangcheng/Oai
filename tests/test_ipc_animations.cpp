@@ -4,7 +4,7 @@
  * End-to-end UDP IPC tests for Oai.
  *
  * Spins up the real IpcServer, EventRouter, SpriteAnimationEngine,
- * and TipBubbleWidget, then drives them via
+ * and TipWidget, then drives them via
  * raw UDP datagrams (same protocol as the Node.js gateways).
  */
 
@@ -20,7 +20,7 @@
 #include "IpcServer.h"
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
-#include "TipBubbleWidget.h"
+#include "TipWidget.h"
 #include "TipsEngine.h"
 #include "PetStateMachine.h"
 
@@ -52,7 +52,7 @@ private:
     IpcServer *m_ipc = nullptr;
     EventRouter *m_router = nullptr;
     SpriteAnimationEngine *m_engine = nullptr;
-    TipBubbleWidget *m_bubble = nullptr;
+    TipWidget *m_bubble = nullptr;
     TipsEngine *m_tips = nullptr;
     PetStateMachine *m_fsm = nullptr;
 
@@ -85,15 +85,15 @@ void TestIpcAnimations::initTestCase()
     m_engine = new SpriteAnimationEngine(this);
     m_engine->loadAssets(assetsDir + "/map.png", assetsDir + "/animations.json");
 
-    m_bubble = new TipBubbleWidget(nullptr);
+    m_bubble = new TipWidget(nullptr);
     m_bubble->setAnchorRect(QRect(0, 0, 124, 93));
 
     m_tips = new TipsEngine(this);
     m_tips->setAnimationEngine(m_engine);
-    m_tips->setTipBubble(m_bubble);
+    m_tips->setTipWidget(m_bubble);
 
     m_router = new EventRouter(this);
-    m_router->setTipBubble(m_bubble);
+    m_router->setTipWidget(m_bubble);
     m_router->setTipsEngine(m_tips);
 
     m_fsm = new PetStateMachine(this);
@@ -112,7 +112,7 @@ void TestIpcAnimations::initTestCase()
         const QString title = tip.value("title").toString("Tip");
         const QString body = tip.value("body").toString();
         const QString anim = tip.value("animation").toString();
-        m_bubble->showBubble(title, body, TipBubbleWidget::TipBubble);
+        m_bubble->showBubble(title, body, TipWidget::TipBubble);
         if (!anim.isEmpty()) {
             m_engine->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
         }
@@ -213,7 +213,7 @@ void TestIpcAnimations::testTipMessage()
 
     QCOMPARE(m_bubble->title(), QStringLiteral("Hello Test"));
     QCOMPARE(m_bubble->message(), QStringLiteral("This is a test tip"));
-    QCOMPARE(m_bubble->bubbleType(), TipBubbleWidget::TipBubble);
+    QCOMPARE(m_bubble->bubbleType(), TipWidget::TipBubble);
 
     client.close();
 }

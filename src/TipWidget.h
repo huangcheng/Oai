@@ -1,5 +1,5 @@
-#ifndef TIPBUBBLEWIDGET_H
-#define TIPBUBBLEWIDGET_H
+#ifndef TIPWIDGET_H
+#define TIPWIDGET_H
 
 #include <QWidget>
 #include <QString>
@@ -7,7 +7,7 @@
 #include <QPropertyAnimation>
 #include <QRect>
 
-class TipBubbleWidget : public QWidget
+class TipWidget : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
@@ -16,8 +16,8 @@ class TipBubbleWidget : public QWidget
 public:
     enum BubbleType { StatusBubble = 0, TipBubble = 1 };
 
-    explicit TipBubbleWidget(QWidget *parent = nullptr);
-    ~TipBubbleWidget();
+    explicit TipWidget(QWidget *parent = nullptr);
+    ~TipWidget();
 
     // Position relative to the pet widget
     void anchorTo(const QWidget *petWidget);
@@ -118,4 +118,4 @@ private:
     QRect m_anchorRect;  // rect within the anchored widget to anchor to (empty = full widget)
 };
 
-#endif // TIPBUBBLEWIDGET_H
+#endif // TIPWIDGET_H

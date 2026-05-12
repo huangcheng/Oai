@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QSet>
 
-class TipBubbleWidget;
+class TipWidget;
 class TipsEngine;
 
 /**
@@ -19,7 +19,7 @@ class EventRouter : public QObject
 public:
     explicit EventRouter(QObject *parent = nullptr);
 
-    void setTipBubble(TipBubbleWidget *bubble) { m_tipBubble = bubble; }
+    void setTipWidget(TipWidget *bubble) { m_tipWidget = bubble; }
     void setTipsEngine(TipsEngine *tips) { m_tips = tips; }
 
 public slots:
@@ -33,7 +33,7 @@ signals:
 private:
     bool validateEvent(const QJsonObject &event) const;
 
-    TipBubbleWidget *m_tipBubble = nullptr;
+    TipWidget *m_tipWidget = nullptr;
     TipsEngine *m_tips = nullptr;
 
     static const QSet<QString> s_validEvents;

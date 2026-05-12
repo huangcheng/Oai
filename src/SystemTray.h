@@ -12,7 +12,7 @@ class QActionGroup;
 class CharacterPackManager;
 class UpdateChecker;
 class ConfigManager;
-class PackManagerDialog;
+class PackManagerWidget;
 
 class SystemTray : public QObject
 {
@@ -56,7 +56,7 @@ private:
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
     ConfigManager *m_config = nullptr;
-    PackManagerDialog *m_packManagerDialog = nullptr;
+    PackManagerWidget *m_packManagerDialog = nullptr;
 };
 
 #endif // SYSTEMTRAY_H

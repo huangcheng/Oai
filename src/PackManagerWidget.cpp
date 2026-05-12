@@ -1,6 +1,6 @@
-#include "PackManagerDialog.h"
+#include "PackManagerWidget.h"
 #include "CharacterPackManager.h"
-#include "StyledAlertDialog.h"
+#include "StyledAlertWidget.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -37,7 +37,7 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
     return f;
 }
 
-PackManagerDialog::PackManagerDialog(CharacterPackManager *manager, QWidget *parent)
+PackManagerWidget::PackManagerWidget(CharacterPackManager *manager, QWidget *parent)
     : QWidget(parent, Qt::Window)
     , m_packManager(manager)
 {
@@ -59,12 +59,12 @@ PackManagerDialog::PackManagerDialog(CharacterPackManager *manager, QWidget *par
 
     if (m_packManager) {
         connect(m_packManager, &CharacterPackManager::packListChanged,
-                this, &PackManagerDialog::refreshPackList);
+                this, &PackManagerWidget::refreshPackList);
     }
     refreshPackList();
 }
 
-void PackManagerDialog::setupUi()
+void PackManagerWidget::setupUi()
 {
     m_contentWidget = new QWidget(this);
     m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
@@ -99,7 +99,7 @@ void PackManagerDialog::setupUi()
             color: white;
         }
     )");
-    connect(m_closeButton, &QPushButton::clicked, this, &PackManagerDialog::onCloseClicked);
+    connect(m_closeButton, &QPushButton::clicked, this, &PackManagerWidget::onCloseClicked);
 
     titleRow->addWidget(m_titleLabel, 1);
     titleRow->addWidget(m_closeButton);
@@ -183,7 +183,7 @@ void PackManagerDialog::setupUi()
             border-color: #E06516;
         }
     )");
-    connect(m_addButton, &QPushButton::clicked, this, &PackManagerDialog::onAddClicked);
+    connect(m_addButton, &QPushButton::clicked, this, &PackManagerWidget::onAddClicked);
 
     m_deleteButton = new QPushButton(tr("Delete"), m_contentWidget);
     m_deleteButton->setFont(harmonyFont(10));
@@ -214,7 +214,7 @@ void PackManagerDialog::setupUi()
             border-color: #ccc;
         }
     )");
-    connect(m_deleteButton, &QPushButton::clicked, this, &PackManagerDialog::onDeleteClicked);
+    connect(m_deleteButton, &QPushButton::clicked, this, &PackManagerWidget::onDeleteClicked);
 
     buttonRow->addStretch(1);
     buttonRow->addWidget(m_addButton);
@@ -225,15 +225,15 @@ void PackManagerDialog::setupUi()
     mainLayout->addLayout(buttonRow);
 }
 
-void PackManagerDialog::ensureAlertDialog()
+void PackManagerWidget::ensureAlertDialog()
 {
     if (!m_alertDialog) {
-        m_alertDialog = new StyledAlertDialog(nullptr);
+        m_alertDialog = new StyledAlertWidget(nullptr);
         m_alertDialog->setPetWindow(m_petWindow);
     }
 }
 
-void PackManagerDialog::paintEvent(QPaintEvent *event)
+void PackManagerWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
@@ -280,7 +280,7 @@ void PackManagerDialog::paintEvent(QPaintEvent *event)
     painter.restore();
 }
 
-void PackManagerDialog::showEvent(QShowEvent *event)
+void PackManagerWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
 #ifdef Q_OS_WIN
@@ -304,7 +304,7 @@ void PackManagerDialog::showEvent(QShowEvent *event)
     }
 }
 
-void PackManagerDialog::positionCentered()
+void PackManagerWidget::positionCentered()
 {
     QScreen *screen = QGuiApplication::primaryScreen();
     if (!screen) return;
@@ -316,7 +316,7 @@ void PackManagerDialog::positionCentered()
     move(x, y);
 }
 
-void PackManagerDialog::positionRelativeTo(const QWidget *pet)
+void PackManagerWidget::positionRelativeTo(const QWidget *pet)
 {
     if (!pet) return;
 
@@ -347,7 +347,7 @@ void PackManagerDialog::positionRelativeTo(const QWidget *pet)
     move(panelX - SHADOW_BLUR, panelY - SHADOW_BLUR);
 }
 
-void PackManagerDialog::showAnimated()
+void PackManagerWidget::showAnimated()
 {
     m_scale = 0.9;
     m_panelOpacity = 0.0;
@@ -373,7 +373,7 @@ void PackManagerDialog::showAnimated()
     m_opacityAnim->start();
 }
 
-void PackManagerDialog::hideAnimated()
+void PackManagerWidget::hideAnimated()
 {
     delete m_scaleAnim;
     delete m_opacityAnim;
@@ -394,7 +394,7 @@ void PackManagerDialog::hideAnimated()
     m_opacityAnim->start();
 }
 
-void PackManagerDialog::setPanelScale(qreal s)
+void PackManagerWidget::setPanelScale(qreal s)
 {
     m_scale = s;
     QTransform t;
@@ -411,18 +411,18 @@ void PackManagerDialog::setPanelScale(qreal s)
     update();
 }
 
-void PackManagerDialog::setPanelOpacity(qreal o)
+void PackManagerWidget::setPanelOpacity(qreal o)
 {
     m_panelOpacity = o;
     setWindowOpacity(o);
 }
 
-void PackManagerDialog::onCloseClicked()
+void PackManagerWidget::onCloseClicked()
 {
     hideAnimated();
 }
 
-void PackManagerDialog::onAddClicked()
+void PackManagerWidget::onAddClicked()
 {
     if (!m_packManager) return;
 
@@ -470,7 +470,7 @@ void PackManagerDialog::onAddClicked()
     }
 }
 
-void PackManagerDialog::onDeleteClicked()
+void PackManagerWidget::onDeleteClicked()
 {
     if (!m_packManager) return;
 
@@ -504,7 +504,7 @@ void PackManagerDialog::onDeleteClicked()
         return;
     }
 
-    StyledAlertDialog confirmDialog(nullptr);
+    StyledAlertWidget confirmDialog(nullptr);
     bool confirmed = confirmDialog.execConfirm(
         tr("Delete Packs"),
         tr("Are you sure you want to delete the following %1 pack(s)?\n\n%2\n\nThis action cannot be undone.")
@@ -540,7 +540,7 @@ void PackManagerDialog::onDeleteClicked()
     }
 }
 
-void PackManagerDialog::refreshPackList()
+void PackManagerWidget::refreshPackList()
 {
     if (!m_listWidget || !m_packManager) return;
 
@@ -551,7 +551,7 @@ void PackManagerDialog::refreshPackList()
 
     for (const auto &pack : packs) {
         if (pack.source != CharacterPackManager::PackSource::User) {
-            qDebug() << "PackManagerDialog: Filtering out built-in pack:" << pack.id << pack.name;
+            qDebug() << "PackManagerWidget: Filtering out built-in pack:" << pack.id << pack.name;
             continue;
         }
 
@@ -559,7 +559,7 @@ void PackManagerDialog::refreshPackList()
         item->setData(Qt::UserRole, pack.id);
         item->setToolTip(tr("ID: %1\nPath: %2").arg(pack.id, pack.path));
         m_listWidget->addItem(item);
-        qDebug() << "PackManagerDialog: Showing user pack:" << pack.id << pack.name;
+        qDebug() << "PackManagerWidget: Showing user pack:" << pack.id << pack.name;
     }
 
     // Update delete button state
