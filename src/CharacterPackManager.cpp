@@ -35,10 +35,7 @@ void CharacterPackManager::initialize(const QString &builtInDir, const QString &
     // Ensure user directory exists
     QDir().mkpath(m_userDir);
 
-    // Auto-install built-in packs if user packs directory is empty
-    autoInstallBuiltInPacks();
-
-    // Discover all packs
+    // Discover all packs (built-in stay in app bundle, user packs in config dir)
     discoverPacks();
 
     // Setup file watcher for hot-reload
@@ -352,100 +349,16 @@ void CharacterPackManager::discoverPacks()
         }
     };
 
-    if (!m_userDir.isEmpty()) {
-        scanDir(m_userDir, PackSource::User);
-    }
-
     if (!m_builtInDir.isEmpty()) {
         scanDir(m_builtInDir, PackSource::BuiltIn);
     }
 
+    if (!m_userDir.isEmpty()) {
+        scanDir(m_userDir, PackSource::User);
+    }
+
     qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs";
     emit packListChanged();
-}
-
-void CharacterPackManager::autoInstallBuiltInPacks()
-{
-    if (m_userDir.isEmpty()) {
-        return;
-    }
-
-    // Only auto-install on first launch (when user directory is empty).
-    // If the user has explicitly deleted packs, we should not re-install them.
-    QDir userDir(m_userDir);
-    if (!userDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty()) {
-        return;
-    }
-
-    // Look for .opk files in multiple locations
-    QStringList searchPaths;
-    
-    // 1. Next to the executable (works for all platforms)
-    QString appDir = QCoreApplication::applicationDirPath();
-    searchPaths.append(appDir + "/packs");
-    
-    // 2. Inside .app bundle on macOS
-    #ifdef Q_OS_MAC
-    QDir bundleDir(appDir);
-    if (bundleDir.cdUp() && bundleDir.cd("Resources")) {
-        searchPaths.append(bundleDir.absoluteFilePath("packs"));
-    }
-    #endif
-    
-    // 3. In the assets directory (for development)
-    QDir assetsDir(appDir);
-    if (assetsDir.cdUp() && assetsDir.cd("assets")) {
-        searchPaths.append(assetsDir.absoluteFilePath("packs"));
-    }
-
-    for (const QString &packsPath : searchPaths) {
-        QDir packsDir(packsPath);
-        if (!packsDir.exists()) {
-            continue;
-        }
-
-        const QFileInfoList opkFiles = packsDir.entryInfoList({"*.opk"}, QDir::Files);
-        for (const QFileInfo &opkFile : opkFiles) {
-            QString packId = extractPackIdFromOpk(opkFile.absoluteFilePath());
-            if (packId.isEmpty()) {
-                continue;
-            }
-
-            QString installDir = m_userDir + "/" + packId;
-            if (QDir(installDir).exists()) {
-                qDebug() << "CharacterPackManager: Pack already installed:" << packId;
-                continue;
-            }
-
-            qDebug() << "CharacterPackManager: Auto-installing pack:" << opkFile.fileName();
-            if (installPack(opkFile.absoluteFilePath())) {
-                qDebug() << "CharacterPackManager: Successfully installed:" << packId;
-            } else {
-                qWarning() << "CharacterPackManager: failed to auto-install:" << opkFile.fileName();
-            }
-        }
-
-        const QFileInfoList codexFiles = packsDir.entryInfoList({"*.codex-pet"}, QDir::Files);
-        for (const QFileInfo &codexFile : codexFiles) {
-            PackInfo info;
-            if (!extractCodexPetInfo(codexFile.absoluteFilePath(), info)) {
-                continue;
-            }
-
-            QString destPath = m_userDir + "/" + info.id + ".codex-pet";
-            if (QFile::exists(destPath)) {
-                qDebug() << "CharacterPackManager: Codex pet already installed:" << info.id;
-                continue;
-            }
-
-            qDebug() << "CharacterPackManager: Auto-installing codex pet:" << codexFile.fileName();
-            if (QFile::copy(codexFile.absoluteFilePath(), destPath)) {
-                qDebug() << "CharacterPackManager: Successfully installed codex pet:" << info.id;
-            } else {
-                qWarning() << "CharacterPackManager: Failed to copy codex pet:" << codexFile.fileName();
-            }
-        }
-    }
 }
 
 QString CharacterPackManager::extractPackIdFromOpk(const QString &opkPath)
@@ -538,7 +451,7 @@ void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSou
     }
     info.source = source;
 
-    // Add to packs map (built-in packs override user packs with same ID)
+    // Add to packs map (user packs override built-in with same ID)
     m_packs[packId] = info;
 
     qDebug() << "CharacterPackManager: Found pack:" << info.name << "(" << packId << ")";

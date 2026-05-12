@@ -171,7 +171,7 @@ private:
     CharacterPack *createAndLoadPack(const QString &packPath);
     void setupFileWatcher();
     void cleanupFileWatcher();
-    void autoInstallBuiltInPacks();
+
     QString extractPackIdFromOpk(const QString &opkPath);
     bool extractCodexPetInfo(const QString &archivePath, PackInfo &outInfo);
 
