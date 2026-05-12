@@ -5,6 +5,7 @@
 #include <QString>
 
 class CharacterPackManager;
+class StyledAlertDialog;
 class QListWidget;
 class QPushButton;
 class QLabel;
@@ -56,6 +57,7 @@ private:
     QListWidget *m_listWidget = nullptr;
     QPushButton *m_addButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
+    StyledAlertDialog *m_alertDialog = nullptr;
 
     qreal m_scale = 1.0;
     qreal m_panelOpacity = 1.0;

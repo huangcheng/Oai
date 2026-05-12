@@ -1,5 +1,6 @@
 #include "PackManagerDialog.h"
 #include "CharacterPackManager.h"
+#include "StyledAlertDialog.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -440,6 +441,23 @@ void PackManagerDialog::onDeleteClicked()
     for (QListWidgetItem *item : selected) {
         packIds.append(item->data(Qt::UserRole).toString());
         packNames.append(item->text());
+    }
+
+    QString activePackId = m_packManager->activePackId();
+    bool hasActivePack = packIds.contains(activePackId);
+
+    if (hasActivePack) {
+        if (!m_alertDialog) {
+            m_alertDialog = new StyledAlertDialog(this);
+        }
+        CharacterPackManager::PackInfo activeInfo = m_packManager->packInfo(activePackId);
+        QString activeName = activeInfo.displayName(m_packManager->activeLocale());
+        m_alertDialog->showAlert(
+            tr("Cannot Delete Active Pet"),
+            tr("\"%1\" is currently in use and cannot be deleted.\n\nPlease switch to another pet first.")
+                .arg(activeName)
+        );
+        return;
     }
 
     QMessageBox::StandardButton reply = QMessageBox::question(

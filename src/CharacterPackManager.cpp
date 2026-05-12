@@ -242,23 +242,10 @@ bool CharacterPackManager::uninstallPack(const QString &packId)
         return false;
     }
 
-    // If this is the active pack, switch to another
+    // Cannot uninstall the currently active pack
     if (packId == m_activePackId) {
-        // Find another pack to switch to
-        QString newPackId;
-        for (auto it = m_packs.begin(); it != m_packs.end(); ++it) {
-            if (it.key() != packId) {
-                newPackId = it.key();
-                break;
-            }
-        }
-
-        if (newPackId.isEmpty()) {
-            qWarning() << "CharacterPackManager: Cannot uninstall last remaining pack";
-            return false;
-        }
-
-        switchPack(newPackId);
+        qWarning() << "CharacterPackManager: Cannot uninstall active pack:" << packId;
+        return false;
     }
 
     // Remove pack directory
