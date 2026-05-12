@@ -113,10 +113,12 @@ void PackManagerDialog::setupUi()
             border-radius: 3px;
             color: #2C2C2E;
             padding: 4px;
+            outline: none;
         }
         QListWidget::item {
             padding: 6px 8px;
             border-radius: 2px;
+            color: #2C2C2E;
         }
         QListWidget::item:selected {
             background: #F36F1A;
@@ -128,6 +130,28 @@ void PackManagerDialog::setupUi()
         QListWidget::item:selected:hover {
             background: #F36F1A;
             color: white;
+        }
+        QScrollBar:vertical {
+            background: #f5f5f5;
+            width: 8px;
+            border-radius: 4px;
+            border: none;
+        }
+        QScrollBar::handle:vertical {
+            background: #888;
+            border-radius: 4px;
+            min-height: 24px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #F36F1A;
+        }
+        QScrollBar::add-line:vertical,
+        QScrollBar::sub-line:vertical {
+            height: 0px;
+        }
+        QScrollBar::add-page:vertical,
+        QScrollBar::sub-page:vertical {
+            background: none;
         }
     )");
 
@@ -143,13 +167,19 @@ void PackManagerDialog::setupUi()
             background: white;
             border: 2px solid black;
             border-radius: 3px;
-            padding: 4px 16px;
+            padding: 2px 16px;
             color: #2C2C2E;
+            min-width: 60px;
+            outline: none;
         }
         QPushButton:hover {
             background: #F36F1A;
             color: white;
             border-color: #F36F1A;
+        }
+        QPushButton:pressed {
+            background: #E06516;
+            border-color: #E06516;
         }
     )");
     connect(m_addButton, &QPushButton::clicked, this, &PackManagerDialog::onAddClicked);
@@ -163,13 +193,19 @@ void PackManagerDialog::setupUi()
             background: white;
             border: 2px solid black;
             border-radius: 3px;
-            padding: 4px 16px;
+            padding: 2px 16px;
             color: #2C2C2E;
+            min-width: 60px;
+            outline: none;
         }
         QPushButton:hover {
             background: #F36F1A;
             color: white;
             border-color: #F36F1A;
+        }
+        QPushButton:pressed {
+            background: #E06516;
+            border-color: #E06516;
         }
         QPushButton:disabled {
             background: #f0f0f0;
