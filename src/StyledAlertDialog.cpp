@@ -34,10 +34,8 @@ StyledAlertDialog::StyledAlertDialog(QWidget *parent)
     : QWidget(parent, Qt::Window)
 {
     setWindowFlags(
-        Qt::Dialog |
         Qt::FramelessWindowHint |
-        Qt::WindowStaysOnTopHint |
-        Qt::WindowDoesNotAcceptFocus
+        Qt::WindowStaysOnTopHint
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
@@ -156,6 +154,7 @@ void StyledAlertDialog::showAnimated()
     setWindowOpacity(0.0);
     QWidget::show();
     raise();
+    activateWindow();
 
     delete m_scaleAnim;
     delete m_opacityAnim;

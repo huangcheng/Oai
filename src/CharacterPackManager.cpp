@@ -248,9 +248,14 @@ bool CharacterPackManager::uninstallPack(const QString &packId)
         return false;
     }
 
-    // Remove pack directory
-    QDir packDir(info.path);
-    if (packDir.exists()) {
+    QFileInfo pathInfo(info.path);
+    if (pathInfo.isFile()) {
+        if (!QFile::remove(info.path)) {
+            qWarning() << "CharacterPackManager: Failed to remove pack file:" << info.path;
+            return false;
+        }
+    } else if (pathInfo.isDir()) {
+        QDir packDir(info.path);
         if (!packDir.removeRecursively()) {
             qWarning() << "CharacterPackManager: Failed to remove pack directory:" << info.path;
             return false;
@@ -348,7 +353,12 @@ void CharacterPackManager::discoverPacks()
         scanDir(m_builtInDir, PackSource::BuiltIn);
     }
 
-    qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs";
+    qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs:";
+    for (auto it = m_packs.constBegin(); it != m_packs.constEnd(); ++it) {
+        qDebug() << "  -" << it.key()
+                 << "source=" << (it->source == PackSource::BuiltIn ? "BuiltIn" : "User")
+                 << "path=" << it->path;
+    }
     emit packListChanged();
 }
 

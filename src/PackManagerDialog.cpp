@@ -506,8 +506,8 @@ void PackManagerDialog::refreshPackList()
     const QString locale = m_packManager->activeLocale();
 
     for (const auto &pack : packs) {
-        // Only show user packs in the management dialog
         if (pack.source != CharacterPackManager::PackSource::User) {
+            qDebug() << "PackManagerDialog: Filtering out built-in pack:" << pack.id << pack.name;
             continue;
         }
 
@@ -515,6 +515,7 @@ void PackManagerDialog::refreshPackList()
         item->setData(Qt::UserRole, pack.id);
         item->setToolTip(tr("ID: %1\nPath: %2").arg(pack.id, pack.path));
         m_listWidget->addItem(item);
+        qDebug() << "PackManagerDialog: Showing user pack:" << pack.id << pack.name;
     }
 
     // Update delete button state
