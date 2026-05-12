@@ -502,6 +502,7 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
             m_tipBubble->showBubble(t.title, t.body, TipBubbleWidget::TipBubble);
         } else {
             StyledAlertDialog *dialog = new StyledAlertDialog(nullptr);
+            dialog->setPetWindow(this);
             connect(dialog, &StyledAlertDialog::dismissed, dialog, &QObject::deleteLater);
             dialog->showAlert(t.title, t.body);
         }

@@ -46,6 +46,12 @@ public:
     /** Animated hide (fade-out + scale-down). */
     void hideAnimated();
 
+    /** Position the dialog at top-center of the pet window, like SettingsPanelWidget. */
+    void positionRelativeTo(const QWidget *pet);
+
+    /** Set the pet window reference for positioning. */
+    void setPetWindow(QWidget *pet) { m_petWindow = pet; }
+
     qreal panelScale() const { return m_scale; }
     void setPanelScale(qreal s);
     qreal panelOpacity() const { return m_panelOpacity; }
@@ -82,6 +88,7 @@ private:
 
     bool m_confirmResult = false;
     bool m_inConfirmMode = false;
+    QWidget *m_petWindow = nullptr;
 
     static constexpr int PADDING = 14;
     static constexpr int VERTICAL_SPACING = 12;

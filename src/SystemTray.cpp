@@ -346,6 +346,7 @@ void SystemTray::onManageModelsClicked()
 {
     if (!m_packManagerDialog) {
         m_packManagerDialog = new PackManagerDialog(m_packManager, nullptr);
+        m_packManagerDialog->setPetWindow(m_mainWindow);
     }
     // Defer show until the tray menu has fully closed — on macOS showing a
     // window while the menu is still the key window prevents it from appearing.

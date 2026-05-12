@@ -11,6 +11,7 @@
 #include <QScreen>
 #include <QShowEvent>
 #include <QEventLoop>
+#include <QWindow>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -332,7 +333,11 @@ void StyledAlertDialog::showEvent(QShowEvent *event)
                               &ncRenderingDisabled, sizeof(ncRenderingDisabled));
     }
 #endif
-    positionCentered();
+    if (m_petWindow) {
+        positionRelativeTo(m_petWindow);
+    } else {
+        positionCentered();
+    }
 }
 
 void StyledAlertDialog::positionCentered()
@@ -345,6 +350,37 @@ void StyledAlertDialog::positionCentered()
     int y = screenRect.center().y() - (PANEL_HEIGHT + SHADOW_BLUR * 2) / 2;
 
     move(x, y);
+}
+
+void StyledAlertDialog::positionRelativeTo(const QWidget *pet)
+{
+    if (!pet) return;
+
+    QPoint petGlobalPos;
+    if (QWindow *w = pet->windowHandle()) {
+        petGlobalPos = w->position();
+    } else {
+        petGlobalPos = pet->mapToGlobal(QPoint(0, 0));
+    }
+    int petCenterX = petGlobalPos.x() + pet->width() / 2;
+    int petTop = petGlobalPos.y();
+
+    int panelX = petCenterX - PANEL_WIDTH / 2;
+    int panelY = petTop - PANEL_HEIGHT - 5;
+
+    QScreen *screen = QGuiApplication::screenAt(QPoint(petCenterX, petTop));
+    if (screen) {
+        QRect screenRect = screen->availableGeometry();
+
+        if (panelY < screenRect.top()) {
+            panelY = petTop + pet->height() + 5;
+        }
+
+        panelX = qBound(screenRect.left(), panelX, screenRect.right() - PANEL_WIDTH);
+        panelY = qBound(screenRect.top(), panelY, screenRect.bottom() - PANEL_HEIGHT);
+    }
+
+    move(panelX - SHADOW_BLUR, panelY - SHADOW_BLUR);
 }
 
 void StyledAlertDialog::onOkClicked()

@@ -16,6 +16,7 @@
 #include <QShowEvent>
 #include <QStyle>
 #include <QStandardPaths>
+#include <QWindow>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -224,6 +225,14 @@ void PackManagerDialog::setupUi()
     mainLayout->addLayout(buttonRow);
 }
 
+void PackManagerDialog::ensureAlertDialog()
+{
+    if (!m_alertDialog) {
+        m_alertDialog = new StyledAlertDialog(nullptr);
+        m_alertDialog->setPetWindow(m_petWindow);
+    }
+}
+
 void PackManagerDialog::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
@@ -288,7 +297,11 @@ void PackManagerDialog::showEvent(QShowEvent *event)
                               &ncRenderingDisabled, sizeof(ncRenderingDisabled));
     }
 #endif
-    positionCentered();
+    if (m_petWindow) {
+        positionRelativeTo(m_petWindow);
+    } else {
+        positionCentered();
+    }
 }
 
 void PackManagerDialog::positionCentered()
@@ -301,6 +314,37 @@ void PackManagerDialog::positionCentered()
     int y = screenRect.center().y() - (PANEL_HEIGHT + SHADOW_BLUR * 2) / 2;
 
     move(x, y);
+}
+
+void PackManagerDialog::positionRelativeTo(const QWidget *pet)
+{
+    if (!pet) return;
+
+    QPoint petGlobalPos;
+    if (QWindow *w = pet->windowHandle()) {
+        petGlobalPos = w->position();
+    } else {
+        petGlobalPos = pet->mapToGlobal(QPoint(0, 0));
+    }
+    int petCenterX = petGlobalPos.x() + pet->width() / 2;
+    int petTop = petGlobalPos.y();
+
+    int panelX = petCenterX - PANEL_WIDTH / 2;
+    int panelY = petTop - PANEL_HEIGHT - 5;
+
+    QScreen *screen = QGuiApplication::screenAt(QPoint(petCenterX, petTop));
+    if (screen) {
+        QRect screenRect = screen->availableGeometry();
+
+        if (panelY < screenRect.top()) {
+            panelY = petTop + pet->height() + 5;
+        }
+
+        panelX = qBound(screenRect.left(), panelX, screenRect.right() - PANEL_WIDTH);
+        panelY = qBound(screenRect.top(), panelY, screenRect.bottom() - PANEL_HEIGHT);
+    }
+
+    move(panelX - SHADOW_BLUR, panelY - SHADOW_BLUR);
 }
 
 void PackManagerDialog::showAnimated()
@@ -416,14 +460,10 @@ void PackManagerDialog::onAddClicked()
             msg += QLatin1Char('\n') + tr("Failed to install %1 file(s): %2")
                      .arg(failCount).arg(failedFiles.join(", "));
         }
-        if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(nullptr);
-        }
+        ensureAlertDialog();
         m_alertDialog->showAlert(tr("Installation Complete"), msg);
     } else if (failCount > 0) {
-        if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(nullptr);
-        }
+        ensureAlertDialog();
         m_alertDialog->showAlert(tr("Installation Failed"),
             tr("Failed to install all selected files: %1")
                 .arg(failedFiles.join(", ")));
@@ -436,9 +476,7 @@ void PackManagerDialog::onDeleteClicked()
 
     QList<QListWidgetItem *> selected = m_listWidget->selectedItems();
     if (selected.isEmpty()) {
-        if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(nullptr);
-        }
+        ensureAlertDialog();
         m_alertDialog->showAlert(tr("No Selection"),
             tr("Please select one or more packs to delete."));
         return;
@@ -455,9 +493,7 @@ void PackManagerDialog::onDeleteClicked()
     bool hasActivePack = packIds.contains(activePackId);
 
     if (hasActivePack) {
-        if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(nullptr);
-        }
+        ensureAlertDialog();
         CharacterPackManager::PackInfo activeInfo = m_packManager->packInfo(activePackId);
         QString activeName = activeInfo.displayName(m_packManager->activeLocale());
         m_alertDialog->showAlert(
@@ -493,17 +529,13 @@ void PackManagerDialog::onDeleteClicked()
     }
 
     if (successCount > 0 && failCount == 0) {
-        if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(nullptr);
-        }
+        ensureAlertDialog();
         m_alertDialog->showAlert(tr("Delete Complete"),
             tr("Successfully deleted %1 pack(s).").arg(successCount));
     } else if (failCount > 0) {
         QString msg = tr("Successfully deleted %1 pack(s).").arg(successCount);
         msg += QLatin1Char('\n') + tr("Failed to delete: %1").arg(failedNames.join(", "));
-        if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(nullptr);
-        }
+        ensureAlertDialog();
         m_alertDialog->showAlert(tr("Delete Partial"), msg);
     }
 }

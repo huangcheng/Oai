@@ -30,6 +30,12 @@ public:
     void showAnimated();
     void hideAnimated();
 
+    /** Position the dialog at top-center of the pet window, like SettingsPanelWidget. */
+    void positionRelativeTo(const QWidget *pet);
+
+    /** Set the pet window reference for positioning. */
+    void setPetWindow(QWidget *pet) { m_petWindow = pet; }
+
     qreal panelScale() const { return m_scale; }
     void setPanelScale(qreal s);
     qreal panelOpacity() const { return m_panelOpacity; }
@@ -48,6 +54,7 @@ private slots:
 private:
     void setupUi();
     void positionCentered();
+    void ensureAlertDialog();
 
     CharacterPackManager *m_packManager = nullptr;
 
@@ -63,6 +70,7 @@ private:
     qreal m_panelOpacity = 1.0;
     QPropertyAnimation *m_scaleAnim = nullptr;
     QPropertyAnimation *m_opacityAnim = nullptr;
+    QWidget *m_petWindow = nullptr;
 
     static constexpr int PADDING = 14;
     static constexpr int VERTICAL_SPACING = 12;
