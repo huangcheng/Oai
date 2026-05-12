@@ -370,6 +370,13 @@ void CharacterPackManager::autoInstallBuiltInPacks()
         return;
     }
 
+    // Only auto-install on first launch (when user directory is empty).
+    // If the user has explicitly deleted packs, we should not re-install them.
+    QDir userDir(m_userDir);
+    if (!userDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty()) {
+        return;
+    }
+
     // Look for .opk files in multiple locations
     QStringList searchPaths;
     
