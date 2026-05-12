@@ -352,12 +352,12 @@ void CharacterPackManager::discoverPacks()
         }
     };
 
-    if (!m_builtInDir.isEmpty()) {
-        scanDir(m_builtInDir, PackSource::BuiltIn);
-    }
-
     if (!m_userDir.isEmpty()) {
         scanDir(m_userDir, PackSource::User);
+    }
+
+    if (!m_builtInDir.isEmpty()) {
+        scanDir(m_builtInDir, PackSource::BuiltIn);
     }
 
     qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs";
@@ -531,7 +531,7 @@ void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSou
     }
     info.source = source;
 
-    // Add to packs map (user packs override built-in with same ID)
+    // Add to packs map (built-in packs override user packs with same ID)
     m_packs[packId] = info;
 
     qDebug() << "CharacterPackManager: Found pack:" << info.name << "(" << packId << ")";
