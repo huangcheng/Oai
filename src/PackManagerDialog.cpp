@@ -448,7 +448,7 @@ void PackManagerDialog::onDeleteClicked()
 
     if (hasActivePack) {
         if (!m_alertDialog) {
-            m_alertDialog = new StyledAlertDialog(this);
+            m_alertDialog = new StyledAlertDialog(nullptr);
         }
         CharacterPackManager::PackInfo activeInfo = m_packManager->packInfo(activePackId);
         QString activeName = activeInfo.displayName(m_packManager->activeLocale());

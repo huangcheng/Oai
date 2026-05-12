@@ -34,6 +34,7 @@ StyledAlertDialog::StyledAlertDialog(QWidget *parent)
     : QWidget(parent, Qt::Window)
 {
     setWindowFlags(
+        Qt::Dialog |
         Qt::FramelessWindowHint |
         Qt::WindowStaysOnTopHint |
         Qt::WindowDoesNotAcceptFocus

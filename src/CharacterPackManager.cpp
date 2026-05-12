@@ -336,12 +336,16 @@ void CharacterPackManager::discoverPacks()
         }
     };
 
-    if (!m_builtInDir.isEmpty()) {
-        scanDir(m_builtInDir, PackSource::BuiltIn);
-    }
-
+    // Scan user dir first, then built-in. This ensures that any stale
+    // built-in pack copies left in the user directory get overridden by
+    // the real built-in entry, keeping their source as BuiltIn so they
+    // are filtered out of the Models Management dialog.
     if (!m_userDir.isEmpty()) {
         scanDir(m_userDir, PackSource::User);
+    }
+
+    if (!m_builtInDir.isEmpty()) {
+        scanDir(m_builtInDir, PackSource::BuiltIn);
     }
 
     qDebug() << "CharacterPackManager: Discovered" << m_packs.size() << "packs";
