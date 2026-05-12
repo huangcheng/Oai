@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QTemporaryDir>
 #include <QImage>
+#include <QImageReader>
 
 #include "../thirdparty/miniz/miniz.h"
 
@@ -143,6 +144,14 @@ bool CharacterPack::loadFromCodexPet(const QString &archivePath)
     }
 
     mz_zip_reader_end(&zip);
+
+    if (!QImageReader::supportedImageFormats().contains("webp")) {
+        qWarning() << "CharacterPack: WEBP image format not supported. "
+                      "Ensure the qwebp Qt image format plugin is installed and deployed. "
+                      "On macOS: install via 'brew install qtimageformats' and run 'macdeployqt'. "
+                      "The plugin should be at <bundle>/Contents/PlugIns/imageformats/libqwebp.dylib";
+        return false;
+    }
 
     QImage sheetImage(sheetPath);
     if (sheetImage.isNull()) {

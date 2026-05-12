@@ -390,6 +390,7 @@ target_compile_definitions(Oai PRIVATE
     PROJECT_VERSION="${PROJECT_VERSION}"
     OAI_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
     OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}"
+    QT_DEBUG  # Force-enable qDebug() output even in Release builds
 )
 
 # --- Icon resource -----------------------------------------------------------
@@ -695,7 +696,43 @@ qt_generate_deploy_app_script(
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
+
+if(APPLE)
+    # On Apple Silicon, the linker ad-hoc signs binaries. install_name_tool
+    # (used by macdeployqt/qt_deploy_runtime_dependencies) refuses to modify
+    # signed binaries, producing "malformed object" errors and corrupting
+    # the bundle. Strip all signatures recursively before deployment, then
+    # re-sign the final bundle.
+    install(CODE "
+        message(STATUS \"Stripping code signatures before deployment...\")
+        execute_process(
+            COMMAND find \"\${CMAKE_INSTALL_PREFIX}/Oai.app\" -type f \\( -name \"*.dylib\" -o -name \"*.framework\" \\) -exec codesign --remove-signature {} +
+            COMMAND find \"\${CMAKE_INSTALL_PREFIX}/Oai.app\" -type f -exec sh -c \"file \\\"\$1\\\" | grep -q 'Mach-O' && codesign --remove-signature \\\"\$1\\\"\" _ {} \\;
+            OUTPUT_VARIABLE _STRIP_OUT
+            ERROR_VARIABLE _STRIP_ERR
+            RESULT_VARIABLE _STRIP_RES
+        )
+        if(NOT _STRIP_RES EQUAL 0)
+            message(WARNING \"Signature stripping had issues: \${_STRIP_ERR}\")
+        endif()
+    ")
+endif()
+
 install(SCRIPT ${deploy_script})
+
+if(APPLE)
+    # Re-sign the deployed bundle after all files are in place
+    install(CODE "
+        message(STATUS \"Re-signing deployed app bundle...\")
+        execute_process(
+            COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/Oai.app\"
+            RESULT_VARIABLE _SIGN_RES
+        )
+        if(NOT _SIGN_RES EQUAL 0)
+            message(WARNING \"codesign failed with exit code: \${_SIGN_RES}\")
+        endif()
+    ")
+endif()
 
 # --- Set Oai as default target for Qt Creator -----------------------------
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Oai)

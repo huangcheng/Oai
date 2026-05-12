@@ -526,6 +526,7 @@ def package_macos(build_dir, version, qt_prefix):
             dst_bin = fw_dir / "Versions" / "A" / fw_name
             if not src_bin.exists() or not dst_bin.exists():
                 continue
+            os.chmod(dst_bin, 0o644)
             shutil.copy2(src_bin, dst_bin)
             if codesign_path:
                 run([codesign_path, "--remove-signature", str(dst_bin)], check=False)
@@ -546,6 +547,7 @@ def package_macos(build_dir, version, qt_prefix):
                           Path(qt_prefix) / "plugins"]:
             src_cocoa = plug_root / "platforms" / "libqcocoa.dylib"
             if src_cocoa.exists():
+                os.chmod(cocoa, 0o644)
                 shutil.copy2(src_cocoa, cocoa)
                 break
         if codesign_path:

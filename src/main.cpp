@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QFontDatabase>
+#include <QImageReader>
 #include <QMutex>
 #include <QTextStream>
 #include <QTimer>
@@ -135,7 +136,9 @@ int main(int argc, char *argv[])
         QDir dir(QApplication::applicationDirPath());
         for (int i = 0; i < 6; ++i) {
             QString candidate = dir.absoluteFilePath("assets");
-            if (QFile::exists(candidate + "/map.png")) {
+            // Use animations.json as the sentinel (always present at assets root);
+            // map.png was moved to packs-disabled/ and no longer exists here.
+            if (QFile::exists(candidate + "/animations.json")) {
                 return candidate;
             }
             if (!dir.cdUp()) break;
@@ -144,7 +147,7 @@ int main(int argc, char *argv[])
         // Fallback: use the compile-time source directory (for IDE builds
         // whose build tree is far from the source tree).
         QString sourceAssets = QStringLiteral(OAI_SOURCE_DIR) + "/assets";
-        if (QFile::exists(sourceAssets + "/map.png")) {
+        if (QFile::exists(sourceAssets + "/animations.json")) {
             return sourceAssets;
         }
 #endif
@@ -156,6 +159,13 @@ int main(int argc, char *argv[])
         qDebug() << "Assets loaded from:" << assetsDir;
     } else {
         qWarning() << "Assets not found. Searched from:" << QApplication::applicationDirPath();
+    }
+
+    if (QImageReader::supportedImageFormats().contains("webp")) {
+        qDebug() << "WEBP image format: supported (required for Codex pets)";
+    } else {
+        qWarning() << "WEBP image format: NOT supported. Codex pets will fail to load. "
+                      "On macOS: brew install qtimageformats, then run macdeployqt to bundle the plugin.";
     }
 
     // --- Font loading (HarmonyOS Sans SC) ------------------------------------
