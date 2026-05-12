@@ -12,6 +12,7 @@ class QActionGroup;
 class CharacterPackManager;
 class UpdateChecker;
 class ConfigManager;
+class PackManagerDialog;
 
 class SystemTray : public QObject
 {
@@ -33,6 +34,7 @@ public:
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
     void onPackActionTriggered();
+    void onManageModelsClicked();
     void onUpdateAvailable(const QString &current, const QString &latest, const QString &url);
     void onNoUpdateAvailable(const QString &current);
     void onUpdateCheckFailed(const QString &error);
@@ -50,9 +52,11 @@ private:
     QAction *m_gamingModeAction = nullptr;
     QAction *m_quitAction = nullptr;
     QAction *m_checkUpdateAction = nullptr;
+    QAction *m_manageModelsAction = nullptr;
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
     ConfigManager *m_config = nullptr;
+    PackManagerDialog *m_packManagerDialog = nullptr;
 };
 
 #endif // SYSTEMTRAY_H

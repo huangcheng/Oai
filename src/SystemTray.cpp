@@ -4,6 +4,7 @@
 #include "CharacterPack.h"
 #include "UpdateChecker.h"
 #include "ConfigManager.h"
+#include "PackManagerDialog.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -14,6 +15,7 @@
 #include <QDebug>
 #include <QPixmap>
 #include <QImage>
+#include <QTimer>
 
 SystemTray::SystemTray(QWidget *mainWindow, ConfigManager *config, QObject *parent)
     : QObject(parent)
@@ -123,6 +125,12 @@ void SystemTray::setupMenu()
 
     m_trayMenu->addSeparator();
 
+    // Manage Models dialog
+    m_manageModelsAction = m_trayMenu->addAction(tr("Manage Models"));
+    connect(m_manageModelsAction, &QAction::triggered, this, &SystemTray::onManageModelsClicked);
+
+    m_trayMenu->addSeparator();
+
     // Check for updates
     m_checkUpdateAction = m_trayMenu->addAction(tr("Check for Updates"));
     connect(m_checkUpdateAction, &QAction::triggered, this, [this]() {
@@ -149,6 +157,12 @@ void SystemTray::setCharacterPackManager(CharacterPackManager *manager)
         connect(m_packManager, &CharacterPackManager::packListChanged,
                 this, &SystemTray::refreshPackMenu);
         refreshPackMenu();
+    }
+
+    if (m_packManagerDialog) {
+        // The dialog stores its own pointer; recreate if needed
+        delete m_packManagerDialog;
+        m_packManagerDialog = nullptr;
     }
 }
 
@@ -322,6 +336,20 @@ void SystemTray::retranslateUi()
     if (m_quitAction) {
         m_quitAction->setText(tr("Quit"));
     }
-    // Pack labels can switch between English/Chinese on locale change.
+    if (m_manageModelsAction) {
+        m_manageModelsAction->setText(tr("Manage Models"));
+    }
     refreshPackMenu();
+}
+
+void SystemTray::onManageModelsClicked()
+{
+    if (!m_packManagerDialog) {
+        m_packManagerDialog = new PackManagerDialog(m_packManager, nullptr);
+    }
+    // Defer show until the tray menu has fully closed — on macOS showing a
+    // window while the menu is still the key window prevents it from appearing.
+    QTimer::singleShot(50, m_packManagerDialog, [this]() {
+        m_packManagerDialog->showAnimated();
+    });
 }

@@ -355,6 +355,8 @@ qt_add_executable(Oai
     src/TipBubbleWidget.h
     src/SettingsPanelWidget.cpp
     src/SettingsPanelWidget.h
+    src/PackManagerDialog.cpp
+    src/PackManagerDialog.h
     src/EcgWidget.cpp
     src/EcgWidget.h
     src/MacFocusFix.h
