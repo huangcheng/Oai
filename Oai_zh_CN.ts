@@ -244,6 +244,12 @@
         <translation>检查更新</translation>
     </message>
     <message>
+        <location filename="src/SystemTray.cpp" line="129"/>
+        <location filename="src/SystemTray.cpp" line="340"/>
+        <source>Manage Models</source>
+        <translation>管理模型</translation>
+    </message>
+    <message>
         <location filename="src/SystemTray.cpp" line="139"/>
         <location filename="src/SystemTray.cpp" line="338"/>
         <source>Quit</source>
@@ -278,6 +284,152 @@
         <location filename="src/SystemTray.cpp" line="209"/>
         <source>Could not check for updates: %1</source>
         <translation>无法检查更新：%1</translation>
+    </message>
+</context>
+<context>
+    <name>PackManagerDialog</name>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="80"/>
+        <source>Models Management</source>
+        <translation>模型管理</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="162"/>
+        <source>Add</source>
+        <translation>添加</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="188"/>
+        <source>Delete</source>
+        <translation>删除</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="387"/>
+        <source>Pack files (*.opk *.codex-pet)</source>
+        <translation>模型文件 (*.opk *.codex-pet)</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="388"/>
+        <source>OPK files (*.opk)</source>
+        <translation>OPK 文件 (*.opk)</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="389"/>
+        <source>Codex Pet files (*.codex-pet)</source>
+        <translation>Codex 宠物文件 (*.codex-pet)</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="390"/>
+        <source>All files (*)</source>
+        <translation>所有文件 (*)</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="394"/>
+        <source>Select Pack Files to Install</source>
+        <translation>选择要安装的模型文件</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="415"/>
+        <source>Successfully installed %1 pack(s).</source>
+        <translation>成功安装 %1 个模型。</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="417"/>
+        <source>Failed to install %1 file(s): %2</source>
+        <translation>安装失败 %1 个文件：%2</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="420"/>
+        <source>Installation Complete</source>
+        <translation>安装完成</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="422"/>
+        <source>Installation Failed</source>
+        <translation>安装失败</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="423"/>
+        <source>Failed to install all selected files: %1</source>
+        <translation>所有选定文件安装失败：%1</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="434"/>
+        <source>No Selection</source>
+        <translation>未选择</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="435"/>
+        <source>Please select one or more packs to delete.</source>
+        <translation>请选择一个或多个模型进行删除。</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="456"/>
+        <source>Cannot Delete Active Pet</source>
+        <translation>无法删除当前宠物</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="457"/>
+        <source>"%1" is currently in use and cannot be deleted.
+
+Please switch to another pet first.</source>
+        <translation>"%1" 当前正在使用中，无法删除。
+
+请先切换到其他宠物。</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="465"/>
+        <source>Delete Packs</source>
+        <translation>删除模型</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="466"/>
+        <source>Are you sure you want to delete the following %1 pack(s)?
+
+%2
+
+This action cannot be undone.</source>
+        <translation>确定要删除以下 %1 个模型吗？
+
+%2
+
+此操作不可撤销。</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="490"/>
+        <source>Delete Complete</source>
+        <translation>删除完成</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="491"/>
+        <source>Successfully deleted %1 pack(s).</source>
+        <translation>成功删除 %1 个模型。</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="494"/>
+        <source>Failed to delete: %1</source>
+        <translation>删除失败：%1</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="495"/>
+        <source>Delete Partial</source>
+        <translation>部分删除</translation>
+    </message>
+    <message>
+        <location filename="src/PackManagerDialog.cpp" line="516"/>
+        <source>ID: %1
+Path: %2</source>
+        <translation>ID: %1
+路径: %2</translation>
+    </message>
+</context>
+<context>
+    <name>StyledAlertDialog</name>
+    <message>
+        <location filename="src/StyledAlertDialog.cpp" line="102"/>
+        <location filename="src/StyledAlertDialog.cpp" line="144"/>
+        <source>OK</source>
+        <translation>确定</translation>
     </message>
 </context>
 <context>
