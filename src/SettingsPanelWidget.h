@@ -17,7 +17,6 @@ class QLineEdit;
 class QToolButton;
 class QAction;
 class QKeySequenceEdit;
-class QKeySequenceEdit;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -46,6 +45,9 @@ public:
     void setPanelScale(qreal s);
     qreal panelOpacity() const { return m_panelOpacity; }
     void setPanelOpacity(qreal o);
+
+signals:
+    void panelHidden();
 
 protected:
     void paintEvent(QPaintEvent *event) override;

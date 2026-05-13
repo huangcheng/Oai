@@ -20,6 +20,7 @@ class CharacterPackManager;
 class EventRouter;
 class FullscreenWatcher;
 class PetStateMachine;
+class GlobalShortcutManager;
 
 class QTranslator;
 class SystemTray;
@@ -42,6 +43,7 @@ public:
 
     void setSystemTray(SystemTray *tray);
     void setCharacterPackManager(CharacterPackManager *manager);
+    void setGlobalShortcutManager(GlobalShortcutManager *manager);
     void setEventRouter(EventRouter *router) { m_eventRouter = router; }
     void setStateMachine(PetStateMachine *sm) { m_stateMachine = sm; }
 
@@ -100,6 +102,7 @@ private:
     CharacterPackManager *m_packManager = nullptr;
     EventRouter *m_eventRouter = nullptr;
     PetStateMachine *m_stateMachine = nullptr;
+    GlobalShortcutManager *m_shortcutManager = nullptr;
 
     // Gaming Mode
     FullscreenWatcher *m_fullscreenWatcher = nullptr;

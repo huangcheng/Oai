@@ -397,6 +397,7 @@ int main(int argc, char *argv[])
                      &config, [&config](const QString &s) { config.setGlobalShortcut(s); });
     QObject::connect(&config, &ConfigManager::globalShortcutChanged,
                      &shortcutManager, [&shortcutManager](const QString &s) { shortcutManager.setShortcut(s); });
+    w.setGlobalShortcutManager(&shortcutManager);
 
     // --- Pet state machine ----------------------------------------------------
     PetStateMachine stateMachine;

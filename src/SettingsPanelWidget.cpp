@@ -98,8 +98,7 @@ SettingsPanelWidget::SettingsPanelWidget(ConfigManager *config, QWidget *parent)
 {
     setWindowFlags(
         Qt::FramelessWindowHint |
-        Qt::WindowStaysOnTopHint |
-        Qt::WindowDoesNotAcceptFocus
+        Qt::WindowStaysOnTopHint
     );
     setAttribute(Qt::WA_TranslucentBackground, true);
     setAttribute(Qt::WA_ShowWithoutActivating, true);
@@ -487,23 +486,31 @@ void SettingsPanelWidget::setupUi()
 
     // Row 5: Global Shortcut
     m_shortcutLabel = new QLabel(tr("Shortcut"), m_contentWidget);
+    m_shortcutLabel->setFont(harmonyFont(10));
+    m_shortcutLabel->setStyleSheet("color: black; background: transparent;");
+    m_shortcutLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_shortcutEdit = new QKeySequenceEdit(QKeySequence(m_config->globalShortcut()), m_contentWidget);
     m_shortcutEdit->setFont(harmonyFont(10));
     m_shortcutEdit->setFixedHeight(24);
     m_shortcutEdit->setStyleSheet(R"(
         QKeySequenceEdit {
-            background: white;
-            border: 2px solid black;
-            border-radius: 3px;
-            padding: 2px 6px;
-            color: #2C2C2E;
-        }
-        QKeySequenceEdit QLineEdit {
             background: transparent;
             border: none;
             padding: 0px;
         }
     )");
+    if (QLineEdit *le = m_shortcutEdit->findChild<QLineEdit*>()) {
+        le->setFrame(false);
+        le->setStyleSheet(R"(
+            QLineEdit {
+                background: white;
+                border: 2px solid black;
+                border-radius: 3px;
+                padding: 2px 6px;
+                color: #2C2C2E;
+            }
+        )");
+    }
     m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
     formGrid->addWidget(m_shortcutLabel, 5, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_shortcutEdit, 5, 1);
@@ -682,7 +689,10 @@ void SettingsPanelWidget::hideAnimated()
     m_opacityAnim->setStartValue(m_panelOpacity);
     m_opacityAnim->setEndValue(0.0);
     m_opacityAnim->setEasingCurve(QEasingCurve::InCubic);
-    connect(m_opacityAnim, &QPropertyAnimation::finished, this, &QWidget::hide);
+    connect(m_opacityAnim, &QPropertyAnimation::finished, this, [this]() {
+        hide();
+        emit panelHidden();
+    });
     m_opacityAnim->start();
 }
 

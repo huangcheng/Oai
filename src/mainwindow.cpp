@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "GlobalShortcutManager.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
 #ifdef OAI_LIVE2D_SUPPORT
@@ -711,6 +712,10 @@ void MainWindow::toggleVisibility()
 
 void MainWindow::openSettings()
 {
+    if (m_shortcutManager) {
+        m_shortcutManager->setEnabled(false);
+    }
+
     // In ECG mode this MainWindow is hidden, so anchoring Settings to its
     // petRect() lands the panel wherever MainWindow's last known coordinates
     // were — which is wrong if the user has dragged the ECG away. Anchor to
@@ -730,6 +735,19 @@ void MainWindow::setSystemTray(SystemTray *tray)
     m_systemTray = tray;
     if (m_systemTray && m_packManager) {
         m_systemTray->setCharacterPackManager(m_packManager);
+    }
+}
+
+void MainWindow::setGlobalShortcutManager(GlobalShortcutManager *manager)
+{
+    m_shortcutManager = manager;
+    if (m_settingsPanel && m_shortcutManager) {
+        connect(m_settingsPanel, &SettingsPanelWidget::panelHidden,
+                this, [this]() {
+            if (m_shortcutManager && m_config && m_config->globalShortcutEnabled()) {
+                m_shortcutManager->setEnabled(true);
+            }
+        });
     }
 }
 

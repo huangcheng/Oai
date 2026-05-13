@@ -16,8 +16,11 @@ void GlobalShortcutManager::setShortcut(const QString &shortcut)
 {
     if (m_shortcut == shortcut) return;
     m_shortcut = shortcut;
-    if (m_hotkey && m_enabled) {
-        m_hotkey->setShortcut(QKeySequence(shortcut), true);
+    if (m_hotkey) {
+        m_hotkey->setShortcut(QKeySequence(shortcut), false);
+        if (m_enabled) {
+            m_hotkey->setRegistered(true);
+        }
     }
     emit shortcutChanged(shortcut);
 }
