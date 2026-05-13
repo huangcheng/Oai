@@ -134,6 +134,19 @@ int main(int argc, char *argv[])
     // handling macOS app bundles, various build dir layouts, and source-tree runs.
     auto findAssetsDir = []() -> QString {
         QDir dir(QApplication::applicationDirPath());
+
+#ifdef Q_OS_MAC
+        // macOS app bundle: assets live in Contents/Resources/assets
+        // (searched first so deployed bundles win over dev-tree fallbacks).
+        QDir bundleDir(dir);
+        if (bundleDir.cdUp() && bundleDir.cd("Resources") && bundleDir.cd("assets")) {
+            QString candidate = bundleDir.absolutePath();
+            if (QFile::exists(candidate + "/animations.json")) {
+                return candidate;
+            }
+        }
+#endif
+
         for (int i = 0; i < 6; ++i) {
             QString candidate = dir.absoluteFilePath("assets");
             // Use animations.json as the sentinel (always present at assets root);

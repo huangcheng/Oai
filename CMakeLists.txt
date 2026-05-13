@@ -687,6 +687,29 @@ if(APPLE)
         target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
     endforeach()
 
+    # Copy essential runtime assets into the macOS bundle so deployed apps
+    # can find them without relying on the compile-time source tree.
+    add_custom_command(TARGET Oai POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets"
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/assets/animations.json"
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/animations.json"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets/fonts"
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/fonts"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets/i18n"
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/i18n"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets/lottie"
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/lottie"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets/packs"
+            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/packs"
+        COMMENT "Copying runtime assets into macOS bundle"
+    )
+
     add_custom_command(TARGET Oai POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/hide_dock_icon.py"

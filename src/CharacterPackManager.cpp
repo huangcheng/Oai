@@ -43,12 +43,32 @@ void CharacterPackManager::initialize(const QString &builtInDir, const QString &
 
     // Load default pack: preferred ID from config (if still installed),
     // otherwise fall back to the alphabetically-first available pack.
+    // If the preferred pack fails to load, keep trying others until one
+    // succeeds — without this a broken user pack leaves the pet invisible.
     if (!m_packs.isEmpty()) {
-        QString defaultPackId = preferredId;
-        if (defaultPackId.isEmpty() || !m_packs.contains(defaultPackId)) {
-            defaultPackId = m_packs.firstKey();
+        QStringList candidates;
+        if (!preferredId.isEmpty() && m_packs.contains(preferredId)) {
+            candidates.append(preferredId);
         }
-        switchPack(defaultPackId);
+        for (const QString &id : m_packs.keys()) {
+            if (!candidates.contains(id)) {
+                candidates.append(id);
+            }
+        }
+
+        bool loaded = false;
+        for (const QString &packId : candidates) {
+            if (switchPack(packId)) {
+                loaded = true;
+                break;
+            }
+            qWarning() << "CharacterPackManager: Failed to load pack" << packId
+                       << "— trying next fallback.";
+        }
+
+        if (!loaded) {
+            qWarning() << "CharacterPackManager: No packs could be loaded!";
+        }
     } else {
         qWarning() << "CharacterPackManager: No sprite packs found!";
     }
@@ -77,9 +97,7 @@ QString CharacterPackManager::PackInfo::displayName(const QString &localeCode) c
 
 bool CharacterPackManager::switchPack(const QString &packId)
 {
-    qDebug() << "[SWITCH] Attempting switch to packId:" << packId
-             << "m_activePackId current:" << m_activePackId
-             << "available packs count:" << m_packs.size();
+
     if (!m_packs.contains(packId)) {
         qWarning() << "CharacterPackManager: Pack not found in m_packs:" << packId;
         qWarning() << "  Available pack IDs:";
