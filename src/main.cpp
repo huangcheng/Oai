@@ -42,6 +42,14 @@ static QString configDir() {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
 }
 
+static QString dataDir() {
+    // AppLocalDataLocation is for user data (packs, logs), not config.
+    // macOS: ~/Library/Application Support/Oai/
+    // Linux: ~/.local/share/Oai/
+    // Windows: %LOCALAPPDATA%/Oai/
+    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+}
+
 // Mirror qDebug/qWarning/qInfo to a file next to the executable so a crashed
 // /SUBSYSTEM:WINDOWS run still leaves a trace. Default Qt handler writes to
 // OutputDebugString which is invisible without a debugger attached.
@@ -219,7 +227,7 @@ int main(int argc, char *argv[])
     // --- Sprite pack manager -------------------------------------------------
     CharacterPackManager packManager;
     const QString builtInPacksDir = assetsDir + "/packs";
-    const QString userPacksDir = configDir() + "/packs";
+    const QString userPacksDir = dataDir() + "/packs";
     packManager.initialize(builtInPacksDir, userPacksDir, config.activePackId());
     w.setCharacterPackManager(&packManager);
 

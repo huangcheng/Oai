@@ -488,6 +488,22 @@ void SettingsPanelWidget::setupUi()
     // Row 5: Global Shortcut
     m_shortcutLabel = new QLabel(tr("Shortcut"), m_contentWidget);
     m_shortcutEdit = new QKeySequenceEdit(QKeySequence(m_config->globalShortcut()), m_contentWidget);
+    m_shortcutEdit->setFont(harmonyFont(10));
+    m_shortcutEdit->setFixedHeight(24);
+    m_shortcutEdit->setStyleSheet(R"(
+        QKeySequenceEdit {
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: #2C2C2E;
+        }
+        QKeySequenceEdit QLineEdit {
+            background: transparent;
+            border: none;
+            padding: 0px;
+        }
+    )");
     m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
     formGrid->addWidget(m_shortcutLabel, 5, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_shortcutEdit, 5, 1);

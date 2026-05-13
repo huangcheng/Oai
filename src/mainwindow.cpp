@@ -612,7 +612,7 @@ void MainWindow::dropEvent(QDropEvent *event)
             QFileInfo fi(filePath);
             QString userPacksDir = m_packManager->userDir();
             if (userPacksDir.isEmpty()) {
-                userPacksDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/Oai/packs";
+                userPacksDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/packs";
                 qWarning() << "MainWindow: userDir empty, falling back to" << userPacksDir;
             }
             QDir().mkpath(userPacksDir);
