@@ -31,6 +31,10 @@ Oai supports customizable characters through sprite packs (`.opk` files) and Cod
 
 ### Codex pets
 
+<p align="center">
+  <img src="assets/screenshots/codex-pet.png" alt="Codex pet example" width="170">
+</p>
+
 Oai natively reads `.codex-pet` archives produced by the upstream [openai/skills `hatch-pet`](https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md) skill. The format ships a fixed 8×9 atlas (`spritesheet.webp`, 1536×1872 px, 192×208 cells) plus a `pet.json` manifest. Drop the archive on the pet window — Oai auto-detects and renders it without conversion. The 9 animation rows (`idle`, `running-right`, `running-left`, `waving`, `jumping`, `failed`, `waiting`, `running`, `review`) map directly onto the pet state machine.
 
 ### Pulling community Live2D packs from the upstream archive
