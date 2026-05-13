@@ -424,6 +424,13 @@ def package_macos(build_dir, version, qt_prefix):
     else:
         print("  [WARNING] macdeployqt not found – relying on cmake install deploy script.")
 
+    # macdeployqt regenerates Info.plist and strips our LSUIElement.
+    # Re-apply it after deployment so the Dock icon stays hidden.
+    hide_script = PROJECT_ROOT / "scripts" / "hide_dock_icon.py"
+    plist_path = app_bundle / "Contents" / "Info.plist"
+    if hide_script.exists() and plist_path.exists():
+        run([sys.executable, str(hide_script), str(plist_path)], check=False)
+
     # Restore the un-mangled binary on top of macdeployqt's broken one.
     if bin_backup.exists():
         shutil.copy2(bin_backup, main_bin)
