@@ -395,10 +395,8 @@ void MainWindow::leaveEvent(QEvent *event)
 #ifdef OAI_LIVE2D_SUPPORT
     if (m_live2dEngine) m_live2dEngine->setPointerTarget(0.0f, 0.0f);
 #endif
-    if (m_config && m_config->mouseTrackingEnabled()) {
-        if (m_stateMachine) {
-            m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverLeave"));
-        }
+    if (m_stateMachine) {
+        m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverLeave"));
     }
     QWidget::leaveEvent(event);
 }
@@ -414,10 +412,8 @@ void MainWindow::enterEvent(QEnterEvent *event)
             static_cast<float>(center.y()));
     }
 #endif
-    if (m_config && m_config->mouseTrackingEnabled()) {
-        if (m_stateMachine) {
-            m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverEnter"));
-        }
+    if (m_stateMachine) {
+        m_stateMachine->onSyntheticEvent(QStringLiteral("user.hoverEnter"));
     }
     QWidget::enterEvent(event);
 }

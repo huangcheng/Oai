@@ -58,7 +58,6 @@ private slots:
     void onModeChanged(int index);
     void onPortEditingFinished();
     void onShortcutChanged(const QKeySequence &sequence);
-    void onMouseTrackingToggled(bool checked);
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
 
@@ -68,7 +67,6 @@ private:
     void refreshPackList();
     void updatePackButtonLabel();
     void updatePackRowVisibility();
-    void updateMouseTrackingRowVisibility();
 
     ConfigManager *m_config;
     CharacterPackManager *m_packManager = nullptr;
@@ -89,8 +87,6 @@ private:
     QToolButton *m_packButton = nullptr;
     QLabel *m_shortcutLabel = nullptr;
     QKeySequenceEdit *m_shortcutEdit = nullptr;
-    QLabel *m_mouseTrackingLabel = nullptr;
-    QCheckBox *m_mouseTrackingCheck = nullptr;
     QLabel *m_gamingModeLabel = nullptr;
     QCheckBox *m_gamingModeCheck = nullptr;
     QLabel *m_tipBubblesLabel = nullptr;

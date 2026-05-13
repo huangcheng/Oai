@@ -494,48 +494,6 @@ void SettingsPanelWidget::setupUi()
     connect(m_shortcutEdit, &QKeySequenceEdit::keySequenceChanged,
             this, &SettingsPanelWidget::onShortcutChanged);
 
-    // Row 6: Mouse Tracking (hidden in ECG mode)
-    m_mouseTrackingLabel = new QLabel(tr("Mouse Tracking"), m_contentWidget);
-    m_mouseTrackingLabel->setFont(harmonyFont(10));
-    m_mouseTrackingLabel->setStyleSheet("color: black; background: transparent;");
-    m_mouseTrackingLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-    m_mouseTrackingCheck = new QCheckBox(m_contentWidget);
-    m_mouseTrackingCheck->setChecked(m_config->mouseTrackingEnabled());
-    m_mouseTrackingCheck->setStyleSheet(QStringLiteral(R"(
-        QCheckBox {
-            color: black;
-            background: transparent;
-            spacing: 6px;
-        }
-        QCheckBox::indicator {
-            width: 16px;
-            height: 16px;
-            border: 2px solid black;
-            border-radius: 3px;
-            background: white;
-        }
-        QCheckBox::indicator:checked {
-            background: black;
-        }
-        QCheckBox::indicator:checked::after {
-            content: "";
-            display: block;
-            width: 6px;
-            height: 10px;
-            border: solid white;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-            margin: 2px 0 0 4px;
-        }
-    )"));
-    connect(m_mouseTrackingCheck, &QCheckBox::toggled,
-            this, &SettingsPanelWidget::onMouseTrackingToggled);
-
-    formGrid->addWidget(m_mouseTrackingLabel, 6, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_mouseTrackingCheck, 6, 1, Qt::AlignLeft | Qt::AlignVCenter);
-
-    // Row 7: Gaming Mode
     m_gamingModeLabel = new QLabel(tr("Gaming Mode"), m_contentWidget);
     m_gamingModeLabel->setFont(harmonyFont(10));
     m_gamingModeLabel->setStyleSheet("color: black; background: transparent;");
@@ -553,10 +511,8 @@ void SettingsPanelWidget::setupUi()
         m_gamingModeCheck->setChecked(enabled);
     });
 
-    formGrid->addWidget(m_gamingModeLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_gamingModeCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
-
-    // Row 8: Event Tips toggle (controls gateway-event-driven tips; system tips always show)
+    formGrid->addWidget(m_gamingModeLabel, 6, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_gamingModeCheck, 6, 1, Qt::AlignLeft | Qt::AlignVCenter);
     m_tipBubblesLabel = new QLabel(tr("Event Tips"), m_contentWidget);
     m_tipBubblesLabel->setFont(harmonyFont(10));
     m_tipBubblesLabel->setStyleSheet("color: black; background: transparent;");
@@ -574,16 +530,13 @@ void SettingsPanelWidget::setupUi()
         m_tipBubblesCheck->setChecked(enabled);
     });
 
-    formGrid->addWidget(m_tipBubblesLabel, 8, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    formGrid->addWidget(m_tipBubblesCheck, 8, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_tipBubblesLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_tipBubblesCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
-    // Add all rows to main layout
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
     mainLayout->addLayout(formGrid);
     mainLayout->addStretch(1);
-
-    updateMouseTrackingRowVisibility();
 }
 
 void SettingsPanelWidget::updatePackRowVisibility()
@@ -591,13 +544,6 @@ void SettingsPanelWidget::updatePackRowVisibility()
     const bool isCharacter = (m_config->displayMode() == ConfigManager::DisplayMode::Character);
     m_packLabel->setVisible(isCharacter);
     m_packButton->setVisible(isCharacter);
-}
-
-void SettingsPanelWidget::updateMouseTrackingRowVisibility()
-{
-    // Row hidden — feature off by default and not user-toggleable.
-    m_mouseTrackingLabel->setVisible(false);
-    m_mouseTrackingCheck->setVisible(false);
 }
 
 void SettingsPanelWidget::positionRelativeTo(const QWidget *pet)
@@ -745,7 +691,6 @@ void SettingsPanelWidget::onModeChanged(int index)
                                             : ConfigManager::DisplayMode::Character;
     m_config->setDisplayMode(mode);
     updatePackRowVisibility();
-    updateMouseTrackingRowVisibility();
 }
 
 void SettingsPanelWidget::onPortEditingFinished()
@@ -763,11 +708,6 @@ void SettingsPanelWidget::onPortEditingFinished()
 void SettingsPanelWidget::onShortcutChanged(const QKeySequence &sequence)
 {
     m_config->setGlobalShortcut(sequence.toString());
-}
-
-void SettingsPanelWidget::onMouseTrackingToggled(bool checked)
-{
-    m_config->setMouseTrackingEnabled(checked);
 }
 
 void SettingsPanelWidget::onGamingModeToggled(bool checked)
@@ -916,7 +856,6 @@ void SettingsPanelWidget::retranslateUi()
     m_portLabel->setText(tr("Port"));
     if (m_shortcutLabel) m_shortcutLabel->setText(tr("Shortcut"));
     if (m_shortcutEdit) m_shortcutEdit->setToolTip(tr("Global shortcut to show/hide the pet"));
-    if (m_mouseTrackingLabel) m_mouseTrackingLabel->setText(tr("Mouse Tracking"));
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     m_packLabel->setText(tr("Model"));

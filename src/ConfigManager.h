@@ -60,10 +60,6 @@ public:
     bool globalShortcutEnabled() const { return m_globalShortcutEnabled; }
     void setGlobalShortcutEnabled(bool enabled);
 
-    /** Whether mouse tracking hover reactions are enabled. */
-    bool mouseTrackingEnabled() const { return m_mouseTrackingEnabled; }
-    void setMouseTrackingEnabled(bool enabled);
-
     /** Whether Gaming Mode (auto-hide when a fullscreen app is active) is enabled. */
     bool gamingModeEnabled() const { return m_gamingModeEnabled; }
     void setGamingModeEnabled(bool enabled);
@@ -95,7 +91,6 @@ signals:
     void updateServerEndpointChanged(const QString &endpoint);
     void displayModeChanged(DisplayMode mode);
     void globalShortcutChanged(const QString &shortcut);
-    void mouseTrackingEnabledChanged(bool enabled);
     void gamingModeEnabledChanged(bool enabled);
     void tipBubblesEnabledChanged(bool enabled);
 
@@ -111,7 +106,6 @@ private:
     DisplayMode m_displayMode = DisplayMode::Character;
     QString m_globalShortcut = QStringLiteral("Ctrl+Shift+O");
     bool m_globalShortcutEnabled = true;
-    bool m_mouseTrackingEnabled = false;
     bool m_gamingModeEnabled = false;
     bool m_tipBubblesEnabled = true;
 

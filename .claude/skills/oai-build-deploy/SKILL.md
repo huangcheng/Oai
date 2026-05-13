@@ -1,10 +1,10 @@
 ---
 name: oai-build-deploy
-description: Bring up the Oai project on a fresh machine — install Qt + Cubism SDK Core, populate submodules, build with scripts/build_release.py, and produce the platform installer (.exe / .dmg / .AppImage). Use when the user is setting up on a new machine, getting a build error before reaching `Configuring done`, debugging a packaging failure, or asking how to ship a release. Triggers on phrases like "build the project", "make an installer", "deploy", "first build", "Live2DCubismCore not found", "GLEW not found", "package_installer", "windeployqt", "macdeployqt", "appimagetool", "fresh clone", "new machine setup".
+description: Bring up the Oai project on a fresh machine — install Qt + Cubism SDK Core, populate submodules, build with scripts/build_release.py, and produce the platform installer (.exe / .dmg / .AppImage). Use when the user is setting up on a new machine, getting a build error before reaching `Configuring done`, debugging a packaging failure, or asking how to ship a release. Triggers on phrases like "build the project", "make an installer", "deploy", "first build", "Live2DCubismCore not found", "GLEW not found", "package_installer", "windeployqt", "macdeployqt", "appimagetool", "fresh clone", "new machine setup", "pet window invisible", "WEBP not supported", "Codex pet fails to load", "build app crashes", "Qt platform plugin".
 license: MIT
 metadata:
   author: oai
-  version: "1.0"
+  version: "1.1"
 ---
 
 Oai is a native Qt6/C++ desktop pet that renders Live2D Cubism characters and reacts to AI-coding-tool events over UDP. Getting from `git clone` to a shippable installer involves five moving parts that bite first-time setups in predictable ways. This skill captures the entire pipeline plus the workarounds for the gotchas we've actually hit.
@@ -355,6 +355,114 @@ When debugging an "icon won't update" complaint:
 1. `stat` mtimes to check `oai.rc.obj` is newer than `oai.ico` — if not, it's (a).
 2. `Oai.exe` mtime is newer than `oai.rc.obj` — confirms the link picked up the new .obj.
 3. If both check out, it's (b) — kick the IconCache.
+
+### 13. macOS: Build-directory app crashes with Qt platform plugin conflict
+
+Running `./build/Oai.app/Contents/MacOS/Oai` directly crashes immediately:
+```
+abort() called
+QGuiApplicationPrivate::createPlatformIntegration()
+```
+
+Cause: The binary links to Qt via `@rpath`, but the shell environment has `DYLD_LIBRARY_PATH` or `DYLD_FRAMEWORK_PATH` pointing at the Homebrew Qt prefix (`/opt/homebrew/lib`). The dynamic linker loads the **system** QtCore first, then the bundled QtCore, causing symbol conflicts.
+
+**This is expected and not a bug.** The build-directory `.app` is not meant to be run directly. macdeployqt's deployment is only valid when the bundle is launched through LaunchServices (`open`) or installed to `/Applications/`.
+
+Fix: Always test via LaunchServices:
+```bash
+# Install and test the proper way
+rm -rf /Applications/Oai.app
+cp -R build/Oai.app /Applications/Oai.app
+xattr -cr /Applications/Oai.app          # remove quarantine
+open /Applications/Oai.app
+```
+
+Or use `open -n` for a second instance while one is already running:
+```bash
+open -n /Applications/Oai.app
+```
+
+### 14. macOS: `open build/Oai.app` launches the wrong binary
+
+After copying a fresh build to `/Applications/Oai.app`, running `open build/Oai.app` still opens the **old** installed version. Both bundles share the same bundle ID (`im.cheng.oai`), so LaunchServices resolves `build/Oai.app` to the already-registered `/Applications/Oai.app`.
+
+Fix: Remove or replace the installed app first, or use absolute path with `-n`:
+```bash
+rm -rf /Applications/Oai.app
+cp -R build/Oai.app /Applications/Oai.app
+open /Applications/Oai.app
+```
+
+### 15. macOS: WEBP plugin corrupted by macdeployqt — Codex pets fail to load
+
+```
+[WARN] WEBP image format: NOT supported. Codex pets will fail to load.
+```
+
+All Codex pets (dario, cheddar, fengge, taobao) use `.webp` sprite atlases. Qt 6.11 (Homebrew) ships `libqwebp.dylib` in a **separate formula** (`qtimageformats`), and `macdeployqt` copies it into the bundle but then corrupts it by stripping `LC_ID_DYLIB`. Additionally, `macdeployqt` misses copying `libsharpyuv.0.dylib` (a dependency of `libwebp.7.dylib`).
+
+Symptoms:
+- WEBP format shows "NOT supported" in logs
+- Codex pets fail to load with `createAndLoadPack returned nullptr`
+- The pet window may be invisible if no fallback pack is available
+
+Fix (already integrated into `scripts/build_release.py`):
+
+```python
+# After macdeployqt, recopy the plugin from the qtimageformats formula
+# and rewrite its library paths to @rpath:
+# 1. Copy libqwebp.dylib from /opt/homebrew/Cellar/qtimageformats/6.11.0/...
+# 2. Set its install name to @rpath/PlugIns/imageformats/libqwebp.dylib
+# 3. Rewrite Qt deps to @rpath/QtGui.framework/...
+# 4. Rewrite webp deps to @rpath/libwebp.7.dylib, etc.
+# 5. Add rpath: @loader_path/../../Frameworks
+# 6. Copy libsharpyuv.0.dylib to Contents/Frameworks/ and fix its paths
+```
+
+The build script now handles this automatically. If you're debugging a custom build pipeline, verify:
+```bash
+# WEBP plugin should have @rpath deps, not /opt/homebrew/...
+otool -L Oai.app/Contents/PlugIns/imageformats/libqwebp.dylib | grep webp
+# Expected: @rpath/libwebp.7.dylib, @rpath/libsharpyuv.0.dylib, etc.
+
+# sharpyuv must exist in Frameworks/
+ls Oai.app/Contents/Frameworks/libsharpyuv.0.dylib
+```
+
+### 16. macOS: Invisible pet window — broken pack loading
+
+The pet window exists but shows nothing (transparent/black). Common causes:
+
+**a) Preferred pack fails to load, no fallback.** If the user's config (`~/.config/Oai/Oai.ini`) has `activePackId=dario` but dario can't load (e.g., missing WEBP plugin), the old code left `m_activePack = nullptr` and the pet rendered nothing.
+
+Fix (already committed): `CharacterPackManager::initialize()` now iterates through all available packs as fallback when the preferred pack fails:
+```cpp
+bool loaded = false;
+for (const QString &packId : candidates) {
+    if (switchPack(packId)) {
+        loaded = true;
+        break;
+    }
+    qWarning() << "Failed to load pack" << packId << "— trying next fallback.";
+}
+```
+
+**b) Window position saved off-screen.** If the pet was dragged to a now-disconnected monitor, `windowX`/`windowY` in `~/.config/Oai/Oai.ini` may place it outside the visible screen.
+
+Fix: Reset window position:
+```bash
+sed -i '' 's/windowX=.*/windowX=100/' ~/.config/Oai/Oai.ini
+sed -i '' 's/windowY=.*/windowY=500/' ~/.config/Oai/Oai.ini
+```
+
+**c) Missing assets directory.** The app searches for `animations.json` as a sentinel. If `findAssetsDir()` returns empty, the app has no animations to render.
+
+Verify:
+```bash
+# In the installed app
+ls /Applications/Oai.app/Contents/Resources/assets/animations.json
+ls /Applications/Oai.app/Contents/Resources/assets/packs/
+```
 
 ### 13. macOS: "The application can't be opened" / LaunchServices error 153
 
