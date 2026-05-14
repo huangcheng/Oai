@@ -1001,6 +1001,19 @@ void SettingsPanelWidget::onTtsProviderFieldEdited()
         }
     }
 }
+
+void SettingsPanelWidget::showAuthFailedHint(const QString &providerStableId)
+{
+    for (const TtsFieldEdit& f : m_ttsFieldEdits) {
+        if (f.providerStableId == providerStableId &&
+            (f.fieldName == QLatin1String("token") ||
+             f.fieldName == QLatin1String("key")))
+        {
+            f.edit->setStyleSheet("border: 2px solid #E53E3E;");
+            f.edit->setToolTip(tr("Authentication failed — check this credential."));
+        }
+    }
+}
 #endif
 
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)

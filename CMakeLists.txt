@@ -22,15 +22,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia LinguistTools Test)
 
-# Optional: WebSockets for TTS support (StepFun/MiniMax providers)
-find_package(Qt6 6.5 COMPONENTS WebSockets QUIET)
-if(Qt6WebSockets_FOUND)
-    set(OAI_TTS_ENABLED ON CACHE BOOL "Enable TTS (Text-to-Speech) support via WebSocket" FORCE)
-    message(STATUS "Qt6::WebSockets found — TTS support enabled")
-else()
-    set(OAI_TTS_ENABLED OFF CACHE BOOL "Enable TTS (Text-to-Speech) support via WebSocket" FORCE)
-    message(STATUS "Qt6::WebSockets NOT found — TTS support disabled")
-endif()
+# TTS support is now HTTP-based (no WebSocket dependency). Kept as an
+# optional feature so the build can still drop the AI tab on minimal builds.
+option(OAI_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
 
 qt_standard_project_setup()
 
@@ -458,9 +452,8 @@ target_link_libraries(Oai
         QHotkey::QHotkey
 )
 
-# TTS support (optional, requires Qt6::WebSockets)
+# TTS support (HTTP-based, no WebSocket dependency)
 if(OAI_TTS_ENABLED)
-    target_link_libraries(Oai PRIVATE Qt::WebSockets)
     target_compile_definitions(Oai PRIVATE OAI_TTS_ENABLED=1)
 endif()
 

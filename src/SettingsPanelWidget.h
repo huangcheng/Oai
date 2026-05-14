@@ -54,6 +54,11 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void showEvent(QShowEvent *event) override;
 
+public slots:
+#ifdef OAI_TTS_ENABLED
+    void showAuthFailedHint(const QString &providerStableId);
+#endif
+
 private slots:
     void onCloseClicked();
     void onTabChanged(int tabIndex);

@@ -98,6 +98,9 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             m_ttsEngine->speak(title + ". " + message);
         }
     });
+
+    connect(m_ttsEngine, &TTSEngine::authFailed,
+            m_settingsPanel, &SettingsPanelWidget::showAuthFailedHint);
 #endif
 
     m_ecgWidget = new EcgWidget(nullptr); // top-level, like the tip bubble
