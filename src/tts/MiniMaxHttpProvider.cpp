@@ -27,9 +27,7 @@ const char* emotionToString(Emotion e)
 
 QUrl buildUrl(const ProviderConfig& cfg)
 {
-    QString base = cfg.get("baseUrl", "https://api.minimaxi.com");
-    if (base.endsWith('/')) base.chop(1);
-    QUrl u(base + "/v1/t2a_v2");
+    QUrl u(cfg.get("baseUrl", "https://api.minimaxi.com/v1/t2a_v2"));
     QUrlQuery q;
     q.addQueryItem("GroupId", cfg.get("groupId"));
     u.setQuery(q);

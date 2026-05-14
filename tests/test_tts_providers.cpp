@@ -163,7 +163,7 @@ void TestTtsProviders::stepFun_buildsExpectedRequest()
     setStepFunResponse(200, QByteArray("MP3DATA"));
 
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token",   "TKN"},
         {"model",   "stepaudio-2.5-tts"},
         {"voice",   "cixingnansheng"},
@@ -192,7 +192,7 @@ void TestTtsProviders::stepFun_parsesMp3Response()
 {
     setStepFunResponse(200, QByteArray("\xFF\xFB\x10\xC4MP3DATA"));
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "cixingnansheng"},
     }};
     StepFunHttpProvider provider(cfg, m_nam);
@@ -213,7 +213,7 @@ void TestTtsProviders::stepFun_mapsHappyEmotionToInstruction()
 {
     setStepFunResponse(200, QByteArray("X"));
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "cixingnansheng"},
     }};
     StepFunHttpProvider provider(cfg, m_nam);
@@ -235,7 +235,7 @@ void TestTtsProviders::stepFun_returnsAuthFailedOn401()
 {
     setStepFunResponse(401, QByteArray("{\"error\":\"bad token\"}"));
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "cixingnansheng"},
     }};
     StepFunHttpProvider provider(cfg, m_nam);
@@ -264,7 +264,7 @@ void TestTtsProviders::miniMax_buildsExpectedRequest()
     setMiniMaxResponse(200, respBody);
 
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/v1/t2a_v2").arg(m_port)},
         {"token",   "TKN"},
         {"groupId", "GRP123"},
         {"model",   "speech-02-hd"},
@@ -303,7 +303,7 @@ void TestTtsProviders::miniMax_mapsHappyEmotionToEnum()
     setMiniMaxResponse(200, respBody);
 
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/v1/t2a_v2").arg(m_port)},
         {"token", "T"}, {"groupId", "G"}, {"voice", "v"},
     }};
     MiniMaxHttpProvider provider(cfg, m_nam);
@@ -393,7 +393,7 @@ void TestTtsProviders::openAi_buildsExpectedRequest()
     setOpenAiResponse(200, QByteArray("MP3"));
 
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1/openai-v1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/openai-v1/audio/speech").arg(m_port)},
         {"token", "sk-XYZ"},
         {"model", "gpt-4o-mini-tts"},
         {"voice", "nova"},
@@ -419,7 +419,7 @@ void TestTtsProviders::openAi_dropsEmotionSilently()
     setOpenAiResponse(200, QByteArray("MP3"));
 
     ProviderConfig cfg{{
-        {"baseUrl", QString("http://127.0.0.1:%1/openai-v1").arg(m_port)},
+        {"baseUrl", QString("http://127.0.0.1:%1/openai-v1/audio/speech").arg(m_port)},
         {"token", "T"}, {"voice", "nova"},
     }};
     OpenAiTtsProvider provider(cfg, m_nam);

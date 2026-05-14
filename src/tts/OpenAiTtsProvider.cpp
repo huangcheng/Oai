@@ -13,9 +13,7 @@ namespace {
 
 QUrl buildUrl(const ProviderConfig& cfg)
 {
-    QString base = cfg.get("baseUrl", "https://api.openai.com/v1");
-    if (base.endsWith('/')) base.chop(1);
-    return QUrl(base + "/audio/speech");
+    return QUrl(cfg.get("baseUrl", "https://api.openai.com/v1/audio/speech"));
 }
 
 TtsErrorKind classifyHttp(int status)

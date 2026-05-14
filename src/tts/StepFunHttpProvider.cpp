@@ -27,9 +27,10 @@ const char* emotionToInstruction(Emotion e)
 
 QUrl buildUrl(const ProviderConfig& cfg)
 {
-    QString base = cfg.get("baseUrl", "https://api.stepfun.com");
-    if (base.endsWith('/')) base.chop(1);
-    return QUrl(base + "/v1/audio/speech");
+    // Full endpoint URL, used verbatim. Default is the canonical StepFun
+    // endpoint per https://platform.stepfun.com/docs/zh/step-plan/integrations/audio-api
+    return QUrl(cfg.get("baseUrl",
+        "https://api.stepfun.com/step_plan/v1/audio/speech"));
 }
 
 TtsErrorKind classifyHttp(int status)
