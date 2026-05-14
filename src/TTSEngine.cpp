@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QBuffer>
+#include <QUrlQuery>
 
 TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     : QObject(parent)
@@ -75,10 +76,28 @@ void TTSEngine::connectToProvider()
 
     m_retryCount = 0;
 
+    // Construct TTS WebSocket URL from base URL + model
+    // If baseUrl is wss://api.stepfun.com/step_plan/v1/realtime
+    // we need wss://api.stepfun.com/step_plan/v1/realtime/audio?model=MODEL
     QUrl url(baseUrl);
+    QString path = url.path();
+    if (!path.endsWith("/audio")) {
+        if (path.endsWith("/")) {
+            path += "audio";
+        } else {
+            path += "/audio";
+        }
+        url.setPath(path);
+    }
+
+    QUrlQuery query;
+    query.addQueryItem("model", m_config->ttsModel());
+    url.setQuery(query);
+
     QNetworkRequest request(url);
     request.setRawHeader("Authorization", "Bearer " + m_config->ttsToken().toUtf8());
 
+    qDebug() << "TTSEngine: connecting to" << url.toString();
     m_webSocket->open(request);
 }
 
@@ -96,24 +115,76 @@ void TTSEngine::speak(const QString &text)
     if (text.isEmpty()) return;
 
     if (!m_webSocket || m_webSocket->state() != QAbstractSocket::ConnectedState) {
+        // Queue the text to speak after connection
+        m_pendingText = text;
         connectToProvider();
+    } else if (!m_sessionId.isEmpty()) {
+        sendTtsText(text);
+    } else {
+        // Waiting for session, queue it
+        m_pendingText = text;
     }
-
-    sendTtsRequest(text);
 }
 
-void TTSEngine::sendTtsRequest(const QString &text)
+void TTSEngine::sendTtsCreate()
 {
-    if (!m_webSocket || !m_config) return;
+    if (!m_webSocket || m_sessionId.isEmpty()) return;
+
+    QJsonObject data;
+    data["session_id"] = m_sessionId;
+    data["voice_id"] = "cixingnansheng";  // Default voice
+    data["response_format"] = "mp3";
+    data["volume_ratio"] = 1.0;
+    data["speed_ratio"] = 1.0;
+    data["sample_rate"] = 24000;
 
     QJsonObject request;
-    request["text"] = text;
-    request["model"] = m_config->ttsModel();
-    request["language"] = m_config->ttsLanguage();
+    request["type"] = "tts.create";
+    request["data"] = data;
+
+    QJsonDocument doc(request);
+    m_webSocket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+    qDebug() << "TTSEngine: sent tts.create for session" << m_sessionId;
+}
+
+void TTSEngine::sendTtsText(const QString &text)
+{
+    if (!m_webSocket || m_sessionId.isEmpty()) return;
+
+    QJsonObject data;
+    data["session_id"] = m_sessionId;
+    data["text"] = text;
+
+    QJsonObject request;
+    request["type"] = "tts.text.delta";
+    request["data"] = data;
 
     QJsonDocument doc(request);
     m_webSocket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
     emit speakingStarted();
+    qDebug() << "TTSEngine: sent tts.text.delta:" << text;
+
+    // Send flush to force immediate generation
+    QJsonObject flushData;
+    flushData["session_id"] = m_sessionId;
+
+    QJsonObject flushRequest;
+    flushRequest["type"] = "tts.text.flush";
+    flushRequest["data"] = flushData;
+
+    QJsonDocument flushDoc(flushRequest);
+    m_webSocket->sendTextMessage(QString::fromUtf8(flushDoc.toJson(QJsonDocument::Compact)));
+
+    // Send done
+    QJsonObject doneData;
+    doneData["session_id"] = m_sessionId;
+
+    QJsonObject doneRequest;
+    doneRequest["type"] = "tts.text.done";
+    doneRequest["data"] = doneData;
+
+    QJsonDocument doneDoc(doneRequest);
+    m_webSocket->sendTextMessage(QString::fromUtf8(doneDoc.toJson(QJsonDocument::Compact)));
 }
 
 void TTSEngine::playAudio(const QByteArray &audioData)
@@ -129,7 +200,7 @@ void TTSEngine::playAudio(const QByteArray &audioData)
                 this, &TTSEngine::onPlaybackStateChanged);
     }
 
-    QBuffer *buffer = new QBuffer();
+    QBuffer *buffer = new QBuffer(this);
     buffer->setData(audioData);
     buffer->open(QIODevice::ReadOnly);
 
@@ -142,11 +213,12 @@ void TTSEngine::onConnected()
     m_retryCount = 0;
     clearRetryTimer();
     emit connected();
-    qDebug() << "TTSEngine: connected to provider";
+    qDebug() << "TTSEngine: WebSocket connected, waiting for session...";
 }
 
 void TTSEngine::onDisconnected()
 {
+    m_sessionId.clear();
     emit disconnected();
     qDebug() << "TTSEngine: disconnected from provider";
 }
@@ -168,13 +240,46 @@ void TTSEngine::onTextMessageReceived(const QString &message)
     QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     QJsonObject obj = doc.object();
 
-    if (obj.contains("error")) {
-        emit error(obj["error"].toString());
-        return;
-    }
+    QString type = obj["type"].toString();
+    QJsonObject data = obj["data"].toObject();
 
-    if (obj.contains("status") && obj["status"].toString() == "finished") {
+    qDebug() << "TTSEngine: received" << type;
+
+    if (type == "tts.connection.done") {
+        m_sessionId = data["session_id"].toString();
+        qDebug() << "TTSEngine: session established:" << m_sessionId;
+        sendTtsCreate();
+    }
+    else if (type == "tts.response.created") {
+        // Session ready, send pending text if any
+        if (!m_pendingText.isEmpty()) {
+            sendTtsText(m_pendingText);
+            m_pendingText.clear();
+        }
+    }
+    else if (type == "tts.response.audio.delta") {
+        QString audioBase64 = data["audio"].toString();
+        if (!audioBase64.isEmpty()) {
+            QByteArray audioData = QByteArray::fromBase64(audioBase64.toUtf8());
+            if (!audioData.isEmpty()) {
+                playAudio(audioData);
+            }
+        }
+    }
+    else if (type == "tts.response.audio.done") {
+        QString audioBase64 = data["audio"].toString();
+        if (!audioBase64.isEmpty()) {
+            QByteArray audioData = QByteArray::fromBase64(audioBase64.toUtf8());
+            if (!audioData.isEmpty()) {
+                playAudio(audioData);
+            }
+        }
         emit speakingFinished();
+    }
+    else if (type == "tts.response.error") {
+        QString errorMsg = data["message"].toString();
+        emit error(errorMsg);
+        qWarning() << "TTSEngine: server error:" << errorMsg;
     }
 }
 

@@ -46,7 +46,8 @@ private slots:
 
 private:
     void setupWebSocket();
-    void sendTtsRequest(const QString &text);
+    void sendTtsCreate();
+    void sendTtsText(const QString &text);
     void playAudio(const QByteArray &audioData);
     void clearRetryTimer();
 
@@ -56,6 +57,9 @@ private:
     QMediaPlayer *m_mediaPlayer = nullptr;
     QAudioOutput *m_audioOutput = nullptr;
     QTimer *m_retryTimer = nullptr;
+
+    QString m_sessionId;
+    QString m_pendingText;
 
     int m_retryCount = 0;
     static constexpr int MAX_RETRIES = 5;
