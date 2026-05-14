@@ -1,15 +1,21 @@
 #ifndef TTSENGINE_H
 #define TTSENGINE_H
 
-#include <QObject>
-#include <QThread>
-#include <QWebSocket>
-#include <QAudioSink>
+#include "tts/ITtsProvider.h"
+#include "tts/TtsProviderRegistry.h"
+
+#include <QAudioDecoder>
 #include <QAudioFormat>
+#include <QAudioSink>
+#include <QBuffer>
+#include <QObject>
+#include <QPointer>
+#include <QThread>
 #include <QTimer>
-#include <QUrl>
+#include <memory>
 
 class ConfigManager;
+class QNetworkAccessManager;
 
 class TTSEngine : public QObject
 {
@@ -17,54 +23,59 @@ class TTSEngine : public QObject
 
 public:
     explicit TTSEngine(ConfigManager *config, QObject *parent = nullptr);
-    ~TTSEngine();
+    ~TTSEngine() override;
 
     void start();
     void stop();
 
 public slots:
     void speak(const QString &text);
-    void connectToProvider();
-    void disconnectFromProvider();
+    void speakWithOptions(const QString &text, oai::tts::SpeakOptions opts);
 
 signals:
-    void connected();
-    void disconnected();
-    void error(const QString &message);
     void speakingStarted();
     void speakingFinished();
+    void error(const QString &message);
+    void authFailed(QString providerStableId);
 
 private slots:
-    void onConnected();
-    void onDisconnected();
-    void onError(QAbstractSocket::SocketError error);
-    void onTextMessageReceived(const QString &message);
-    void onBinaryMessageReceived(const QByteArray &data);
-    void retryConnection();
+    void onActiveProviderChanged(const QString &stableId);
+    void onProviderFieldChanged(const QString &providerId,
+                                const QString &field,
+                                const QString &value);
+    void onDecoderBufferReady();
+    void onDecoderFinished();
 
 private:
-    void setupWebSocket();
-    void sendTtsCreate();
-    void sendTtsText(const QString &text);
-    void ensureAudioSink();
-    void writePcm(const QByteArray &pcm);
-    void clearRetryTimer();
+    void initOnThread();           // runs on m_thread after start()
+    void rebuildProvider();        // tear down, re-instantiate from current config
+    void doSynthesize(const QString &text, oai::tts::SpeakOptions opts);
+    void onSynthesisSuccess(oai::tts::SynthesisResult result);
+    void onSynthesisError(oai::tts::TtsError err);
+    void scheduleRetry();
+    void resetAudio();
 
-    ConfigManager *m_config;
+    ConfigManager *m_config = nullptr;
     QThread *m_thread = nullptr;
-    QWebSocket *m_webSocket = nullptr;
-    QAudioSink *m_audioSink = nullptr;
-    QIODevice *m_audioSinkDevice = nullptr;  // owned by m_audioSink
-    QTimer *m_retryTimer = nullptr;
-    QTimer *m_heartbeatTimer = nullptr;
 
-    QString m_sessionId;
+    QNetworkAccessManager *m_nam = nullptr;
+    std::unique_ptr<oai::tts::ITtsProvider> m_provider;
+    QString m_currentProviderStableId;
+
+    // Active request bookkeeping.
+    oai::tts::RequestHandle m_inFlight = 0;
     QString m_pendingText;
-
+    oai::tts::SpeakOptions m_pendingOptions;
     int m_retryCount = 0;
-    static constexpr int MAX_RETRIES = 5;
-    static constexpr int INITIAL_RETRY_DELAY_MS = 1000;
-    static constexpr int HEARTBEAT_INTERVAL_MS = 15000;  // server idle timeout is typically 30-60s
+    QTimer *m_retryTimer = nullptr;
+
+    // Audio pipeline (one decoder + sink reused across utterances).
+    QBuffer *m_audioBuffer = nullptr;
+    QAudioDecoder *m_decoder = nullptr;
+    QAudioSink *m_audioSink = nullptr;
+    QIODevice *m_audioSinkDevice = nullptr;
+
+    static constexpr int kMaxRetries = 2;
 };
 
-#endif // TTSENGINE_H
+#endif
