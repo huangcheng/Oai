@@ -18,6 +18,7 @@
 #include "tts/ITtsProvider.h"
 #include "tts/ProviderConfig.h"
 #include "tts/StepFunHttpProvider.h"
+#include "tts/MiniMaxHttpProvider.h"
 
 using namespace oai::tts;
 
@@ -31,6 +32,9 @@ private slots:
     void stepFun_parsesMp3Response();
     void stepFun_mapsHappyEmotionToInstruction();
     void stepFun_returnsAuthFailedOn401();
+    void miniMax_buildsExpectedRequest();
+    void miniMax_decodesHexAudio();
+    void miniMax_mapsHappyEmotionToEnum();
 
 private:
     QHttpServer*           m_server      = nullptr;
@@ -43,8 +47,10 @@ private:
 
     QJsonObject  m_lastRequestBody;
     QString      m_lastAuthHeader;
+    QString      m_lastRequestPath;
 
     void setStepFunResponse(int httpStatus, const QByteArray& body);
+    void setMiniMaxResponse(int httpStatus, const QByteArray& body);
 };
 
 void TestTtsProviders::initTestCase()
@@ -65,8 +71,22 @@ void TestTtsProviders::initTestCase()
         [this](const QHttpServerRequest& req) {
             m_lastRequestBody = QJsonDocument::fromJson(req.body()).object();
             m_lastAuthHeader  = QString::fromUtf8(req.headers().value("Authorization"));
+            m_lastRequestPath = QStringLiteral("/v1/audio/speech");
             QHttpServerResponse resp(
                 QByteArray("audio/mpeg"),
+                m_nextBody,
+                static_cast<QHttpServerResponse::StatusCode>(m_nextStatus));
+            return resp;
+        });
+
+    // MiniMax route — same mutable state, different path.
+    m_server->route("/v1/t2a_v2", QHttpServerRequest::Method::Post,
+        [this](const QHttpServerRequest& req) {
+            m_lastRequestBody = QJsonDocument::fromJson(req.body()).object();
+            m_lastAuthHeader  = QString::fromUtf8(req.headers().value("Authorization"));
+            m_lastRequestPath = QStringLiteral("/v1/t2a_v2");
+            QHttpServerResponse resp(
+                QByteArray("application/json"),
                 m_nextBody,
                 static_cast<QHttpServerResponse::StatusCode>(m_nextStatus));
             return resp;
@@ -74,6 +94,12 @@ void TestTtsProviders::initTestCase()
 }
 
 void TestTtsProviders::setStepFunResponse(int httpStatus, const QByteArray& body)
+{
+    m_nextStatus = httpStatus;
+    m_nextBody   = body;
+}
+
+void TestTtsProviders::setMiniMaxResponse(int httpStatus, const QByteArray& body)
 {
     m_nextStatus = httpStatus;
     m_nextBody   = body;
@@ -170,6 +196,75 @@ void TestTtsProviders::stepFun_returnsAuthFailedOn401()
     loop.exec();
 
     QCOMPARE(gotKind, TtsErrorKind::AuthFailed);
+}
+
+void TestTtsProviders::miniMax_buildsExpectedRequest()
+{
+    QJsonObject envelope;
+    envelope["data"] = QJsonObject{
+        {"audio", QStringLiteral("48656c6c6f")},  // "Hello" in hex
+        {"status", 2}
+    };
+    envelope["base_resp"] = QJsonObject{{"status_code", 0}};
+    QByteArray respBody = QJsonDocument(envelope).toJson(QJsonDocument::Compact);
+
+    setMiniMaxResponse(200, respBody);
+
+    ProviderConfig cfg{{
+        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"token",   "TKN"},
+        {"groupId", "GRP123"},
+        {"model",   "speech-02-hd"},
+        {"voice",   "female-shaonv"},
+    }};
+    MiniMaxHttpProvider provider(cfg, m_nam);
+
+    QByteArray gotAudio;
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("hi"), {}},
+        [&](SynthesisResult r){ gotAudio = r.audio; loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QCOMPARE(gotAudio, QByteArray("Hello"));
+    QCOMPARE(m_lastAuthHeader, QStringLiteral("Bearer TKN"));
+    QCOMPARE(m_lastRequestBody.value("text").toString(), QStringLiteral("hi"));
+    // voice_id is nested under voice_setting:
+    QJsonObject vs = m_lastRequestBody.value("voice_setting").toObject();
+    QCOMPARE(vs.value("voice_id").toString(), QStringLiteral("female-shaonv"));
+    QCOMPARE(m_lastRequestBody.value("model").toString(), QStringLiteral("speech-02-hd"));
+}
+
+void TestTtsProviders::miniMax_decodesHexAudio()
+{
+    QSKIP("Verified by miniMax_buildsExpectedRequest");
+}
+
+void TestTtsProviders::miniMax_mapsHappyEmotionToEnum()
+{
+    QJsonObject envelope;
+    envelope["data"] = QJsonObject{{"audio", QStringLiteral("00")}, {"status", 2}};
+    envelope["base_resp"] = QJsonObject{{"status_code", 0}};
+    QByteArray respBody = QJsonDocument(envelope).toJson();
+    setMiniMaxResponse(200, respBody);
+
+    ProviderConfig cfg{{
+        {"baseUrl", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"token", "T"}, {"groupId", "G"}, {"voice", "v"},
+    }};
+    MiniMaxHttpProvider provider(cfg, m_nam);
+
+    SpeakOptions opts;
+    opts.emotion = Emotion::Happy;
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("x"), opts},
+        [&](SynthesisResult){ loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QCOMPARE(m_lastRequestBody.value("emotion").toString(), QStringLiteral("happy"));
 }
 
 QTEST_MAIN(TestTtsProviders)

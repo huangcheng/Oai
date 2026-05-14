@@ -1,0 +1,137 @@
+﻿#include "MiniMaxHttpProvider.h"
+
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QUrlQuery>
+
+namespace oai::tts {
+
+namespace {
+
+const char* emotionToString(Emotion e)
+{
+    switch (e) {
+        case Emotion::Happy:   return "happy";
+        case Emotion::Sad:     return "sad";
+        case Emotion::Angry:   return "angry";
+        case Emotion::Calm:    return "calm";
+        case Emotion::Whisper: return "whisper";
+        case Emotion::Neutral: return nullptr;  // omit
+    }
+    return nullptr;
+}
+
+QUrl buildUrl(const ProviderConfig& cfg)
+{
+    QString base = cfg.get("baseUrl", "https://api.minimaxi.com");
+    if (base.endsWith('/')) base.chop(1);
+    QUrl u(base + "/v1/t2a_v2");
+    QUrlQuery q;
+    q.addQueryItem("GroupId", cfg.get("groupId"));
+    u.setQuery(q);
+    return u;
+}
+
+TtsErrorKind classifyHttp(int status)
+{
+    if (status == 401 || status == 403) return TtsErrorKind::AuthFailed;
+    if (status == 429)                  return TtsErrorKind::RateLimited;
+    if (status >= 500)                  return TtsErrorKind::Network;
+    if (status >= 400)                  return TtsErrorKind::BadRequest;
+    return TtsErrorKind::Unknown;
+}
+
+} // namespace
+
+MiniMaxHttpProvider::MiniMaxHttpProvider(ProviderConfig cfg,
+                                         QNetworkAccessManager* nam,
+                                         QObject* parent)
+    : QObject(parent), m_cfg(std::move(cfg)), m_nam(nam) {}
+
+RequestHandle MiniMaxHttpProvider::synthesize(
+    const SynthesisRequest& req,
+    std::function<void(SynthesisResult)> onSuccess,
+    std::function<void(TtsError)> onError)
+{
+    QJsonObject body;
+    body["model"]    = m_cfg.get("model", "speech-02-hd");
+    body["text"]     = req.text;
+    QJsonObject voiceSetting;
+    voiceSetting["voice_id"] = m_cfg.get("voice");
+    if (req.options.rate.has_value())
+        voiceSetting["speed"] = *req.options.rate;
+    body["voice_setting"] = voiceSetting;
+    if (req.options.emotion.has_value()) {
+        if (const char* s = emotionToString(*req.options.emotion))
+            body["emotion"] = QString::fromUtf8(s);
+    }
+
+    QNetworkRequest qreq(buildUrl(m_cfg));
+    qreq.setRawHeader("Authorization",
+                      "Bearer " + m_cfg.get("token").toUtf8());
+    qreq.setRawHeader("Content-Type", "application/json");
+
+    QNetworkReply* reply =
+        m_nam->post(qreq, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    const RequestHandle handle = m_nextHandle++;
+    m_inFlight.insert(handle, {reply, onSuccess, onError});
+
+    connect(reply, &QNetworkReply::finished, this, [this, handle]() {
+        auto it = m_inFlight.find(handle);
+        if (it == m_inFlight.end()) return;
+        InFlight inflight = it.value();
+        m_inFlight.erase(it);
+
+        QNetworkReply* r = inflight.reply;
+        if (!r) return;
+        r->deleteLater();
+
+        const int status = r->attribute(
+            QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (r->error() != QNetworkReply::NoError && status == 0) {
+            inflight.onError({TtsErrorKind::Network, 0, r->errorString()});
+            return;
+        }
+        if (status >= 400) {
+            inflight.onError({classifyHttp(status), status,
+                              QString::fromUtf8(r->readAll())});
+            return;
+        }
+
+        QJsonDocument doc = QJsonDocument::fromJson(r->readAll());
+        if (!doc.isObject()) {
+            inflight.onError({TtsErrorKind::Unknown, status,
+                              QStringLiteral("invalid JSON envelope")});
+            return;
+        }
+        QJsonObject root = doc.object();
+        const int respCode =
+            root.value("base_resp").toObject().value("status_code").toInt();
+        if (respCode != 0) {
+            inflight.onError({TtsErrorKind::BadRequest, status,
+                              root.value("base_resp").toObject()
+                                  .value("status_msg").toString()});
+            return;
+        }
+        const QString hexAudio =
+            root.value("data").toObject().value("audio").toString();
+        const QByteArray audio = QByteArray::fromHex(hexAudio.toLatin1());
+        inflight.onSuccess({audio, "audio/mpeg", 0});
+    });
+
+    return handle;
+}
+
+void MiniMaxHttpProvider::cancel(RequestHandle handle)
+{
+    auto it = m_inFlight.find(handle);
+    if (it == m_inFlight.end()) return;
+    if (it.value().reply) it.value().reply->abort();
+    m_inFlight.erase(it);
+}
+
+} // namespace oai::tts

@@ -39,6 +39,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.cpp
     ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.cpp
 )
 
 set(TEST_SOURCES
