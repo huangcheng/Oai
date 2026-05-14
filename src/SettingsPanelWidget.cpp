@@ -576,6 +576,30 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_tipBubblesLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_tipBubblesCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
+#ifdef OAI_TTS_ENABLED
+    // Enable TTS — lives on the General tab beside Event Tips, since users
+    // think of it as a feature toggle (like tips) rather than provider config.
+    m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_contentWidget);
+    m_ttsEnabledLabel->setFont(harmonyFont(10));
+    m_ttsEnabledLabel->setStyleSheet("color: black; background: transparent;");
+    m_ttsEnabledLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    m_ttsEnabledCheck = new CheckMarkBox(m_contentWidget);
+    m_ttsEnabledCheck->setFixedSize(16, 16);
+    m_ttsEnabledCheck->setChecked(m_config->ttsEnabled());
+    m_ttsEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+    connect(m_ttsEnabledCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onTtsEnabledToggled);
+    connect(m_config, &ConfigManager::ttsEnabledChanged,
+            this, [this](bool enabled) {
+        QSignalBlocker blocker(m_ttsEnabledCheck);
+        m_ttsEnabledCheck->setChecked(enabled);
+    });
+
+    formGrid->addWidget(m_ttsEnabledLabel, 8, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    formGrid->addWidget(m_ttsEnabledCheck, 8, 1, Qt::AlignLeft | Qt::AlignVCenter);
+#endif
+
     // Tab buttons (left side)
     m_generalTabBtn = new QPushButton(tr("General"), m_contentWidget);
     m_generalTabBtn->setFont(harmonyFont(10, QFont::Bold));
@@ -622,21 +646,7 @@ void SettingsPanelWidget::setupUi()
 
 #ifdef OAI_TTS_ENABLED
     // === AI tab content ===
-
-    m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_aiTab);
-    m_ttsEnabledCheck = new CheckMarkBox(m_aiTab);
-    m_ttsEnabledCheck->setFixedSize(16, 16);
-    m_ttsEnabledCheck->setChecked(m_config->ttsEnabled());
-    m_ttsEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
-    connect(m_ttsEnabledCheck, &QCheckBox::toggled,
-            this, &SettingsPanelWidget::onTtsEnabledToggled);
-    {
-        QHBoxLayout *row = new QHBoxLayout();
-        row->addWidget(m_ttsEnabledLabel);
-        row->addStretch();
-        row->addWidget(m_ttsEnabledCheck);
-        aiLayout->addLayout(row);
-    }
+    // (Enable TTS toggle lives on the General tab — see above.)
 
     m_ttsProviderLabel = new QLabel(tr("Provider"), m_aiTab);
     m_ttsProviderCombo = new QComboBox(m_aiTab);
@@ -668,76 +678,24 @@ void SettingsPanelWidget::setupUi()
         form->setContentsMargins(0, 0, 0, 0);
         form->setSpacing(8);
 
-        // Render every required + optional field as a QLineEdit, except
-        // "voice", which gets a combo + custom-text fallback.
+        // Render every required + optional field as a QLineEdit. Voice is
+        // a plain free-text field — users paste the provider's voice ID
+        // (e.g. "cixingnansheng" for StepFun, "nova" for OpenAI).
         QStringList fields = desc.requiredFields + desc.optionalFields;
         for (const QString& field : fields) {
-            if (field == QLatin1String("voice")) {
-                QComboBox *combo = new QComboBox(page);
-                combo->setFont(harmonyFont(10));
-                combo->setFixedHeight(24);
-                combo->setStyleSheet(comboStyleSheet);
-                for (const VoicePreset& v : desc.voiceCatalog)
-                    combo->addItem(v.displayName, v.id);
-                combo->addItem(tr("Custom..."), QString());
-
-                QLineEdit *customEdit = new QLineEdit(page);
-                customEdit->setFont(harmonyFont(10));
-                customEdit->setFixedHeight(24);
-                customEdit->setStyleSheet(m_portInput->styleSheet());
-                customEdit->setPlaceholderText(tr("Enter voice ID"));
-                customEdit->setVisible(false);
-
-                const QString currentId = m_config->ttsProviderField(desc.stableId, "voice");
-                int matchIdx = combo->findData(currentId);
-                combo->blockSignals(true);
-                if (!currentId.isEmpty() && matchIdx == -1) {
-                    combo->setCurrentIndex(combo->count() - 1);  // Custom...
-                    customEdit->setText(currentId);
-                    customEdit->setVisible(true);
-                } else if (matchIdx >= 0) {
-                    combo->setCurrentIndex(matchIdx);
-                }
-                combo->blockSignals(false);
-
-                connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                        this, [this, combo, customEdit, stableId = desc.stableId]
-                              (int idx) {
-                    const QString id = combo->itemData(idx).toString();
-                    customEdit->setVisible(id.isEmpty());
-                    if (!id.isEmpty())
-                        m_config->setTtsProviderField(stableId, "voice", id);
-                    else if (!customEdit->text().isEmpty())
-                        m_config->setTtsProviderField(stableId, "voice",
-                                                      customEdit->text());
-                });
-                connect(customEdit, &QLineEdit::editingFinished,
-                        this, [this, customEdit, stableId = desc.stableId]() {
-                    m_config->setTtsProviderField(stableId, "voice",
-                                                  customEdit->text());
-                });
-
-                QWidget *cell = new QWidget(page);
-                QVBoxLayout *cellLayout = new QVBoxLayout(cell);
-                cellLayout->setContentsMargins(0, 0, 0, 0);
-                cellLayout->addWidget(combo);
-                cellLayout->addWidget(customEdit);
-                form->addRow(tr("Voice"), cell);
-
-                m_ttsVoiceCombos.append({desc.stableId, combo, customEdit});
-            } else {
-                QLineEdit *edit = new QLineEdit(page);
-                edit->setFont(harmonyFont(10));
-                edit->setFixedHeight(24);
-                edit->setStyleSheet(m_portInput->styleSheet());
-                edit->setText(m_config->ttsProviderField(desc.stableId, field));
-                if (field == QLatin1String("token") || field == QLatin1String("key"))
-                    edit->setEchoMode(QLineEdit::Password);
-                connect(edit, &QLineEdit::editingFinished,
-                        this, &SettingsPanelWidget::onTtsProviderFieldEdited);
-                m_ttsFieldEdits.append({desc.stableId, field, edit});
-                form->addRow(labelForField(field), edit);
-            }
+            QLineEdit *edit = new QLineEdit(page);
+            edit->setFont(harmonyFont(10));
+            edit->setFixedHeight(24);
+            edit->setStyleSheet(m_portInput->styleSheet());
+            edit->setText(m_config->ttsProviderField(desc.stableId, field));
+            if (field == QLatin1String("token") || field == QLatin1String("key"))
+                edit->setEchoMode(QLineEdit::Password);
+            if (field == QLatin1String("voice"))
+                edit->setPlaceholderText(tr("Enter voice ID"));
+            connect(edit, &QLineEdit::editingFinished,
+                    this, &SettingsPanelWidget::onTtsProviderFieldEdited);
+            m_ttsFieldEdits.append({desc.stableId, field, edit});
+            form->addRow(labelForField(field), edit);
         }
         m_ttsProviderStack->addWidget(page);
     }
@@ -746,6 +704,17 @@ void SettingsPanelWidget::setupUi()
     m_ttsProviderStack->setCurrentIndex(activeIndex);
     connect(m_ttsProviderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsPanelWidget::onTtsProviderChanged);
+
+    // Test button at the bottom — fires a fixed phrase through the engine
+    // so the user can verify their config without waiting for a real tip.
+    m_ttsTestButton = new QPushButton(tr("Test"), m_aiTab);
+    m_ttsTestButton->setFont(harmonyFont(10, QFont::Bold));
+    m_ttsTestButton->setFixedHeight(28);
+    m_ttsTestButton->setCursor(Qt::PointingHandCursor);
+    connect(m_ttsTestButton, &QPushButton::clicked, this, [this]() {
+        emit testTtsRequested(tr("Hello. This is a TTS test from Oai."));
+    });
+    aiLayout->addWidget(m_ttsTestButton);
 #else
     QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_aiTab);
     ttsDisabledLabel->setFont(harmonyFont(10));

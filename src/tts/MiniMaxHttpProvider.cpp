@@ -6,7 +6,6 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUrl>
-#include <QUrlQuery>
 
 namespace oai::tts {
 
@@ -27,11 +26,10 @@ const char* emotionToString(Emotion e)
 
 QUrl buildUrl(const ProviderConfig& cfg)
 {
-    QUrl u(cfg.get("baseUrl", "https://api.minimaxi.com/v1/t2a_v2"));
-    QUrlQuery q;
-    q.addQueryItem("GroupId", cfg.get("groupId"));
-    u.setQuery(q);
-    return u;
+    // baseUrl is used verbatim. If the user's account requires a GroupId
+    // query parameter, they include it directly in the URL — same model
+    // as StepFun / OpenAI.
+    return QUrl(cfg.get("baseUrl", "https://api.minimaxi.com/v1/t2a_v2"));
 }
 
 TtsErrorKind classifyHttp(int status)

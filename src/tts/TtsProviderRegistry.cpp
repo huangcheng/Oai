@@ -40,9 +40,8 @@ const QList<ProviderDescriptor>& builtInDescriptors()
             QStringLiteral("minimax"),
             QStringLiteral("MiniMax"),
             QStringList{QStringLiteral("token"),
-                        QStringLiteral("groupId"),
                         QStringLiteral("voice")},
-            QStringList{QStringLiteral("model")},
+            QStringList{QStringLiteral("baseUrl"), QStringLiteral("model")},
             {
                 {QStringLiteral("female-shaonv"),
                  QCoreApplication::translate("Tts", "Female young (shaonv)"),
@@ -65,7 +64,7 @@ const QList<ProviderDescriptor>& builtInDescriptors()
             QStringList{QStringLiteral("key"),
                         QStringLiteral("region"),
                         QStringLiteral("voice")},
-            {},
+            QStringList{QStringLiteral("baseUrl")},
             {
                 {QStringLiteral("zh-CN-XiaoxiaoNeural"),
                  QCoreApplication::translate("Tts", "Xiaoxiao (zh-CN, female)"),

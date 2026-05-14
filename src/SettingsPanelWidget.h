@@ -49,6 +49,11 @@ public:
 
 signals:
     void panelHidden();
+#ifdef OAI_TTS_ENABLED
+    // Emitted when the user clicks "Test" in the TTS tab. MainWindow wires
+    // this to TTSEngine::speak so the test bypasses any tip flow.
+    void testTtsRequested(const QString &text);
+#endif
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -120,24 +125,18 @@ private:
     QLabel       *m_ttsProviderLabel = nullptr;
     QComboBox    *m_ttsProviderCombo = nullptr;
     QStackedWidget *m_ttsProviderStack = nullptr;
+    QPushButton  *m_ttsTestButton = nullptr;
 
     // Each provider's page contains a QFormLayout of QLineEdits keyed by
-    // field name. We track them here so onTtsProviderFieldEdited() can
-    // route the edit back to the right provider/field pair.
+    // field name (including "voice" — it's just another text field). We
+    // track them here so onTtsProviderFieldEdited() can route the edit
+    // back to the right provider/field pair.
     struct TtsFieldEdit {
         QString providerStableId;
         QString fieldName;
         QLineEdit *edit;
     };
     QList<TtsFieldEdit> m_ttsFieldEdits;
-
-    // Voice combo per provider (separate so we can repopulate on edit).
-    struct TtsVoiceCombo {
-        QString providerStableId;
-        QComboBox *combo;
-        QLineEdit *customEdit;     // shown only when "Custom..." selected
-    };
-    QList<TtsVoiceCombo> m_ttsVoiceCombos;
 #endif
 
     // Layout container

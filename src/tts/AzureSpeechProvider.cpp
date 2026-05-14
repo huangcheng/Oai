@@ -24,6 +24,11 @@ const char* emotionToStyle(Emotion e)
 
 QUrl buildUrl(const ProviderConfig& cfg)
 {
+    // User-provided baseUrl wins (used verbatim). Otherwise derive from region.
+    const QString baseUrl = cfg.get("baseUrl");
+    if (!baseUrl.isEmpty()) return QUrl(baseUrl);
+
+    // Test hook: takes precedence only when no real baseUrl is set.
     const QString override_ = cfg.get("azureEndpointOverride");
     if (!override_.isEmpty()) {
         QString base = override_;
