@@ -382,6 +382,14 @@ Path: %2</source>
         <translation>提供商</translation>
     </message>
     <message>
+        <source>Test</source>
+        <translation>测试</translation>
+    </message>
+    <message>
+        <source>Hello. This is a TTS test from Oai.</source>
+        <translation>你好。这是 Oai 的语音合成测试。</translation>
+    </message>
+    <message>
         <location filename="src/SettingsPanelWidget.cpp" line="682"/>
         <source>Custom...</source>
         <translation>自定义...</translation>

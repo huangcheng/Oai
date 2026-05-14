@@ -711,6 +711,23 @@ void SettingsPanelWidget::setupUi()
     m_ttsTestButton->setFont(harmonyFont(10, QFont::Bold));
     m_ttsTestButton->setFixedHeight(28);
     m_ttsTestButton->setCursor(Qt::PointingHandCursor);
+    m_ttsTestButton->setStyleSheet(QStringLiteral(R"(
+        QPushButton {
+            background: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            color: #2C2C2E;
+            padding: 2px 12px;
+        }
+        QPushButton:hover {
+            background: #F36F1A;
+            color: white;
+        }
+        QPushButton:pressed {
+            background: #C85A12;
+            color: white;
+        }
+    )"));
     connect(m_ttsTestButton, &QPushButton::clicked, this, [this]() {
         emit testTtsRequested(tr("Hello. This is a TTS test from Oai."));
     });
@@ -1142,6 +1159,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
+    if (m_ttsTestButton) m_ttsTestButton->setText(tr("Test"));
 #endif
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {
