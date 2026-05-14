@@ -1,0 +1,42 @@
+#ifndef OAI_TTS_AZURESPEECHPROVIDER_H
+#define OAI_TTS_AZURESPEECHPROVIDER_H
+
+#include "ITtsProvider.h"
+#include "ProviderConfig.h"
+
+#include <QHash>
+#include <QObject>
+#include <QPointer>
+
+class QNetworkAccessManager;
+class QNetworkReply;
+
+namespace oai::tts {
+
+class AzureSpeechProvider : public QObject, public ITtsProvider {
+    Q_OBJECT
+public:
+    AzureSpeechProvider(ProviderConfig cfg, QNetworkAccessManager* nam,
+                        QObject* parent = nullptr);
+
+    RequestHandle synthesize(
+        const SynthesisRequest& req,
+        std::function<void(SynthesisResult)> onSuccess,
+        std::function<void(TtsError)> onError) override;
+
+    void cancel(RequestHandle handle) override;
+
+private:
+    struct InFlight {
+        QPointer<QNetworkReply> reply;
+        std::function<void(SynthesisResult)> onSuccess;
+        std::function<void(TtsError)> onError;
+    };
+    ProviderConfig m_cfg;
+    QNetworkAccessManager* m_nam;
+    QHash<RequestHandle, InFlight> m_inFlight;
+    RequestHandle m_nextHandle = 1;
+};
+
+} // namespace oai::tts
+#endif

@@ -19,6 +19,7 @@
 #include "tts/ProviderConfig.h"
 #include "tts/StepFunHttpProvider.h"
 #include "tts/MiniMaxHttpProvider.h"
+#include "tts/AzureSpeechProvider.h"
 
 using namespace oai::tts;
 
@@ -35,6 +36,9 @@ private slots:
     void miniMax_buildsExpectedRequest();
     void miniMax_decodesHexAudio();
     void miniMax_mapsHappyEmotionToEnum();
+    void azure_buildsExpectedSsml();
+    void azure_usesSubscriptionKeyHeader();
+    void azure_mapsHappyEmotionToSsmlStyle();
 
 private:
     QHttpServer*           m_server      = nullptr;
@@ -49,8 +53,13 @@ private:
     QString      m_lastAuthHeader;
     QString      m_lastRequestPath;
 
+    // Azure-specific capture fields
+    QByteArray   m_lastRequestBodyRaw;
+    QByteArray   m_lastSubscriptionKey;
+
     void setStepFunResponse(int httpStatus, const QByteArray& body);
     void setMiniMaxResponse(int httpStatus, const QByteArray& body);
+    void setAzureResponse(int httpStatus, const QByteArray& body);
 };
 
 void TestTtsProviders::initTestCase()
@@ -91,6 +100,20 @@ void TestTtsProviders::initTestCase()
                 static_cast<QHttpServerResponse::StatusCode>(m_nextStatus));
             return resp;
         });
+
+    // Azure route — captures raw SSML body and subscription key header.
+    m_server->route("/cognitiveservices/v1", QHttpServerRequest::Method::Post,
+        [this](const QHttpServerRequest& req) {
+            m_lastRequestPath    = QStringLiteral("azure");
+            m_lastRequestBodyRaw = req.body();
+            m_lastSubscriptionKey =
+                req.headers().value("Ocp-Apim-Subscription-Key").toByteArray();
+            QHttpServerResponse resp(
+                QByteArray("audio/mpeg"),
+                m_nextBody,
+                static_cast<QHttpServerResponse::StatusCode>(m_nextStatus));
+            return resp;
+        });
 }
 
 void TestTtsProviders::setStepFunResponse(int httpStatus, const QByteArray& body)
@@ -100,6 +123,12 @@ void TestTtsProviders::setStepFunResponse(int httpStatus, const QByteArray& body
 }
 
 void TestTtsProviders::setMiniMaxResponse(int httpStatus, const QByteArray& body)
+{
+    m_nextStatus = httpStatus;
+    m_nextBody   = body;
+}
+
+void TestTtsProviders::setAzureResponse(int httpStatus, const QByteArray& body)
 {
     m_nextStatus = httpStatus;
     m_nextBody   = body;
@@ -265,6 +294,74 @@ void TestTtsProviders::miniMax_mapsHappyEmotionToEnum()
     loop.exec();
 
     QCOMPARE(m_lastRequestBody.value("emotion").toString(), QStringLiteral("happy"));
+}
+
+void TestTtsProviders::azure_buildsExpectedSsml()
+{
+    setAzureResponse(200, QByteArray("MP3"));
+
+    ProviderConfig cfg{{
+        {"azureEndpointOverride", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"key", "KEY"},
+        {"region", "eastus"},
+        {"voice", "en-US-JennyNeural"},
+    }};
+    AzureSpeechProvider provider(cfg, m_nam);
+
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("hi there"), {}},
+        [&](SynthesisResult){ loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QVERIFY(m_lastRequestBodyRaw.contains("<speak"));
+    QVERIFY(m_lastRequestBodyRaw.contains("name=\"en-US-JennyNeural\""));
+    QVERIFY(m_lastRequestBodyRaw.contains(">hi there<"));
+}
+
+void TestTtsProviders::azure_usesSubscriptionKeyHeader()
+{
+    setAzureResponse(200, QByteArray("MP3"));
+
+    ProviderConfig cfg{{
+        {"azureEndpointOverride", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"key", "SECRETKEY"}, {"region", "eastus"},
+        {"voice", "en-US-JennyNeural"},
+    }};
+    AzureSpeechProvider provider(cfg, m_nam);
+
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("x"), {}},
+        [&](SynthesisResult){ loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QCOMPARE(m_lastSubscriptionKey, QByteArray("SECRETKEY"));
+}
+
+void TestTtsProviders::azure_mapsHappyEmotionToSsmlStyle()
+{
+    setAzureResponse(200, QByteArray("MP3"));
+
+    ProviderConfig cfg{{
+        {"azureEndpointOverride", QString("http://127.0.0.1:%1").arg(m_port)},
+        {"key", "K"}, {"region", "eastus"},
+        {"voice", "en-US-JennyNeural"},
+    }};
+    AzureSpeechProvider provider(cfg, m_nam);
+
+    SpeakOptions opts;
+    opts.emotion = Emotion::Happy;
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("hi"), opts},
+        [&](SynthesisResult){ loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QVERIFY(m_lastRequestBodyRaw.contains("<mstts:express-as style=\"cheerful\""));
 }
 
 QTEST_MAIN(TestTtsProviders)

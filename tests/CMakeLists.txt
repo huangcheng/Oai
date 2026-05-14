@@ -41,6 +41,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.cpp
 )
 
 set(TEST_SOURCES

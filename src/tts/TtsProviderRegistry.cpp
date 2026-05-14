@@ -1,6 +1,7 @@
 #include "TtsProviderRegistry.h"
 #include "StepFunHttpProvider.h"
 #include "MiniMaxHttpProvider.h"
+#include "AzureSpeechProvider.h"
 
 #include <QCoreApplication>
 #include <stdexcept>
@@ -75,9 +76,9 @@ const QList<ProviderDescriptor>& builtInDescriptors()
             },
             {Emotion::Neutral, Emotion::Happy, Emotion::Sad,
              Emotion::Angry, Emotion::Calm, Emotion::Whisper},
-            [](const ProviderConfig&, QNetworkAccessManager*)
+            [](const ProviderConfig& cfg, QNetworkAccessManager* nam)
                 -> std::unique_ptr<ITtsProvider> {
-                throw std::runtime_error("Azure provider not yet implemented");
+                return std::make_unique<AzureSpeechProvider>(cfg, nam);
             },
         },
         ProviderDescriptor{
