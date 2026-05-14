@@ -20,6 +20,7 @@
 #include "tts/StepFunHttpProvider.h"
 #include "tts/MiniMaxHttpProvider.h"
 #include "tts/AzureSpeechProvider.h"
+#include "tts/OpenAiTtsProvider.h"
 
 using namespace oai::tts;
 
@@ -39,6 +40,8 @@ private slots:
     void azure_buildsExpectedSsml();
     void azure_usesSubscriptionKeyHeader();
     void azure_mapsHappyEmotionToSsmlStyle();
+    void openAi_buildsExpectedRequest();
+    void openAi_dropsEmotionSilently();
 
 private:
     QHttpServer*           m_server      = nullptr;
@@ -60,6 +63,7 @@ private:
     void setStepFunResponse(int httpStatus, const QByteArray& body);
     void setMiniMaxResponse(int httpStatus, const QByteArray& body);
     void setAzureResponse(int httpStatus, const QByteArray& body);
+    void setOpenAiResponse(int httpStatus, const QByteArray& body);
 };
 
 void TestTtsProviders::initTestCase()
@@ -114,6 +118,20 @@ void TestTtsProviders::initTestCase()
                 static_cast<QHttpServerResponse::StatusCode>(m_nextStatus));
             return resp;
         });
+
+    // OpenAI route — distinct path avoids collision with the StepFun /v1/audio/speech route.
+    m_server->route("/openai-v1/audio/speech", QHttpServerRequest::Method::Post,
+        [this](const QHttpServerRequest& req) {
+            m_lastRequestPath = QStringLiteral("openai");
+            m_lastRequestBody = QJsonDocument::fromJson(req.body()).object();
+            m_lastAuthHeader  = QString::fromUtf8(
+                req.headers().value("Authorization").toByteArray());
+            QHttpServerResponse resp(
+                QByteArray("audio/mpeg"),
+                m_nextBody,
+                static_cast<QHttpServerResponse::StatusCode>(m_nextStatus));
+            return resp;
+        });
 }
 
 void TestTtsProviders::setStepFunResponse(int httpStatus, const QByteArray& body)
@@ -129,6 +147,12 @@ void TestTtsProviders::setMiniMaxResponse(int httpStatus, const QByteArray& body
 }
 
 void TestTtsProviders::setAzureResponse(int httpStatus, const QByteArray& body)
+{
+    m_nextStatus = httpStatus;
+    m_nextBody   = body;
+}
+
+void TestTtsProviders::setOpenAiResponse(int httpStatus, const QByteArray& body)
 {
     m_nextStatus = httpStatus;
     m_nextBody   = body;
@@ -362,6 +386,55 @@ void TestTtsProviders::azure_mapsHappyEmotionToSsmlStyle()
     loop.exec();
 
     QVERIFY(m_lastRequestBodyRaw.contains("<mstts:express-as style=\"cheerful\""));
+}
+
+void TestTtsProviders::openAi_buildsExpectedRequest()
+{
+    setOpenAiResponse(200, QByteArray("MP3"));
+
+    ProviderConfig cfg{{
+        {"baseUrl", QString("http://127.0.0.1:%1/openai-v1").arg(m_port)},
+        {"token", "sk-XYZ"},
+        {"model", "gpt-4o-mini-tts"},
+        {"voice", "nova"},
+    }};
+    OpenAiTtsProvider provider(cfg, m_nam);
+
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("hi"), {}},
+        [&](SynthesisResult){ loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QCOMPARE(m_lastAuthHeader, QStringLiteral("Bearer sk-XYZ"));
+    QCOMPARE(m_lastRequestBody.value("model").toString(), QStringLiteral("gpt-4o-mini-tts"));
+    QCOMPARE(m_lastRequestBody.value("input").toString(), QStringLiteral("hi"));
+    QCOMPARE(m_lastRequestBody.value("voice").toString(), QStringLiteral("nova"));
+    QCOMPARE(m_lastRequestBody.value("response_format").toString(), QStringLiteral("mp3"));
+}
+
+void TestTtsProviders::openAi_dropsEmotionSilently()
+{
+    setOpenAiResponse(200, QByteArray("MP3"));
+
+    ProviderConfig cfg{{
+        {"baseUrl", QString("http://127.0.0.1:%1/openai-v1").arg(m_port)},
+        {"token", "T"}, {"voice", "nova"},
+    }};
+    OpenAiTtsProvider provider(cfg, m_nam);
+
+    SpeakOptions opts;
+    opts.emotion = Emotion::Happy;
+    QEventLoop loop;
+    provider.synthesize(SynthesisRequest{QStringLiteral("hi"), opts},
+        [&](SynthesisResult){ loop.quit(); },
+        [&](TtsError){ loop.quit(); });
+    QTimer::singleShot(2000, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QVERIFY(!m_lastRequestBody.contains("emotion"));
+    QVERIFY(!m_lastRequestBody.contains("instruction"));
 }
 
 QTEST_MAIN(TestTtsProviders)

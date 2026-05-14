@@ -2,9 +2,9 @@
 #include "StepFunHttpProvider.h"
 #include "MiniMaxHttpProvider.h"
 #include "AzureSpeechProvider.h"
+#include "OpenAiTtsProvider.h"
 
 #include <QCoreApplication>
-#include <stdexcept>
 
 namespace oai::tts {
 
@@ -94,9 +94,9 @@ const QList<ProviderDescriptor>& builtInDescriptors()
                 {QStringLiteral("echo"),     QStringLiteral("Echo"),    QStringLiteral("en")},
             },
             {Emotion::Neutral},
-            [](const ProviderConfig&, QNetworkAccessManager*)
+            [](const ProviderConfig& cfg, QNetworkAccessManager* nam)
                 -> std::unique_ptr<ITtsProvider> {
-                throw std::runtime_error("OpenAI provider not yet implemented");
+                return std::make_unique<OpenAiTtsProvider>(cfg, nam);
             },
         },
     };

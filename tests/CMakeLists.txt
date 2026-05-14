@@ -43,6 +43,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.cpp
 )
 
 set(TEST_SOURCES

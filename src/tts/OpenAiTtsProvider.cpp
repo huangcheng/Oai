@@ -1,0 +1,96 @@
+#include "OpenAiTtsProvider.h"
+
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QUrl>
+
+namespace oai::tts {
+
+namespace {
+
+QUrl buildUrl(const ProviderConfig& cfg)
+{
+    QString base = cfg.get("baseUrl", "https://api.openai.com/v1");
+    if (base.endsWith('/')) base.chop(1);
+    return QUrl(base + "/audio/speech");
+}
+
+TtsErrorKind classifyHttp(int status)
+{
+    if (status == 401 || status == 403) return TtsErrorKind::AuthFailed;
+    if (status == 429)                  return TtsErrorKind::RateLimited;
+    if (status >= 500)                  return TtsErrorKind::Network;
+    if (status >= 400)                  return TtsErrorKind::BadRequest;
+    return TtsErrorKind::Unknown;
+}
+
+} // namespace
+
+OpenAiTtsProvider::OpenAiTtsProvider(ProviderConfig cfg,
+                                     QNetworkAccessManager* nam,
+                                     QObject* parent)
+    : QObject(parent), m_cfg(std::move(cfg)), m_nam(nam) {}
+
+RequestHandle OpenAiTtsProvider::synthesize(
+    const SynthesisRequest& req,
+    std::function<void(SynthesisResult)> onSuccess,
+    std::function<void(TtsError)> onError)
+{
+    QJsonObject body;
+    body["model"]           = m_cfg.get("model", "gpt-4o-mini-tts");
+    body["input"]           = req.text;
+    body["voice"]           = m_cfg.get("voice");
+    body["response_format"] = "mp3";
+    if (req.options.rate.has_value())
+        body["speed"] = *req.options.rate;
+    // emotion intentionally dropped — OpenAI tts-1 family doesn't expose it.
+
+    QNetworkRequest qreq(buildUrl(m_cfg));
+    qreq.setRawHeader("Authorization",
+                      "Bearer " + m_cfg.get("token").toUtf8());
+    qreq.setRawHeader("Content-Type", "application/json");
+
+    QNetworkReply* reply =
+        m_nam->post(qreq, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    const RequestHandle handle = m_nextHandle++;
+    m_inFlight.insert(handle, {reply, onSuccess, onError});
+
+    connect(reply, &QNetworkReply::finished, this, [this, handle]() {
+        auto it = m_inFlight.find(handle);
+        if (it == m_inFlight.end()) return;
+        InFlight inflight = it.value();
+        m_inFlight.erase(it);
+
+        QNetworkReply* r = inflight.reply;
+        if (!r) return;
+        r->deleteLater();
+
+        const int status = r->attribute(
+            QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (r->error() != QNetworkReply::NoError && status == 0) {
+            inflight.onError({TtsErrorKind::Network, 0, r->errorString()});
+            return;
+        }
+        if (status >= 400) {
+            inflight.onError({classifyHttp(status), status,
+                              QString::fromUtf8(r->readAll())});
+            return;
+        }
+        inflight.onSuccess({r->readAll(), "audio/mpeg", 0});
+    });
+
+    return handle;
+}
+
+void OpenAiTtsProvider::cancel(RequestHandle handle)
+{
+    auto it = m_inFlight.find(handle);
+    if (it == m_inFlight.end()) return;
+    if (it.value().reply) it.value().reply->abort();
+    m_inFlight.erase(it);
+}
+
+} // namespace oai::tts
