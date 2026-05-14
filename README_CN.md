@@ -10,6 +10,7 @@
 - **Sprite pack 引擎** —— 通过 `.opk` 包加载自定义角色
 - **Lottie 动画**（基于三星 rlottie 库）—— 流畅的 60fps 播放
 - **Win98 风格气泡提示** —— 自动消失的提示文案
+- **多供应商语音合成** —— 阶跃星辰、MiniMax、Azure Speech、OpenAI；切换供应商无需重启
 - **框架无关** —— 支持 OpenCode、Claude Code、Codex 或任何能发送 IPC 消息的工具
 - **主动提示引擎** —— 检测编码模式并展示上下文相关建议
 - **跨平台** —— macOS、Windows、Linux
@@ -346,12 +347,25 @@ oai/
 │   ├── LottieEffectOverlay.h/cpp    # 视觉特效叠加层
 │   ├── CharacterPack.h/cpp          # 角色包数据结构
 │   ├── CharacterPackManager.h/cpp   # 角色包发现与切换
+│   ├── PackManagerWidget.h/cpp      # 角色包浏览器 UI
 │   ├── EcgWidget.h/cpp              # ICU 监护仪显示模式
-│   ├── TipBubbleWidget.h/cpp        # Win98 风格气泡
+│   ├── TipWidget.h/cpp              # Win98 风格气泡
 │   ├── TipsEngine.h/cpp             # 上下文提示模式匹配引擎
 │   ├── TipsCatalog.h/cpp            # 提示目录加载器（i18n JSON）
+│   ├── TTSEngine.h/cpp              # 基于 ITtsProvider 的 HTTP 协调器
+│   ├── tts/
+│   │   ├── ITtsProvider.h           # 供应商契约（synthesize / cancel）
+│   │   ├── ProviderConfig.h         # 自由格式的每供应商配置袋
+│   │   ├── TtsProviderRegistry.h/cpp     # 全部供应商的描述符表
+│   │   ├── StepFunHttpProvider.h/cpp     # 阶跃星辰适配器
+│   │   ├── MiniMaxHttpProvider.h/cpp     # MiniMax 适配器（hex 编码 JSON）
+│   │   ├── AzureSpeechProvider.h/cpp     # Azure Speech 适配器（SSML 请求体）
+│   │   └── OpenAiTtsProvider.h/cpp       # OpenAI 适配器
 │   ├── ConfigManager.h/cpp          # 分层配置（默认值/便携/用户）
-│   ├── SettingsPanelWidget.h/cpp    # 设置面板 UI
+│   ├── SettingsPanelWidget.h/cpp    # 设置面板 UI（通用 + 语音 选项卡）
+│   ├── StyledAlertWidget.h/cpp      # 主题化弹窗
+│   ├── GlobalShortcutManager.h/cpp  # 显示/隐藏快捷键
+│   ├── FullscreenWatcher.h/cpp      # 游戏模式自动隐藏
 │   ├── SystemTray.h/cpp             # 系统托盘集成
 │   ├── UpdateChecker.h/cpp          # 版本检查 UDP 客户端
 │   └── MacFocusFix.h/.mm            # macOS 焦点修复
@@ -364,6 +378,10 @@ oai/
 │   │   ├── character/          # 18 个 Lottie 角色动画
 │   │   └── effects/            # 6 个 Lottie 特效（alert-pulse、confetti……）
 │   └── packs/                  # 一方 Live2D 角色包
+├── docs/
+│   └── superpowers/
+│       ├── specs/              # 设计文档（TTS 抽象等）
+│       └── plans/              # 实施方案
 ├── gateways/
 │   └── oai-gateway/            # @eastlake/oai-gateway CLI（Node.js，零依赖）
 ├── installer/
@@ -376,6 +394,12 @@ oai/
 ├── scripts/                    # 构建与导入辅助脚本（Python）
 ├── server/                     # Erlang/OTP UDP 更新服务器（rebar3）
 ├── tests/                      # Qt Test 测试套件（UDP 端口 52848）
+│   ├── test_ipc_animations.cpp        # UDP IPC 端到端
+│   ├── test_pet_state_machine.cpp
+│   ├── test_ecg.cpp / test_gaming_mode.cpp
+│   ├── test_tts_providers.cpp         # 各适配器单元测试（QHttpServer）
+│   ├── test_tts_engine.cpp            # FakeProvider 契约测试
+│   └── manual/test_tts_live.cpp       # 真实 API 烟雾测试（OAI_LIVE_TTS=1 启用）
 └── thirdparty/
     ├── CubismNativeFramework/  # 子模块 —— Live2D Cubism SDK
     ├── CubismNativeSamples/    # 子模块 —— Cubism 示例（仅构建期使用）
@@ -397,6 +421,53 @@ oai/
 ```
 
 `ipcEndpoint` 字段默认为 `127.0.0.1:52847`，可被覆盖。
+
+## 语音合成（TTS）
+
+Oai 可以通过四个云端供应商把提示读出来。语音引擎运行在独立线程上，使用一次性 HTTP 合成（不分片流式），在网络抖动时也稳定；切换供应商无需重启。
+
+### 支持的供应商
+
+| 供应商 | 鉴权 | 说明 |
+|---|---|---|
+| **阶跃星辰（StepFun）** | Bearer token | 默认地址：`https://api.stepfun.com/step_plan/v1/audio/speech`。文档示例提供两个音色（`cixingnansheng`、`linjiajiejie`）。 |
+| **MiniMax** | Bearer token | 默认地址：`https://api.minimaxi.com/v1/t2a_v2`。如你的账户要求 `GroupId`，请直接附加到 URL 中。 |
+| **Azure Speech** | 订阅密钥 | 端点根据 `region` 推导（例如 `eastus` → `eastus.tts.speech.microsoft.com`）。SSML 请求体，`Ocp-Apim-Subscription-Key` 头。 |
+| **OpenAI** | Bearer token | 默认地址：`https://api.openai.com/v1/audio/speech`。兼容自部署的 OpenAI-API 网关。 |
+
+### 配置步骤
+
+1. 打开设置面板（系统托盘的齿轮图标，或右键宠物）
+2. **通用** 选项卡 → 勾选 **启用语音**
+3. **语音** 选项卡 → 从下拉框选择供应商，填写凭证（token、voice ID、可选的 base URL / 模型）
+4. 点击底部的 **测试** 按钮验证
+
+音色字段是自由文本 —— 把你从供应商控制台拿到的任意 voice ID 粘进去（系统/克隆/内测都行）。所有凭证会自动 `trim` 首尾空白，粘贴时不必担心多余空格。
+
+### 新增供应商
+
+抽象层很薄，新增第五个后端（比如 ElevenLabs）大约 150 行纯协议代码：
+
+1. 在 `src/tts/<Name>HttpProvider.h/.cpp` 实现 `oai::tts::ITtsProvider`（请求构造 + 响应解析；不涉及音频，不涉及线程）
+2. 在 `src/tts/TtsProviderRegistry.cpp` 追加一条 `ProviderDescriptor`：稳定 ID、显示名、必填/可选字段、工厂 lambda
+3. 在 `tests/test_tts_providers.cpp` 加一组单元测试，对着本地 `QHttpServer` 夹具
+
+设置面板会从注册表自动构建出新供应商的页面，无需改 UI。
+
+### 测试真实 API
+
+`tests/manual/test_tts_live.cpp` 通过环境变量启用，跑真实供应商接口；发布前自检很方便：
+
+```bash
+OAI_LIVE_TTS=1 \
+  OAI_STEPFUN_TOKEN=... \
+  OAI_MINIMAX_TOKEN=... \
+  OAI_AZURE_KEY=... OAI_AZURE_REGION=eastus \
+  OAI_OPENAI_TOKEN=... \
+  ./build/tests/test_tts_live
+```
+
+未导出某个供应商的凭证时，对应测试自动 skip。CI 永远不跑这个目标。
 
 ## 资产致谢
 

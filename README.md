@@ -10,6 +10,7 @@ A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight
 - **Sprite pack engine** — load custom characters via `.opk` packs
 - **Lottie animations** via Samsung's rlottie library — smooth 60fps playback
 - **Windows 98-style speech bubble** with auto-dismiss tips
+- **Multi-provider TTS** — StepFun, MiniMax, Azure Speech, OpenAI; hot-swap between providers without restart
 - **Framework-agnostic** — works with OpenCode, Claude Code, Codex, or any tool that can send IPC messages
 - **Proactive tips engine** — detects coding patterns and shows contextual suggestions
 - **Cross-platform** — macOS, Windows, Linux
@@ -336,12 +337,25 @@ oai/
 │   ├── LottieEffectOverlay.h/cpp    # Visual effects overlay
 │   ├── CharacterPack.h/cpp          # Character pack data structure
 │   ├── CharacterPackManager.h/cpp   # Pack discovery & switching
+│   ├── PackManagerWidget.h/cpp      # Pack browser UI
 │   ├── EcgWidget.h/cpp              # ICU-monitor display mode
-│   ├── TipBubbleWidget.h/cpp        # Win98-style speech bubble
+│   ├── TipWidget.h/cpp              # Win98-style speech bubble
 │   ├── TipsEngine.h/cpp             # Pattern matcher for contextual tips
 │   ├── TipsCatalog.h/cpp            # Tip catalog loader (i18n JSON)
+│   ├── TTSEngine.h/cpp              # HTTP coordinator over ITtsProvider
+│   ├── tts/
+│   │   ├── ITtsProvider.h           # Provider contract (synthesize / cancel)
+│   │   ├── ProviderConfig.h         # Free-form per-provider settings bag
+│   │   ├── TtsProviderRegistry.h/cpp     # Descriptor table for all providers
+│   │   ├── StepFunHttpProvider.h/cpp     # StepFun adapter
+│   │   ├── MiniMaxHttpProvider.h/cpp     # MiniMax adapter (hex-encoded JSON)
+│   │   ├── AzureSpeechProvider.h/cpp     # Azure Speech adapter (SSML body)
+│   │   └── OpenAiTtsProvider.h/cpp       # OpenAI adapter
 │   ├── ConfigManager.h/cpp          # Layered config (defaults / portable / user)
-│   ├── SettingsPanelWidget.h/cpp    # Settings panel UI
+│   ├── SettingsPanelWidget.h/cpp    # Settings panel UI (General + TTS tabs)
+│   ├── StyledAlertWidget.h/cpp      # Themed alert dialog
+│   ├── GlobalShortcutManager.h/cpp  # Show/hide hotkey
+│   ├── FullscreenWatcher.h/cpp      # Gaming-mode auto-hide
 │   ├── SystemTray.h/cpp             # System tray integration
 │   ├── UpdateChecker.h/cpp          # Version-check UDP client
 │   └── MacFocusFix.h/.mm            # macOS focus workaround
@@ -354,6 +368,10 @@ oai/
 │   │   ├── character/          # 18 Lottie character animations
 │   │   └── effects/            # 6 Lottie effects (alert-pulse, confetti, …)
 │   └── packs/                  # First-party Live2D character packs
+├── docs/
+│   └── superpowers/
+│       ├── specs/              # Design docs (TTS abstraction, etc.)
+│       └── plans/              # Implementation plans
 ├── gateways/
 │   └── oai-gateway/            # @eastlake/oai-gateway CLI (Node.js, zero deps)
 ├── installer/
@@ -366,6 +384,12 @@ oai/
 ├── scripts/                    # Build + import helpers (Python)
 ├── server/                     # Erlang/OTP UDP update server (rebar3)
 ├── tests/                      # Qt Test suite (UDP port 52848)
+│   ├── test_ipc_animations.cpp        # End-to-end UDP IPC
+│   ├── test_pet_state_machine.cpp
+│   ├── test_ecg.cpp / test_gaming_mode.cpp
+│   ├── test_tts_providers.cpp         # Per-adapter unit tests (QHttpServer)
+│   ├── test_tts_engine.cpp            # FakeProvider contract tests
+│   └── manual/test_tts_live.cpp       # Live-API smoke (gated by OAI_LIVE_TTS=1)
 └── thirdparty/
     ├── CubismNativeFramework/  # Submodule — Live2D Cubism SDK
     ├── CubismNativeSamples/    # Submodule — Cubism samples (build-time only)
@@ -387,6 +411,53 @@ Config file: `~/.config/Oai/config.json`
 ```
 
 The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
+
+## Text-to-Speech
+
+Oai can speak tips aloud through any of four cloud providers. The TTS engine runs on its own thread, uses HTTP synthesis (no streaming) so it stays stable on flaky networks, and hot-swaps providers without restart.
+
+### Supported providers
+
+| Provider | Auth | Notes |
+|---|---|---|
+| **StepFun** | Bearer token | Default endpoint: `https://api.stepfun.com/step_plan/v1/audio/speech`. Ships with two voice presets in the docs (`cixingnansheng`, `linjiajiejie`). |
+| **MiniMax** | Bearer token | Default endpoint: `https://api.minimaxi.com/v1/t2a_v2`. If your account requires a `GroupId`, append it directly to the URL. |
+| **Azure Speech** | Subscription key | Endpoint derived from `region` (e.g. `eastus` → `eastus.tts.speech.microsoft.com`). SSML body, `Ocp-Apim-Subscription-Key` header. |
+| **OpenAI** | Bearer token | Default endpoint: `https://api.openai.com/v1/audio/speech`. Compatible with self-hosted OpenAI-API gateways. |
+
+### Configuring
+
+1. Open the settings panel (gear icon in the system tray, or right-click the pet)
+2. **General tab** → toggle **Enable TTS**
+3. **TTS tab** → pick a provider from the dropdown, fill in the fields (token, voice ID, optional base URL / model)
+4. Click **Test** at the bottom of the TTS tab to verify
+
+The voice field is free-text — paste any voice ID your provider supports (system, cloned, or beta voices). All credentials are trimmed automatically; pasting with leading/trailing whitespace is safe.
+
+### Adding a new provider
+
+The provider abstraction is small enough that adding a fifth backend (say ElevenLabs) is ~150 LOC of pure protocol:
+
+1. Create `src/tts/<Name>HttpProvider.h/.cpp` implementing `oai::tts::ITtsProvider` (request builder + response parser; no audio code, no threading)
+2. Append a `ProviderDescriptor` to `src/tts/TtsProviderRegistry.cpp` with the stable ID, display name, required/optional fields, and factory lambda
+3. Add a unit test in `tests/test_tts_providers.cpp` against the local `QHttpServer` fixture
+
+The settings UI builds itself from the registry — no UI changes needed for the new provider page.
+
+### Testing live APIs
+
+`tests/manual/test_tts_live.cpp` is gated behind environment variables and exercises the real provider APIs. Useful before releases:
+
+```bash
+OAI_LIVE_TTS=1 \
+  OAI_STEPFUN_TOKEN=... \
+  OAI_MINIMAX_TOKEN=... \
+  OAI_AZURE_KEY=... OAI_AZURE_REGION=eastus \
+  OAI_OPENAI_TOKEN=... \
+  ./build/tests/test_tts_live
+```
+
+Each provider's test is skipped if its credentials are not exported. CI never runs this target.
 
 ## Asset Attribution
 

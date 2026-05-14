@@ -94,14 +94,18 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
 
     connect(m_tipWidget, &TipWidget::bubbleRequested,
             this, [this](const QString &title, const QString &message, TipWidget::BubbleType type) {
-        if (type == TipWidget::TipBubble && m_ttsEngine && m_config->ttsEnabled()) {
-            m_ttsEngine->speak(title + ". " + message);
-        }
+        if (type != TipWidget::TipBubble) return;
+        if (!m_ttsEngine || !m_config->ttsEnabled()) return;
+        // ECG mode hides the pet entirely — speaking would be an out-of-context
+        // surprise. Match the visual tip suppression in onDisplayModeChanged().
+        if (m_config->displayMode() == ConfigManager::DisplayMode::Ecg) return;
+        m_ttsEngine->speak(title + ". " + message);
     });
 
     connect(m_ttsEngine, &TTSEngine::authFailed,
             m_settingsPanel, &SettingsPanelWidget::showAuthFailedHint);
 
+    // Test button works in any mode — the user explicitly asked for it.
     connect(m_settingsPanel, &SettingsPanelWidget::testTtsRequested,
             m_ttsEngine, &TTSEngine::speak);
 #endif
@@ -677,6 +681,9 @@ void MainWindow::onDisplayModeChanged(ConfigManager::DisplayMode mode)
     if (mode == ConfigManager::DisplayMode::Ecg) {
         m_tipWidget->hideBubble();
         m_tipWidget->setSuppressed(true);
+        // No new TTS will start — see the bubbleRequested guard above. Any
+        // utterance already mid-stream finishes naturally; stopping it would
+        // require a heavier teardown than the gain warrants.
         hide();
         if (m_ecgWidget) {
             m_ecgWidget->setAnchorRect(petRect());
