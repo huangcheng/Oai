@@ -103,6 +103,10 @@ void TipWidget::anchorTo(const QWidget *petWidget)
 
 void TipWidget::showBubble(const QString &title, const QString &message, BubbleType type, const QString &source, bool bypassUserSuppression)
 {
+    // Fire the request signal regardless of suppression — listeners like TTS
+    // should react to the *intent* to show a tip, not the rendered visibility.
+    emit bubbleRequested(title, message, type);
+
     // Check suppression: mode suppression always blocks, but user suppression can be bypassed
     if (m_suppressedByMode || (m_suppressedByUser && !bypassUserSuppression)) return;
 

@@ -4,8 +4,11 @@
 #include <QAudioDecoder>
 #include <QBuffer>
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QMediaDevices>
 #include <QNetworkAccessManager>
+
+Q_LOGGING_CATEGORY(lcTts, "oai.tts")
 
 using namespace oai::tts;
 
@@ -49,22 +52,7 @@ void TTSEngine::initOnThread()
 {
     m_nam = new QNetworkAccessManager(this);
     m_audioBuffer = new QBuffer(this);
-    m_decoder = new QAudioDecoder(this);
-    m_decoder->setSourceDevice(m_audioBuffer);
-    connect(m_decoder, &QAudioDecoder::bufferReady,
-            this, &TTSEngine::onDecoderBufferReady);
-    connect(m_decoder,
-            QOverload<>::of(&QAudioDecoder::finished),
-            this, &TTSEngine::onDecoderFinished);
-    // Decoder errors are non-fatal: log and emit speakingFinished so the UI
-    // doesn't hang waiting for a finish that never comes. Spec requires the
-    // signal to fire even when playback fails.
-    connect(m_decoder, QOverload<QAudioDecoder::Error>::of(&QAudioDecoder::error), this,
-            [this](QAudioDecoder::Error e) {
-        qWarning() << "TTSEngine: QAudioDecoder error" << e
-                   << m_decoder->errorString();
-        emit speakingFinished();
-    });
+    // Decoder is built lazily in startDecode() — see header for why.
 
     m_retryTimer = new QTimer(this);
     m_retryTimer->setSingleShot(true);
@@ -72,6 +60,8 @@ void TTSEngine::initOnThread()
         doSynthesize(m_pendingText, m_pendingOptions);
     });
 
+    qCInfo(lcTts) << "engine init on thread, active provider ="
+                  << (m_config ? m_config->ttsActiveProvider() : QStringLiteral("<no config>"));
     rebuildProvider();
 }
 
@@ -97,11 +87,13 @@ void TTSEngine::rebuildProvider()
     try {
         m_provider = desc->factory(cfg, m_nam);
     } catch (const std::exception& e) {
+        qCWarning(lcTts) << "factory threw for" << stableId << ":" << e.what();
         emit error(tr("Failed to construct TTS provider: %1")
                        .arg(QString::fromUtf8(e.what())));
         return;
     }
     m_currentProviderStableId = stableId;
+    qCInfo(lcTts) << "provider built:" << stableId;
 }
 
 void TTSEngine::onActiveProviderChanged(const QString &)
@@ -124,9 +116,14 @@ void TTSEngine::speak(const QString &text)
 
 void TTSEngine::speakWithOptions(const QString &text, SpeakOptions opts)
 {
-    if (!m_config || !m_config->ttsEnabled() || text.isEmpty()) return;
+    if (!m_config || !m_config->ttsEnabled() || text.isEmpty()) {
+        qCDebug(lcTts) << "speak() ignored — enabled=" << (m_config && m_config->ttsEnabled())
+                       << "textEmpty=" << text.isEmpty();
+        return;
+    }
 
     QMetaObject::invokeMethod(this, [this, text, opts]() {
+        qCInfo(lcTts) << "speak:" << text.left(60);
         if (m_inFlight && m_provider) {
             m_provider->cancel(m_inFlight);
             m_inFlight = 0;
@@ -142,9 +139,11 @@ void TTSEngine::speakWithOptions(const QString &text, SpeakOptions opts)
 void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
 {
     if (!m_provider) {
+        qCWarning(lcTts) << "doSynthesize: no provider";
         emit error(tr("No TTS provider configured"));
         return;
     }
+    qCDebug(lcTts) << "synthesize via" << m_currentProviderStableId;
     SynthesisRequest req{text, opts};
     m_inFlight = m_provider->synthesize(req,
         [this](SynthesisResult r) { onSynthesisSuccess(std::move(r)); },
@@ -155,27 +154,27 @@ void TTSEngine::onSynthesisSuccess(SynthesisResult result)
 {
     m_inFlight = 0;
     m_retryCount = 0;
+    qCInfo(lcTts) << "synthesis ok:" << result.audio.size() << "bytes"
+                  << "mime=" << result.mimeType;
     if (result.audio.isEmpty()) {
+        qCWarning(lcTts) << "empty audio buffer — nothing to play";
         emit speakingFinished();
         return;
     }
-
-    resetAudio();
-    m_audioBuffer->setData(result.audio);
-    m_audioBuffer->open(QIODevice::ReadOnly);
-
-    // Hint MIME type so the decoder can pick the right backend.
-    if (!result.mimeType.isEmpty())
-        m_decoder->setSource({});  // ensure source change notifies
-    m_decoder->setSourceDevice(m_audioBuffer);
-    m_decoder->start();
+    startDecode(result.audio, result.mimeType);
     emit speakingStarted();
 }
 
 void TTSEngine::onSynthesisError(TtsError err)
 {
     m_inFlight = 0;
-    if (err.kind == TtsErrorKind::Cancelled) return;
+    if (err.kind == TtsErrorKind::Cancelled) {
+        qCDebug(lcTts) << "synthesis cancelled";
+        return;
+    }
+    qCWarning(lcTts) << "synthesis error kind=" << int(err.kind)
+                     << "http=" << err.httpStatus
+                     << "msg=" << err.message;
     if (err.kind == TtsErrorKind::AuthFailed) {
         emit authFailed(m_currentProviderStableId);
         emit error(tr("TTS authentication failed (HTTP %1)").arg(err.httpStatus));
@@ -200,28 +199,79 @@ void TTSEngine::scheduleRetry()
 
 void TTSEngine::onDecoderBufferReady()
 {
+    if (!m_decoder) return;
     while (m_decoder->bufferAvailable()) {
         QAudioBuffer buf = m_decoder->read();
         if (!buf.isValid()) break;
         if (!m_audioSink) {
+            qCInfo(lcTts) << "audio format:" << buf.format()
+                          << "device=" << QMediaDevices::defaultAudioOutput().description();
             m_audioSink = new QAudioSink(QMediaDevices::defaultAudioOutput(),
                                           buf.format(), this);
+            connect(m_audioSink, &QAudioSink::stateChanged, this,
+                    [](QAudio::State s) { qCDebug(lcTts) << "sink state ->" << s; });
             m_audioSinkDevice = m_audioSink->start();
+            if (!m_audioSinkDevice) {
+                qCWarning(lcTts) << "QAudioSink::start() returned null —"
+                                 << "error=" << m_audioSink->error();
+            }
         }
-        if (m_audioSinkDevice)
-            m_audioSinkDevice->write(reinterpret_cast<const char*>(buf.constData<char>()),
-                                     buf.byteCount());
+        if (m_audioSinkDevice) {
+            qint64 written = m_audioSinkDevice->write(
+                reinterpret_cast<const char*>(buf.constData<char>()),
+                buf.byteCount());
+            if (written < buf.byteCount()) {
+                qCWarning(lcTts) << "short write to sink"
+                                 << written << "of" << buf.byteCount();
+            }
+        }
     }
 }
 
 void TTSEngine::onDecoderFinished()
 {
+    qCInfo(lcTts) << "decoder finished";
     emit speakingFinished();
+}
+
+void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
+{
+    // Recreate the decoder every time. Reusing a single QAudioDecoder across
+    // utterances is unreliable on Qt 6.11's WMF backend (Windows): once a
+    // decode completes or errors, setSourceDevice() + start() on the same
+    // instance frequently produces no bufferReady signals. A fresh decoder
+    // sidesteps that entirely.
+    resetAudio();
+
+    m_audioBuffer->setData(audio);
+    m_audioBuffer->open(QIODevice::ReadOnly);
+
+    m_decoder = new QAudioDecoder(this);
+    m_decoder->setSourceDevice(m_audioBuffer);
+
+    connect(m_decoder, &QAudioDecoder::bufferReady,
+            this, &TTSEngine::onDecoderBufferReady);
+    connect(m_decoder, QOverload<>::of(&QAudioDecoder::finished),
+            this, &TTSEngine::onDecoderFinished);
+    connect(m_decoder, QOverload<QAudioDecoder::Error>::of(&QAudioDecoder::error), this,
+            [this](QAudioDecoder::Error e) {
+                qCWarning(lcTts) << "QAudioDecoder error" << e
+                                 << m_decoder->errorString();
+                emit speakingFinished();
+            });
+
+    qCDebug(lcTts) << "decoder start, audio bytes=" << audio.size()
+                   << "mime hint=" << mimeType;
+    m_decoder->start();
 }
 
 void TTSEngine::resetAudio()
 {
-    if (m_decoder) m_decoder->stop();
+    if (m_decoder) {
+        m_decoder->stop();
+        m_decoder->deleteLater();
+        m_decoder = nullptr;
+    }
     if (m_audioSink) {
         m_audioSink->stop();
         m_audioSink->deleteLater();

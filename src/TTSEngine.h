@@ -54,6 +54,7 @@ private:
     void onSynthesisError(oai::tts::TtsError err);
     void scheduleRetry();
     void resetAudio();
+    void startDecode(const QByteArray &audio, const QString &mimeType);
 
     ConfigManager *m_config = nullptr;
     QThread *m_thread = nullptr;
@@ -69,7 +70,11 @@ private:
     int m_retryCount = 0;
     QTimer *m_retryTimer = nullptr;
 
-    // Audio pipeline (one decoder + sink reused across utterances).
+    // Audio pipeline. The decoder is recreated per-utterance because reusing
+    // a QAudioDecoder across utterances is unreliable on Qt 6.11's WMF backend
+    // — once the previous decode finishes (or errors), the instance can stop
+    // emitting bufferReady for the next source. The buffer and sink can be
+    // reused safely.
     QBuffer *m_audioBuffer = nullptr;
     QAudioDecoder *m_decoder = nullptr;
     QAudioSink *m_audioSink = nullptr;

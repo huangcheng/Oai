@@ -92,7 +92,7 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_ttsEngine = new TTSEngine(m_config, this);
     m_ttsEngine->start();
 
-    connect(m_tipWidget, &TipWidget::bubbleShown,
+    connect(m_tipWidget, &TipWidget::bubbleRequested,
             this, [this](const QString &title, const QString &message, TipWidget::BubbleType type) {
         if (type == TipWidget::TipBubble && m_ttsEngine && m_config->ttsEnabled()) {
             m_ttsEngine->speak(title + ". " + message);
