@@ -68,7 +68,7 @@ private slots:
     void onTtsBaseUrlChanged(const QString &text);
     void onTtsTokenChanged(const QString &text);
     void onTtsModelChanged(const QString &text);
-    void onTtsLanguageChanged(int index);
+    void onTtsLanguageChanged(const QString &text);
 #endif
 
 private:
@@ -121,7 +121,7 @@ private:
     QLabel *m_ttsModelLabel = nullptr;
     QLineEdit *m_ttsModelInput = nullptr;
     QLabel *m_ttsLanguageLabel = nullptr;
-    QComboBox *m_ttsLanguageCombo = nullptr;
+    QLineEdit *m_ttsLanguageInput = nullptr;
 #endif
 
     // Layout container

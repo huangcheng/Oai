@@ -654,17 +654,13 @@ void SettingsPanelWidget::setupUi()
     m_ttsLanguageLabel->setFont(harmonyFont(10));
     m_ttsLanguageLabel->setStyleSheet("color: black; background: transparent;");
 
-    m_ttsLanguageCombo = new QComboBox(m_aiTab);
-    m_ttsLanguageCombo->setFont(harmonyFont(10));
-    m_ttsLanguageCombo->setFixedHeight(24);
-    m_ttsLanguageCombo->addItem("中文 (zh-CN)", "zh-CN");
-    m_ttsLanguageCombo->addItem("English (en-US)", "en-US");
-    m_ttsLanguageCombo->addItem("日本語 (ja-JP)", "ja-JP");
-    m_ttsLanguageCombo->setStyleSheet(comboStyleSheet);
-
-    int langIdx = m_ttsLanguageCombo->findData(m_config->ttsLanguage());
-    if (langIdx >= 0) m_ttsLanguageCombo->setCurrentIndex(langIdx);
-    connect(m_ttsLanguageCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    m_ttsLanguageInput = new QLineEdit(m_aiTab);
+    m_ttsLanguageInput->setFont(harmonyFont(10));
+    m_ttsLanguageInput->setText(m_config->ttsLanguage());
+    m_ttsLanguageInput->setPlaceholderText("zh-CN, en-US, ja-JP, ...");
+    m_ttsLanguageInput->setFixedHeight(24);
+    m_ttsLanguageInput->setStyleSheet(m_portInput->styleSheet());
+    connect(m_ttsLanguageInput, &QLineEdit::textChanged,
             this, &SettingsPanelWidget::onTtsLanguageChanged);
 
     QGridLayout *aiGrid = new QGridLayout();
@@ -681,7 +677,7 @@ void SettingsPanelWidget::setupUi()
     aiGrid->addWidget(m_ttsModelLabel, 3, 0, Qt::AlignLeft | Qt::AlignVCenter);
     aiGrid->addWidget(m_ttsModelInput, 3, 1);
     aiGrid->addWidget(m_ttsLanguageLabel, 4, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsLanguageCombo, 4, 1);
+    aiGrid->addWidget(m_ttsLanguageInput, 4, 1);
 
     aiLayout->addLayout(aiGrid);
     aiLayout->addStretch(1);
@@ -949,10 +945,9 @@ void SettingsPanelWidget::onTtsModelChanged(const QString &text)
     m_config->setTtsModel(text);
 }
 
-void SettingsPanelWidget::onTtsLanguageChanged(int index)
+void SettingsPanelWidget::onTtsLanguageChanged(const QString &text)
 {
-    QString lang = m_ttsLanguageCombo->itemData(index).toString();
-    m_config->setTtsLanguage(lang);
+    m_config->setTtsLanguage(text);
 }
 #endif
 
