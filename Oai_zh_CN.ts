@@ -70,37 +70,37 @@
 <context>
     <name>PackCategories</name>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1039"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1053"/>
         <location filename="src/SystemTray.cpp" line="249"/>
         <source>Standalone</source>
         <translation>独立</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1040"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1054"/>
         <location filename="src/SystemTray.cpp" line="250"/>
         <source>Azur Lane</source>
         <translation>碧蓝航线</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1041"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1055"/>
         <location filename="src/SystemTray.cpp" line="251"/>
         <source>Girls&apos; Frontline</source>
         <translation>少女前线</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1042"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1056"/>
         <location filename="src/SystemTray.cpp" line="252"/>
         <source>Idol Dimension</source>
         <translation>偶像次元</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1043"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1057"/>
         <location filename="src/SystemTray.cpp" line="253"/>
         <source>Konosuba</source>
         <translation>为美好的世界献上祝福！</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1044"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1058"/>
         <location filename="src/SystemTray.cpp" line="254"/>
         <source>Live2D Samples</source>
         <translation>Live2D 样例</translation>
@@ -250,121 +250,154 @@ Path: %2</source>
     </message>
 </context>
 <context>
-    <name>SettingsPanelWidget</name>
+    <name>QObject</name>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="229"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1143"/>
-        <source>Settings</source>
-        <translation>设置</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="73"/>
+        <source>Token</source>
+        <translation>密钥</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="234"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1144"/>
-        <source>×</source>
-        <translation>×</translation>
+        <location filename="src/SettingsPanelWidget.cpp" line="74"/>
+        <source>BaseUrl</source>
+        <translation>基础地址</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="264"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1145"/>
-        <source>Language</source>
-        <translation>语言</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="274"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1146"/>
-        <source>English</source>
-        <translation>English</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="275"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1147"/>
-        <source>简体中文</source>
-        <translation>简体中文</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="343"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1148"/>
-        <source>Launch at Login</source>
-        <translation>登录时启动</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="370"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1149"/>
-        <source>Mode</source>
-        <translation>模式</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="379"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1150"/>
-        <source>Character</source>
-        <translation>角色</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="380"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1151"/>
-        <source>ECG Monitor</source>
-        <translation>心电图</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="388"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1152"/>
-        <source>Port</source>
-        <translation>端口</translation>
-    </message>
-    <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="411"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1157"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="75"/>
         <source>Model</source>
         <translation>模型</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="422"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1061"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1138"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="76"/>
+        <source>GroupId</source>
+        <translation>Group ID</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="77"/>
+        <source>Key</source>
+        <translation>订阅密钥</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="78"/>
+        <source>Region</source>
+        <translation>区域</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPanelWidget</name>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="244"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1157"/>
+        <source>Settings</source>
+        <translation>设置</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="249"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1158"/>
+        <source>×</source>
+        <translation>×</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="279"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1159"/>
+        <source>Language</source>
+        <translation>语言</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="289"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1160"/>
+        <source>English</source>
+        <translation>English</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="290"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1161"/>
+        <source>简体中文</source>
+        <translation>简体中文</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="358"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1162"/>
+        <source>Launch at Login</source>
+        <translation>登录时启动</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="385"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1163"/>
+        <source>Mode</source>
+        <translation>模式</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="394"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1164"/>
+        <source>Character</source>
+        <translation>角色</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="395"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1165"/>
+        <source>ECG Monitor</source>
+        <translation>心电图</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="403"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1166"/>
+        <source>Port</source>
+        <translation>端口</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="426"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1171"/>
+        <source>Model</source>
+        <translation>模型</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="437"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1075"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1152"/>
         <source>(no pack)</source>
         <translation>（未选择）</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="493"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1153"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="508"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1167"/>
         <source>Shortcut</source>
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="519"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1154"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="534"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1168"/>
         <source>Global shortcut to show/hide the pet</source>
         <translation>用于显示/隐藏宠物的全局快捷键</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="572"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1159"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="587"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1173"/>
         <source>TTS</source>
         <translation>语音</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="626"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1161"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="641"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1175"/>
         <source>Provider</source>
         <translation>提供商</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="667"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="682"/>
         <source>Custom...</source>
         <translation>自定义...</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="673"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="688"/>
         <source>Enter voice ID</source>
         <translation>输入语音 ID</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="710"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="725"/>
         <source>Voice</source>
         <translation>语音</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="1013"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1027"/>
         <source>Authentication failed — check this credential.</source>
         <translation>认证失败，请检查凭证。</translation>
     </message>
@@ -373,19 +406,19 @@ Path: %2</source>
         <translation type="vanished">鼠标追踪</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="525"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1155"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="540"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1169"/>
         <source>Gaming Mode</source>
         <translation>游戏模式</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="544"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1156"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="559"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1170"/>
         <source>Event Tips</source>
         <translation>事件提示</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="565"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="580"/>
         <source>General</source>
         <translation>通用</translation>
     </message>
@@ -394,8 +427,8 @@ Path: %2</source>
         <translation type="vanished">AI</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="611"/>
-        <location filename="src/SettingsPanelWidget.cpp" line="1160"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="626"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="1174"/>
         <source>Enable TTS</source>
         <translation>启用语音</translation>
     </message>
@@ -408,7 +441,7 @@ Path: %2</source>
         <translation type="vanished">API 令牌</translation>
     </message>
     <message>
-        <location filename="src/SettingsPanelWidget.cpp" line="736"/>
+        <location filename="src/SettingsPanelWidget.cpp" line="750"/>
         <source>TTS not available</source>
         <translation>语音功能不可用</translation>
     </message>

@@ -65,6 +65,21 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
 }
 
 namespace {
+
+// Static lookup table for TTS provider field labels. Replaces the former
+// dynamic tr(qPrintable(...)) call which lupdate cannot statically scan.
+static QString labelForField(const QString &field)
+{
+    if (field == QLatin1String("token"))   return QObject::tr("Token");
+    if (field == QLatin1String("baseUrl")) return QObject::tr("BaseUrl");
+    if (field == QLatin1String("model"))   return QObject::tr("Model");
+    if (field == QLatin1String("groupId")) return QObject::tr("GroupId");
+    if (field == QLatin1String("key"))     return QObject::tr("Key");
+    if (field == QLatin1String("region"))  return QObject::tr("Region");
+    // Fallback for unknown fields: capitalize first letter
+    return field.left(1).toUpper() + field.mid(1);
+}
+
 // QSS can color the indicator box but cannot draw the tick glyph. Override
 // paintEvent to overlay a checkmark on top of the styled box when checked.
 class CheckMarkBox : public QCheckBox {
@@ -721,8 +736,7 @@ void SettingsPanelWidget::setupUi()
                 connect(edit, &QLineEdit::editingFinished,
                         this, &SettingsPanelWidget::onTtsProviderFieldEdited);
                 m_ttsFieldEdits.append({desc.stableId, field, edit});
-                form->addRow(tr(qPrintable(field.left(1).toUpper() + field.mid(1))),
-                              edit);
+                form->addRow(labelForField(field), edit);
             }
         }
         m_ttsProviderStack->addWidget(page);

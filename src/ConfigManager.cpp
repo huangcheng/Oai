@@ -132,7 +132,9 @@ void ConfigManager::load()
     // of the legacy baseUrl key, which only ever existed in the StepFun era.
     if (m_settings.contains("tts/baseUrl") ||
         m_settings.contains("tts/token") ||
-        m_settings.contains("tts/voice"))
+        m_settings.contains("tts/voice") ||
+        m_settings.contains("tts/model") ||
+        m_settings.contains("tts/language"))
     {
         const QString legacyBaseUrl = m_settings.value("tts/baseUrl").toString();
         const QString legacyToken   = m_settings.value("tts/token").toString();
