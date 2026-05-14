@@ -704,6 +704,9 @@ void SettingsPanelWidget::setupUi()
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
     mainLayout->addLayout(tabContentLayout, 1);
+
+    // Initialize tab styling (General selected by default)
+    onTabChanged(0);
 }
 
 void SettingsPanelWidget::updatePackRowVisibility()
