@@ -69,6 +69,7 @@ private slots:
     void onTtsTokenChanged(const QString &text);
     void onTtsModelChanged(const QString &text);
     void onTtsLanguageChanged(const QString &text);
+    void onTtsVoiceChanged(const QString &text);
 #endif
 
 private:
@@ -122,6 +123,8 @@ private:
     QLineEdit *m_ttsModelInput = nullptr;
     QLabel *m_ttsLanguageLabel = nullptr;
     QLineEdit *m_ttsLanguageInput = nullptr;
+    QLabel *m_ttsVoiceLabel = nullptr;
+    QLineEdit *m_ttsVoiceInput = nullptr;
 #endif
 
     // Layout container
@@ -142,7 +145,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 300;
-    static constexpr int PANEL_HEIGHT = 310;
+    static constexpr int PANEL_HEIGHT = 340;
 };
 
 #endif // SETTINGSPANELWIDGET_H

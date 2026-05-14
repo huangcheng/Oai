@@ -4,8 +4,22 @@
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QBuffer>
+#include <QMediaDevices>
 #include <QUrlQuery>
+#include <QFile>
+#include <QDateTime>
+
+static void ttsLog(const QString &msg)
+{
+    QFile f("/tmp/oai_tts.log");
+    if (f.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        f.write(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz").toUtf8());
+        f.write(" ");
+        f.write(msg.toUtf8());
+        f.write("\n");
+        f.close();
+    }
+}
 
 TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     : QObject(parent)
@@ -14,10 +28,15 @@ TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     m_thread = new QThread(this);
     moveToThread(m_thread);
 
+    ttsLog("TTSEngine constructor, ttsEnabled=" + QString::number(m_config ? m_config->ttsEnabled() : -1));
+
     connect(m_thread, &QThread::started, this, [this]() {
         setupWebSocket();
         if (m_config && m_config->ttsEnabled()) {
+            ttsLog("Thread started, connecting to provider");
             connectToProvider();
+        } else {
+            ttsLog("Thread started, TTS disabled or no config");
         }
     });
 }
@@ -66,10 +85,14 @@ void TTSEngine::setupWebSocket()
 
 void TTSEngine::connectToProvider()
 {
-    if (!m_webSocket || !m_config) return;
+    if (!m_webSocket || !m_config) {
+        ttsLog("connectToProvider: missing websocket or config");
+        return;
+    }
 
     QString baseUrl = m_config->ttsBaseUrl();
     if (baseUrl.isEmpty()) {
+        ttsLog("connectToProvider: baseUrl empty");
         emit error(tr("TTS base URL not configured"));
         return;
     }
@@ -97,7 +120,7 @@ void TTSEngine::connectToProvider()
     QNetworkRequest request(url);
     request.setRawHeader("Authorization", "Bearer " + m_config->ttsToken().toUtf8());
 
-    qDebug() << "TTSEngine: connecting to" << url.toString();
+    ttsLog("connectToProvider: opening " + url.toString());
     m_webSocket->open(request);
 }
 
@@ -111,29 +134,45 @@ void TTSEngine::disconnectFromProvider()
 
 void TTSEngine::speak(const QString &text)
 {
-    if (!m_config || !m_config->ttsEnabled()) return;
-    if (text.isEmpty()) return;
+    ttsLog("speak called, text=" + text.left(50));
+    if (!m_config || !m_config->ttsEnabled()) {
+        ttsLog("speak: TTS disabled");
+        return;
+    }
+    if (text.isEmpty()) {
+        ttsLog("speak: text empty");
+        return;
+    }
 
     if (!m_webSocket || m_webSocket->state() != QAbstractSocket::ConnectedState) {
         // Queue the text to speak after connection
         m_pendingText = text;
+        ttsLog("speak: not connected, queuing and connecting");
         connectToProvider();
     } else if (!m_sessionId.isEmpty()) {
+        ttsLog("speak: connected with session, sending text");
         sendTtsText(text);
     } else {
         // Waiting for session, queue it
         m_pendingText = text;
+        ttsLog("speak: connected but no session, queuing");
     }
 }
 
 void TTSEngine::sendTtsCreate()
 {
-    if (!m_webSocket || m_sessionId.isEmpty()) return;
+    if (!m_webSocket || m_sessionId.isEmpty()) {
+        ttsLog("sendTtsCreate: no websocket or session");
+        return;
+    }
+
+    QString voice = m_config ? m_config->ttsVoice() : QString();
+    if (voice.isEmpty()) voice = QStringLiteral("cixingnansheng");
 
     QJsonObject data;
     data["session_id"] = m_sessionId;
-    data["voice_id"] = "cixingnansheng";  // Default voice
-    data["response_format"] = "mp3";
+    data["voice_id"] = voice;
+    data["response_format"] = "pcm";  // raw 16-bit signed LE mono — no headers, streams cleanly
     data["volume_ratio"] = 1.0;
     data["speed_ratio"] = 1.0;
     data["sample_rate"] = 24000;
@@ -144,12 +183,15 @@ void TTSEngine::sendTtsCreate()
 
     QJsonDocument doc(request);
     m_webSocket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
-    qDebug() << "TTSEngine: sent tts.create for session" << m_sessionId;
+    ttsLog("sendTtsCreate: sent tts.create session=" + m_sessionId);
 }
 
 void TTSEngine::sendTtsText(const QString &text)
 {
-    if (!m_webSocket || m_sessionId.isEmpty()) return;
+    if (!m_webSocket || m_sessionId.isEmpty()) {
+        ttsLog("sendTtsText: no websocket or session");
+        return;
+    }
 
     QJsonObject data;
     data["session_id"] = m_sessionId;
@@ -162,7 +204,7 @@ void TTSEngine::sendTtsText(const QString &text)
     QJsonDocument doc(request);
     m_webSocket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
     emit speakingStarted();
-    qDebug() << "TTSEngine: sent tts.text.delta:" << text;
+    ttsLog("sendTtsText: sent tts.text.delta");
 
     // Send flush to force immediate generation
     QJsonObject flushData;
@@ -187,40 +229,66 @@ void TTSEngine::sendTtsText(const QString &text)
     m_webSocket->sendTextMessage(QString::fromUtf8(doneDoc.toJson(QJsonDocument::Compact)));
 }
 
-void TTSEngine::playAudio(const QByteArray &audioData)
+void TTSEngine::ensureAudioSink()
 {
-    if (!m_mediaPlayer) {
-        m_mediaPlayer = new QMediaPlayer(this);
-        m_audioOutput = new QAudioOutput(this);
-        m_mediaPlayer->setAudioOutput(m_audioOutput);
+    if (m_audioSink) return;
 
-        connect(m_mediaPlayer, &QMediaPlayer::mediaStatusChanged,
-                this, &TTSEngine::onMediaStatusChanged);
-        connect(m_mediaPlayer, &QMediaPlayer::playbackStateChanged,
-                this, &TTSEngine::onPlaybackStateChanged);
+    QAudioFormat fmt;
+    fmt.setSampleRate(24000);
+    fmt.setChannelCount(1);
+    fmt.setSampleFormat(QAudioFormat::Int16);  // PCM s16le
+
+    QAudioDevice dev = QMediaDevices::defaultAudioOutput();
+    if (!dev.isFormatSupported(fmt)) {
+        ttsLog("ensureAudioSink: 24kHz s16 mono not supported by default device");
     }
 
-    QBuffer *buffer = new QBuffer(this);
-    buffer->setData(audioData);
-    buffer->open(QIODevice::ReadOnly);
+    m_audioSink = new QAudioSink(dev, fmt, this);
+    m_audioSinkDevice = m_audioSink->start();  // start in push mode
+    if (!m_audioSinkDevice) {
+        ttsLog("ensureAudioSink: start() returned null");
+    } else {
+        ttsLog("ensureAudioSink: streaming sink ready");
+    }
+}
 
-    m_mediaPlayer->setSourceDevice(buffer);
-    m_mediaPlayer->play();
+void TTSEngine::writePcm(const QByteArray &pcm)
+{
+    ensureAudioSink();
+    if (!m_audioSinkDevice) return;
+
+    qint64 written = m_audioSinkDevice->write(pcm);
+    if (written < pcm.size()) {
+        ttsLog("writePcm: short write " + QString::number(written) + "/" + QString::number(pcm.size()));
+    }
 }
 
 void TTSEngine::onConnected()
 {
     m_retryCount = 0;
     clearRetryTimer();
+
+    if (!m_heartbeatTimer) {
+        m_heartbeatTimer = new QTimer(this);
+        m_heartbeatTimer->setInterval(HEARTBEAT_INTERVAL_MS);
+        connect(m_heartbeatTimer, &QTimer::timeout, this, [this]() {
+            if (m_webSocket && m_webSocket->state() == QAbstractSocket::ConnectedState) {
+                m_webSocket->ping();
+            }
+        });
+    }
+    m_heartbeatTimer->start();
+
     emit connected();
-    qDebug() << "TTSEngine: WebSocket connected, waiting for session...";
+    ttsLog("onConnected: WebSocket connected, heartbeat started");
 }
 
 void TTSEngine::onDisconnected()
 {
+    if (m_heartbeatTimer) m_heartbeatTimer->stop();
     m_sessionId.clear();
     emit disconnected();
-    qDebug() << "TTSEngine: disconnected from provider";
+    ttsLog("onDisconnected");
 }
 
 void TTSEngine::onError(QAbstractSocket::SocketError socketError)
@@ -228,7 +296,7 @@ void TTSEngine::onError(QAbstractSocket::SocketError socketError)
     Q_UNUSED(socketError)
     QString errorMsg = m_webSocket ? m_webSocket->errorString() : tr("Unknown WebSocket error");
     emit error(errorMsg);
-    qWarning() << "TTSEngine: WebSocket error:" << errorMsg;
+    ttsLog("onError: " + errorMsg);
 
     if (m_retryCount < MAX_RETRIES) {
         retryConnection();
@@ -243,61 +311,46 @@ void TTSEngine::onTextMessageReceived(const QString &message)
     QString type = obj["type"].toString();
     QJsonObject data = obj["data"].toObject();
 
-    qDebug() << "TTSEngine: received" << type;
+    ttsLog("onTextMessageReceived: type=" + type);
 
     if (type == "tts.connection.done") {
         m_sessionId = data["session_id"].toString();
-        qDebug() << "TTSEngine: session established:" << m_sessionId;
+        ttsLog("session established: " + m_sessionId);
         sendTtsCreate();
     }
     else if (type == "tts.response.created") {
-        // Session ready, send pending text if any
         if (!m_pendingText.isEmpty()) {
+            ttsLog("tts.response.created, sending pending text");
             sendTtsText(m_pendingText);
             m_pendingText.clear();
         }
     }
     else if (type == "tts.response.audio.delta") {
         QString audioBase64 = data["audio"].toString();
+        ttsLog("audio delta, base64 len=" + QString::number(audioBase64.length()));
         if (!audioBase64.isEmpty()) {
-            QByteArray audioData = QByteArray::fromBase64(audioBase64.toUtf8());
-            if (!audioData.isEmpty()) {
-                playAudio(audioData);
-            }
+            writePcm(QByteArray::fromBase64(audioBase64.toUtf8()));
         }
     }
     else if (type == "tts.response.audio.done") {
         QString audioBase64 = data["audio"].toString();
+        ttsLog("audio done, base64 len=" + QString::number(audioBase64.length()));
         if (!audioBase64.isEmpty()) {
-            QByteArray audioData = QByteArray::fromBase64(audioBase64.toUtf8());
-            if (!audioData.isEmpty()) {
-                playAudio(audioData);
-            }
+            writePcm(QByteArray::fromBase64(audioBase64.toUtf8()));
         }
         emit speakingFinished();
     }
     else if (type == "tts.response.error") {
         QString errorMsg = data["message"].toString();
         emit error(errorMsg);
-        qWarning() << "TTSEngine: server error:" << errorMsg;
+        ttsLog("server error: " + errorMsg);
     }
 }
 
 void TTSEngine::onBinaryMessageReceived(const QByteArray &data)
 {
-    playAudio(data);
-}
-
-void TTSEngine::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
-{
-    if (status == QMediaPlayer::EndOfMedia) {
-        emit speakingFinished();
-    }
-}
-
-void TTSEngine::onPlaybackStateChanged(QMediaPlayer::PlaybackState state)
-{
-    Q_UNUSED(state)
+    ttsLog("binary message received, size=" + QString::number(data.size()));
+    writePcm(data);
 }
 
 void TTSEngine::retryConnection()
@@ -310,6 +363,7 @@ void TTSEngine::retryConnection()
 
     int delay = INITIAL_RETRY_DELAY_MS * (1 << m_retryCount);
     m_retryCount++;
+    ttsLog("retryConnection: attempt " + QString::number(m_retryCount) + " delay=" + QString::number(delay));
     m_retryTimer->start(delay);
 }
 

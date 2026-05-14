@@ -564,7 +564,7 @@ void SettingsPanelWidget::setupUi()
     m_generalTabBtn->setCheckable(true);
     m_generalTabBtn->setChecked(true);
 
-    m_aiTabBtn = new QPushButton(tr("AI"), m_contentWidget);
+    m_aiTabBtn = new QPushButton(tr("TTS"), m_contentWidget);
     m_aiTabBtn->setFont(harmonyFont(10, QFont::Bold));
     m_aiTabBtn->setFixedWidth(70);
     m_aiTabBtn->setCursor(Qt::PointingHandCursor);
@@ -663,6 +663,20 @@ void SettingsPanelWidget::setupUi()
     connect(m_ttsLanguageInput, &QLineEdit::textChanged,
             this, &SettingsPanelWidget::onTtsLanguageChanged);
 
+    // TTS Voice row
+    m_ttsVoiceLabel = new QLabel(tr("Voice"), m_aiTab);
+    m_ttsVoiceLabel->setFont(harmonyFont(10));
+    m_ttsVoiceLabel->setStyleSheet("color: black; background: transparent;");
+
+    m_ttsVoiceInput = new QLineEdit(m_aiTab);
+    m_ttsVoiceInput->setFont(harmonyFont(10));
+    m_ttsVoiceInput->setText(m_config->ttsVoice());
+    m_ttsVoiceInput->setPlaceholderText("cixingnansheng");
+    m_ttsVoiceInput->setFixedHeight(24);
+    m_ttsVoiceInput->setStyleSheet(m_portInput->styleSheet());
+    connect(m_ttsVoiceInput, &QLineEdit::textChanged,
+            this, &SettingsPanelWidget::onTtsVoiceChanged);
+
     QGridLayout *aiGrid = new QGridLayout();
     aiGrid->setHorizontalSpacing(10);
     aiGrid->setVerticalSpacing(VERTICAL_SPACING);
@@ -678,6 +692,8 @@ void SettingsPanelWidget::setupUi()
     aiGrid->addWidget(m_ttsModelInput, 3, 1);
     aiGrid->addWidget(m_ttsLanguageLabel, 4, 0, Qt::AlignLeft | Qt::AlignVCenter);
     aiGrid->addWidget(m_ttsLanguageInput, 4, 1);
+    aiGrid->addWidget(m_ttsVoiceLabel, 5, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsVoiceInput, 5, 1);
 
     aiLayout->addLayout(aiGrid);
     aiLayout->addStretch(1);
@@ -949,6 +965,11 @@ void SettingsPanelWidget::onTtsLanguageChanged(const QString &text)
 {
     m_config->setTtsLanguage(text);
 }
+
+void SettingsPanelWidget::onTtsVoiceChanged(const QString &text)
+{
+    m_config->setTtsVoice(text);
+}
 #endif
 
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
@@ -1090,6 +1111,15 @@ void SettingsPanelWidget::retranslateUi()
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     m_packLabel->setText(tr("Model"));
+#ifdef OAI_TTS_ENABLED
+    if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
+    if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
+    if (m_ttsBaseUrlLabel) m_ttsBaseUrlLabel->setText(tr("Base URL"));
+    if (m_ttsTokenLabel) m_ttsTokenLabel->setText(tr("Token"));
+    if (m_ttsModelLabel) m_ttsModelLabel->setText(tr("Model"));
+    if (m_ttsLanguageLabel) m_ttsLanguageLabel->setText(tr("Language"));
+    if (m_ttsVoiceLabel) m_ttsVoiceLabel->setText(tr("Voice"));
+#endif
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {
         refreshPackList();

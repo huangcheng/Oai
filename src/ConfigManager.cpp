@@ -130,6 +130,7 @@ void ConfigManager::load()
     m_ttsToken = m_settings.value("tts/token").toString();
     m_ttsModel = m_settings.value("tts/model").toString();
     m_ttsLanguage = m_settings.value("tts/language", QStringLiteral("zh-CN")).toString();
+    m_ttsVoice = m_settings.value("tts/voice", QStringLiteral("cixingnansheng")).toString();
 
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
@@ -156,6 +157,7 @@ void ConfigManager::save()
     m_settings.setValue("tts/token", m_ttsToken);
     m_settings.setValue("tts/model", m_ttsModel);
     m_settings.setValue("tts/language", m_ttsLanguage);
+    m_settings.setValue("tts/voice", m_ttsVoice);
     m_settings.sync();
 }
 
@@ -408,4 +410,12 @@ void ConfigManager::setTtsLanguage(const QString &language)
     m_ttsLanguage = language;
     save();
     emit ttsLanguageChanged(language);
+}
+
+void ConfigManager::setTtsVoice(const QString &voice)
+{
+    if (m_ttsVoice == voice) return;
+    m_ttsVoice = voice;
+    save();
+    emit ttsVoiceChanged(voice);
 }

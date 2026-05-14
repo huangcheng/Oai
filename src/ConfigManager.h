@@ -88,6 +88,10 @@ public:
     QString ttsLanguage() const { return m_ttsLanguage; }
     void setTtsLanguage(const QString &language);
 
+    /** TTS voice ID (provider-specific, e.g., "cixingnansheng"). */
+    QString ttsVoice() const { return m_ttsVoice; }
+    void setTtsVoice(const QString &voice);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -118,6 +122,7 @@ signals:
     void ttsTokenChanged(const QString &token);
     void ttsModelChanged(const QString &model);
     void ttsLanguageChanged(const QString &language);
+    void ttsVoiceChanged(const QString &voice);
 
 private:
     QSettings m_settings;
@@ -138,6 +143,7 @@ private:
     QString m_ttsToken;
     QString m_ttsModel;
     QString m_ttsLanguage = QStringLiteral("zh-CN");
+    QString m_ttsVoice = QStringLiteral("cixingnansheng");
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:
