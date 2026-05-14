@@ -123,11 +123,16 @@ void TTSEngine::speakWithOptions(const QString &text, SpeakOptions opts)
     }
 
     QMetaObject::invokeMethod(this, [this, text, opts]() {
-        qCInfo(lcTts) << "speak:" << text.left(60);
-        if (m_inFlight && m_provider) {
-            m_provider->cancel(m_inFlight);
-            m_inFlight = 0;
+        // Debounce: if we're already speaking (or have a request in flight),
+        // drop the new one rather than racing the audio pipeline through a
+        // teardown. Rapid clicks on the pet stay responsive visually; only
+        // the speech is gated.
+        if (m_speaking || m_inFlight) {
+            qCDebug(lcTts) << "speak() dropped — busy (speaking=" << m_speaking
+                           << " inFlight=" << m_inFlight << ")";
+            return;
         }
+        qCInfo(lcTts) << "speak:" << text.left(60);
         m_retryTimer->stop();
         m_retryCount = 0;
         m_pendingText = text;
@@ -161,6 +166,7 @@ void TTSEngine::onSynthesisSuccess(SynthesisResult result)
         emit speakingFinished();
         return;
     }
+    m_speaking = true;
     startDecode(result.audio, result.mimeType);
     emit speakingStarted();
 }
@@ -170,12 +176,14 @@ void TTSEngine::onSynthesisError(TtsError err)
     m_inFlight = 0;
     if (err.kind == TtsErrorKind::Cancelled) {
         qCDebug(lcTts) << "synthesis cancelled";
+        m_speaking = false;
         return;
     }
     qCWarning(lcTts) << "synthesis error kind=" << int(err.kind)
                      << "http=" << err.httpStatus
                      << "msg=" << err.message;
     if (err.kind == TtsErrorKind::AuthFailed) {
+        m_speaking = false;
         emit authFailed(m_currentProviderStableId);
         emit error(tr("TTS authentication failed (HTTP %1)").arg(err.httpStatus));
         return;
@@ -185,6 +193,7 @@ void TTSEngine::onSynthesisError(TtsError err)
         scheduleRetry();
         return;
     }
+    m_speaking = false;
     emit error(err.message.isEmpty()
                  ? tr("TTS request failed")
                  : err.message);
@@ -203,35 +212,46 @@ void TTSEngine::onDecoderBufferReady()
     while (m_decoder->bufferAvailable()) {
         QAudioBuffer buf = m_decoder->read();
         if (!buf.isValid()) break;
-        if (!m_audioSink) {
-            qCInfo(lcTts) << "audio format:" << buf.format()
-                          << "device=" << QMediaDevices::defaultAudioOutput().description();
-            m_audioSink = new QAudioSink(QMediaDevices::defaultAudioOutput(),
-                                          buf.format(), this);
-            connect(m_audioSink, &QAudioSink::stateChanged, this,
-                    [](QAudio::State s) { qCDebug(lcTts) << "sink state ->" << s; });
-            m_audioSinkDevice = m_audioSink->start();
-            if (!m_audioSinkDevice) {
-                qCWarning(lcTts) << "QAudioSink::start() returned null —"
-                                 << "error=" << m_audioSink->error();
-            }
+        if (!m_pcmFormat.isValid()) {
+            m_pcmFormat = buf.format();
+            qCInfo(lcTts) << "decoded audio format:" << m_pcmFormat;
         }
-        if (m_audioSinkDevice) {
-            qint64 written = m_audioSinkDevice->write(
-                reinterpret_cast<const char*>(buf.constData<char>()),
-                buf.byteCount());
-            if (written < buf.byteCount()) {
-                qCWarning(lcTts) << "short write to sink"
-                                 << written << "of" << buf.byteCount();
-            }
-        }
+        m_pcm.append(buf.constData<char>(), buf.byteCount());
     }
 }
 
 void TTSEngine::onDecoderFinished()
 {
-    qCInfo(lcTts) << "decoder finished";
-    emit speakingFinished();
+    qCInfo(lcTts) << "decoder finished, pcm size=" << m_pcm.size();
+    if (m_pcm.isEmpty() || !m_pcmFormat.isValid()) {
+        qCWarning(lcTts) << "no PCM to play";
+        m_speaking = false;
+        emit speakingFinished();
+        return;
+    }
+
+    // Hand the assembled PCM to the sink in pull mode. The sink reads at
+    // its own pace; no short-write loss.
+    m_pcmBuffer = new QBuffer(this);
+    m_pcmBuffer->setData(m_pcm);
+    m_pcmBuffer->open(QIODevice::ReadOnly);
+
+    m_audioSink = new QAudioSink(QMediaDevices::defaultAudioOutput(),
+                                  m_pcmFormat, this);
+    connect(m_audioSink, &QAudioSink::stateChanged, this,
+            [this](QAudio::State s) {
+                qCDebug(lcTts) << "sink state ->" << s;
+                // IdleState after Active means the source ran out — playback
+                // is done. StoppedState means we called stop() ourselves.
+                if (s == QAudio::IdleState) {
+                    m_speaking = false;
+                    emit speakingFinished();
+                }
+            });
+
+    qCInfo(lcTts) << "sink start (pull mode), device="
+                  << QMediaDevices::defaultAudioOutput().description();
+    m_audioSink->start(m_pcmBuffer);
 }
 
 void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
@@ -257,6 +277,7 @@ void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
             [this](QAudioDecoder::Error e) {
                 qCWarning(lcTts) << "QAudioDecoder error" << e
                                  << m_decoder->errorString();
+                m_speaking = false;
                 emit speakingFinished();
             });
 
@@ -276,10 +297,16 @@ void TTSEngine::resetAudio()
         m_audioSink->stop();
         m_audioSink->deleteLater();
         m_audioSink = nullptr;
-        m_audioSinkDevice = nullptr;
+    }
+    if (m_pcmBuffer) {
+        m_pcmBuffer->close();
+        m_pcmBuffer->deleteLater();
+        m_pcmBuffer = nullptr;
     }
     if (m_audioBuffer) {
         m_audioBuffer->close();
         m_audioBuffer->setData(QByteArray());
     }
+    m_pcm.clear();
+    m_pcmFormat = QAudioFormat{};
 }

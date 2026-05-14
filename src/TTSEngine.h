@@ -70,15 +70,24 @@ private:
     int m_retryCount = 0;
     QTimer *m_retryTimer = nullptr;
 
-    // Audio pipeline. The decoder is recreated per-utterance because reusing
-    // a QAudioDecoder across utterances is unreliable on Qt 6.11's WMF backend
-    // — once the previous decode finishes (or errors), the instance can stop
-    // emitting bufferReady for the next source. The buffer and sink can be
-    // reused safely.
-    QBuffer *m_audioBuffer = nullptr;
+    // Audio pipeline. Decoder is recreated per-utterance (Qt 6.11 WMF
+    // backend stops emitting bufferReady on a reused instance after the
+    // first decode). The sink runs in pull mode against m_pcmBuffer: we
+    // accumulate decoded PCM into the buffer as bufferReady fires, then
+    // hand the buffer to QAudioSink::start() once the decoder finishes.
+    // Pull mode lets the sink read at its own pace and eliminates the
+    // short-write loss that push mode produced on Windows.
+    QBuffer *m_audioBuffer = nullptr;        // MP3 input to the decoder
     QAudioDecoder *m_decoder = nullptr;
+    QByteArray m_pcm;                        // accumulated decoded PCM
+    QAudioFormat m_pcmFormat;                // format of m_pcm
+    QBuffer *m_pcmBuffer = nullptr;          // pull-mode source for the sink
     QAudioSink *m_audioSink = nullptr;
-    QIODevice *m_audioSinkDevice = nullptr;
+
+    // True between speakingStarted and speakingFinished. Rapid speak() calls
+    // arriving while busy are dropped (debounce). Set/cleared on the engine
+    // thread only.
+    bool m_speaking = false;
 
     static constexpr int kMaxRetries = 2;
 };
