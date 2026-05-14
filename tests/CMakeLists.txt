@@ -47,6 +47,29 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.cpp
 )
 
+# Manual live tests. Compiled by `cmake --build . --target test_tts_live`
+# but not added to ctest — they require real credentials and network.
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/manual)
+qt_add_executable(test_tts_live
+    manual/test_tts_live.cpp
+    ${OAIPET_LIB_SOURCES}
+)
+target_link_libraries(test_tts_live PRIVATE
+    Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::Multimedia Qt::Test rlottie::rlottie)
+target_include_directories(test_tts_live PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${rlottie_SOURCE_DIR}/inc)
+target_compile_definitions(test_tts_live PRIVATE
+    SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    PROJECT_VERSION="${PROJECT_VERSION}"
+    OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}")
+if(WIN32)
+    target_link_libraries(test_tts_live PRIVATE dwmapi)
+endif()
+if(APPLE)
+    target_link_libraries(test_tts_live PRIVATE "-framework AppKit" "-framework CoreGraphics")
+endif()
+
 set(TEST_SOURCES
     test_ipc_animations.cpp
     test_ecg.cpp

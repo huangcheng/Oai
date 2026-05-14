@@ -1,3 +1,9 @@
+> **STATUS: Superseded** by
+> `docs/superpowers/specs/2026-05-14-tts-provider-abstraction-design.md`.
+> The "WebSocket as Primary Protocol" decision was reversed; the new
+> implementation is HTTP-only across all providers. Voice and provider
+> handling now live behind ITtsProvider rather than inside TTSEngine.
+
 ## Context
 
 The Oai desktop pet currently has a single-page settings panel (`SettingsPanelWidget`) with a vertical grid layout showing all configuration options. The pet communicates visually through tip bubbles only. Users have requested adding Text-to-Speech (TTS) capabilities so the pet can speak tips and greetings aloud.
