@@ -556,10 +556,154 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_tipBubblesLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_tipBubblesCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
+    // Tab buttons (left side)
+    m_generalTabBtn = new QPushButton(tr("General"), m_contentWidget);
+    m_generalTabBtn->setFont(harmonyFont(10, QFont::Bold));
+    m_generalTabBtn->setFixedWidth(70);
+    m_generalTabBtn->setCursor(Qt::PointingHandCursor);
+    m_generalTabBtn->setCheckable(true);
+    m_generalTabBtn->setChecked(true);
+
+    m_aiTabBtn = new QPushButton(tr("AI"), m_contentWidget);
+    m_aiTabBtn->setFont(harmonyFont(10, QFont::Bold));
+    m_aiTabBtn->setFixedWidth(70);
+    m_aiTabBtn->setCursor(Qt::PointingHandCursor);
+    m_aiTabBtn->setCheckable(true);
+
+    QVBoxLayout *tabBtnLayout = new QVBoxLayout();
+    tabBtnLayout->setSpacing(8);
+    tabBtnLayout->addWidget(m_generalTabBtn);
+    tabBtnLayout->addWidget(m_aiTabBtn);
+    tabBtnLayout->addStretch(1);
+
+    connect(m_generalTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(0); });
+    connect(m_aiTabBtn, &QPushButton::clicked, this, [this]() { onTabChanged(1); });
+
+    // General tab content
+    m_generalTab = new QWidget(m_contentWidget);
+    QVBoxLayout *generalLayout = new QVBoxLayout(m_generalTab);
+    generalLayout->setContentsMargins(0, 0, 0, 0);
+    generalLayout->setSpacing(0);
+    generalLayout->addLayout(formGrid);
+    generalLayout->addStretch(1);
+
+    // AI tab content
+    m_aiTab = new QWidget(m_contentWidget);
+    m_aiTab->setVisible(false);
+    QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
+    aiLayout->setContentsMargins(0, 0, 0, 0);
+    aiLayout->setSpacing(VERTICAL_SPACING);
+
+#ifdef OAI_TTS_ENABLED
+    // TTS Enable row
+    m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_aiTab);
+    m_ttsEnabledLabel->setFont(harmonyFont(10));
+    m_ttsEnabledLabel->setStyleSheet("color: black; background: transparent;");
+
+    m_ttsEnabledCheck = new CheckMarkBox(m_aiTab);
+    m_ttsEnabledCheck->setFixedSize(16, 16);
+    m_ttsEnabledCheck->setChecked(m_config->ttsEnabled());
+    m_ttsEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
+    connect(m_ttsEnabledCheck, &QCheckBox::toggled,
+            this, &SettingsPanelWidget::onTtsEnabledToggled);
+
+    // TTS Base URL row
+    m_ttsBaseUrlLabel = new QLabel(tr("Base URL"), m_aiTab);
+    m_ttsBaseUrlLabel->setFont(harmonyFont(10));
+    m_ttsBaseUrlLabel->setStyleSheet("color: black; background: transparent;");
+
+    m_ttsBaseUrlInput = new QLineEdit(m_aiTab);
+    m_ttsBaseUrlInput->setFont(harmonyFont(10));
+    m_ttsBaseUrlInput->setText(m_config->ttsBaseUrl());
+    m_ttsBaseUrlInput->setPlaceholderText("wss://api.example.com/v1/audio");
+    m_ttsBaseUrlInput->setFixedHeight(24);
+    m_ttsBaseUrlInput->setStyleSheet(m_portInput->styleSheet());
+    connect(m_ttsBaseUrlInput, &QLineEdit::textChanged,
+            this, &SettingsPanelWidget::onTtsBaseUrlChanged);
+
+    // TTS Token row
+    m_ttsTokenLabel = new QLabel(tr("Token"), m_aiTab);
+    m_ttsTokenLabel->setFont(harmonyFont(10));
+    m_ttsTokenLabel->setStyleSheet("color: black; background: transparent;");
+
+    m_ttsTokenInput = new QLineEdit(m_aiTab);
+    m_ttsTokenInput->setFont(harmonyFont(10));
+    m_ttsTokenInput->setText(m_config->ttsToken());
+    m_ttsTokenInput->setEchoMode(QLineEdit::Password);
+    m_ttsTokenInput->setFixedHeight(24);
+    m_ttsTokenInput->setStyleSheet(m_portInput->styleSheet());
+    connect(m_ttsTokenInput, &QLineEdit::textChanged,
+            this, &SettingsPanelWidget::onTtsTokenChanged);
+
+    // TTS Model row
+    m_ttsModelLabel = new QLabel(tr("Model"), m_aiTab);
+    m_ttsModelLabel->setFont(harmonyFont(10));
+    m_ttsModelLabel->setStyleSheet("color: black; background: transparent;");
+
+    m_ttsModelInput = new QLineEdit(m_aiTab);
+    m_ttsModelInput->setFont(harmonyFont(10));
+    m_ttsModelInput->setText(m_config->ttsModel());
+    m_ttsModelInput->setPlaceholderText("step-tts-mini");
+    m_ttsModelInput->setFixedHeight(24);
+    m_ttsModelInput->setStyleSheet(m_portInput->styleSheet());
+    connect(m_ttsModelInput, &QLineEdit::textChanged,
+            this, &SettingsPanelWidget::onTtsModelChanged);
+
+    // TTS Language row
+    m_ttsLanguageLabel = new QLabel(tr("Language"), m_aiTab);
+    m_ttsLanguageLabel->setFont(harmonyFont(10));
+    m_ttsLanguageLabel->setStyleSheet("color: black; background: transparent;");
+
+    m_ttsLanguageCombo = new QComboBox(m_aiTab);
+    m_ttsLanguageCombo->setFont(harmonyFont(10));
+    m_ttsLanguageCombo->setFixedHeight(24);
+    m_ttsLanguageCombo->addItem("中文 (zh-CN)", "zh-CN");
+    m_ttsLanguageCombo->addItem("English (en-US)", "en-US");
+    m_ttsLanguageCombo->addItem("日本語 (ja-JP)", "ja-JP");
+    m_ttsLanguageCombo->setStyleSheet(comboStyleSheet);
+
+    int langIdx = m_ttsLanguageCombo->findData(m_config->ttsLanguage());
+    if (langIdx >= 0) m_ttsLanguageCombo->setCurrentIndex(langIdx);
+    connect(m_ttsLanguageCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingsPanelWidget::onTtsLanguageChanged);
+
+    QGridLayout *aiGrid = new QGridLayout();
+    aiGrid->setHorizontalSpacing(10);
+    aiGrid->setVerticalSpacing(VERTICAL_SPACING);
+    aiGrid->setColumnStretch(1, 1);
+
+    aiGrid->addWidget(m_ttsEnabledLabel, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsEnabledCheck, 0, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsBaseUrlLabel, 1, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsBaseUrlInput, 1, 1);
+    aiGrid->addWidget(m_ttsTokenLabel, 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsTokenInput, 2, 1);
+    aiGrid->addWidget(m_ttsModelLabel, 3, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsModelInput, 3, 1);
+    aiGrid->addWidget(m_ttsLanguageLabel, 4, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    aiGrid->addWidget(m_ttsLanguageCombo, 4, 1);
+
+    aiLayout->addLayout(aiGrid);
+    aiLayout->addStretch(1);
+#else
+    QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_aiTab);
+    ttsDisabledLabel->setFont(harmonyFont(10));
+    ttsDisabledLabel->setStyleSheet("color: #888; background: transparent;");
+    ttsDisabledLabel->setAlignment(Qt::AlignCenter);
+    aiLayout->addWidget(ttsDisabledLabel);
+    aiLayout->addStretch(1);
+#endif
+
+    // Tab content stacked area
+    QHBoxLayout *tabContentLayout = new QHBoxLayout();
+    tabContentLayout->setSpacing(8);
+    tabContentLayout->addLayout(tabBtnLayout);
+    tabContentLayout->addWidget(m_generalTab, 1);
+    tabContentLayout->addWidget(m_aiTab, 1);
+
     mainLayout->addLayout(titleRow);
     mainLayout->addWidget(m_separator);
-    mainLayout->addLayout(formGrid);
-    mainLayout->addStretch(1);
+    mainLayout->addLayout(tabContentLayout, 1);
 }
 
 void SettingsPanelWidget::updatePackRowVisibility()
@@ -745,6 +889,69 @@ void SettingsPanelWidget::onTipBubblesToggled(bool checked)
 {
     m_config->setTipBubblesEnabled(checked);
 }
+
+void SettingsPanelWidget::onTabChanged(int tabIndex)
+{
+    m_generalTab->setVisible(tabIndex == 0);
+    m_aiTab->setVisible(tabIndex == 1);
+
+    const QString activeStyle = R"(
+        QPushButton {
+            background: #F36F1A;
+            color: white;
+            border: 2px solid black;
+            border-radius: 3px;
+            padding: 6px 8px;
+            font-weight: bold;
+            text-align: left;
+        }
+    )";
+    const QString inactiveStyle = R"(
+        QPushButton {
+            background: white;
+            color: black;
+            border: 2px solid #888;
+            border-radius: 3px;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        QPushButton:hover {
+            background: #F36F1A;
+            color: white;
+        }
+    )";
+
+    m_generalTabBtn->setStyleSheet(tabIndex == 0 ? activeStyle : inactiveStyle);
+    m_aiTabBtn->setStyleSheet(tabIndex == 1 ? activeStyle : inactiveStyle);
+}
+
+#ifdef OAI_TTS_ENABLED
+void SettingsPanelWidget::onTtsEnabledToggled(bool checked)
+{
+    m_config->setTtsEnabled(checked);
+}
+
+void SettingsPanelWidget::onTtsBaseUrlChanged(const QString &text)
+{
+    m_config->setTtsBaseUrl(text);
+}
+
+void SettingsPanelWidget::onTtsTokenChanged(const QString &text)
+{
+    m_config->setTtsToken(text);
+}
+
+void SettingsPanelWidget::onTtsModelChanged(const QString &text)
+{
+    m_config->setTtsModel(text);
+}
+
+void SettingsPanelWidget::onTtsLanguageChanged(int index)
+{
+    QString lang = m_ttsLanguageCombo->itemData(index).toString();
+    m_config->setTtsLanguage(lang);
+}
+#endif
 
 void SettingsPanelWidget::setCharacterPackManager(CharacterPackManager *manager)
 {

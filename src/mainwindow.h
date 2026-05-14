@@ -13,6 +13,9 @@ class LottieAnimationEngine;
 #ifdef OAI_LIVE2D_SUPPORT
 class Live2DAnimationEngine;
 #endif
+#ifdef OAI_TTS_ENABLED
+class TTSEngine;
+#endif
 class TipWidget;
 class SettingsPanelWidget;
 class EcgWidget;
@@ -92,6 +95,9 @@ private:
     LottieAnimationEngine *m_lottieEngine;
 #ifdef OAI_LIVE2D_SUPPORT
     Live2DAnimationEngine *m_live2dEngine = nullptr;
+#endif
+#ifdef OAI_TTS_ENABLED
+    TTSEngine *m_ttsEngine = nullptr;
 #endif
     ConfigManager *m_config;
     TipWidget *m_tipWidget;

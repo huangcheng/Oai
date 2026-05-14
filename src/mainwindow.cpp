@@ -5,6 +5,9 @@
 #ifdef OAI_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
+#ifdef OAI_TTS_ENABLED
+#include "TTSEngine.h"
+#endif
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
 #include "ConfigManager.h"
@@ -84,6 +87,18 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_settingsPanel = new SettingsPanelWidget(m_config, nullptr);
     m_settingsPanel->setAnchorRect(petRect());
     m_settingsPanel->hide();
+
+#ifdef OAI_TTS_ENABLED
+    m_ttsEngine = new TTSEngine(m_config, this);
+    m_ttsEngine->start();
+
+    connect(m_tipWidget, &TipWidget::bubbleShown,
+            this, [this](const QString &title, const QString &message, TipWidget::BubbleType type) {
+        if (type == TipWidget::TipBubble && m_ttsEngine && m_config->ttsEnabled()) {
+            m_ttsEngine->speak(title + ". " + message);
+        }
+    });
+#endif
 
     m_ecgWidget = new EcgWidget(nullptr); // top-level, like the tip bubble
     m_ecgWidget->setAnchorRect(petRect());
@@ -217,6 +232,13 @@ MainWindow::~MainWindow()
         delete m_settingsPanel;
         m_settingsPanel = nullptr;
     }
+#ifdef OAI_TTS_ENABLED
+    if (m_ttsEngine) {
+        m_ttsEngine->stop();
+        delete m_ttsEngine;
+        m_ttsEngine = nullptr;
+    }
+#endif
     if (m_tipWidget) {
         delete m_tipWidget;
         m_tipWidget = nullptr;

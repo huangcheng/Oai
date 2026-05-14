@@ -151,8 +151,9 @@ void TTSEngine::onDisconnected()
     qDebug() << "TTSEngine: disconnected from provider";
 }
 
-void TTSEngine::onError(QAbstractSocket::SocketError error)
+void TTSEngine::onError(QAbstractSocket::SocketError socketError)
 {
+    Q_UNUSED(socketError)
     QString errorMsg = m_webSocket ? m_webSocket->errorString() : tr("Unknown WebSocket error");
     emit error(errorMsg);
     qWarning() << "TTSEngine: WebSocket error:" << errorMsg;

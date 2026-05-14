@@ -114,6 +114,8 @@ void TipWidget::showBubble(const QString &title, const QString &message, BubbleT
     m_source = source;
     m_type = type;
 
+    emit bubbleShown(title, message, type);
+
     // If already showing the same content, just reset the dismiss timer
     if (alreadyVisible && sameContent) {
         m_dismissTimer.stop();

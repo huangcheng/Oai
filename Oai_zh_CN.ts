@@ -209,6 +209,36 @@
         <source>Event Tips</source>
         <translation>事件提示</translation>
     </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="560"/>
+        <source>General</source>
+        <translation>通用</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="567"/>
+        <source>AI</source>
+        <translation>AI</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="599"/>
+        <source>Enable TTS</source>
+        <translation>启用语音</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="611"/>
+        <source>Base URL</source>
+        <translation>语音服务地址</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="625"/>
+        <source>Token</source>
+        <translation>API 令牌</translation>
+    </message>
+    <message>
+        <location filename="src/SettingsPanelWidget.cpp" line="689"/>
+        <source>TTS not available</source>
+        <translation>语音功能不可用</translation>
+    </message>
 </context>
 <context>
     <name>SystemTray</name>

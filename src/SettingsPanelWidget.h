@@ -55,6 +55,7 @@ protected:
 
 private slots:
     void onCloseClicked();
+    void onTabChanged(int tabIndex);
     void onLanguageChanged(int index);
     void onAutoStartToggled(bool checked);
     void onModeChanged(int index);
@@ -62,6 +63,13 @@ private slots:
     void onShortcutChanged(const QKeySequence &sequence);
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
+#ifdef OAI_TTS_ENABLED
+    void onTtsEnabledToggled(bool checked);
+    void onTtsBaseUrlChanged(const QString &text);
+    void onTtsTokenChanged(const QString &text);
+    void onTtsModelChanged(const QString &text);
+    void onTtsLanguageChanged(int index);
+#endif
 
 private:
     void setupUi();
@@ -93,6 +101,28 @@ private:
     QCheckBox *m_gamingModeCheck = nullptr;
     QLabel *m_tipBubblesLabel = nullptr;
     QCheckBox *m_tipBubblesCheck = nullptr;
+
+    // Tab buttons (left side)
+    QPushButton *m_generalTabBtn = nullptr;
+    QPushButton *m_aiTabBtn = nullptr;
+
+    // Tab content containers
+    QWidget *m_generalTab = nullptr;
+    QWidget *m_aiTab = nullptr;
+
+#ifdef OAI_TTS_ENABLED
+    // TTS UI elements
+    QLabel *m_ttsEnabledLabel = nullptr;
+    QCheckBox *m_ttsEnabledCheck = nullptr;
+    QLabel *m_ttsBaseUrlLabel = nullptr;
+    QLineEdit *m_ttsBaseUrlInput = nullptr;
+    QLabel *m_ttsTokenLabel = nullptr;
+    QLineEdit *m_ttsTokenInput = nullptr;
+    QLabel *m_ttsModelLabel = nullptr;
+    QLineEdit *m_ttsModelInput = nullptr;
+    QLabel *m_ttsLanguageLabel = nullptr;
+    QComboBox *m_ttsLanguageCombo = nullptr;
+#endif
 
     // Layout container
     QWidget *m_contentWidget = nullptr;

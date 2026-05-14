@@ -58,6 +58,9 @@ public:
     QString message() const { return m_message; }
     BubbleType bubbleType() const { return m_type; }
 
+signals:
+    void bubbleShown(const QString &title, const QString &message, BubbleType type);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
     void showEvent(QShowEvent *event) override;
