@@ -381,6 +381,18 @@ qt_add_executable(Oai
     src/FullscreenWatcher.h
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.cpp>
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ITtsProvider.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ProviderConfig.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.cpp>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/AzureSpeechProvider.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/AzureSpeechProvider.cpp>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.cpp>
 )
 
 target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

@@ -59,7 +59,7 @@ void TTSEngine::initOnThread()
     // Decoder errors are non-fatal: log and emit speakingFinished so the UI
     // doesn't hang waiting for a finish that never comes. Spec requires the
     // signal to fire even when playback fails.
-    connect(m_decoder, &QAudioDecoder::errorOccurred, this,
+    connect(m_decoder, QOverload<QAudioDecoder::Error>::of(&QAudioDecoder::error), this,
             [this](QAudioDecoder::Error e) {
         qWarning() << "TTSEngine: QAudioDecoder error" << e
                    << m_decoder->errorString();

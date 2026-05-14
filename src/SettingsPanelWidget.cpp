@@ -2,12 +2,17 @@
 #include "ConfigManager.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
+#ifdef OAI_TTS_ENABLED
+#include "tts/TtsProviderRegistry.h"
+#endif
 
 #include <QPainter>
 #include <QPainterPath>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
+#include <QFormLayout>
+#include <QStackedWidget>
 #include <QWindow>
 #include <QLabel>
 #include <QPushButton>
@@ -590,113 +595,143 @@ void SettingsPanelWidget::setupUi()
     // AI tab content
     m_aiTab = new QWidget(m_contentWidget);
     m_aiTab->setVisible(false);
+#ifdef OAI_TTS_ENABLED
+    QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
+    aiLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);
+    aiLayout->setSpacing(VERTICAL_SPACING);
+#else
     QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
     aiLayout->setContentsMargins(0, 0, 0, 0);
     aiLayout->setSpacing(VERTICAL_SPACING);
+#endif
 
 #ifdef OAI_TTS_ENABLED
-    // TTS Enable row
-    m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_aiTab);
-    m_ttsEnabledLabel->setFont(harmonyFont(10));
-    m_ttsEnabledLabel->setStyleSheet("color: black; background: transparent;");
+    // === AI tab content ===
 
+    m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_aiTab);
     m_ttsEnabledCheck = new CheckMarkBox(m_aiTab);
     m_ttsEnabledCheck->setFixedSize(16, 16);
     m_ttsEnabledCheck->setChecked(m_config->ttsEnabled());
     m_ttsEnabledCheck->setStyleSheet(m_autoStartCheck->styleSheet());
     connect(m_ttsEnabledCheck, &QCheckBox::toggled,
             this, &SettingsPanelWidget::onTtsEnabledToggled);
+    {
+        QHBoxLayout *row = new QHBoxLayout();
+        row->addWidget(m_ttsEnabledLabel);
+        row->addStretch();
+        row->addWidget(m_ttsEnabledCheck);
+        aiLayout->addLayout(row);
+    }
 
-    // TTS Base URL row
-    m_ttsBaseUrlLabel = new QLabel(tr("Base URL"), m_aiTab);
-    m_ttsBaseUrlLabel->setFont(harmonyFont(10));
-    m_ttsBaseUrlLabel->setStyleSheet("color: black; background: transparent;");
+    m_ttsProviderLabel = new QLabel(tr("Provider"), m_aiTab);
+    m_ttsProviderCombo = new QComboBox(m_aiTab);
+    m_ttsProviderCombo->setFont(harmonyFont(10));
+    m_ttsProviderCombo->setFixedHeight(24);
+    m_ttsProviderCombo->setStyleSheet(comboStyleSheet);
+    {
+        QHBoxLayout *row = new QHBoxLayout();
+        row->addWidget(m_ttsProviderLabel);
+        row->addWidget(m_ttsProviderCombo, 1);
+        aiLayout->addLayout(row);
+    }
 
-    m_ttsBaseUrlInput = new QLineEdit(m_aiTab);
-    m_ttsBaseUrlInput->setFont(harmonyFont(10));
-    m_ttsBaseUrlInput->setText(m_config->ttsBaseUrl());
-    m_ttsBaseUrlInput->setPlaceholderText("wss://api.example.com/v1/audio");
-    m_ttsBaseUrlInput->setFixedHeight(24);
-    m_ttsBaseUrlInput->setStyleSheet(m_portInput->styleSheet());
-    connect(m_ttsBaseUrlInput, &QLineEdit::textChanged,
-            this, &SettingsPanelWidget::onTtsBaseUrlChanged);
+    m_ttsProviderStack = new QStackedWidget(m_aiTab);
+    aiLayout->addWidget(m_ttsProviderStack, 1);
 
-    // TTS Token row
-    m_ttsTokenLabel = new QLabel(tr("Token"), m_aiTab);
-    m_ttsTokenLabel->setFont(harmonyFont(10));
-    m_ttsTokenLabel->setStyleSheet("color: black; background: transparent;");
+    // Build one page per descriptor.
+    using namespace oai::tts;
+    int activeIndex = 0;
+    int comboIndex = 0;
+    for (const ProviderDescriptor& desc : TtsProviderRegistry::descriptors()) {
+        m_ttsProviderCombo->addItem(desc.displayName, desc.stableId);
+        if (desc.stableId == m_config->ttsActiveProvider())
+            activeIndex = comboIndex;
+        ++comboIndex;
 
-    m_ttsTokenInput = new QLineEdit(m_aiTab);
-    m_ttsTokenInput->setFont(harmonyFont(10));
-    m_ttsTokenInput->setText(m_config->ttsToken());
-    m_ttsTokenInput->setEchoMode(QLineEdit::Password);
-    m_ttsTokenInput->setFixedHeight(24);
-    m_ttsTokenInput->setStyleSheet(m_portInput->styleSheet());
-    connect(m_ttsTokenInput, &QLineEdit::textChanged,
-            this, &SettingsPanelWidget::onTtsTokenChanged);
+        QWidget *page = new QWidget(m_ttsProviderStack);
+        QFormLayout *form = new QFormLayout(page);
+        form->setContentsMargins(0, 0, 0, 0);
+        form->setSpacing(8);
 
-    // TTS Model row
-    m_ttsModelLabel = new QLabel(tr("Model"), m_aiTab);
-    m_ttsModelLabel->setFont(harmonyFont(10));
-    m_ttsModelLabel->setStyleSheet("color: black; background: transparent;");
+        // Render every required + optional field as a QLineEdit, except
+        // "voice", which gets a combo + custom-text fallback.
+        QStringList fields = desc.requiredFields + desc.optionalFields;
+        for (const QString& field : fields) {
+            if (field == QLatin1String("voice")) {
+                QComboBox *combo = new QComboBox(page);
+                combo->setFont(harmonyFont(10));
+                combo->setFixedHeight(24);
+                combo->setStyleSheet(comboStyleSheet);
+                for (const VoicePreset& v : desc.voiceCatalog)
+                    combo->addItem(v.displayName, v.id);
+                combo->addItem(tr("Custom..."), QString());
 
-    m_ttsModelInput = new QLineEdit(m_aiTab);
-    m_ttsModelInput->setFont(harmonyFont(10));
-    m_ttsModelInput->setText(m_config->ttsModel());
-    m_ttsModelInput->setPlaceholderText("step-tts-mini");
-    m_ttsModelInput->setFixedHeight(24);
-    m_ttsModelInput->setStyleSheet(m_portInput->styleSheet());
-    connect(m_ttsModelInput, &QLineEdit::textChanged,
-            this, &SettingsPanelWidget::onTtsModelChanged);
+                QLineEdit *customEdit = new QLineEdit(page);
+                customEdit->setFont(harmonyFont(10));
+                customEdit->setFixedHeight(24);
+                customEdit->setStyleSheet(m_portInput->styleSheet());
+                customEdit->setPlaceholderText(tr("Enter voice ID"));
+                customEdit->setVisible(false);
 
-    // TTS Language row
-    m_ttsLanguageLabel = new QLabel(tr("Language"), m_aiTab);
-    m_ttsLanguageLabel->setFont(harmonyFont(10));
-    m_ttsLanguageLabel->setStyleSheet("color: black; background: transparent;");
+                const QString currentId = m_config->ttsProviderField(desc.stableId, "voice");
+                int matchIdx = combo->findData(currentId);
+                combo->blockSignals(true);
+                if (!currentId.isEmpty() && matchIdx == -1) {
+                    combo->setCurrentIndex(combo->count() - 1);  // Custom...
+                    customEdit->setText(currentId);
+                    customEdit->setVisible(true);
+                } else if (matchIdx >= 0) {
+                    combo->setCurrentIndex(matchIdx);
+                }
+                combo->blockSignals(false);
 
-    m_ttsLanguageInput = new QLineEdit(m_aiTab);
-    m_ttsLanguageInput->setFont(harmonyFont(10));
-    m_ttsLanguageInput->setText(m_config->ttsLanguage());
-    m_ttsLanguageInput->setPlaceholderText("zh-CN, en-US, ja-JP, ...");
-    m_ttsLanguageInput->setFixedHeight(24);
-    m_ttsLanguageInput->setStyleSheet(m_portInput->styleSheet());
-    connect(m_ttsLanguageInput, &QLineEdit::textChanged,
-            this, &SettingsPanelWidget::onTtsLanguageChanged);
+                connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                        this, [this, combo, customEdit, stableId = desc.stableId]
+                              (int idx) {
+                    const QString id = combo->itemData(idx).toString();
+                    customEdit->setVisible(id.isEmpty());
+                    if (!id.isEmpty())
+                        m_config->setTtsProviderField(stableId, "voice", id);
+                    else if (!customEdit->text().isEmpty())
+                        m_config->setTtsProviderField(stableId, "voice",
+                                                      customEdit->text());
+                });
+                connect(customEdit, &QLineEdit::editingFinished,
+                        this, [this, customEdit, stableId = desc.stableId]() {
+                    m_config->setTtsProviderField(stableId, "voice",
+                                                  customEdit->text());
+                });
 
-    // TTS Voice row
-    m_ttsVoiceLabel = new QLabel(tr("Voice"), m_aiTab);
-    m_ttsVoiceLabel->setFont(harmonyFont(10));
-    m_ttsVoiceLabel->setStyleSheet("color: black; background: transparent;");
+                QWidget *cell = new QWidget(page);
+                QVBoxLayout *cellLayout = new QVBoxLayout(cell);
+                cellLayout->setContentsMargins(0, 0, 0, 0);
+                cellLayout->addWidget(combo);
+                cellLayout->addWidget(customEdit);
+                form->addRow(tr("Voice"), cell);
 
-    m_ttsVoiceInput = new QLineEdit(m_aiTab);
-    m_ttsVoiceInput->setFont(harmonyFont(10));
-    m_ttsVoiceInput->setText(m_config->ttsVoice());
-    m_ttsVoiceInput->setPlaceholderText("cixingnansheng");
-    m_ttsVoiceInput->setFixedHeight(24);
-    m_ttsVoiceInput->setStyleSheet(m_portInput->styleSheet());
-    connect(m_ttsVoiceInput, &QLineEdit::textChanged,
-            this, &SettingsPanelWidget::onTtsVoiceChanged);
+                m_ttsVoiceCombos.append({desc.stableId, combo, customEdit});
+            } else {
+                QLineEdit *edit = new QLineEdit(page);
+                edit->setFont(harmonyFont(10));
+                edit->setFixedHeight(24);
+                edit->setStyleSheet(m_portInput->styleSheet());
+                edit->setText(m_config->ttsProviderField(desc.stableId, field));
+                if (field == QLatin1String("token") || field == QLatin1String("key"))
+                    edit->setEchoMode(QLineEdit::Password);
+                connect(edit, &QLineEdit::editingFinished,
+                        this, &SettingsPanelWidget::onTtsProviderFieldEdited);
+                m_ttsFieldEdits.append({desc.stableId, field, edit});
+                form->addRow(tr(qPrintable(field.left(1).toUpper() + field.mid(1))),
+                              edit);
+            }
+        }
+        m_ttsProviderStack->addWidget(page);
+    }
 
-    QGridLayout *aiGrid = new QGridLayout();
-    aiGrid->setHorizontalSpacing(10);
-    aiGrid->setVerticalSpacing(VERTICAL_SPACING);
-    aiGrid->setColumnStretch(1, 1);
-
-    aiGrid->addWidget(m_ttsEnabledLabel, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsEnabledCheck, 0, 1, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsBaseUrlLabel, 1, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsBaseUrlInput, 1, 1);
-    aiGrid->addWidget(m_ttsTokenLabel, 2, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsTokenInput, 2, 1);
-    aiGrid->addWidget(m_ttsModelLabel, 3, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsModelInput, 3, 1);
-    aiGrid->addWidget(m_ttsLanguageLabel, 4, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsLanguageInput, 4, 1);
-    aiGrid->addWidget(m_ttsVoiceLabel, 5, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    aiGrid->addWidget(m_ttsVoiceInput, 5, 1);
-
-    aiLayout->addLayout(aiGrid);
-    aiLayout->addStretch(1);
+    m_ttsProviderCombo->setCurrentIndex(activeIndex);
+    m_ttsProviderStack->setCurrentIndex(activeIndex);
+    connect(m_ttsProviderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingsPanelWidget::onTtsProviderChanged);
 #else
     QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_aiTab);
     ttsDisabledLabel->setFont(harmonyFont(10));
@@ -946,29 +981,25 @@ void SettingsPanelWidget::onTtsEnabledToggled(bool checked)
     m_config->setTtsEnabled(checked);
 }
 
-void SettingsPanelWidget::onTtsBaseUrlChanged(const QString &text)
+void SettingsPanelWidget::onTtsProviderChanged(int comboIndex)
 {
-    m_config->setTtsBaseUrl(text);
+    const QString stableId = m_ttsProviderCombo->itemData(comboIndex).toString();
+    if (stableId.isEmpty()) return;
+    m_config->setTtsActiveProvider(stableId);
+    m_ttsProviderStack->setCurrentIndex(comboIndex);
 }
 
-void SettingsPanelWidget::onTtsTokenChanged(const QString &text)
+void SettingsPanelWidget::onTtsProviderFieldEdited()
 {
-    m_config->setTtsToken(text);
-}
-
-void SettingsPanelWidget::onTtsModelChanged(const QString &text)
-{
-    m_config->setTtsModel(text);
-}
-
-void SettingsPanelWidget::onTtsLanguageChanged(const QString &text)
-{
-    m_config->setTtsLanguage(text);
-}
-
-void SettingsPanelWidget::onTtsVoiceChanged(const QString &text)
-{
-    m_config->setTtsVoice(text);
+    QLineEdit *src = qobject_cast<QLineEdit*>(sender());
+    if (!src) return;
+    for (const TtsFieldEdit& f : m_ttsFieldEdits) {
+        if (f.edit == src) {
+            m_config->setTtsProviderField(f.providerStableId, f.fieldName,
+                                          src->text());
+            return;
+        }
+    }
 }
 #endif
 
@@ -1114,11 +1145,7 @@ void SettingsPanelWidget::retranslateUi()
 #ifdef OAI_TTS_ENABLED
     if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
-    if (m_ttsBaseUrlLabel) m_ttsBaseUrlLabel->setText(tr("Base URL"));
-    if (m_ttsTokenLabel) m_ttsTokenLabel->setText(tr("Token"));
-    if (m_ttsModelLabel) m_ttsModelLabel->setText(tr("Model"));
-    if (m_ttsLanguageLabel) m_ttsLanguageLabel->setText(tr("Language"));
-    if (m_ttsVoiceLabel) m_ttsVoiceLabel->setText(tr("Voice"));
+    if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
 #endif
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {

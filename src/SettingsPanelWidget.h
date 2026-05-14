@@ -17,6 +17,7 @@ class QLineEdit;
 class QToolButton;
 class QAction;
 class QKeySequenceEdit;
+class QStackedWidget;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -65,11 +66,8 @@ private slots:
     void onTipBubblesToggled(bool checked);
 #ifdef OAI_TTS_ENABLED
     void onTtsEnabledToggled(bool checked);
-    void onTtsBaseUrlChanged(const QString &text);
-    void onTtsTokenChanged(const QString &text);
-    void onTtsModelChanged(const QString &text);
-    void onTtsLanguageChanged(const QString &text);
-    void onTtsVoiceChanged(const QString &text);
+    void onTtsProviderChanged(int comboIndex);
+    void onTtsProviderFieldEdited();        // shared slot for all field editors
 #endif
 
 private:
@@ -112,19 +110,29 @@ private:
     QWidget *m_aiTab = nullptr;
 
 #ifdef OAI_TTS_ENABLED
-    // TTS UI elements
-    QLabel *m_ttsEnabledLabel = nullptr;
-    QCheckBox *m_ttsEnabledCheck = nullptr;
-    QLabel *m_ttsBaseUrlLabel = nullptr;
-    QLineEdit *m_ttsBaseUrlInput = nullptr;
-    QLabel *m_ttsTokenLabel = nullptr;
-    QLineEdit *m_ttsTokenInput = nullptr;
-    QLabel *m_ttsModelLabel = nullptr;
-    QLineEdit *m_ttsModelInput = nullptr;
-    QLabel *m_ttsLanguageLabel = nullptr;
-    QLineEdit *m_ttsLanguageInput = nullptr;
-    QLabel *m_ttsVoiceLabel = nullptr;
-    QLineEdit *m_ttsVoiceInput = nullptr;
+    QLabel       *m_ttsEnabledLabel = nullptr;
+    QCheckBox    *m_ttsEnabledCheck = nullptr;
+    QLabel       *m_ttsProviderLabel = nullptr;
+    QComboBox    *m_ttsProviderCombo = nullptr;
+    QStackedWidget *m_ttsProviderStack = nullptr;
+
+    // Each provider's page contains a QFormLayout of QLineEdits keyed by
+    // field name. We track them here so onTtsProviderFieldEdited() can
+    // route the edit back to the right provider/field pair.
+    struct TtsFieldEdit {
+        QString providerStableId;
+        QString fieldName;
+        QLineEdit *edit;
+    };
+    QList<TtsFieldEdit> m_ttsFieldEdits;
+
+    // Voice combo per provider (separate so we can repopulate on edit).
+    struct TtsVoiceCombo {
+        QString providerStableId;
+        QComboBox *combo;
+        QLineEdit *customEdit;     // shown only when "Custom..." selected
+    };
+    QList<TtsVoiceCombo> m_ttsVoiceCombos;
 #endif
 
     // Layout container
@@ -145,7 +153,7 @@ private:
     static constexpr int BORDER_WIDTH = 3;
     static constexpr int SKEW_PX = 4;
     static constexpr int PANEL_WIDTH = 300;
-    static constexpr int PANEL_HEIGHT = 340;
+    static constexpr int PANEL_HEIGHT = 400;
 };
 
 #endif // SETTINGSPANELWIDGET_H
