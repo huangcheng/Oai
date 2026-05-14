@@ -70,7 +70,7 @@ RequestHandle StepFunHttpProvider::synthesize(
 
     QNetworkRequest qreq(buildUrl(m_cfg));
     qreq.setRawHeader("Authorization",
-                      "Bearer " + m_cfg.get("token").toUtf8());
+                      "Bearer " + m_cfg.get("token").trimmed().toUtf8());
     qreq.setRawHeader("Content-Type", "application/json");
 
     QNetworkReply* reply =

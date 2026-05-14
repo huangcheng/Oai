@@ -450,11 +450,15 @@ void ConfigManager::setTtsProviderField(const QString &providerId,
                                         const QString &field,
                                         const QString &value)
 {
+    // Trim whitespace — provider tokens and URLs are frequently pasted with
+    // a leading/trailing space or tab, which makes the resulting Authorization
+    // header malformed and the request unauthorized for opaque reasons.
+    const QString trimmed = value.trimmed();
     QHash<QString, QString>& fields = m_ttsProviders[providerId];
-    if (fields.value(field) == value) return;
-    fields.insert(field, value);
+    if (fields.value(field) == trimmed) return;
+    fields.insert(field, trimmed);
     save();
-    emit ttsProviderFieldChanged(providerId, field, value);
+    emit ttsProviderFieldChanged(providerId, field, trimmed);
 }
 
 QHash<QString, QString> ConfigManager::ttsProviderConfig(const QString &providerId) const

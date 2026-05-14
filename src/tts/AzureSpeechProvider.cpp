@@ -95,7 +95,7 @@ RequestHandle AzureSpeechProvider::synthesize(
                                    req.options.emotion);
 
     QNetworkRequest qreq(buildUrl(m_cfg));
-    qreq.setRawHeader("Ocp-Apim-Subscription-Key", m_cfg.get("key").toUtf8());
+    qreq.setRawHeader("Ocp-Apim-Subscription-Key", m_cfg.get("key").trimmed().toUtf8());
     qreq.setRawHeader("Content-Type", "application/ssml+xml");
     qreq.setRawHeader("X-Microsoft-OutputFormat", "audio-24khz-48kbitrate-mono-mp3");
     qreq.setRawHeader("User-Agent", "Oai");
