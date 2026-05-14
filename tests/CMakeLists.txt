@@ -33,6 +33,12 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.cpp
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.h
     ${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c
+    ${CMAKE_SOURCE_DIR}/src/tts/ITtsProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/ProviderConfig.h
+    ${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.h
+    ${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.h
+    ${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.cpp
 )
 
 set(TEST_SOURCES
@@ -40,6 +46,7 @@ set(TEST_SOURCES
     test_ecg.cpp
     test_gaming_mode.cpp
     test_pet_state_machine.cpp
+    test_tts_providers.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})
@@ -78,6 +85,12 @@ foreach(test_src ${TEST_SOURCES})
         OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}"
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
+
+    find_package(Qt6 6.5 COMPONENTS HttpServer QUIET)
+    if(Qt6HttpServer_FOUND)
+        target_link_libraries(${test_name} PRIVATE Qt6::HttpServer)
+        target_compile_definitions(${test_name} PRIVATE OAI_HAS_QHTTPSERVER=1)
+    endif()
 
     # On Windows the Qt6 DLLs live in Qt's bin/, which is not on the PATH that
     # ctest inherits — without this, the test exe exits 0xc0000135 (DLL not
