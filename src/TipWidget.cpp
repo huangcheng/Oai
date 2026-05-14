@@ -96,7 +96,7 @@ void TipWidget::refreshDwmAttributes()
 void TipWidget::anchorTo(const QWidget *petWidget)
 {
     m_anchoredPet = petWidget;
-    if (petWidget && isVisible()) {
+    if (petWidget) {
         positionRelativeTo(petWidget);
     }
 }
@@ -209,8 +209,7 @@ void TipWidget::paintEvent(QPaintEvent *event)
     bubblePath.quadTo(body.left() + sk, body.top(), body.left() + sk + r, body.top());
     bubblePath.closeSubpath();
 
-    // Build tail: angular, offset to match the skew energy
-    int tailBaseX = body.center().x() + 10;  // slightly off-center
+    int tailBaseX = body.center().x();
     QPainterPath tailPath;
     if (m_tailDown) {
         tailPath.moveTo(tailBaseX - TAIL_WIDTH / 2.0, body.bottom());
