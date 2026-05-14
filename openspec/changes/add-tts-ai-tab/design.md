@@ -49,6 +49,11 @@ Current settings include: language, auto-start, display mode, IPC endpoint, acti
 **Rationale:** Native Qt integration, supports WSS, integrates with existing event loop. Homebrew Qt6 package includes WebSockets.
 **Alternative considered:** Third-party WebSocket library (websocketpp, etc.) — rejected to minimize dependencies.
 
+### TTSEngine Threading
+**Decision:** Run `TTSEngine` on a dedicated `QThread` via `moveToThread()`.
+**Rationale:** Prevents WebSocket I/O, audio decoding, and buffer management from competing with the main thread's animation loop. Follows the existing `UdpWorker` pattern in the codebase. Cross-thread communication via Qt signals/slots.
+**Alternative considered:** Run on main thread (QtWebSocket is async) — rejected because audio buffer preparation and decoding could still cause frame drops during heavy TTS operations.
+
 ## Risks / Trade-offs
 
 - **[Risk]** QtWebSockets may not be available in all build environments → **Mitigation:** Make TTS compilation conditional via CMake option `OAI_TTS_ENABLED` (default ON if QtWebSockets found)

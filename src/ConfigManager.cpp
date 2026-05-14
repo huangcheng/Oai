@@ -125,6 +125,12 @@ void ConfigManager::load()
     m_gamingModeEnabled = m_settings.value("gamingMode", false).toBool();
     m_tipBubblesEnabled = m_settings.value("tipBubblesEnabled", m_tipBubblesEnabled).toBool();
 
+    m_ttsEnabled = m_settings.value("tts/enabled", false).toBool();
+    m_ttsBaseUrl = m_settings.value("tts/baseUrl").toString();
+    m_ttsToken = m_settings.value("tts/token").toString();
+    m_ttsModel = m_settings.value("tts/model").toString();
+    m_ttsLanguage = m_settings.value("tts/language", QStringLiteral("zh-CN")).toString();
+
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
 
@@ -145,6 +151,11 @@ void ConfigManager::save()
     m_settings.setValue("globalShortcutEnabled", m_globalShortcutEnabled);
     m_settings.setValue("gamingMode", m_gamingModeEnabled);
     m_settings.setValue("tipBubblesEnabled", m_tipBubblesEnabled);
+    m_settings.setValue("tts/enabled", m_ttsEnabled);
+    m_settings.setValue("tts/baseUrl", m_ttsBaseUrl);
+    m_settings.setValue("tts/token", m_ttsToken);
+    m_settings.setValue("tts/model", m_ttsModel);
+    m_settings.setValue("tts/language", m_ttsLanguage);
     m_settings.sync();
 }
 
@@ -357,4 +368,44 @@ void ConfigManager::setTipBubblesEnabled(bool enabled)
     m_tipBubblesEnabled = enabled;
     save();
     emit tipBubblesEnabledChanged(enabled);
+}
+
+void ConfigManager::setTtsEnabled(bool enabled)
+{
+    if (m_ttsEnabled == enabled) return;
+    m_ttsEnabled = enabled;
+    save();
+    emit ttsEnabledChanged(enabled);
+}
+
+void ConfigManager::setTtsBaseUrl(const QString &url)
+{
+    if (m_ttsBaseUrl == url) return;
+    m_ttsBaseUrl = url;
+    save();
+    emit ttsBaseUrlChanged(url);
+}
+
+void ConfigManager::setTtsToken(const QString &token)
+{
+    if (m_ttsToken == token) return;
+    m_ttsToken = token;
+    save();
+    emit ttsTokenChanged(token);
+}
+
+void ConfigManager::setTtsModel(const QString &model)
+{
+    if (m_ttsModel == model) return;
+    m_ttsModel = model;
+    save();
+    emit ttsModelChanged(model);
+}
+
+void ConfigManager::setTtsLanguage(const QString &language)
+{
+    if (m_ttsLanguage == language) return;
+    m_ttsLanguage = language;
+    save();
+    emit ttsLanguageChanged(language);
 }

@@ -68,6 +68,26 @@ public:
     bool tipBubblesEnabled() const { return m_tipBubblesEnabled; }
     void setTipBubblesEnabled(bool enabled);
 
+    /** Whether TTS (Text-to-Speech) is enabled. Default false. */
+    bool ttsEnabled() const { return m_ttsEnabled; }
+    void setTtsEnabled(bool enabled);
+
+    /** TTS provider base URL (WebSocket endpoint). */
+    QString ttsBaseUrl() const { return m_ttsBaseUrl; }
+    void setTtsBaseUrl(const QString &url);
+
+    /** TTS API authentication token. */
+    QString ttsToken() const { return m_ttsToken; }
+    void setTtsToken(const QString &token);
+
+    /** TTS model identifier (e.g., "step-tts-mini", "speech-01"). */
+    QString ttsModel() const { return m_ttsModel; }
+    void setTtsModel(const QString &model);
+
+    /** TTS language/voice identifier (e.g., "zh-CN", "en-US"). */
+    QString ttsLanguage() const { return m_ttsLanguage; }
+    void setTtsLanguage(const QString &language);
+
     /**
      * Returns the UDP endpoint for the version-check / update server.
      * Format: "host:port". Stored under the `updateServerEndpoint` key in
@@ -93,6 +113,11 @@ signals:
     void globalShortcutChanged(const QString &shortcut);
     void gamingModeEnabledChanged(bool enabled);
     void tipBubblesEnabledChanged(bool enabled);
+    void ttsEnabledChanged(bool enabled);
+    void ttsBaseUrlChanged(const QString &url);
+    void ttsTokenChanged(const QString &token);
+    void ttsModelChanged(const QString &model);
+    void ttsLanguageChanged(const QString &language);
 
 private:
     QSettings m_settings;
@@ -108,6 +133,11 @@ private:
     bool m_globalShortcutEnabled = true;
     bool m_gamingModeEnabled = false;
     bool m_tipBubblesEnabled = true;
+    bool m_ttsEnabled = false;
+    QString m_ttsBaseUrl;
+    QString m_ttsToken;
+    QString m_ttsModel;
+    QString m_ttsLanguage = QStringLiteral("zh-CN");
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:

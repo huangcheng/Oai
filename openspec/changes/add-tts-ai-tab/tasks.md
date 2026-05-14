@@ -1,16 +1,16 @@
 ## 1. Setup and Dependencies
 
-- [ ] 1.1 Add Qt6::WebSockets to CMake find_package (conditional via `OAI_TTS_ENABLED`)
-- [ ] 1.2 Add Qt6::WebSockets to target_link_libraries when enabled
+- [x] 1.1 Add Qt6::WebSockets to CMake find_package (conditional via `OAI_TTS_ENABLED`)
+- [x] 1.2 Add Qt6::WebSockets to target_link_libraries when enabled
 - [ ] 1.3 Verify build passes with `OAI_TTS_ENABLED=ON` and `OFF`
 
 ## 2. Config Layer
 
-- [ ] 2.1 Add TTS properties to ConfigManager.h (enabled, baseUrl, token, model, language)
-- [ ] 2.2 Implement TTS getters/setters in ConfigManager.cpp
-- [ ] 2.3 Add TTS change signals (ttsEnabledChanged, ttsBaseUrlChanged, etc.)
-- [ ] 2.4 Implement load/save for TTS settings with `tts/` key prefix
-- [ ] 2.5 Add default values for TTS settings
+- [x] 2.1 Add TTS properties to ConfigManager.h (enabled, baseUrl, token, model, language)
+- [x] 2.2 Implement TTS getters/setters in ConfigManager.cpp
+- [x] 2.3 Add TTS change signals (ttsEnabledChanged, ttsBaseUrlChanged, etc.)
+- [x] 2.4 Implement load/save for TTS settings with `tts/` key prefix
+- [x] 2.5 Add default values for TTS settings
 
 ## 3. Settings UI Refactor
 
