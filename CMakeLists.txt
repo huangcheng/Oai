@@ -379,6 +379,8 @@ qt_add_executable(Oai
     src/GlobalShortcutManager.h
     src/FullscreenWatcher.cpp
     src/FullscreenWatcher.h
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.cpp>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.h>
 )
 
 target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
