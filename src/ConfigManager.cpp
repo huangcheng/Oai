@@ -126,11 +126,51 @@ void ConfigManager::load()
     m_tipBubblesEnabled = m_settings.value("tipBubblesEnabled", m_tipBubblesEnabled).toBool();
 
     m_ttsEnabled = m_settings.value("tts/enabled", false).toBool();
-    m_ttsBaseUrl = m_settings.value("tts/baseUrl").toString();
-    m_ttsToken = m_settings.value("tts/token").toString();
-    m_ttsModel = m_settings.value("tts/model").toString();
-    m_ttsLanguage = m_settings.value("tts/language", QStringLiteral("zh-CN")).toString();
-    m_ttsVoice = m_settings.value("tts/voice", QStringLiteral("cixingnansheng")).toString();
+
+    // One-shot migration: if any flat tts/* keys exist, copy them into
+    // tts/providers/stepfun/* and delete the originals. Detect by presence
+    // of the legacy baseUrl key, which only ever existed in the StepFun era.
+    if (m_settings.contains("tts/baseUrl") ||
+        m_settings.contains("tts/token") ||
+        m_settings.contains("tts/voice"))
+    {
+        const QString legacyBaseUrl = m_settings.value("tts/baseUrl").toString();
+        const QString legacyToken   = m_settings.value("tts/token").toString();
+        const QString legacyModel   = m_settings.value("tts/model").toString();
+        const QString legacyVoice   = m_settings.value("tts/voice").toString();
+
+        m_settings.beginGroup("tts/providers/stepfun");
+        if (!legacyBaseUrl.isEmpty()) m_settings.setValue("baseUrl", legacyBaseUrl);
+        if (!legacyToken.isEmpty())   m_settings.setValue("token",   legacyToken);
+        if (!legacyModel.isEmpty())   m_settings.setValue("model",   legacyModel);
+        if (!legacyVoice.isEmpty())   m_settings.setValue("voice",   legacyVoice);
+        m_settings.endGroup();
+
+        m_settings.remove("tts/baseUrl");
+        m_settings.remove("tts/token");
+        m_settings.remove("tts/model");
+        m_settings.remove("tts/voice");
+        m_settings.remove("tts/language");
+
+        if (!m_settings.contains("tts/activeProvider"))
+            m_settings.setValue("tts/activeProvider", QStringLiteral("stepfun"));
+    }
+
+    m_ttsActiveProvider =
+        m_settings.value("tts/activeProvider", QStringLiteral("stepfun")).toString();
+
+    m_ttsProviders.clear();
+    m_settings.beginGroup("tts/providers");
+    const QStringList providerIds = m_settings.childGroups();
+    for (const QString& providerId : providerIds) {
+        m_settings.beginGroup(providerId);
+        QHash<QString, QString> fields;
+        for (const QString& key : m_settings.childKeys())
+            fields.insert(key, m_settings.value(key).toString());
+        m_ttsProviders.insert(providerId, fields);
+        m_settings.endGroup();
+    }
+    m_settings.endGroup();
 
     qDebug() << "Config loaded from:" << m_settings.fileName();
 }
@@ -153,11 +193,18 @@ void ConfigManager::save()
     m_settings.setValue("gamingMode", m_gamingModeEnabled);
     m_settings.setValue("tipBubblesEnabled", m_tipBubblesEnabled);
     m_settings.setValue("tts/enabled", m_ttsEnabled);
-    m_settings.setValue("tts/baseUrl", m_ttsBaseUrl);
-    m_settings.setValue("tts/token", m_ttsToken);
-    m_settings.setValue("tts/model", m_ttsModel);
-    m_settings.setValue("tts/language", m_ttsLanguage);
-    m_settings.setValue("tts/voice", m_ttsVoice);
+    m_settings.setValue("tts/activeProvider", m_ttsActiveProvider);
+
+    // Re-write all known provider subtrees. Removing the parent group first
+    // makes the on-disk state match the in-memory map exactly (handles
+    // deletions of keys that were cleared in-memory).
+    m_settings.remove("tts/providers");
+    for (auto pit = m_ttsProviders.cbegin(); pit != m_ttsProviders.cend(); ++pit) {
+        m_settings.beginGroup(QStringLiteral("tts/providers/") + pit.key());
+        for (auto fit = pit.value().cbegin(); fit != pit.value().cend(); ++fit)
+            m_settings.setValue(fit.key(), fit.value());
+        m_settings.endGroup();
+    }
     m_settings.sync();
 }
 
@@ -380,42 +427,35 @@ void ConfigManager::setTtsEnabled(bool enabled)
     emit ttsEnabledChanged(enabled);
 }
 
-void ConfigManager::setTtsBaseUrl(const QString &url)
+void ConfigManager::setTtsActiveProvider(const QString &stableId)
 {
-    if (m_ttsBaseUrl == url) return;
-    m_ttsBaseUrl = url;
+    if (m_ttsActiveProvider == stableId) return;
+    m_ttsActiveProvider = stableId;
     save();
-    emit ttsBaseUrlChanged(url);
+    emit ttsActiveProviderChanged(stableId);
 }
 
-void ConfigManager::setTtsToken(const QString &token)
+QString ConfigManager::ttsProviderField(const QString &providerId,
+                                        const QString &field) const
 {
-    if (m_ttsToken == token) return;
-    m_ttsToken = token;
-    save();
-    emit ttsTokenChanged(token);
+    auto pit = m_ttsProviders.constFind(providerId);
+    if (pit == m_ttsProviders.constEnd()) return QString();
+    auto fit = pit->constFind(field);
+    return fit == pit->constEnd() ? QString() : *fit;
 }
 
-void ConfigManager::setTtsModel(const QString &model)
+void ConfigManager::setTtsProviderField(const QString &providerId,
+                                        const QString &field,
+                                        const QString &value)
 {
-    if (m_ttsModel == model) return;
-    m_ttsModel = model;
+    QHash<QString, QString>& fields = m_ttsProviders[providerId];
+    if (fields.value(field) == value) return;
+    fields.insert(field, value);
     save();
-    emit ttsModelChanged(model);
+    emit ttsProviderFieldChanged(providerId, field, value);
 }
 
-void ConfigManager::setTtsLanguage(const QString &language)
+QHash<QString, QString> ConfigManager::ttsProviderConfig(const QString &providerId) const
 {
-    if (m_ttsLanguage == language) return;
-    m_ttsLanguage = language;
-    save();
-    emit ttsLanguageChanged(language);
-}
-
-void ConfigManager::setTtsVoice(const QString &voice)
-{
-    if (m_ttsVoice == voice) return;
-    m_ttsVoice = voice;
-    save();
-    emit ttsVoiceChanged(voice);
+    return m_ttsProviders.value(providerId);
 }

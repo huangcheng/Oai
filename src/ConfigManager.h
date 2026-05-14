@@ -1,6 +1,7 @@
 #ifndef CONFIGMANAGER_H
 #define CONFIGMANAGER_H
 
+#include <QHash>
 #include <QObject>
 #include <QPoint>
 #include <QString>
@@ -72,25 +73,18 @@ public:
     bool ttsEnabled() const { return m_ttsEnabled; }
     void setTtsEnabled(bool enabled);
 
-    /** TTS provider base URL (WebSocket endpoint). */
-    QString ttsBaseUrl() const { return m_ttsBaseUrl; }
-    void setTtsBaseUrl(const QString &url);
+    /** Stable ID of the active provider ("stepfun", "minimax", "azure", "openai"). */
+    QString ttsActiveProvider() const { return m_ttsActiveProvider; }
+    void setTtsActiveProvider(const QString &stableId);
 
-    /** TTS API authentication token. */
-    QString ttsToken() const { return m_ttsToken; }
-    void setTtsToken(const QString &token);
+    /** Read/write a single field for a given provider stable ID. */
+    QString ttsProviderField(const QString &providerId, const QString &field) const;
+    void setTtsProviderField(const QString &providerId,
+                             const QString &field,
+                             const QString &value);
 
-    /** TTS model identifier (e.g., "step-tts-mini", "speech-01"). */
-    QString ttsModel() const { return m_ttsModel; }
-    void setTtsModel(const QString &model);
-
-    /** TTS language/voice identifier (e.g., "zh-CN", "en-US"). */
-    QString ttsLanguage() const { return m_ttsLanguage; }
-    void setTtsLanguage(const QString &language);
-
-    /** TTS voice ID (provider-specific, e.g., "cixingnansheng"). */
-    QString ttsVoice() const { return m_ttsVoice; }
-    void setTtsVoice(const QString &voice);
+    /** Read all fields for a given provider stable ID. */
+    QHash<QString, QString> ttsProviderConfig(const QString &providerId) const;
 
     /**
      * Returns the UDP endpoint for the version-check / update server.
@@ -118,11 +112,10 @@ signals:
     void gamingModeEnabledChanged(bool enabled);
     void tipBubblesEnabledChanged(bool enabled);
     void ttsEnabledChanged(bool enabled);
-    void ttsBaseUrlChanged(const QString &url);
-    void ttsTokenChanged(const QString &token);
-    void ttsModelChanged(const QString &model);
-    void ttsLanguageChanged(const QString &language);
-    void ttsVoiceChanged(const QString &voice);
+    void ttsActiveProviderChanged(const QString &stableId);
+    void ttsProviderFieldChanged(const QString &providerId,
+                                 const QString &field,
+                                 const QString &value);
 
 private:
     QSettings m_settings;
@@ -139,11 +132,8 @@ private:
     bool m_gamingModeEnabled = false;
     bool m_tipBubblesEnabled = true;
     bool m_ttsEnabled = false;
-    QString m_ttsBaseUrl;
-    QString m_ttsToken;
-    QString m_ttsModel;
-    QString m_ttsLanguage = QStringLiteral("zh-CN");
-    QString m_ttsVoice = QStringLiteral("cixingnansheng");
+    QString m_ttsActiveProvider = QStringLiteral("stepfun");
+    QHash<QString, QHash<QString, QString>> m_ttsProviders;  // providerId -> field -> value
 
     /**
      * Reflect m_autoStart into the OS's per-user "launch at login" facility:
