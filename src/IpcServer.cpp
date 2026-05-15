@@ -131,6 +131,14 @@ void IpcServer::parseMessage(const QByteArray &data, const QHostAddress &sender,
     } else if (type == "tip") {
         emit tipReceived(msg);
     } else if (type == "ping") {
+        if (!m_worker) {
+            // Server is shutting down; the worker has already been torn
+            // down and the queued invoke below would target a destroyed
+            // object. Silently drop the pong — the caller has no recovery
+            // path, and emitting pingReceived here would let callers fire
+            // their own writes against the same dead socket. M3.
+            return;
+        }
         QJsonObject pong;
         pong["type"] = "pong";
         QJsonDocument pongDoc(pong);

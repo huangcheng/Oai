@@ -76,6 +76,10 @@ private slots:
     void onThinkingTimeout();
     void onReviewingTimeout();
     void onOneShotFinished();
+    /// Fires WALK_IDLE_MS after the last position change. Clears m_walking
+    /// and re-emits the base state's chain so the walking overlay isn't
+    /// visible forever after motion stops. M10.
+    void onWalkIdleExpired();
 
 private:
     void enterBase(State s, Priority priority);
@@ -96,6 +100,7 @@ private:
     QTimer m_thinkingTimeout;
     QTimer m_reviewingTimeout;
     QTimer m_oneShotTimer;
+    QTimer m_walkIdleTimer;     // resets m_walking when motion stops
 
     QMap<State, QStringList> m_chains;
     QString m_idleFallback = QStringLiteral("idle");
@@ -105,6 +110,7 @@ private:
     static constexpr int REVIEWING_TIMEOUT_MS = 60000;
     static constexpr int NOTIFICATION_ONESHOT_MS = 2000;
     static constexpr int WALK_DELTA_THRESHOLD_PX = 32;
+    static constexpr int WALK_IDLE_MS = 500;
 };
 
 #endif // PETSTATEMACHINE_H

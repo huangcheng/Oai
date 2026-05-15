@@ -220,6 +220,11 @@ void PackManagerWidget::ensureAlertDialog()
 {
     if (!m_alertDialog) {
         m_alertDialog = new StyledAlertWidget(nullptr);
+        // WA_DeleteOnClose means the user closing the dialog frees it.
+        // QPointer<> in the header tracks that destruction, so a future
+        // showAlert call hits this lazy-create path again instead of a
+        // dangling pointer. Audit M7/M8.
+        m_alertDialog->setAttribute(Qt::WA_DeleteOnClose);
         m_alertDialog->setPetWindow(m_petWindow);
     }
 }

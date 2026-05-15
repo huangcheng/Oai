@@ -179,7 +179,7 @@ bool CharacterPackManager::switchPack(const QString &packId)
         return true;
     }
 
-    const PackInfo &info = m_packs[packId];
+    const PackInfo info = m_packs.value(packId);
     qDebug() << "  Pack info: name=" << info.name << "path=" << info.path;
 
     // Load pack if not already loaded
@@ -331,7 +331,7 @@ bool CharacterPackManager::uninstallPack(const QString &packId)
         return false;
     }
 
-    const PackInfo &info = m_packs[packId];
+    const PackInfo info = m_packs.value(packId);
 
     // Only user packs can be uninstalled
     if (info.source != PackSource::User) {
@@ -400,7 +400,7 @@ void CharacterPackManager::reloadCurrentPack()
         return;
     }
 
-    const PackInfo &info = m_packs[m_activePackId];
+    const PackInfo info = m_packs.value(m_activePackId);
 
     // Reload pack
     CharacterPack *newPack = createAndLoadPack(info.path);

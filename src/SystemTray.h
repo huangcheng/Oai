@@ -2,6 +2,7 @@
 #define SYSTEMTRAY_H
 
 #include <QObject>
+#include <QPointer>
 #include <QSystemTrayIcon>
 
 class QSystemTrayIcon;
@@ -56,7 +57,7 @@ private:
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
     ConfigManager *m_config = nullptr;
-    PackManagerWidget *m_packManagerDialog = nullptr;
+    QPointer<PackManagerWidget> m_packManagerDialog;
 };
 
 #endif // SYSTEMTRAY_H

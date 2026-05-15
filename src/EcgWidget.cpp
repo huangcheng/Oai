@@ -98,10 +98,9 @@ EcgWidget::EcgWidget(QWidget *parent)
 EcgWidget::~EcgWidget()
 {
     m_tickTimer.stop();
-    delete m_beep;
-    delete m_beepFile;
-    delete m_flatlineBeep;
-    delete m_flatlineBeepFile;
+    // All four audio objects (QSoundEffect and QTemporaryFile) are
+    // parented to `this` in initAudio() — Qt's parent-child ownership
+    // destroys them automatically when ~QObject runs.
 }
 
 void EcgWidget::recomputeLayout()
@@ -684,11 +683,16 @@ void EcgWidget::initAudio()
 {
     if (m_beep) return;
 
+    // Parent the QTemporaryFiles to `this` so Qt cleans them up on
+    // widget destruction (and setAutoRemove(true) deletes the actual
+    // file on disk). The QSoundEffects below already have `this` as
+    // parent — no manual delete needed in ~EcgWidget.
     m_beepFile = new QTemporaryFile(
-        QDir::tempPath() + QStringLiteral("/oai_ecg_beep_XXXXXX.wav"));
+        QDir::tempPath() + QStringLiteral("/oai_ecg_beep_XXXXXX.wav"),
+        this);
     m_beepFile->setAutoRemove(true);
     if (!m_beepFile->open()) {
-        delete m_beepFile;
+        m_beepFile->deleteLater();
         m_beepFile = nullptr;
         return;
     }
@@ -705,7 +709,8 @@ void EcgWidget::initAudio()
     m_beep->setVolume(static_cast<float>(m_volume));
 
     m_flatlineBeepFile = new QTemporaryFile(
-        QDir::tempPath() + QStringLiteral("/oai_ecg_flatline_XXXXXX.wav"));
+        QDir::tempPath() + QStringLiteral("/oai_ecg_flatline_XXXXXX.wav"),
+        this);
     m_flatlineBeepFile->setAutoRemove(true);
     if (m_flatlineBeepFile->open()) {
         m_flatlineBeepFile->write(synthesizeFlatlineWav());

@@ -22,6 +22,10 @@ PetStateMachine::PetStateMachine(QObject *parent)
     m_oneShotTimer.setSingleShot(true);
     connect(&m_oneShotTimer, &QTimer::timeout, this, &PetStateMachine::onOneShotFinished);
 
+    m_walkIdleTimer.setSingleShot(true);
+    m_walkIdleTimer.setInterval(WALK_IDLE_MS);
+    connect(&m_walkIdleTimer, &QTimer::timeout, this, &PetStateMachine::onWalkIdleExpired);
+
     // Engine-default chains (overridden when a pack loads).
     m_chains[State::Idle]        = {"idle", "Idle"};
     m_chains[State::Greeting]    = {"waving", "greet", "Login", "Tap"};
@@ -154,13 +158,23 @@ void PetStateMachine::onPositionChanged(const QPoint &oldPos, const QPoint &newP
         chain.append(m_idleFallback);
     }
     emit animationRequested(chain, static_cast<int>(HighPriority));
-    // NOTE: m_walking is intentionally not reset here. There is no
-    // "motion stopped" detector today; the next event-driven state
-    // transition will emit a fresh chain and override the walking
-    // animation visually. When a real producer (gaming-mode return,
-    // wander timer) lands, add a short-debounce timer that flips
-    // m_walking back to false and re-emits the underlying base state's
-    // chain.
+
+    // Reset on motion-stop. Each position change pokes the idle timer
+    // forward by WALK_IDLE_MS; if no further motion arrives in that
+    // window, onWalkIdleExpired() flips m_walking back to false and
+    // re-emits the base state's chain so the walking overlay clears.
+    // M10 — was previously a TODO: "no motion-stop detector today."
+    m_walkIdleTimer.start();
+}
+
+void PetStateMachine::onWalkIdleExpired()
+{
+    if (!m_walking) return;
+    m_walking = false;
+    m_walkDir = WalkDir::None;
+    // Re-emit the underlying base state's chain so the visual returns
+    // to whatever the pet was doing before motion started.
+    emitChainFor(m_baseState, NormalPriority);
 }
 void PetStateMachine::onWorkingGraceExpired()
 {

@@ -160,8 +160,11 @@ void SystemTray::setCharacterPackManager(CharacterPackManager *manager)
     }
 
     if (m_packManagerDialog) {
-        // The dialog stores its own pointer; recreate if needed
-        delete m_packManagerDialog;
+        // QPointer + WA_DeleteOnClose: closing the dialog auto-deletes it
+        // and nulls m_packManagerDialog. Active dialogs explicitly destroyed
+        // here use deleteLater() so a queued mouse/key event targeted at
+        // the dialog cannot land after `delete`. M7.
+        m_packManagerDialog->deleteLater();
         m_packManagerDialog = nullptr;
     }
 }
@@ -346,6 +349,7 @@ void SystemTray::onManageModelsClicked()
 {
     if (!m_packManagerDialog) {
         m_packManagerDialog = new PackManagerWidget(m_packManager, nullptr);
+        m_packManagerDialog->setAttribute(Qt::WA_DeleteOnClose);
         m_packManagerDialog->setPetWindow(m_mainWindow);
     }
     // Defer show until the tray menu has fully closed — on macOS showing a

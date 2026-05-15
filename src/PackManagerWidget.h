@@ -2,6 +2,7 @@
 #define PACKMANAGERWIDGET_H
 
 #include <QWidget>
+#include <QPointer>
 #include <QString>
 
 class CharacterPackManager;
@@ -64,7 +65,10 @@ private:
     QListWidget *m_listWidget = nullptr;
     QPushButton *m_addButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
-    StyledAlertWidget *m_alertDialog = nullptr;
+    // QPointer auto-nulls on the dialog's destruction, so a dialog closed
+    // by the user (via WA_DeleteOnClose) leaves m_alertDialog as nullptr
+    // and ensureAlertDialog() lazily re-creates one on the next showAlert.
+    QPointer<StyledAlertWidget> m_alertDialog;
 
     qreal m_scale = 1.0;
     qreal m_panelOpacity = 1.0;
