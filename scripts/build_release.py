@@ -813,6 +813,8 @@ def main():
     parser.add_argument("--qt-dir", default=None, help="Override Qt installation directory")
     parser.add_argument("--skip-build", action="store_true", help="Skip build step (use existing binaries)")
     parser.add_argument("--skip-package", action="store_true", help="Only build, skip packaging")
+    parser.add_argument("--include-nsfw", action="store_true",
+                        help="Bundle NSFW pack categories (azur_lane). Default builds ship the SFW lineup only.")
     args = parser.parse_args()
 
     build_dir = PROJECT_ROOT / args.build_dir
@@ -868,6 +870,14 @@ def main():
         configure_cmd.extend(["-GNinja", f"-DCMAKE_MAKE_PROGRAM={ninja}"])
     if qt_prefix:
         configure_cmd.append(f"-DCMAKE_PREFIX_PATH={qt_prefix}")
+
+    # Always pin SEELIE_INCLUDE_NSFW explicitly so a prior --include-nsfw run
+    # cached in CMakeCache.txt cannot silently leak into a subsequent SFW
+    # release build. Flag at invocation always wins.
+    nsfw_value = "ON" if args.include_nsfw else "OFF"
+    configure_cmd.append(f"-DSEELIE_INCLUDE_NSFW={nsfw_value}")
+    if args.include_nsfw:
+        print("  Bundling NSFW pack categories (--include-nsfw)")
 
     # On Linux set a relocatable RPATH so the AppImage finds bundled libraries
     if sys.platform.startswith("linux"):
