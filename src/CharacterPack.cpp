@@ -101,6 +101,17 @@ bool CharacterPack::loadFromCodexPet(const QString &archivePath)
         return false;
     }
 
+    // Refuse to allocate for pathological pet.json sizes. mz_zip's size_t is
+    // attacker-controlled via the archive central directory; without a cap a
+    // hostile archive could request a multi-gigabyte allocation.
+    constexpr size_t kMaxPetJsonBytes = 10 * 1024 * 1024;
+    mz_zip_archive_file_stat petStat;
+    if (!mz_zip_reader_file_stat(&zip, static_cast<mz_uint>(petJsonIdx), &petStat) ||
+        petStat.m_uncomp_size > kMaxPetJsonBytes) {
+        qWarning() << "CharacterPack: pet.json missing or exceeds size cap in:" << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
     size_t petJsonSize = 0;
     void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
     if (!petJsonData) {

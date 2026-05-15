@@ -14,6 +14,26 @@
 
 namespace {
 
+// Maximum size we will allocate for any JSON-y entry (manifest.json,
+// pet.json) extracted from an untrusted archive. mz_zip_reader_extract_to_heap
+// returns size_t; legitimate manifests are < 100 KB. 10 MB is a comfortable
+// upper bound that still rejects pathological / hostile entries before any
+// allocation occurs.
+constexpr size_t kMaxManifestBytes = 10 * 1024 * 1024;
+
+// Returns true if the entry at `index` has a reasonable size for a manifest-
+// like JSON file. Writes the size into `outSize` on success.
+bool zipEntryFitsManifestCap(mz_zip_archive *zip, int index, size_t *outSize)
+{
+    mz_zip_archive_file_stat stat;
+    if (!mz_zip_reader_file_stat(zip, static_cast<mz_uint>(index), &stat))
+        return false;
+    if (stat.m_uncomp_size > kMaxManifestBytes)
+        return false;
+    if (outSize) *outSize = static_cast<size_t>(stat.m_uncomp_size);
+    return true;
+}
+
 // Reject ZIP entry names that would escape the staging directory. The
 // archive is untrusted user input (drag-and-drop, downloaded .opk); a
 // malicious entry like "../../Library/LaunchAgents/evil.plist" must NOT
@@ -202,6 +222,12 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     }
 
     size_t manifestSize = 0;
+    if (!zipEntryFitsManifestCap(&zip, manifestIdx, &manifestSize)) {
+        qWarning() << "CharacterPackManager: manifest.json missing or exceeds size cap in:"
+                   << archivePath;
+        mz_zip_reader_end(&zip);
+        return false;
+    }
     void *manifestData = mz_zip_reader_extract_to_heap(&zip, manifestIdx, &manifestSize, 0);
     if (!manifestData) {
         qWarning() << "CharacterPackManager: Failed to read manifest.json from:" << archivePath;
@@ -447,6 +473,10 @@ QString CharacterPackManager::extractPackIdFromOpk(const QString &opkPath)
     }
 
     size_t manifestSize = 0;
+    if (!zipEntryFitsManifestCap(&zip, manifestIdx, &manifestSize)) {
+        mz_zip_reader_end(&zip);
+        return QString();
+    }
     void *manifestData = mz_zip_reader_extract_to_heap(&zip, manifestIdx, &manifestSize, 0);
     mz_zip_reader_end(&zip);
 
@@ -558,6 +588,10 @@ bool CharacterPackManager::extractCodexPetInfo(const QString &archivePath, PackI
     }
 
     size_t petJsonSize = 0;
+    if (!zipEntryFitsManifestCap(&zip, petJsonIdx, &petJsonSize)) {
+        mz_zip_reader_end(&zip);
+        return false;
+    }
     void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
     mz_zip_reader_end(&zip);
 
