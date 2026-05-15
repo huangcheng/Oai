@@ -9,6 +9,18 @@
 
 class TipWidget;
 
+/**
+ * Pattern-matches recent events into contextual tips ("Working on tests?",
+ * "Permission issues?") with a 5-minute per-pattern cooldown.
+ *
+ * Threading: processEvent() is invoked from the main GUI thread only (via
+ * EventRouter, which runs on the IPC server's queued connection to the
+ * main thread). Not re-entrant — a slot in the same thread that triggers
+ * another processEvent() would corrupt m_eventWindow. Document via main-
+ * thread-only invariant rather than guarding because the alternative
+ * (nested event loops) is the kind of thing we'd want to crash loudly
+ * on, not silently tolerate. L5.
+ */
 class TipsEngine : public QObject
 {
     Q_OBJECT

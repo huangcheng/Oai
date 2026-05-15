@@ -1,9 +1,12 @@
 #include "TipsEngine.h"
+#include "CanonicalEvents.h"
 #include "TipWidget.h"
 
 #include <QJsonObject>
 #include <QDateTime>
 #include <QDebug>
+
+namespace CE = CanonicalEvents;
 
 TipsEngine::TipsEngine(QObject *parent)
     : QObject(parent)
@@ -73,7 +76,7 @@ void TipsEngine::initMatchers()
         [](const QVector<QPair<QString, QDateTime>> &events) {
             int errorCount = 0;
             for (const auto &e : events) {
-                if (e.first == "session.error" || e.first == "tool.failed") {
+                if (e.first == CE::SessionError || e.first == CE::ToolFailed) {
                     errorCount++;
                 }
             }
@@ -89,7 +92,7 @@ void TipsEngine::initMatchers()
         "test_file_activity",
         [](const QVector<QPair<QString, QDateTime>> &events) {
             for (const auto &e : events) {
-                if (e.first == "file.edited" || e.first == "file.watched") {
+                if (e.first == CE::FileEdited || e.first == CE::FileWatched) {
                     return true;
                 }
             }
@@ -106,7 +109,7 @@ void TipsEngine::initMatchers()
         [](const QVector<QPair<QString, QDateTime>> &events) {
             int configEdits = 0;
             for (const auto &e : events) {
-                if (e.first == "file.edited") {
+                if (e.first == CE::FileEdited) {
                     configEdits++;
                 }
             }
@@ -124,8 +127,8 @@ void TipsEngine::initMatchers()
             bool hasStart = false;
             bool hasEdit = false;
             for (const auto &e : events) {
-                if (e.first == "session.start") hasStart = true;
-                if (e.first == "file.edited") hasEdit = true;
+                if (e.first == CE::SessionStart) hasStart = true;
+                if (e.first == CE::FileEdited) hasEdit = true;
             }
             return hasStart && hasEdit;
         },
@@ -140,7 +143,7 @@ void TipsEngine::initMatchers()
         [](const QVector<QPair<QString, QDateTime>> &events) {
             int editCount = 0;
             for (const auto &e : events) {
-                if (e.first == "file.edited") {
+                if (e.first == CE::FileEdited) {
                     editCount++;
                 }
             }
@@ -157,8 +160,8 @@ void TipsEngine::initMatchers()
         [](const QVector<QPair<QString, QDateTime>> &events) {
             if (events.size() < 2) return false;
             // Check if first event is session.start and last is session.idle
-            return events.first().first == "session.start" &&
-                   events.last().first == "session.idle";
+            return events.first().first == CE::SessionStart &&
+                   events.last().first == CE::SessionIdle;
         },
         tr("Taking a break?"),
         tr("It looks like you've been idle. Let me know when you're ready to continue!"),
@@ -171,7 +174,7 @@ void TipsEngine::initMatchers()
         [](const QVector<QPair<QString, QDateTime>> &events) {
             int denialCount = 0;
             for (const auto &e : events) {
-                if (e.first == "permission.denied") {
+                if (e.first == CE::PermissionDenied) {
                     denialCount++;
                 }
             }
@@ -187,7 +190,7 @@ void TipsEngine::initMatchers()
         "git_commands",
         [](const QVector<QPair<QString, QDateTime>> &events) {
             for (const auto &e : events) {
-                if (e.first == "tool.before" || e.first == "tool.after") {
+                if (e.first == CE::ToolBefore || e.first == CE::ToolAfter) {
                     // Would need to check tool name in data
                     return false; // Simplified for now
                 }

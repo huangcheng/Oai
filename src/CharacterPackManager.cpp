@@ -685,7 +685,11 @@ void CharacterPackManager::setupFileWatcher()
 void CharacterPackManager::cleanupFileWatcher()
 {
     if (m_fileWatcher) {
-        delete m_fileWatcher;
+        // Use deleteLater so any directoryChanged signal already queued from
+        // the watcher's last fire doesn't land on a freed object during a
+        // rapid setHotReloadEnabled(false) ↔ true toggle. L10.
+        m_fileWatcher->disconnect(this);
+        m_fileWatcher->deleteLater();
         m_fileWatcher = nullptr;
     }
 }

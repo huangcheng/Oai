@@ -1,4 +1,5 @@
 #include "EcgWidget.h"
+#include "CanonicalEvents.h"
 #include "MacFocusFix.h"
 
 #include <QPainter>
@@ -644,18 +645,19 @@ void EcgWidget::onEvent(const QJsonObject &event)
     bool alarm = false;
     int decayMs = 4000;
 
-    if (name == QStringLiteral("session.start"))            { bpm = 90;  decayMs = 5000; }
-    else if (name == QStringLiteral("session.end"))         { bpm = 60;  decayMs = 5000; }
-    else if (name == QStringLiteral("session.idle"))        { bpm = 60;  decayMs = 8000; }
-    else if (name == QStringLiteral("session.error"))       { bpm = 130; alarm = true; decayMs = 6000; }
-    else if (name == QStringLiteral("prompt.submitted"))    { bpm = 95;  decayMs = 3000; }
-    else if (name == QStringLiteral("tool.before"))         { bpm = 85;  decayMs = 4000; }
-    else if (name == QStringLiteral("tool.after"))          { decayMs = 1000; }
-    else if (name == QStringLiteral("tool.failed"))         { bpm = 120; alarm = true; decayMs = 5000; }
-    else if (name == QStringLiteral("permission.requested")){ bpm = 100; alarm = true; decayMs = 5000; }
-    else if (name == QStringLiteral("permission.denied"))   { bpm = 120; alarm = true; decayMs = 5000; }
-    else if (name == QStringLiteral("subagent.started"))    { bpm = 90;  decayMs = 4000; }
-    else if (name == QStringLiteral("subagent.stopped"))    { bpm = 72;  decayMs = 2000; }
+    namespace CE = CanonicalEvents;
+    if      (name == CE::SessionStart)        { bpm = 90;  decayMs = 5000; }
+    else if (name == CE::SessionEnd)          { bpm = 60;  decayMs = 5000; }
+    else if (name == CE::SessionIdle)         { bpm = 60;  decayMs = 8000; }
+    else if (name == CE::SessionError)        { bpm = 130; alarm = true; decayMs = 6000; }
+    else if (name == CE::PromptSubmitted)     { bpm = 95;  decayMs = 3000; }
+    else if (name == CE::ToolBefore)          { bpm = 85;  decayMs = 4000; }
+    else if (name == CE::ToolAfter)           { decayMs = 1000; }
+    else if (name == CE::ToolFailed)          { bpm = 120; alarm = true; decayMs = 5000; }
+    else if (name == CE::PermissionRequested) { bpm = 100; alarm = true; decayMs = 5000; }
+    else if (name == CE::PermissionDenied)    { bpm = 120; alarm = true; decayMs = 5000; }
+    else if (name == CE::SubagentStarted)     { bpm = 90;  decayMs = 4000; }
+    else if (name == CE::SubagentStopped)     { bpm = 72;  decayMs = 2000; }
     else return;
 
     if (bpm > 0) {

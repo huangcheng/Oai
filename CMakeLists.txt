@@ -371,6 +371,7 @@ qt_add_executable(Oai
     src/PlatformWindow.h
     src/AutoStartManager.cpp
     src/AutoStartManager.h
+    src/CanonicalEvents.h
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
     src/GlobalShortcutManager.cpp

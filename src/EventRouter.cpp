@@ -1,4 +1,5 @@
 #include "EventRouter.h"
+#include "CanonicalEvents.h"
 #include "TipWidget.h"
 #include "TipsEngine.h"
 #include "TipsCatalog.h"
@@ -6,15 +7,17 @@
 #include <QJsonObject>
 #include <QDebug>
 
+namespace CE = CanonicalEvents;
+
 const QSet<QString> EventRouter::s_validEvents = {
-    "session.start", "session.end", "session.idle", "session.error",
-    "prompt.submitted",
-    "tool.before", "tool.after", "tool.failed",
-    "permission.requested", "permission.denied", "permission.response",
-    "subagent.started", "subagent.stopped",
-    "notification.sent",
-    "file.edited", "file.watched",
-    "todo.updated"
+    CE::SessionStart, CE::SessionEnd, CE::SessionIdle, CE::SessionError,
+    CE::PromptSubmitted,
+    CE::ToolBefore, CE::ToolAfter, CE::ToolFailed,
+    CE::PermissionRequested, CE::PermissionDenied, CE::PermissionResponse,
+    CE::SubagentStarted, CE::SubagentStopped,
+    CE::NotificationSent,
+    CE::FileEdited, CE::FileWatched,
+    CE::TodoUpdated
 };
 
 const QSet<QString> EventRouter::s_validSources = {

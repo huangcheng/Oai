@@ -216,6 +216,29 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
         return;
     }
 
+    // Required-field precheck. Without this a missing token / voice goes
+    // straight to the provider HTTP layer and surfaces as a cryptic 401
+    // / 400 several seconds later. Audit L6.
+    if (m_config) {
+        const QString providerStableId = m_config->ttsActiveProvider();
+        const auto *desc = oai::tts::TtsProviderRegistry::findByStableId(providerStableId);
+        if (desc) {
+            QStringList missing;
+            for (const QString &field : desc->requiredFields) {
+                if (m_config->ttsProviderField(providerStableId, field).trimmed().isEmpty())
+                    missing.append(field);
+            }
+            if (!missing.isEmpty()) {
+                qCWarning(lcTts) << "doSynthesize: missing required fields"
+                                 << missing << "for provider" << providerStableId;
+                emit error(tr("TTS provider \"%1\" is missing required fields: %2. "
+                              "Open Settings → TTS to configure.")
+                               .arg(desc->displayName, missing.join(QStringLiteral(", "))));
+                return;
+            }
+        }
+    }
+
     if (m_voiceCache && m_config) {
         const QString providerId = m_config->ttsActiveProvider();
         const QString voiceId = m_config->ttsProviderField(providerId, QStringLiteral("voice"));
