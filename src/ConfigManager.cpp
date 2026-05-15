@@ -355,11 +355,18 @@ void ConfigManager::setActivePackId(const QString &packId)
 
 quint16 ConfigManager::ipcPort() const
 {
+    constexpr quint16 kDefaultPort = 52847;
     int colonPos = m_ipcEndpoint.lastIndexOf(':');
-    if (colonPos > 0) {
-        return static_cast<quint16>(m_ipcEndpoint.mid(colonPos + 1).toUInt());
+    if (colonPos <= 0) return kDefaultPort;
+
+    bool ok = false;
+    const uint parsed = m_ipcEndpoint.mid(colonPos + 1).toUInt(&ok);
+    // Reject parse failures and out-of-range values rather than silently
+    // truncating via the quint16 cast (toUInt('99999')→99999→34464).
+    if (!ok || parsed == 0 || parsed > 65535) {
+        return kDefaultPort;
     }
-    return 52847;
+    return static_cast<quint16>(parsed);
 }
 
 void ConfigManager::setIpcPort(quint16 port)

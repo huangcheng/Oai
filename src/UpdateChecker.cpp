@@ -140,9 +140,21 @@ void UpdateChecker::checkForUpdates(bool userTriggered)
 
 void UpdateChecker::onReadyRead()
 {
+    // Cap to 65535 bytes (UDP payload max); pendingDatagramSize() is qint64
+    // and a negative/huge value would cause QByteArray::resize() UB.
+    constexpr qint64 kMaxDatagramBytes = 65535;
+
     while (m_socket->hasPendingDatagrams()) {
+        const qint64 pending = m_socket->pendingDatagramSize();
+        if (pending < 0 || pending > kMaxDatagramBytes) {
+            qWarning() << "UpdateChecker: dropping oversized/invalid datagram, size ="
+                       << pending;
+            char sink[1];
+            m_socket->readDatagram(sink, 0);
+            continue;
+        }
         QByteArray buf;
-        buf.resize(static_cast<int>(m_socket->pendingDatagramSize()));
+        buf.resize(static_cast<int>(pending));
         m_socket->readDatagram(buf.data(), buf.size());
 
         // Validate framing: 10-byte header + N-byte payload + 2-byte CRC trailer.

@@ -76,9 +76,23 @@ void UdpWorker::onReadyRead()
 {
     if (!m_socket) return;
 
+    // Maximum theoretical UDP payload is 65507 bytes (65535 minus IPv4
+    // header and UDP header). pendingDatagramSize() returns qint64; clamp
+    // before resizing and discard anything pathological.
+    constexpr qint64 kMaxDatagramBytes = 65535;
+
     while (m_socket->hasPendingDatagrams()) {
+        const qint64 pending = m_socket->pendingDatagramSize();
+        if (pending < 0 || pending > kMaxDatagramBytes) {
+            qWarning() << "UdpWorker: dropping oversized/invalid datagram, size ="
+                       << pending;
+            // Drain the bad packet so the socket loop makes progress.
+            char sink[1];
+            m_socket->readDatagram(sink, 0);
+            continue;
+        }
         QByteArray datagram;
-        datagram.resize(m_socket->pendingDatagramSize());
+        datagram.resize(pending);
 
         QHostAddress sender;
         quint16 senderPort;
