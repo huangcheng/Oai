@@ -32,6 +32,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/AutoStartManager.h
     ${CMAKE_SOURCE_DIR}/src/PlatformWindow.cpp
     ${CMAKE_SOURCE_DIR}/src/PlatformWindow.h
+    ${CMAKE_SOURCE_DIR}/src/AnimationEngine.h
+    ${CMAKE_SOURCE_DIR}/src/CanonicalEvents.h
     ${CMAKE_SOURCE_DIR}/src/FullscreenWatcher.cpp
     ${CMAKE_SOURCE_DIR}/src/FullscreenWatcher.h
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.cpp

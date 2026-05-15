@@ -1,6 +1,8 @@
 #ifndef LOTTIEANIMATIONENGINE_H
 #define LOTTIEANIMATIONENGINE_H
 
+#include "AnimationEngine.h"
+
 #include <QObject>
 #include <QMap>
 #include <QVector>
@@ -13,15 +15,14 @@ class QRect;
 class QImage;
 class CharacterPack;
 
-class LottieAnimationEngine : public QObject
+class LottieAnimationEngine : public QObject, public AnimationEngine
 {
     Q_OBJECT
 
 public:
-    enum Priority {
-        HighPriority,   // Interrupts current animation immediately
-        NormalPriority  // Queued after current animation
-    };
+    using AnimationEngine::Priority;
+    using AnimationEngine::HighPriority;
+    using AnimationEngine::NormalPriority;
 
     explicit LottieAnimationEngine(QObject *parent = nullptr);
     ~LottieAnimationEngine() override;
@@ -34,25 +35,25 @@ public:
      * @param pack Sprite pack to load from
      * @return true if loaded successfully
      */
-    bool loadFromCharacterPack(const CharacterPack *pack);
+    bool loadFromCharacterPack(const CharacterPack *pack) override;
 
     // Play named animation with given priority
-    void playAnimation(const QString &name, Priority priority = NormalPriority);
+    void playAnimation(const QString &name, Priority priority = NormalPriority) override;
 
     // Stop playback and clear state (used when switching to a different engine).
-    void stop();
+    void stop() override;
 
     // Render current frame onto painter
-    void paint(QPainter *painter, const QRect &bounds);
+    void paint(QPainter *painter, const QRect &bounds) override;
 
     // Check if animation is playing
-    bool isPlaying() const { return m_playing; }
-    
+    bool isPlaying() const override { return m_playing; }
+
     // Check if engine has any animations loaded
-    bool hasAnimations() const { return !m_animations.isEmpty(); }
+    bool hasAnimations() const override { return !m_animations.isEmpty(); }
 
     /** @brief Always true for Lottie — software renderer, no GPU context to lose. */
-    bool lastPaintSuccessful() const { return true; }
+    bool lastPaintSuccessful() const override { return true; }
 
 signals:
     void effectRequested(const QString &effectName);

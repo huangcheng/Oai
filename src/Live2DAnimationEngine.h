@@ -3,6 +3,8 @@
 
 #ifdef OAI_LIVE2D_SUPPORT
 
+#include "AnimationEngine.h"
+
 #include <QObject>
 #include <QMap>
 #include <QVector>
@@ -31,15 +33,14 @@ class CharacterPack;
  * SpriteAnimationEngine so MainWindow / EventRouter can treat all engines
  * uniformly.
  */
-class Live2DAnimationEngine : public QObject
+class Live2DAnimationEngine : public QObject, public AnimationEngine
 {
     Q_OBJECT
 
 public:
-    enum Priority {
-        HighPriority,   // Interrupts current motion immediately
-        NormalPriority  // Queued after current motion
-    };
+    using AnimationEngine::Priority;
+    using AnimationEngine::HighPriority;
+    using AnimationEngine::NormalPriority;
 
     explicit Live2DAnimationEngine(QObject *parent = nullptr);
     ~Live2DAnimationEngine() override;
@@ -49,7 +50,7 @@ public:
      * @param pack  Pack whose characterConfig().engineType == Live2D
      * @return true on success
      */
-    bool loadFromCharacterPack(const CharacterPack *pack);
+    bool loadFromCharacterPack(const CharacterPack *pack) override;
 
     /**
      * @brief Start playing a named motion group.
@@ -57,10 +58,10 @@ public:
      * Motion names correspond to groups in model3.json (e.g. "Idle", "TapBody").
      * They are also the keys used in the pack's eventMap.
      */
-    void playAnimation(const QString &name, Priority priority = NormalPriority);
+    void playAnimation(const QString &name, Priority priority = NormalPriority) override;
 
     /** @brief Stop playback and clear state (used when switching to a different engine). */
-    void stop();
+    void stop() override;
 
     /**
      * @brief Set the pointer target in normalized viewport coords (-1..+1).
@@ -83,7 +84,7 @@ public:
     /**
      * @brief Render the current frame into a QPainter target rect.
      */
-    void paint(QPainter *painter, const QRect &bounds);
+    void paint(QPainter *painter, const QRect &bounds) override;
 
     /**
      * @brief Bounding box of the visible character in the FBO's coordinate
@@ -93,8 +94,8 @@ public:
      */
     QRect characterBounds() const;
 
-    bool isPlaying() const { return m_playing; }
-    bool hasAnimations() const { return m_modelLoaded; }
+    bool isPlaying() const override { return m_playing; }
+    bool hasAnimations() const override { return m_modelLoaded; }
 
     /** @brief Render dimensions (from manifest frameWidth/frameHeight). */
     int renderWidth() const { return m_renderWidth; }
@@ -103,7 +104,7 @@ public:
     /** @brief True if the last render produced a valid non-null image.
      *         Used by MainWindow to detect GL context loss and fall back
      *         to another engine. */
-    bool lastPaintSuccessful() const { return m_lastPaintSuccessful; }
+    bool lastPaintSuccessful() const override { return m_lastPaintSuccessful; }
 
 signals:
     void frameChanged();
