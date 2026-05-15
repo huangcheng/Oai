@@ -390,6 +390,14 @@ Path: %2</source>
         <translation>你好。这是 Oai 的语音合成测试。</translation>
     </message>
     <message>
+        <source>Clear voice cache</source>
+        <translation>清除语音缓存</translation>
+    </message>
+    <message>
+        <source>Delete cached audio so the next utterance is freshly synthesised.</source>
+        <translation>删除已缓存的音频，下一次发声将重新合成。</translation>
+    </message>
+    <message>
         <location filename="src/SettingsPanelWidget.cpp" line="682"/>
         <source>Custom...</source>
         <translation>自定义...</translation>

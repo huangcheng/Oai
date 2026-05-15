@@ -706,8 +706,10 @@ void SettingsPanelWidget::setupUi()
     connect(m_ttsProviderCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsPanelWidget::onTtsProviderChanged);
 
-    // Test button at the bottom — fires a fixed phrase through the engine
-    // so the user can verify their config without waiting for a real tip.
+    // Action row: primary "Test" on the left fills available space, secondary
+    // "Clear voice cache" on the right is compact. Sharing one row keeps the
+    // panel tight and visually balanced — stacked full-width buttons looked
+    // like an afterthought.
     m_ttsTestButton = new QPushButton(tr("Test"), m_aiTab);
     m_ttsTestButton->setFont(harmonyFont(10, QFont::Bold));
     m_ttsTestButton->setFixedHeight(28);
@@ -732,31 +734,38 @@ void SettingsPanelWidget::setupUi()
     connect(m_ttsTestButton, &QPushButton::clicked, this, [this]() {
         emit testTtsRequested(tr("Hello. This is a TTS test from Oai."));
     });
-    aiLayout->addWidget(m_ttsTestButton);
 
-    // Clear voice cache — frees disk and forces re-synthesis on the next
-    // speak. Useful when a provider tweaks its model without changing
-    // user-facing config.
     m_ttsClearCacheButton = new QPushButton(tr("Clear voice cache"), m_aiTab);
     m_ttsClearCacheButton->setFont(harmonyFont(10));
-    m_ttsClearCacheButton->setFixedHeight(24);
+    m_ttsClearCacheButton->setFixedHeight(28);
     m_ttsClearCacheButton->setCursor(Qt::PointingHandCursor);
+    m_ttsClearCacheButton->setToolTip(tr("Delete cached audio so the next utterance is freshly synthesised."));
     m_ttsClearCacheButton->setStyleSheet(QStringLiteral(R"(
         QPushButton {
             background: transparent;
             border: 1px solid #888;
             border-radius: 3px;
             color: #555;
-            padding: 1px 10px;
+            padding: 2px 12px;
         }
         QPushButton:hover {
             border-color: #2C2C2E;
             color: #2C2C2E;
+            background: #F5F5F5;
+        }
+        QPushButton:pressed {
+            background: #E8E8E8;
         }
     )"));
     connect(m_ttsClearCacheButton, &QPushButton::clicked,
             this, &SettingsPanelWidget::clearVoiceCacheRequested);
-    aiLayout->addWidget(m_ttsClearCacheButton);
+
+    QHBoxLayout *actionRow = new QHBoxLayout();
+    actionRow->setContentsMargins(0, 0, 0, 0);
+    actionRow->setSpacing(8);
+    actionRow->addWidget(m_ttsTestButton, 1);
+    actionRow->addWidget(m_ttsClearCacheButton, 0);
+    aiLayout->addLayout(actionRow);
 #else
     QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_aiTab);
     ttsDisabledLabel->setFont(harmonyFont(10));
@@ -1185,7 +1194,10 @@ void SettingsPanelWidget::retranslateUi()
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
     if (m_ttsTestButton) m_ttsTestButton->setText(tr("Test"));
-    if (m_ttsClearCacheButton) m_ttsClearCacheButton->setText(tr("Clear voice cache"));
+    if (m_ttsClearCacheButton) {
+        m_ttsClearCacheButton->setText(tr("Clear voice cache"));
+        m_ttsClearCacheButton->setToolTip(tr("Delete cached audio so the next utterance is freshly synthesised."));
+    }
 #endif
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {
