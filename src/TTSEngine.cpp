@@ -299,12 +299,25 @@ void TTSEngine::scheduleRetry()
 void TTSEngine::onDecoderBufferReady()
 {
     if (!m_decoder) return;
+    // Cap accumulated PCM so a malicious / malformed audio header that
+    // claims an extreme duration cannot OOM the process. 50 MB is ≈ 4
+    // minutes of 48kHz/16-bit stereo PCM — more than enough for any
+    // legitimate TTS utterance.
+    static constexpr qsizetype kMaxPcmBytes = 50 * 1024 * 1024;
     while (m_decoder->bufferAvailable()) {
         QAudioBuffer buf = m_decoder->read();
         if (!buf.isValid()) break;
         if (!m_pcmFormat.isValid()) {
             m_pcmFormat = buf.format();
             qCInfo(lcTts) << "decoded audio format:" << m_pcmFormat;
+        }
+        if (m_pcm.size() + buf.byteCount() > kMaxPcmBytes) {
+            qCWarning(lcTts) << "PCM cap reached (" << kMaxPcmBytes
+                             << " bytes); aborting decode to avoid OOM";
+            m_decoder->stop();
+            m_speaking = false;
+            emit speakingFinished();
+            return;
         }
         m_pcm.append(buf.constData<char>(), buf.byteCount());
     }
