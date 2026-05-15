@@ -796,9 +796,14 @@ void Live2DAnimationEngine::tick()
 {
     if (!m_modelLoaded || !m_cubismModel || !m_glContext || !m_fbo) return;
 
-#ifdef Q_OS_WIN
-    // Windows: DWM restart, GPU power-state change, or display adapter reset
-    // can invalidate the OpenGL context. Detect and recover silently.
+    // GPU power-state changes, display adapter resets, GPU switches (eGPU
+    // attach/detach on macOS), and DWM restarts on Windows can all
+    // invalidate the OpenGL context. The recovery path was originally
+    // Windows-only, but macOS triggers context loss too — most reliably
+    // on lid-close / display sleep / external-display unplug. Run the
+    // validity check on every platform; recoverOpenGL() is a no-op when
+    // the context is fine because it tears down and rebuilds GL state
+    // unconditionally (so guard with the explicit isValid() check). M11.
     if (!m_glContext->isValid()) {
         qWarning() << "Live2D: GL context lost — attempting recovery";
         if (!recoverOpenGL()) {
@@ -807,7 +812,6 @@ void Live2DAnimationEngine::tick()
             return;
         }
     }
-#endif
 
     // Calculate delta time
     qint64 now = QDateTime::currentMSecsSinceEpoch();
