@@ -656,7 +656,20 @@ void MainWindow::dropEvent(QDropEvent *event)
                 qWarning() << "MainWindow: userDir empty, falling back to" << userPacksDir;
             }
             QDir().mkpath(userPacksDir);
-            QString destFile = userPacksDir + "/" + fi.fileName();
+            // fi.fileName() is attacker-controllable via a crafted file:// URL
+            // (e.g. "../../Library/LaunchAgents/evil.plist") or a filename that
+            // crosses a path separator. Reduce to the base name and reject any
+            // residual separator so the destination always stays inside
+            // userPacksDir.
+            const QString safeName = QFileInfo(fi.fileName()).fileName();
+            if (safeName.isEmpty() ||
+                safeName.contains('/') || safeName.contains('\\') ||
+                safeName == QStringLiteral(".") ||
+                safeName == QStringLiteral("..")) {
+                qWarning() << "MainWindow: rejecting drop with unsafe filename:" << fi.fileName();
+                continue;
+            }
+            QString destFile = userPacksDir + "/" + safeName;
 
             bool ok = false;
             if (QFile::exists(destFile)) {
