@@ -116,6 +116,15 @@ TipsCatalog::Bundle TipsCatalog::loadBundle(const QString &locale)
         }
         return b;
     }
+    // Sanity cap. Tips files are < 100 KB today and live in qrc:/, but a
+    // future change could read from disk; with no upper bound, a corrupted
+    // or hostile file could OOM the GUI thread on startup. M13.
+    constexpr qint64 kMaxTipsBytes = 1 * 1024 * 1024;
+    if (f.size() > kMaxTipsBytes) {
+        qWarning() << "TipsCatalog: refusing oversized tips file" << path
+                   << "size=" << f.size();
+        return b;
+    }
     QJsonParseError err{};
     const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &err);
     if (doc.isNull() || !doc.isObject()) {
