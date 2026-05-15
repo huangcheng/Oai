@@ -319,10 +319,25 @@ const CharacterPack::AnimationDef *CharacterPack::animation(const QString &name)
 
 QString CharacterPack::assetPath(const QString &relativePath) const
 {
-    if (m_rootPath.isEmpty()) {
+    if (m_rootPath.isEmpty() || relativePath.isEmpty()) {
         return QString();
     }
-    return QDir(m_rootPath).absoluteFilePath(relativePath);
+
+    // The manifest is untrusted user input. A pack with
+    //   "spriteSheet": "../../sensitive.png"
+    // would otherwise let assetPath() resolve outside the pack root and
+    // load attacker-controlled files. Verify the cleaned absolute path
+    // still lives under m_rootPath.
+    const QString candidate = QDir::cleanPath(
+        QDir(m_rootPath).absoluteFilePath(relativePath));
+    const QString cleanRoot = QDir::cleanPath(m_rootPath);
+    if (candidate != cleanRoot &&
+        !candidate.startsWith(cleanRoot + '/')) {
+        qWarning() << "CharacterPack: refusing asset path outside pack root:"
+                   << relativePath << "(resolves to" << candidate << ")";
+        return QString();
+    }
+    return candidate;
 }
 
 QString CharacterPack::lottieAnimationPath(const QString &animationName) const
