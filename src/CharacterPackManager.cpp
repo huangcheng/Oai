@@ -8,8 +8,55 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QCoreApplication>
+#include <QRegularExpression>
 
 #include "../thirdparty/miniz/miniz.h"
+
+namespace {
+
+// Reject ZIP entry names that would escape the staging directory. The
+// archive is untrusted user input (drag-and-drop, downloaded .opk); a
+// malicious entry like "../../Library/LaunchAgents/evil.plist" must NOT
+// be allowed to overwrite files outside the install root.
+//
+// Returns the absolute destination path on success, or an empty string
+// if the entry should be skipped.
+QString safeZipDestination(const QString &stagingDir, const QString &entryName)
+{
+    if (entryName.isEmpty()) return QString();
+
+    // Reject absolute paths and Windows drive-letter prefixes outright.
+    // (miniz uses forward slashes per ZIP spec, but be defensive about
+    // archives produced by misbehaving tools.)
+    if (entryName.startsWith('/') || entryName.startsWith('\\'))
+        return QString();
+    if (entryName.size() >= 2 && entryName[1] == ':')
+        return QString();
+
+    // Reject any segment that is exactly ".." — catches both "../etc" and
+    // "foo/../../etc". A plain "." segment is harmless (it's a no-op) but
+    // we strip it via QDir::cleanPath below.
+    const QStringList parts = entryName.split(QRegularExpression(R"([/\\])"),
+                                              Qt::SkipEmptyParts);
+    for (const QString &part : parts) {
+        if (part == QStringLiteral(".."))
+            return QString();
+    }
+
+    const QString candidate = QDir::cleanPath(stagingDir + "/" + entryName);
+    const QString cleanStaging = QDir::cleanPath(stagingDir);
+
+    // Defense in depth: after path normalization, the destination must
+    // still live under the staging dir. Use '/' boundary to avoid the
+    // "stagingDir-evil" sibling-prefix attack.
+    if (candidate != cleanStaging &&
+        !candidate.startsWith(cleanStaging + '/'))
+        return QString();
+
+    return candidate;
+}
+
+} // namespace
 
 CharacterPackManager::CharacterPackManager(QObject *parent)
     : QObject(parent)
@@ -202,7 +249,13 @@ bool CharacterPackManager::installPack(const QString &archivePath)
             continue;
 
         QString entryName = QString::fromUtf8(stat.m_filename);
-        QString destPath = stagingDir + "/" + entryName;
+        QString destPath = safeZipDestination(stagingDir, entryName);
+        if (destPath.isEmpty()) {
+            qWarning() << "CharacterPackManager: Rejecting unsafe archive entry:"
+                       << entryName;
+            extractOk = false;
+            break;
+        }
 
         if (mz_zip_reader_is_file_a_directory(&zip, i)) {
             QDir().mkpath(destPath);
