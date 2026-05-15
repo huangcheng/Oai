@@ -4,6 +4,98 @@ All notable changes to Oai are recorded here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+Code-quality / architecture sweep after the 1.2.6 stability + security pass. No
+user-visible behavior changes; everything below is internal cleanup that future
+feature work will lean on.
+
+### Added
+- `src/AnimationEngine.h` — abstract base implemented by SpriteAnimationEngine,
+  LottieAnimationEngine, and Live2DAnimationEngine. Shared `Priority` enum
+  replaces three near-identical per-engine enums; common methods
+  (`playAnimation`, `stop`, `paint`, `isPlaying`, `hasAnimations`,
+  `lastPaintSuccessful`, `loadFromCharacterPack`) are now `override`. Engine-
+  specific extras (Live2D's `playAnimationChain` / `setPointerTarget`) stay on
+  the concrete class.
+- `src/PlatformWindow.{h,cpp}` — central home for the Windows-only DWM
+  frameless-window dance (`applyDwmFramelessAttributes`, `refreshComposition`).
+  No-op on non-Windows. Six widgets shed their per-file `<dwmapi.h>` includes
+  and DWMWA_* fallback macros.
+- `src/AutoStartManager.{h,cpp}` — extracted from ConfigManager. Stateless
+  `setEnabled(bool)` covering Windows HKCU\…\Run, macOS launchd plist, and
+  Linux XDG `.desktop` autostart.
+- `src/CanonicalEvents.h` — typed constexpr names for the 17 canonical events.
+  Replaces literal `"session.start"` strings in EventRouter / TipsEngine /
+  EcgWidget; wire format unchanged so gateways stay compatible.
+- `src/PackDropHandler.{h,cpp}` — drag-and-drop install logic extracted from
+  MainWindow into a stateless namespace. Sanitization (H13) carries over.
+- `src/CharacterPackLoader.{h,cpp}` — common archive-probe helper
+  (`readJsonEntryFromArchive`, `isValidCodexPet`, `readOpkPackId`). Three sites
+  that duplicated the miniz + JSON parse dance now delegate.
+- `CharacterPackManager::lastError()` — surfaces real install/uninstall failure
+  reasons in the pack-manager UI (missing manifest, oversized JSON, unsafe ZIP
+  entry, disk full, etc.) instead of generic "Failed".
+- Three new unit tests: `test_autostart_manager`, `test_platform_window`,
+  `test_character_pack_manager_errors`.
+
+### Changed
+- `TipsEngine` is engine-agnostic. Emits `animationRequested(QString)` instead
+  of calling directly into SpriteAnimationEngine; MainWindow fans out across
+  the same Live2D > Lottie > Sprite priority chain EventRouter and
+  PetStateMachine already use. Fixes silent drop of tip animations on Lottie /
+  Live2D packs.
+- `MainWindow::refreshAllDwmAttributes()` consolidates the 30 s DWM-refresh
+  timer body and the WM_DISPLAYCHANGE handler — one place owns the recovery
+  sequence.
+- `main.cpp`'s three engine-fan-out lambdas (TipsEngine, IPC tips,
+  PetStateMachine chain) collapsed into `dispatchAnimation` /
+  `dispatchAnimationChain` helpers.
+- `SettingsPanelWidget::setupTtsTabContents` carved out of the 580-line
+  `setupUi` so the TTS-tab construction sits next to its retranslate /
+  event-handling slots.
+- `ConfigManager::save()` is debounced at 500 ms (was synchronous per setter).
+  A window drag now collapses ~60 disk writes/sec into one.
+
+### Fixed
+- TTS provider precheck before HTTP request — missing `token` / `voice` /
+  `model` surfaces an immediate localized error pointing at the TTS settings
+  tab, instead of a cryptic provider 401 several seconds later.
+- TipsEngine reentrancy contract documented (main-thread-only).
+- `CharacterPackManager::cleanupFileWatcher` uses `disconnect(this) +
+  deleteLater()` instead of `delete`, so a directoryChanged signal already in
+  the queue can't land on a freed object during rapid hot-reload toggles.
+- `EcgWidget` `QTemporaryFile`s now parent to `this`; the manual delete block
+  in `~EcgWidget` goes away. No more leaked beep / flatline WAV files.
+- `PackManagerWidget` + `SystemTray` alert dialogs use `QPointer` +
+  `WA_DeleteOnClose`. User-close auto-deletes and re-creates lazily; explicit
+  teardown uses `deleteLater`.
+- `IpcServer::parseMessage` guards against `m_worker == nullptr` on ping
+  during shutdown — silently drops the pong instead of queuing a callback to
+  a destroyed worker.
+- `PetStateMachine` walking overlay clears after 500 ms of no position
+  changes (`onWalkIdleExpired`); previously stuck `m_walking=true` forever.
+- `CharacterPackManager` map reads use `value()` instead of `operator[]` so
+  a missed `contains()` check can't quietly default-insert.
+
+### Performance
+- `fileMessageHandler` only `flush()`es on Critical / Fatal levels. Routine
+  Debug / Info / Warning rely on the OS write-back; eliminates a per-message
+  fsync that serialized every logging thread.
+
+### Build / Tooling
+- Replaced `.clang-format` with one tuned to the existing house style (4-space
+  indent, Allman-for-functions / K&R-for-control-flow braces, right-aligned
+  pointers, 100-col limit). Existing files were intentionally not mass-
+  reformatted; the config is for on-touch use going forward.
+- `.gitignore` now covers `.tmux-ide/` and `ide.yml` so local IDE state
+  doesn't accidentally land in commits.
+- Live2D `#ifdef OAI_LIVE2D_SUPPORT` reduced from 18 sites to 15 (header
+  forward decl + member pointer + accessor are unconditional now).
+
+### Internal
+- 4 OpenSpec changes archived (`add-tts-voice-cache`, `add-gaming-mode`,
+  `i18n-support`, `add-tts-ai-tab` superseded); their delta specs synced into
+  `openspec/specs/`.
+
 ## [1.2.6] — 2026-05-15
 
 Stability + security pass driven by an end-to-end audit, plus a TTS voice cache and the related UI polish.
