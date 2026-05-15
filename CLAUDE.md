@@ -14,6 +14,10 @@ mkdir -p build && cd build
 cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
+# Optional build flags:
+#   -DSEELIE_TTS_ENABLED=OFF     drop the TTS AI tab + providers
+#   -DSEELIE_INCLUDE_NSFW=ON     bundle NSFW categories (azur_lane) in the installer
+
 # Run
 open build/Seelie.app             # macOS
 ./build/Seelie                    # Linux

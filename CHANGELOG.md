@@ -5,3 +5,9 @@ All notable changes to Seelie are recorded here. The format follows [Keep a Chan
 ## [Unreleased]
 
 Initial release.
+
+### Added
+- `SEELIE_INCLUDE_NSFW` CMake option (default `OFF`) gates bundling of NSFW
+  pack categories. Default builds ship a store-safe pack lineup; opt in with
+  `-DSEELIE_INCLUDE_NSFW=ON`. Runtime is unaffected — users can still install
+  any `.spk` into their user pack dir.

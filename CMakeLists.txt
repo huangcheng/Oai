@@ -26,6 +26,18 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Lin
 # optional feature so the build can still drop the AI tab on minimal builds.
 option(SEELIE_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
 
+# NSFW pack categories (currently: azur_lane) are excluded from the bundled
+# pack set by default so store-distributable builds ship a SFW lineup. Users
+# can still drop NSFW .spk archives into ~/.config/Seelie/packs/ at runtime —
+# this gate only controls what ships in the installer.
+# Enable with: cmake -DSEELIE_INCLUDE_NSFW=ON ..
+option(SEELIE_INCLUDE_NSFW "Bundle NSFW pack categories (e.g. azur_lane)" OFF)
+
+# Single source of truth for which manifest `category` values are NSFW.
+# Add new categories here as the pack lineup grows. Used in the pack-discovery
+# loop further down.
+set(SEELIE_NSFW_CATEGORIES azur_lane)
+
 qt_standard_project_setup()
 
 # --- rlottie via FetchContent ------------------------------------------------
@@ -630,14 +642,36 @@ endif()
 file(GLOB _PACK_MANIFESTS CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/assets/packs/*/manifest.json)
 set(LIVE2D_PACKS "")
+set(_skipped_nsfw_count 0)
 foreach(_manifest ${_PACK_MANIFESTS})
     get_filename_component(_pack_dir ${_manifest} DIRECTORY)
     get_filename_component(_pack_name ${_pack_dir} NAME)
+
+    # NSFW gate: read the manifest's `category` and drop the pack from the
+    # bundled set when its category is NSFW and SEELIE_INCLUDE_NSFW is OFF.
+    # string(JSON) needs CMake >= 3.19 (already our minimum). A missing or
+    # malformed category is treated as SFW (fail-open: never silently drop a
+    # legit pack because of a parse hiccup).
+    if(NOT SEELIE_INCLUDE_NSFW)
+        file(READ ${_manifest} _manifest_json)
+        string(JSON _pack_category ERROR_VARIABLE _json_err
+               GET "${_manifest_json}" category)
+        if(NOT _json_err AND _pack_category IN_LIST SEELIE_NSFW_CATEGORIES)
+            math(EXPR _skipped_nsfw_count "${_skipped_nsfw_count} + 1")
+            continue()
+        endif()
+    endif()
+
     list(APPEND LIVE2D_PACKS ${_pack_name})
 endforeach()
 list(SORT LIVE2D_PACKS)
 list(LENGTH LIVE2D_PACKS _live2d_pack_count)
-message(STATUS "Live2D packs discovered: ${_live2d_pack_count}")
+if(SEELIE_INCLUDE_NSFW)
+    message(STATUS "Live2D packs discovered: ${_live2d_pack_count} (NSFW bundled — SEELIE_INCLUDE_NSFW=ON)")
+else()
+    message(STATUS "Live2D packs discovered: ${_live2d_pack_count} "
+                   "(${_skipped_nsfw_count} NSFW packs excluded — set -DSEELIE_INCLUDE_NSFW=ON to bundle)")
+endif()
 foreach(pack ${LIVE2D_PACKS})
     file(GLOB_RECURSE _${pack}_FILES RELATIVE
         ${CMAKE_SOURCE_DIR}/assets/packs/${pack}
