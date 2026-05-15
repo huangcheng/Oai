@@ -256,9 +256,13 @@ int main(int argc, char *argv[])
             }
             if (!dir.cdUp()) break;
         }
-#ifdef SEELIE_SOURCE_DIR
-        // Fallback: use the compile-time source directory (for IDE builds
-        // whose build tree is far from the source tree).
+#if defined(SEELIE_SOURCE_DIR) && !defined(NDEBUG)
+        // Debug-build fallback: use the compile-time source directory so IDE
+        // builds whose CWD is far from the source tree still find assets.
+        // INTENTIONALLY disabled in Release: an installed build that fails the
+        // application-dir search must NOT silently leak the developer's source
+        // tree into the user's running app (audit fix — that's what loaded all
+        // 117 source packs from F:/Oai/assets in production).
         QString sourceAssets = QStringLiteral(SEELIE_SOURCE_DIR) + "/assets";
         if (QFile::exists(sourceAssets + "/animations.json")) {
             return sourceAssets;

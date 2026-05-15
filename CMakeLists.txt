@@ -703,10 +703,34 @@ endforeach()
 add_custom_target(generate_packs ALL DEPENDS ${ALL_PACK_SPKS})
 add_dependencies(Seelie generate_packs)
 
-# Install the generated packs
+# Install the generated packs.
+# Layout: <install>/bin/assets/packs/*.spk so main.cpp's findAssetsDir search
+# (which walks up from applicationDirPath() looking for assets/animations.json)
+# resolves <install>/bin/assets, then derives packs at assets/packs.
 install(DIRECTORY ${PACKS_DIR}/
-    DESTINATION ${CMAKE_INSTALL_BINDIR}/packs
+    DESTINATION ${CMAKE_INSTALL_BINDIR}/assets/packs
+    FILES_MATCHING PATTERN "*.spk"
 )
+
+# Bundle the rest of assets/ that the runtime expects to find next to the exe:
+#   - animations.json     : sprite-engine sentinel + frame timing fallback
+#   - fonts/              : HarmonyOS Sans SC TTFs (CJK glyph rendering)
+#   - i18n/               : tips.<locale>.json catalogs (event-tip text)
+#   - lottie/             : lottie effect overlays (sparkle, confetti, alert-pulse)
+# Skipped on purpose:
+#   - packs/              : installed above as .spk archives, not raw dirs
+#   - packs-disabled/     : developer-only sprite-pack archive of legacy agents
+#   - screenshots/        : repo docs only, never read at runtime
+#   - icons/              : qt_add_resources baked this into the binary
+install(FILES ${CMAKE_SOURCE_DIR}/assets/animations.json
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets/fonts
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/assets)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets/i18n
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/assets
+        FILES_MATCHING PATTERN "tips.*.json")
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets/lottie
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/assets)
 
 # --- macOS: app icon & hide Dock icon ----------------------------------------
 if(APPLE)
@@ -759,15 +783,22 @@ if(APPLE)
     #     target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.spk)
     # endforeach()
 
+    # macOS: bundle .spk archives under Contents/Resources/assets/packs.
+    # Layout matches Windows/Linux now — main.cpp's findAssetsDir resolves
+    # Contents/Resources/assets first, then derives packs at assets/packs.
     foreach(pack ${LIVE2D_PACKS})
         set_source_files_properties(${PACKS_DIR}/${pack}.spk PROPERTIES
-            MACOSX_PACKAGE_LOCATION "Resources/packs"
+            MACOSX_PACKAGE_LOCATION "Resources/assets/packs"
         )
         target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.spk)
     endforeach()
 
     # Copy essential runtime assets into the macOS bundle so deployed apps
     # can find them without relying on the compile-time source tree.
+    # NOTE: assets/packs/ is intentionally NOT copied here — the target_sources
+    # block above bundles the filtered LIVE2D_PACKS .spk archives under the
+    # same Resources/assets/packs prefix. Copying the raw source tree would
+    # leak NSFW packs (and 90 directories of moc3/textures) into the bundle.
     add_custom_command(TARGET Seelie POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
             "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets"
@@ -783,9 +814,6 @@ if(APPLE)
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/assets/lottie"
             "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/lottie"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/assets/packs"
-            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/packs"
         COMMENT "Copying runtime assets into macOS bundle"
     )
 
