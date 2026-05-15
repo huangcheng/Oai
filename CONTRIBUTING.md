@@ -72,6 +72,23 @@ Asset rights belong to the original game studios. Treat imports as **personal-us
 - All user-visible strings use `tr()` for translation
 - Tests use the Qt Test framework on UDP port 52848
 
+### Formatting
+
+The project ships a `.clang-format` tuned to the existing style: 4-space
+indent, function braces on their own line (Allman), control-flow braces
+attached, pointers right-aligned (`QObject *parent`), 100-char column
+limit.
+
+```bash
+clang-format -i src/Foo.cpp           # reformat one file
+clang-format --dry-run --Werror src/  # check without writing
+```
+
+Most editors auto-pick up the config (VS Code, Qt Creator, CLion) when
+the file lives at the project root. Existing files were *not* mass-
+reformatted — apply on touch when you edit a file rather than running
+it across the whole tree.
+
 ## Pull Requests
 
 - Keep changes focused — one concern per PR
