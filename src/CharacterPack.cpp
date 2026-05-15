@@ -77,6 +77,17 @@ bool CharacterPack::loadFromDirectory(const QString &packDir)
     return true;
 }
 
+CharacterPack::~CharacterPack()
+{
+    // Clean up the QTemporaryDir we kept alive past loadFromCodexPet by
+    // calling setAutoRemove(false). Without this, every Codex-pet reload
+    // (drag-drop, manifest hot reload, app restart loop) leaks ~3 MB to
+    // /tmp until reboot. H4.
+    if (!m_extractedTempPath.isEmpty()) {
+        QDir(m_extractedTempPath).removeRecursively();
+    }
+}
+
 bool CharacterPack::loadFromArchive(const QString &archivePath, const QString &extractDir)
 {
     // TODO: Implement ZIP extraction using QZipReader or miniz
@@ -192,6 +203,7 @@ bool CharacterPack::loadFromCodexPet(const QString &archivePath)
     }
 
     m_rootPath = tempDir.path();
+    m_extractedTempPath = tempDir.path();
     tempDir.setAutoRemove(false);
 
     // --- Populate metadata ---------------------------------------------------

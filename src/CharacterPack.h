@@ -117,7 +117,7 @@ public:
     };
 
     CharacterPack() = default;
-    ~CharacterPack() = default;
+    ~CharacterPack();
 
     /**
      * @brief Load sprite pack from directory
@@ -268,6 +268,11 @@ private:
 
     bool m_valid = false;
     QString m_rootPath;
+    // When loaded from a .codex-pet archive we extract into a QTemporaryDir
+    // and call setAutoRemove(false) so the stack-scoped dir survives the
+    // load function. The path is remembered here and removeRecursively()'d
+    // in ~CharacterPack so disk space isn't leaked across pack reloads. H4.
+    QString m_extractedTempPath;
     Metadata m_metadata;
     CharacterConfig m_characterConfig;
     QMap<QString, AnimationDef> m_animations;
