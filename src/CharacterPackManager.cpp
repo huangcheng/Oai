@@ -207,9 +207,12 @@ bool CharacterPackManager::switchPack(const QString &packId)
 
 bool CharacterPackManager::installPack(const QString &archivePath)
 {
+    m_lastError.clear();
+
     mz_zip_archive zip{};
     if (!mz_zip_reader_init_file(&zip, archivePath.toUtf8().constData(), 0)) {
         qWarning() << "CharacterPackManager: Failed to open archive:" << archivePath;
+        m_lastError = tr("Could not open the pack archive. It may be corrupt or unreadable.");
         return false;
     }
 
@@ -217,6 +220,7 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     int manifestIdx = mz_zip_reader_locate_file(&zip, "manifest.json", nullptr, 0);
     if (manifestIdx < 0) {
         qWarning() << "CharacterPackManager: No manifest.json in archive:" << archivePath;
+        m_lastError = tr("Archive is missing manifest.json — not a valid Oai pack.");
         mz_zip_reader_end(&zip);
         return false;
     }
@@ -225,12 +229,14 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     if (!zipEntryFitsManifestCap(&zip, manifestIdx, &manifestSize)) {
         qWarning() << "CharacterPackManager: manifest.json missing or exceeds size cap in:"
                    << archivePath;
+        m_lastError = tr("manifest.json is unreadable or unreasonably large (>10 MB).");
         mz_zip_reader_end(&zip);
         return false;
     }
     void *manifestData = mz_zip_reader_extract_to_heap(&zip, manifestIdx, &manifestSize, 0);
     if (!manifestData) {
         qWarning() << "CharacterPackManager: Failed to read manifest.json from:" << archivePath;
+        m_lastError = tr("Could not read manifest.json from the archive.");
         mz_zip_reader_end(&zip);
         return false;
     }
@@ -241,6 +247,7 @@ bool CharacterPackManager::installPack(const QString &archivePath)
 
     if (!doc.isObject()) {
         qWarning() << "CharacterPackManager: Invalid manifest.json in:" << archivePath;
+        m_lastError = tr("manifest.json is not valid JSON.");
         mz_zip_reader_end(&zip);
         return false;
     }
@@ -248,6 +255,7 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     QString packId = doc.object().value("id").toString();
     if (packId.isEmpty()) {
         qWarning() << "CharacterPackManager: Pack manifest missing 'id' in:" << archivePath;
+        m_lastError = tr("manifest.json is missing the required \"id\" field.");
         mz_zip_reader_end(&zip);
         return false;
     }
@@ -263,6 +271,8 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     QDir(stagingDir).removeRecursively();
     if (!QDir().mkpath(stagingDir)) {
         qWarning() << "CharacterPackManager: Failed to create staging dir:" << stagingDir;
+        m_lastError = tr("Could not create the staging directory at %1. "
+                         "Check disk space and permissions.").arg(stagingDir);
         mz_zip_reader_end(&zip);
         return false;
     }
@@ -279,6 +289,8 @@ bool CharacterPackManager::installPack(const QString &archivePath)
         if (destPath.isEmpty()) {
             qWarning() << "CharacterPackManager: Rejecting unsafe archive entry:"
                        << entryName;
+            m_lastError = tr("Archive contains an unsafe path (\"%1\") and was rejected.")
+                              .arg(entryName);
             extractOk = false;
             break;
         }
@@ -290,6 +302,8 @@ bool CharacterPackManager::installPack(const QString &archivePath)
             QDir().mkpath(QFileInfo(destPath).absolutePath());
             if (!mz_zip_reader_extract_to_file(&zip, i, destPath.toUtf8().constData(), 0)) {
                 qWarning() << "CharacterPackManager: Failed to extract:" << entryName;
+                m_lastError = tr("Failed to extract \"%1\" — disk full or permission denied.")
+                                  .arg(entryName);
                 extractOk = false;
                 break;
             }
@@ -306,11 +320,13 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     // Atomically replace the existing install (if any) with the staged copy.
     if (QDir(installDir).exists() && !QDir(installDir).removeRecursively()) {
         qWarning() << "CharacterPackManager: Failed to remove existing install:" << installDir;
+        m_lastError = tr("Could not remove the previously installed copy at %1.").arg(installDir);
         QDir(stagingDir).removeRecursively();
         return false;
     }
     if (!QDir().rename(stagingDir, installDir)) {
         qWarning() << "CharacterPackManager: Failed to rename staging dir to:" << installDir;
+        m_lastError = tr("Could not finalise the install at %1.").arg(installDir);
         QDir(stagingDir).removeRecursively();
         return false;
     }
@@ -326,8 +342,11 @@ bool CharacterPackManager::installPack(const QString &archivePath)
 
 bool CharacterPackManager::uninstallPack(const QString &packId)
 {
+    m_lastError.clear();
+
     if (!m_packs.contains(packId)) {
         qWarning() << "CharacterPackManager: Pack not found:" << packId;
+        m_lastError = tr("Pack \"%1\" is not installed.").arg(packId);
         return false;
     }
 
@@ -336,12 +355,14 @@ bool CharacterPackManager::uninstallPack(const QString &packId)
     // Only user packs can be uninstalled
     if (info.source != PackSource::User) {
         qWarning() << "CharacterPackManager: Cannot uninstall built-in pack:" << packId;
+        m_lastError = tr("Cannot uninstall built-in pack \"%1\".").arg(info.name);
         return false;
     }
 
     // Cannot uninstall the currently active pack
     if (packId == m_activePackId) {
         qWarning() << "CharacterPackManager: Cannot uninstall active pack:" << packId;
+        m_lastError = tr("Switch to a different pack before uninstalling \"%1\".").arg(info.name);
         return false;
     }
 
@@ -349,12 +370,14 @@ bool CharacterPackManager::uninstallPack(const QString &packId)
     if (pathInfo.isFile()) {
         if (!QFile::remove(info.path)) {
             qWarning() << "CharacterPackManager: Failed to remove pack file:" << info.path;
+            m_lastError = tr("Could not delete %1 — permission denied or file in use.").arg(info.path);
             return false;
         }
     } else if (pathInfo.isDir()) {
         QDir packDir(info.path);
         if (!packDir.removeRecursively()) {
             qWarning() << "CharacterPackManager: Failed to remove pack directory:" << info.path;
+            m_lastError = tr("Could not delete %1 — some files may be in use or read-only.").arg(info.path);
             return false;
         }
     }

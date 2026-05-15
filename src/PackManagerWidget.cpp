@@ -427,29 +427,41 @@ void PackManagerWidget::onAddClicked()
     int successCount = 0;
     int failCount = 0;
     QStringList failedFiles;
+    // Capture per-file failure reasons so we can show *why* an install
+    // failed instead of a generic "installation failed". H17.
+    QStringList failureReasons;
 
     for (const QString &file : files) {
         if (m_packManager->installPack(file)) {
             ++successCount;
         } else {
             ++failCount;
-            failedFiles.append(QFileInfo(file).fileName());
+            const QString name = QFileInfo(file).fileName();
+            failedFiles.append(name);
+            const QString why = m_packManager->lastError();
+            if (!why.isEmpty()) {
+                failureReasons.append(QStringLiteral("%1: %2").arg(name, why));
+            }
         }
     }
+
+    auto formatFailureDetail = [&]() {
+        return failureReasons.isEmpty()
+            ? failedFiles.join(QStringLiteral(", "))
+            : failureReasons.join(QLatin1Char('\n'));
+    };
 
     if (successCount > 0) {
         QString msg = tr("Successfully installed %1 pack(s).").arg(successCount);
         if (failCount > 0) {
-            msg += QLatin1Char('\n') + tr("Failed to install %1 file(s): %2")
-                     .arg(failCount).arg(failedFiles.join(", "));
+            msg += QLatin1Char('\n') + tr("Failed to install %1 file(s):").arg(failCount)
+                 + QLatin1Char('\n') + formatFailureDetail();
         }
         ensureAlertDialog();
         m_alertDialog->showAlert(tr("Installation Complete"), msg);
     } else if (failCount > 0) {
         ensureAlertDialog();
-        m_alertDialog->showAlert(tr("Installation Failed"),
-            tr("Failed to install all selected files: %1")
-                .arg(failedFiles.join(", ")));
+        m_alertDialog->showAlert(tr("Installation Failed"), formatFailureDetail());
     }
 }
 
@@ -500,6 +512,7 @@ void PackManagerWidget::onDeleteClicked()
     int successCount = 0;
     int failCount = 0;
     QStringList failedNames;
+    QStringList failureReasons;
 
     for (const QString &packId : packIds) {
         CharacterPackManager::PackInfo info = m_packManager->packInfo(packId);
@@ -507,7 +520,12 @@ void PackManagerWidget::onDeleteClicked()
             ++successCount;
         } else {
             ++failCount;
-            failedNames.append(info.displayName(m_packManager->activeLocale()));
+            const QString name = info.displayName(m_packManager->activeLocale());
+            failedNames.append(name);
+            const QString why = m_packManager->lastError();
+            if (!why.isEmpty()) {
+                failureReasons.append(QStringLiteral("%1: %2").arg(name, why));
+            }
         }
     }
 
@@ -517,7 +535,9 @@ void PackManagerWidget::onDeleteClicked()
             tr("Successfully deleted %1 pack(s).").arg(successCount));
     } else if (failCount > 0) {
         QString msg = tr("Successfully deleted %1 pack(s).").arg(successCount);
-        msg += QLatin1Char('\n') + tr("Failed to delete: %1").arg(failedNames.join(", "));
+        msg += QLatin1Char('\n') + (failureReasons.isEmpty()
+                                    ? tr("Failed to delete: %1").arg(failedNames.join(", "))
+                                    : tr("Failed to delete:\n%1").arg(failureReasons.join("\n")));
         ensureAlertDialog();
         m_alertDialog->showAlert(tr("Delete Partial"), msg);
     }

@@ -115,6 +115,19 @@ public:
     bool uninstallPack(const QString &packId);
 
     /**
+     * @brief Last user-facing error from installPack / uninstallPack.
+     *
+     * Cleared at the start of each call; populated with a localized,
+     * user-readable string on failure (via tr()). Pair with `false` returns
+     * from installPack/uninstallPack to surface real causes in UI dialogs
+     * instead of generic "installation failed" messages. Audit H17.
+     *
+     * The qWarning() telemetry is unchanged — that's for the log; this
+     * is for the user.
+     */
+    QString lastError() const { return m_lastError; }
+
+    /**
      * @brief Check if a pack is installed
      */
     bool isPackInstalled(const QString &packId) const;
@@ -180,6 +193,7 @@ private:
     QString m_activePackId;
     QString m_activeLocale;
     CharacterPack *m_activePack = nullptr;
+    QString m_lastError;  // user-facing failure message; see lastError()
 
     QMap<QString, PackInfo> m_packs;
     QMap<QString, CharacterPack *> m_loadedPacks;
