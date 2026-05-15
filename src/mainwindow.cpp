@@ -538,6 +538,10 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
             m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble);
         } else {
             StyledAlertWidget *dialog = new StyledAlertWidget(nullptr);
+            // Belt-and-suspenders cleanup. dismissed → deleteLater handles
+            // the click-to-close path; WA_DeleteOnClose handles every other
+            // way the widget can disappear (close event, parent quit). L11.
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
             dialog->setPetWindow(this);
             connect(dialog, &StyledAlertWidget::dismissed, dialog, &QObject::deleteLater);
             dialog->showAlert(t.title, t.body);

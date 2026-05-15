@@ -715,7 +715,10 @@ void EcgWidget::initAudio()
         return;
     }
     m_beepFile->write(synthesizeBeepWav());
-    m_beepFile->flush();
+    if (!m_beepFile->flush()) {
+        qWarning() << "EcgWidget: failed to flush beep WAV — audio may be silent:"
+                   << m_beepFile->errorString();
+    }
     const QString path = m_beepFile->fileName();
     m_beepFile->close();
 
@@ -728,7 +731,10 @@ void EcgWidget::initAudio()
     m_flatlineBeepFile->setAutoRemove(true);
     if (m_flatlineBeepFile->open()) {
         m_flatlineBeepFile->write(synthesizeFlatlineWav());
-        m_flatlineBeepFile->flush();
+        if (!m_flatlineBeepFile->flush()) {
+            qWarning() << "EcgWidget: failed to flush flatline WAV — audio may be silent:"
+                       << m_flatlineBeepFile->errorString();
+        }
         const QString flatPath = m_flatlineBeepFile->fileName();
         m_flatlineBeepFile->close();
 

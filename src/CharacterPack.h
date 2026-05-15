@@ -127,14 +127,6 @@ public:
     bool loadFromDirectory(const QString &packDir);
 
     /**
-     * @brief Load sprite pack from .opk archive
-     * @param archivePath Path to .opk file
-     * @param extractDir Directory to extract to (temp)
-     * @return true if loaded successfully
-     */
-    bool loadFromArchive(const QString &archivePath, const QString &extractDir);
-
-    /**
      * @brief Load a Codex .codex-pet archive
      * @param archivePath Path to .codex-pet file
      * @return true if loaded successfully

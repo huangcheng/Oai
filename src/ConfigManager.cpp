@@ -296,6 +296,25 @@ void ConfigManager::applyAutoStartToOS(bool enabled)
         // Point at the bundle's MacOS executable, NOT the .app dir —
         // launchd does not "open" .app bundles, it execs binaries.
         const QString exe = QCoreApplication::applicationFilePath();
+        // Proper XML escape — Qt's toHtmlEscaped() turns ' into &#39;, which
+        // happens to be valid XML, but the named-entity set differs in
+        // edge cases. Be explicit so the plist parser can never misread an
+        // executable path containing &, <, >, ", or '. L9.
+        auto xmlEscape = [](const QString &s) {
+            QString out;
+            out.reserve(s.size());
+            for (QChar c : s) {
+                switch (c.unicode()) {
+                    case '&':  out += QStringLiteral("&amp;");  break;
+                    case '<':  out += QStringLiteral("&lt;");   break;
+                    case '>':  out += QStringLiteral("&gt;");   break;
+                    case '"':  out += QStringLiteral("&quot;"); break;
+                    case '\'': out += QStringLiteral("&apos;"); break;
+                    default:   out += c;
+                }
+            }
+            return out;
+        };
         QDir().mkpath(QFileInfo(plistPath).absolutePath());
         QFile f(plistPath);
         if (f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
@@ -309,7 +328,7 @@ void ConfigManager::applyAutoStartToOS(bool enabled)
                 << "    <string>im.cheng.oai</string>\n"
                 << "    <key>ProgramArguments</key>\n"
                 << "    <array>\n"
-                << "        <string>" << exe.toHtmlEscaped() << "</string>\n"
+                << "        <string>" << xmlEscape(exe) << "</string>\n"
                 << "    </array>\n"
                 << "    <key>RunAtLoad</key>\n"
                 << "    <true/>\n"

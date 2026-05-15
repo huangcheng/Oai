@@ -34,6 +34,7 @@
 #include <QMutex>
 #include <QTextStream>
 #include <QTimer>
+#include <memory>
 #include <optional>
 
 #include "TipsCatalog.h"
@@ -58,7 +59,10 @@ static QString dataDir() {
 static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
                                const QString &msg)
 {
-    static QFile *logFile = nullptr;
+    // Owned by std::unique_ptr (was raw `QFile *` — L7) so the file handle
+    // and OS resources are released on process exit even though the static
+    // lifetime means the OS would also reclaim them. Cleaner ownership.
+    static std::unique_ptr<QFile> logFile;
     static QMutex mtx;
     static const QString LOG_NAME = QStringLiteral("oai_debug.log");
     static const qint64 MAX_SIZE = 5 * 1024 * 1024;
@@ -74,7 +78,7 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
         const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
         QDir().mkpath(dir);
         const QString path = dir + "/" + LOG_NAME;
-        logFile = new QFile(path);
+        logFile = std::make_unique<QFile>(path);
         // Failure handled by the isOpen() check below; the cast acknowledges
         // QFile::open's [[nodiscard]] without obscuring the control flow.
         (void)logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
@@ -117,7 +121,7 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
         case QtInfoMsg:     level = "INFO";  break;
         default: break;
     }
-    QTextStream(logFile) << '[' << level << "] " << msg << '\n';
+    QTextStream(logFile.get()) << '[' << level << "] " << msg << '\n';
     logFile->flush();
 }
 

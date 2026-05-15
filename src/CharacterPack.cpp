@@ -88,14 +88,6 @@ CharacterPack::~CharacterPack()
     }
 }
 
-bool CharacterPack::loadFromArchive(const QString &archivePath, const QString &extractDir)
-{
-    // TODO: Implement ZIP extraction using QZipReader or miniz
-    // For now, log a warning and return false
-    qWarning() << "CharacterPack: Archive loading not yet implemented:" << archivePath;
-    return false;
-}
-
 bool CharacterPack::loadFromCodexPet(const QString &archivePath)
 {
     mz_zip_archive zip{};

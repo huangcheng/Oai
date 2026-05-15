@@ -292,9 +292,14 @@ void SettingsPanelWidget::setupUi()
     m_langCombo->setFont(harmonyFont(10));
     m_langCombo->setFixedHeight(24);
 
-    // Generate a small down-arrow pixmap (shared by both combos)
-    QString arrowPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
-                        + "/oai_combo_arrow.png";
+    // Generate a small down-arrow pixmap (shared by both combos). Live in
+    // AppLocalData rather than TempLocation so it: (a) doesn't litter the
+    // system temp directory with a new orphan if Qt clears /tmp on reboot,
+    // (b) is reused across launches without rewriting, and (c) lives next
+    // to the app's other persistent state. L3.
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    QDir().mkpath(cacheDir);
+    QString arrowPath = cacheDir + "/combo_arrow.png";
     if (!QFile::exists(arrowPath)) {
         QPixmap arrow(8, 5);
         arrow.fill(Qt::transparent);
