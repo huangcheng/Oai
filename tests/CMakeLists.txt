@@ -84,6 +84,9 @@ set(TEST_SOURCES
     test_tts_providers.cpp
     test_tts_engine.cpp
     test_tts_voice_cache.cpp
+    test_autostart_manager.cpp
+    test_platform_window.cpp
+    test_character_pack_manager_errors.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})

@@ -89,7 +89,14 @@ void TestIpcAnimations::initTestCase()
     m_bubble->setAnchorRect(QRect(0, 0, 124, 93));
 
     m_tips = new TipsEngine(this);
-    m_tips->setAnimationEngine(m_engine);
+    // H1: TipsEngine now emits animationRequested(QString); the test harness
+    // wires it directly to the sprite engine since this test predates the
+    // multi-engine fan-out and only exercises the legacy SpriteAnimationEngine.
+    connect(m_tips, &TipsEngine::animationRequested, this, [this](const QString &name) {
+        if (m_engine && m_engine->hasAnimations() && !name.isEmpty()) {
+            m_engine->playAnimation(name, SpriteAnimationEngine::NormalPriority);
+        }
+    });
     m_tips->setTipWidget(m_bubble);
 
     m_router = new EventRouter(this);
