@@ -392,13 +392,21 @@ private:
         }
         // Reject pathological dimensions before allocating GPU memory.
         // A 30000x30000 PNG would OOM during decode or crash the driver
-        // inside glTexImage2D. 4096 is below the conservative max-tex
-        // limit on every GPU we target.
-        static constexpr int kMaxTexDim = 4096;
+        // inside glTexImage2D.
+        //
+        // Query GL_MAX_TEXTURE_SIZE at runtime instead of hardcoding 4096:
+        // many real-world Cubism 4 packs ship 8K textures (atlas variants
+        // suffixed `.8192/`), and modern GPUs handle 16K easily. The
+        // conservative 4096 cap that landed with the audit's C14 fix
+        // rejected legitimate packs (e.g. little_demon's 8192×4096
+        // texture). Audit C14, with rectified bound.
+        GLint maxTexSize = 4096;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+        if (maxTexSize < 4096) maxTexSize = 4096;  // sanity floor
         if (img.width() <= 0 || img.height() <= 0 ||
-            img.width() > kMaxTexDim || img.height() > kMaxTexDim) {
+            img.width() > maxTexSize || img.height() > maxTexSize) {
             qWarning() << "Live2D: Refusing texture with out-of-range dimensions"
-                       << img.size() << "from" << path;
+                       << img.size() << "(GL max =" << maxTexSize << ") from" << path;
             return 0;
         }
         img = img.convertToFormat(QImage::Format_RGBA8888);

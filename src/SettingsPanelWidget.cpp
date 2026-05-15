@@ -154,6 +154,17 @@ void SettingsPanelWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     PlatformWindow::applyDwmFramelessAttributes(this);
+    // Re-apply tab styles after the native window has been realized.
+    // The setStyleSheet calls in setupUi() happen before the panel
+    // has a real widget tree to polish; on the very first show some
+    // platforms render the buttons with the un-styled compact size,
+    // making them appear edge-to-edge until the user clicks one. This
+    // re-poke is a no-op visually if styles were already correct, but
+    // ensures both tabs render their padding+border on first paint.
+    if (m_generalTabBtn && m_aiTabBtn) {
+        const int currentTab = m_aiTab && m_aiTab->isVisible() ? 1 : 0;
+        onTabChanged(currentTab);
+    }
 }
 
 void SettingsPanelWidget::paintEvent(QPaintEvent *event)
