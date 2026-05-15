@@ -45,6 +45,51 @@ static QString configDir() {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
 }
 
+// Animation fan-out: route a named animation through the priority chain
+// Live2D > Lottie > Sprite, picking the first engine that has animations
+// loaded. Three call sites used to duplicate this — TipsEngine signal,
+// IPC tip handler, PetStateMachine signal. Audit H2/H3.
+static void dispatchAnimation(MainWindow &w, const QString &anim,
+                              AnimationEngine::Priority priority = AnimationEngine::NormalPriority)
+{
+    if (anim.isEmpty()) return;
+#ifdef OAI_LIVE2D_SUPPORT
+    if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
+        w.live2dEngine()->playAnimation(anim, priority);
+        return;
+    }
+#endif
+    if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
+        w.lottieEngine()->playAnimation(anim, priority);
+        return;
+    }
+    if (w.animationEngine() && w.animationEngine()->hasAnimations()) {
+        w.animationEngine()->playAnimation(anim, priority);
+    }
+}
+
+// Chain variant: Live2D understands the full chain (it can try each motion
+// group in order); Lottie and Sprite only know individual names, so they
+// fall back to chain.first().
+static void dispatchAnimationChain(MainWindow &w, const QStringList &chain,
+                                   AnimationEngine::Priority priority)
+{
+    if (chain.isEmpty()) return;
+#ifdef OAI_LIVE2D_SUPPORT
+    if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
+        w.live2dEngine()->playAnimationChain(chain, priority);
+        return;
+    }
+#endif
+    if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
+        w.lottieEngine()->playAnimation(chain.first(), priority);
+        return;
+    }
+    if (w.animationEngine() && w.animationEngine()->hasAnimations()) {
+        w.animationEngine()->playAnimation(chain.first(), priority);
+    }
+}
+
 static QString dataDir() {
     // AppLocalDataLocation is for user data (packs, logs), not config.
     // macOS: ~/Library/Application Support/Oai/
@@ -347,27 +392,11 @@ int main(int argc, char *argv[])
     TipsEngine tipsEngine;
     tipsEngine.setTipWidget(w.tipWidget());
 
-    // TipsEngine is engine-agnostic — it asks for an animation by name and
-    // we fan out across the active engines in the same Live2D > Lottie >
-    // Sprite priority chain EventRouter / PetStateMachine use. Previously
-    // TipsEngine called directly into SpriteAnimationEngine, so tip-driven
-    // animations silently dropped for Lottie / Live2D packs (audit H1).
+    // TipsEngine is engine-agnostic — fan out across active engines in the
+    // Live2D > Lottie > Sprite priority chain. Audit H1.
     QObject::connect(&tipsEngine, &TipsEngine::animationRequested,
                      &w, [&w](const QString &anim) {
-        if (anim.isEmpty()) return;
-#ifdef OAI_LIVE2D_SUPPORT
-        if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
-            w.live2dEngine()->playAnimation(anim, Live2DAnimationEngine::NormalPriority);
-            return;
-        }
-#endif
-        if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
-            w.lottieEngine()->playAnimation(anim, LottieAnimationEngine::NormalPriority);
-            return;
-        }
-        if (w.animationEngine() && w.animationEngine()->hasAnimations()) {
-            w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
-        }
+        dispatchAnimation(w, anim);
     });
 
     // --- Event router --------------------------------------------------------
@@ -405,22 +434,7 @@ int main(int argc, char *argv[])
         const QString anim = tip.value("animation").toString();
 
         w.tipWidget()->showBubble(title, body, TipWidget::TipBubble);
-
-        if (anim.isEmpty()) return;
-
-        // Route through whichever engine has animations loaded,
-        // matching EventRouter's priority (Live2D > Lottie > Sprite).
-#ifdef OAI_LIVE2D_SUPPORT
-        if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
-            w.live2dEngine()->playAnimation(anim, Live2DAnimationEngine::NormalPriority);
-            return;
-        }
-#endif
-        if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
-            w.lottieEngine()->playAnimation(anim, LottieAnimationEngine::NormalPriority);
-            return;
-        }
-        w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
+        dispatchAnimation(w, anim);
     });
 
     ipcServer.start(config.ipcEndpoint());
@@ -498,31 +512,14 @@ int main(int argc, char *argv[])
                          stateMachine.onActivePackChanged(packManager.activePack());
                      });
 
-    // FSM-emitted chain → engine fan-out (same shape as the old moodChanged lambda).
+    // FSM-emitted chain → engine fan-out.
     QObject::connect(&stateMachine, &PetStateMachine::animationRequested,
                      &w,
                      [&w](const QStringList &chain, int priority) {
-        if (chain.isEmpty()) return;
-#ifdef OAI_LIVE2D_SUPPORT
-        if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
-            w.live2dEngine()->playAnimationChain(chain,
-                priority == PetStateMachine::HighPriority
-                    ? Live2DAnimationEngine::HighPriority
-                    : Live2DAnimationEngine::NormalPriority);
-            return;
-        }
-#endif
-        if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
-            w.lottieEngine()->playAnimation(chain.first(),
-                priority == PetStateMachine::HighPriority
-                    ? LottieAnimationEngine::HighPriority
-                    : LottieAnimationEngine::NormalPriority);
-            return;
-        }
-        w.animationEngine()->playAnimation(chain.first(),
-            priority == PetStateMachine::HighPriority
-                ? SpriteAnimationEngine::HighPriority
-                : SpriteAnimationEngine::NormalPriority);
+        const auto p = (priority == PetStateMachine::HighPriority)
+                           ? AnimationEngine::HighPriority
+                           : AnimationEngine::NormalPriority;
+        dispatchAnimationChain(w, chain, p);
     });
 
     if (config.displayMode() == ConfigManager::DisplayMode::Character) {
