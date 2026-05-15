@@ -201,8 +201,14 @@ void SystemTray::onNoUpdateAvailable(const QString &current)
     // stays silent on the happy path so we don't pop a balloon every time
     // the app starts up on the latest version.
     if (!m_updateChecker || !m_updateChecker->wasUserTriggered()) {
+        qDebug() << "UpdateChecker: no-update silent (auto check), current=" << current;
         return;
     }
+    qDebug() << "UpdateChecker: no-update notification firing for manual check,"
+             << "current=" << current
+             << "trayAvailable=" << QSystemTrayIcon::isSystemTrayAvailable()
+             << "supportsMessages=" << QSystemTrayIcon::supportsMessages()
+             << "iconVisible=" << m_trayIcon->isVisible();
     m_trayIcon->showMessage(
         tr("No Updates"),
         tr("You are running the latest version (%1)").arg(current),
