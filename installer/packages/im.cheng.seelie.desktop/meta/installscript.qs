@@ -5,10 +5,14 @@
 
 function Component()
 {
-    // Show the language picker on the very first wizard page (Introduction)
-    // unless the user already chose a language and we restarted with --lang.
-    installer.addWizardPageItem(component, "LanguageSelectorForm",
-                                QInstaller.Introduction);
+    // The wizard skeleton doesn't exist yet at constructor time, so defer
+    // page registration to guiElementsReady(). addWizardPage (NOT
+    // addWizardPageItem — that inserts INTO an existing page) is the API
+    // that creates a new page in the wizard.
+    if (installer.isInstaller()) {
+        installer.guiElementsReady.connect(this,
+            Component.prototype.onGuiElementsReady);
+    }
 
     installer.installationFinished.connect(this,
         Component.prototype.onInstallationFinishedPage);
@@ -18,10 +22,14 @@ function Component()
     component.languageRestartTriggered = false;
 }
 
-// --- Language picker setup --------------------------------------------------
-
-Component.prototype.componentLoaded = function()
+Component.prototype.onGuiElementsReady = function()
 {
+    // Insert the language picker BEFORE the standard Introduction page so it
+    // is the very first thing the user sees. Skip when the user already
+    // restarted with --lang (UILanguage will be set explicitly then).
+    installer.addWizardPage(component, "LanguageSelectorForm",
+                            QInstaller.Introduction);
+
     var form = component.userInterface("LanguageSelectorForm");
     if (!form || !form.languageCombo) return;
 
@@ -30,8 +38,7 @@ Component.prototype.componentLoaded = function()
 
     // Pre-select the active language so the combo reflects the current state.
     // installer.value("UILanguage") returns the locale code IFW resolved from
-    // --lang flag or system locale (e.g. "en", "zh_CN"). Match the prefix
-    // because system locale may be a full BCP-47 tag like "en_US".
+    // --lang flag or system locale (e.g. "en", "zh_CN").
     var current = String(installer.value("UILanguage", "en"));
     var prefix = current.split("_")[0];
     for (var i = 0; i < form.languageCombo.count; ++i) {
