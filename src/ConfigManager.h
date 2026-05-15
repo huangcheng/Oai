@@ -116,6 +116,7 @@ signals:
     void ttsProviderFieldChanged(const QString &providerId,
                                  const QString &field,
                                  const QString &value);
+    void ttsCacheInvalidated();
 
 private:
     QSettings m_settings;

@@ -435,6 +435,7 @@ void ConfigManager::setTtsActiveProvider(const QString &stableId)
     m_ttsActiveProvider = stableId;
     save();
     emit ttsActiveProviderChanged(stableId);
+    emit ttsCacheInvalidated();
 }
 
 QString ConfigManager::ttsProviderField(const QString &providerId,
@@ -459,6 +460,11 @@ void ConfigManager::setTtsProviderField(const QString &providerId,
     fields.insert(field, trimmed);
     save();
     emit ttsProviderFieldChanged(providerId, field, trimmed);
+    // Voice and model are part of the cache fingerprint; changing them must
+    // invalidate cached audio for the active provider, otherwise we serve
+    // audio synthesized under the previous voice/model selection.
+    if (field == QStringLiteral("voice") || field == QStringLiteral("model"))
+        emit ttsCacheInvalidated();
 }
 
 QHash<QString, QString> ConfigManager::ttsProviderConfig(const QString &providerId) const

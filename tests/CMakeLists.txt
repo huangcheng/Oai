@@ -45,6 +45,8 @@ set(OAIPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.cpp
     ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/OpenAiTtsProvider.cpp
+    ${CMAKE_SOURCE_DIR}/src/tts/TtsVoiceCache.h
+    ${CMAKE_SOURCE_DIR}/src/tts/TtsVoiceCache.cpp
 )
 
 # Manual live tests. Compiled by `cmake --build . --target test_tts_live`
@@ -77,6 +79,7 @@ set(TEST_SOURCES
     test_pet_state_machine.cpp
     test_tts_providers.cpp
     test_tts_engine.cpp
+    test_tts_voice_cache.cpp
 )
 
 foreach(test_src ${TEST_SOURCES})

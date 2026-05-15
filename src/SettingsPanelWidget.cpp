@@ -733,6 +733,30 @@ void SettingsPanelWidget::setupUi()
         emit testTtsRequested(tr("Hello. This is a TTS test from Oai."));
     });
     aiLayout->addWidget(m_ttsTestButton);
+
+    // Clear voice cache — frees disk and forces re-synthesis on the next
+    // speak. Useful when a provider tweaks its model without changing
+    // user-facing config.
+    m_ttsClearCacheButton = new QPushButton(tr("Clear voice cache"), m_aiTab);
+    m_ttsClearCacheButton->setFont(harmonyFont(10));
+    m_ttsClearCacheButton->setFixedHeight(24);
+    m_ttsClearCacheButton->setCursor(Qt::PointingHandCursor);
+    m_ttsClearCacheButton->setStyleSheet(QStringLiteral(R"(
+        QPushButton {
+            background: transparent;
+            border: 1px solid #888;
+            border-radius: 3px;
+            color: #555;
+            padding: 1px 10px;
+        }
+        QPushButton:hover {
+            border-color: #2C2C2E;
+            color: #2C2C2E;
+        }
+    )"));
+    connect(m_ttsClearCacheButton, &QPushButton::clicked,
+            this, &SettingsPanelWidget::clearVoiceCacheRequested);
+    aiLayout->addWidget(m_ttsClearCacheButton);
 #else
     QLabel *ttsDisabledLabel = new QLabel(tr("TTS not available"), m_aiTab);
     ttsDisabledLabel->setFont(harmonyFont(10));
@@ -1161,6 +1185,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
     if (m_ttsTestButton) m_ttsTestButton->setText(tr("Test"));
+    if (m_ttsClearCacheButton) m_ttsClearCacheButton->setText(tr("Clear voice cache"));
 #endif
     // Pack labels can switch between English/Chinese on locale change.
     if (m_packManager) {

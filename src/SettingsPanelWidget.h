@@ -53,6 +53,8 @@ signals:
     // Emitted when the user clicks "Test" in the TTS tab. MainWindow wires
     // this to TTSEngine::speak so the test bypasses any tip flow.
     void testTtsRequested(const QString &text);
+    // Emitted when the user clicks "Clear voice cache" in the TTS tab.
+    void clearVoiceCacheRequested();
 #endif
 
 protected:
@@ -126,6 +128,7 @@ private:
     QComboBox    *m_ttsProviderCombo = nullptr;
     QStackedWidget *m_ttsProviderStack = nullptr;
     QPushButton  *m_ttsTestButton = nullptr;
+    QPushButton  *m_ttsClearCacheButton = nullptr;
 
     // Each provider's page contains a QFormLayout of QLineEdits keyed by
     // field name (including "voice" — it's just another text field). We

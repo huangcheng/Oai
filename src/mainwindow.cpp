@@ -108,6 +108,8 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     // Test button works in any mode — the user explicitly asked for it.
     connect(m_settingsPanel, &SettingsPanelWidget::testTtsRequested,
             m_ttsEngine, &TTSEngine::speak);
+    connect(m_settingsPanel, &SettingsPanelWidget::clearVoiceCacheRequested,
+            m_ttsEngine, &TTSEngine::clearVoiceCache);
 #endif
 
     m_ecgWidget = new EcgWidget(nullptr); // top-level, like the tip bubble

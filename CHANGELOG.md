@@ -4,6 +4,12 @@ All notable changes to Oai are recorded here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- TTS voice cache — synthesised audio is cached on disk under `~/.cache/Oai/tts_voice_cache/`, keyed by SHA-256 of `(provider, voice, model, options, normalized text)`. Cache hits replay instantly without a network round-trip. Bounded at 100 MB with LRU eviction. Cleared automatically when voice/model/active provider changes; users can also click **Clear voice cache** in the TTS settings tab.
+
+### Fixed
+- Daily log rotation now uses a `yyyy-MM-dd_HH-mm-ss` suffix, so a chatty crash loop on the same day no longer overwrites earlier archives. Archive cap is enforced strictly above the limit instead of at-or-above.
+
 ## [1.2.5] — 2026-05-10
 
 ### Added

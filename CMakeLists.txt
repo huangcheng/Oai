@@ -379,6 +379,8 @@ qt_add_executable(Oai
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ProviderConfig.h>
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsVoiceCache.h>
+    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsVoiceCache.cpp>
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
     $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>

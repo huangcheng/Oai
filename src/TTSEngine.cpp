@@ -60,6 +60,13 @@ void TTSEngine::initOnThread()
         doSynthesize(m_pendingText, m_pendingOptions);
     });
 
+    m_voiceCache = std::make_unique<oai::tts::TtsVoiceCache>();
+    if (m_config) {
+        connect(m_config, &ConfigManager::ttsCacheInvalidated,
+                m_voiceCache.get(), &oai::tts::TtsVoiceCache::wipeAll,
+                Qt::QueuedConnection);
+    }
+
     qCInfo(lcTts) << "engine init on thread, active provider ="
                   << (m_config ? m_config->ttsActiveProvider() : QStringLiteral("<no config>"));
     rebuildProvider();
@@ -114,6 +121,15 @@ void TTSEngine::speak(const QString &text)
     speakWithOptions(text, SpeakOptions{});
 }
 
+void TTSEngine::clearVoiceCache()
+{
+    // Hop to the engine thread; m_voiceCache is constructed there in
+    // initOnThread() and not safe to touch from elsewhere.
+    QMetaObject::invokeMethod(this, [this]() {
+        if (m_voiceCache) m_voiceCache->wipeAll();
+    }, Qt::QueuedConnection);
+}
+
 void TTSEngine::speakWithOptions(const QString &text, SpeakOptions opts)
 {
     if (!m_config || !m_config->ttsEnabled() || text.isEmpty()) {
@@ -148,6 +164,33 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
         emit error(tr("No TTS provider configured"));
         return;
     }
+
+    if (m_voiceCache && m_config) {
+        const QString providerId = m_config->ttsActiveProvider();
+        const QString voiceId = m_config->ttsProviderField(providerId, QStringLiteral("voice"));
+        const QString modelId = m_config->ttsProviderField(providerId, QStringLiteral("model"));
+        m_pendingCacheKey = oai::tts::TtsVoiceCache::cacheKey(
+            providerId, voiceId, modelId, opts, text);
+
+        if (m_voiceCache->hasCachedAudio(m_pendingCacheKey)) {
+            QByteArray cachedAudio = m_voiceCache->getCachedAudio(m_pendingCacheKey);
+            if (!cachedAudio.isEmpty()) {
+                qCInfo(lcTts) << "cache hit, returning cached audio for key:"
+                              << m_pendingCacheKey;
+                SynthesisResult result;
+                result.audio = std::move(cachedAudio);
+                QString cachedMime = m_voiceCache->getCachedMimeType(m_pendingCacheKey);
+                result.mimeType = cachedMime.isEmpty()
+                    ? QStringLiteral("audio/mpeg")
+                    : cachedMime;
+                onSynthesisSuccess(std::move(result));
+                return;
+            }
+        }
+    } else {
+        m_pendingCacheKey.clear();
+    }
+
     qCDebug(lcTts) << "synthesize via" << m_currentProviderStableId;
     SynthesisRequest req{text, opts};
     m_inFlight = m_provider->synthesize(req,
@@ -166,6 +209,11 @@ void TTSEngine::onSynthesisSuccess(SynthesisResult result)
         emit speakingFinished();
         return;
     }
+
+    if (m_voiceCache && !m_pendingCacheKey.isEmpty()) {
+        m_voiceCache->writeCachedAudio(m_pendingCacheKey, result.audio, result.mimeType);
+    }
+
     m_speaking = true;
     startDecode(result.audio, result.mimeType);
     emit speakingStarted();

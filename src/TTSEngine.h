@@ -3,6 +3,7 @@
 
 #include "tts/ITtsProvider.h"
 #include "tts/TtsProviderRegistry.h"
+#include "tts/TtsVoiceCache.h"
 
 #include <QAudioDecoder>
 #include <QAudioFormat>
@@ -31,6 +32,8 @@ public:
 public slots:
     void speak(const QString &text);
     void speakWithOptions(const QString &text, oai::tts::SpeakOptions opts);
+    // Wipe the on-disk voice cache. Safe to call from any thread.
+    void clearVoiceCache();
 
 signals:
     void speakingStarted();
@@ -61,12 +64,18 @@ private:
 
     QNetworkAccessManager *m_nam = nullptr;
     std::unique_ptr<oai::tts::ITtsProvider> m_provider;
+    std::unique_ptr<oai::tts::TtsVoiceCache> m_voiceCache;
     QString m_currentProviderStableId;
 
     // Active request bookkeeping.
     oai::tts::RequestHandle m_inFlight = 0;
     QString m_pendingText;
     oai::tts::SpeakOptions m_pendingOptions;
+    // Snapshot of the cache fingerprint at request time. Captured here so the
+    // success path writes under the same key the lookup used, even if config
+    // changes mid-flight (rebuildProvider() cancels in-flight requests, but
+    // this insulates the cache from any future cancellation regression).
+    QString m_pendingCacheKey;
     int m_retryCount = 0;
     QTimer *m_retryTimer = nullptr;
 

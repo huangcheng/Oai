@@ -22,7 +22,9 @@
 #include <QLocale>
 #include <QLockFile>
 #include <QTranslator>
+#include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 #include <QScreen>
 #include <QDebug>
@@ -58,7 +60,12 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
 {
     static QFile *logFile = nullptr;
     static QMutex mtx;
+    static const QString LOG_NAME = QStringLiteral("oai_debug.log");
+    static const qint64 MAX_SIZE = 5 * 1024 * 1024;
+    static const int MAX_ARCHIVES = 10;
+
     QMutexLocker lock(&mtx);
+
     if (!logFile) {
         // Write to a user-writable location, NOT next to the executable:
         // on macOS the executable lives inside Contents/MacOS/, and any extra
@@ -66,12 +73,41 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
         // at all"), causing LaunchServices to refuse to launch the bundle.
         const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
         QDir().mkpath(dir);
-        const QString path = dir + "/oai_debug.log";
+        const QString path = dir + "/" + LOG_NAME;
         logFile = new QFile(path);
         // Failure handled by the isOpen() check below; the cast acknowledges
         // QFile::open's [[nodiscard]] without obscuring the control flow.
         (void)logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
     }
+
+    // Rotate if current log exceeds MAX_SIZE.
+    if (logFile->size() >= MAX_SIZE) {
+        // Timestamp suffix down to the second so a chatty crash loop doesn't
+        // overwrite earlier same-day archives.
+        const QString stamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd_HH-mm-ss"));
+        const QString logDir = QFileInfo(*logFile).absolutePath();
+        const QString rotatedPath = logDir + "/" + LOG_NAME + "." + stamp;
+        logFile->close();
+        QFile::remove(rotatedPath);
+        QFile::rename(logDir + "/" + LOG_NAME, rotatedPath);
+        QStringList oldLogs;
+        const QDir logsDir(logDir);
+        for (const QFileInfo &fi : logsDir.entryInfoList({LOG_NAME + ".*"}, QDir::Files)) {
+            const QString fn = fi.fileName();
+            if (fn != LOG_NAME) {
+                oldLogs.append(fi.absoluteFilePath());
+            }
+        }
+        if (oldLogs.size() > MAX_ARCHIVES) {
+            QStringList sorted = oldLogs;
+            sorted.sort();
+            for (int i = 0; i < sorted.size() - MAX_ARCHIVES; ++i) {
+                QFile::remove(sorted[i]);
+            }
+        }
+        (void)logFile->open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+    }
+
     if (!logFile->isOpen()) return;
     const char *level = "DEBUG";
     switch (type) {
