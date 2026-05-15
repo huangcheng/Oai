@@ -1,5 +1,6 @@
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
+#include "CharacterPackLoader.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -484,38 +485,8 @@ void CharacterPackManager::discoverPacks()
 
 QString CharacterPackManager::extractPackIdFromOpk(const QString &opkPath)
 {
-    mz_zip_archive zip{};
-    if (!mz_zip_reader_init_file(&zip, opkPath.toUtf8().constData(), 0)) {
-        return QString();
-    }
-
-    int manifestIdx = mz_zip_reader_locate_file(&zip, "manifest.json", nullptr, 0);
-    if (manifestIdx < 0) {
-        mz_zip_reader_end(&zip);
-        return QString();
-    }
-
-    size_t manifestSize = 0;
-    if (!zipEntryFitsManifestCap(&zip, manifestIdx, &manifestSize)) {
-        mz_zip_reader_end(&zip);
-        return QString();
-    }
-    void *manifestData = mz_zip_reader_extract_to_heap(&zip, manifestIdx, &manifestSize, 0);
-    mz_zip_reader_end(&zip);
-
-    if (!manifestData) {
-        return QString();
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(QByteArray(static_cast<const char *>(manifestData),
-                                                           static_cast<int>(manifestSize)));
-    mz_free(manifestData);
-
-    if (!doc.isObject()) {
-        return QString();
-    }
-
-    return doc.object().value("id").toString();
+    // Shared archive-probe helper, lives in CharacterPackLoader.h. H18.
+    return CharacterPackLoader::readOpkPackId(opkPath);
 }
 
 void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSource source)
@@ -599,49 +570,20 @@ void CharacterPackManager::loadPackFromCodexPet(const QString &archivePath, Pack
 
 bool CharacterPackManager::extractCodexPetInfo(const QString &archivePath, PackInfo &outInfo)
 {
-    mz_zip_archive zip{};
-    if (!mz_zip_reader_init_file(&zip, archivePath.toUtf8().constData(), 0)) {
+    const QJsonObject obj = CharacterPackLoader::readJsonEntryFromArchive(
+        archivePath, QStringLiteral("pet.json"),
+        "CharacterPackManager::extractCodexPetInfo");
+    if (obj.isEmpty()) {
         return false;
     }
 
-    int petJsonIdx = mz_zip_reader_locate_file(&zip, "pet.json", nullptr, 0);
-    if (petJsonIdx < 0) {
-        mz_zip_reader_end(&zip);
-        return false;
-    }
-
-    size_t petJsonSize = 0;
-    if (!zipEntryFitsManifestCap(&zip, petJsonIdx, &petJsonSize)) {
-        mz_zip_reader_end(&zip);
-        return false;
-    }
-    void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
-    mz_zip_reader_end(&zip);
-
-    if (!petJsonData) {
-        return false;
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(
-        QByteArray(static_cast<const char *>(petJsonData), static_cast<int>(petJsonSize)));
-    mz_free(petJsonData);
-
-    if (!doc.isObject()) {
-        return false;
-    }
-
-    const QJsonObject obj = doc.object();
     outInfo.id = obj.value("id").toString();
     outInfo.name = obj.value("displayName").toString();
     outInfo.description = obj.value("description").toString();
     outInfo.author = "codex";
     outInfo.version = "1.0.0";
 
-    if (outInfo.id.isEmpty() || outInfo.name.isEmpty()) {
-        return false;
-    }
-
-    return true;
+    return !outInfo.id.isEmpty() && !outInfo.name.isEmpty();
 }
 
 CharacterPack *CharacterPackManager::createAndLoadPack(const QString &packPath)

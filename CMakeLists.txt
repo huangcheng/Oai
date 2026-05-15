@@ -374,6 +374,8 @@ qt_add_executable(Oai
     src/CanonicalEvents.h
     src/PackDropHandler.cpp
     src/PackDropHandler.h
+    src/CharacterPackLoader.cpp
+    src/CharacterPackLoader.h
     src/AnimationEngine.h
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h

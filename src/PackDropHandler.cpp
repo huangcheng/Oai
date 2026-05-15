@@ -1,11 +1,9 @@
 #include "PackDropHandler.h"
 
-#include "CharacterPack.h"
+#include "CharacterPackLoader.h"
 #include "CharacterPackManager.h"
 #include "TipWidget.h"
 #include "TipsCatalog.h"
-
-#include "../thirdparty/miniz/miniz.h"
 
 #include <QDebug>
 #include <QDir>
@@ -13,8 +11,6 @@
 #include <QDropEvent>
 #include <QFile>
 #include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QMimeData>
 #include <QStandardPaths>
 #include <QUrl>
@@ -23,46 +19,7 @@ namespace PackDropHandler {
 
 bool isValidCodexPet(const QString &filePath)
 {
-    mz_zip_archive zip{};
-    if (!mz_zip_reader_init_file(&zip, filePath.toUtf8().constData(), 0)) {
-        qWarning() << "PackDropHandler: cannot open ZIP:" << filePath;
-        return false;
-    }
-
-    int petJsonIdx = mz_zip_reader_locate_file(&zip, "pet.json", nullptr, 0);
-    if (petJsonIdx < 0) {
-        qWarning() << "PackDropHandler: no pet.json in:" << filePath;
-        mz_zip_reader_end(&zip);
-        return false;
-    }
-
-    size_t petJsonSize = 0;
-    void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
-    mz_zip_reader_end(&zip);
-
-    if (!petJsonData) {
-        qWarning() << "PackDropHandler: failed to extract pet.json from:" << filePath;
-        return false;
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(
-        QByteArray(static_cast<const char *>(petJsonData), static_cast<int>(petJsonSize)));
-    mz_free(petJsonData);
-
-    if (!doc.isObject()) {
-        qWarning() << "PackDropHandler: invalid JSON in pet.json:" << filePath;
-        return false;
-    }
-
-    const QJsonObject obj = doc.object();
-    const QString id = obj.value("id").toString();
-    const QString displayName = obj.value("displayName").toString();
-
-    const bool valid = !id.isEmpty() && !displayName.isEmpty();
-    if (!valid) {
-        qWarning() << "PackDropHandler: missing id or displayName in:" << filePath;
-    }
-    return valid;
+    return CharacterPackLoader::isValidCodexPet(filePath);
 }
 
 void handleDragEnter(QDragEnterEvent *event)
