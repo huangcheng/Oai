@@ -29,16 +29,7 @@
 #include <QStyle>
 #include <QStyleOptionButton>
 
-#ifdef Q_OS_WIN
-#include <windows.h>
-#include <dwmapi.h>
-#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
-#define DWMWA_WINDOW_CORNER_PREFERENCE 33
-#endif
-#ifndef DWMWA_SYSTEMBACKDROP_TYPE
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
-#endif
-#endif
+#include "PlatformWindow.h"
 #include <QKeySequenceEdit>
 #include <QTemporaryDir>
 #include <QDir>
@@ -162,20 +153,7 @@ void SettingsPanelWidget::anchorTo(const QWidget *petWidget)
 void SettingsPanelWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-#ifdef Q_OS_WIN
-    HWND hwnd = reinterpret_cast<HWND>(winId());
-    if (hwnd) {
-        const int doNotRound = 1;          // DWMWCP_DONOTROUND
-        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                              &doNotRound, sizeof(doNotRound));
-        const int backdropNone = 1;        // DWMSBT_NONE
-        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                              &backdropNone, sizeof(backdropNone));
-        const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
-        DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                              &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-    }
-#endif
+    PlatformWindow::applyDwmFramelessAttributes(this);
 }
 
 void SettingsPanelWidget::paintEvent(QPaintEvent *event)

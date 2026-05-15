@@ -14,16 +14,7 @@
 #include <QPainterPath>
 #include <QWindow>
 
-#ifdef Q_OS_WIN
-#include <windows.h>
-#include <dwmapi.h>
-#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
-#define DWMWA_WINDOW_CORNER_PREFERENCE 33
-#endif
-#ifndef DWMWA_SYSTEMBACKDROP_TYPE
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
-#endif
-#endif
+#include "PlatformWindow.h"
 
 TipWidget::TipWidget(QWidget *parent)
     : QWidget(parent)
@@ -67,30 +58,11 @@ void TipWidget::showEvent(QShowEvent *event)
 
 void TipWidget::refreshDwmAttributes()
 {
-#ifdef Q_OS_WIN
-    HWND hwnd = reinterpret_cast<HWND>(winId());
-    if (!hwnd) return;
-
-    const int doNotRound = 1;          // DWMWCP_DONOTROUND
-    DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                          &doNotRound, sizeof(doNotRound));
-    const int backdropNone = 1;        // DWMSBT_NONE
-    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                          &backdropNone, sizeof(backdropNone));
-    const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
-    DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                          &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-
+    PlatformWindow::applyDwmFramelessAttributes(this);
     // Force Windows to re-evaluate the window's composition surface.
     // Without this, DWM can cache stale chrome and leave the bubble
     // invisible after display sleep/wake or DWM restart.
-    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                 SWP_FRAMECHANGED | SWP_NOACTIVATE);
-
-    // Ensure Qt re-composites the widget on the next event loop iteration.
-    update();
-#endif
+    PlatformWindow::refreshComposition(this);
 }
 
 void TipWidget::anchorTo(const QWidget *petWidget)

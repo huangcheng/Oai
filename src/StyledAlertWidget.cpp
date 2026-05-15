@@ -13,16 +13,7 @@
 #include <QEventLoop>
 #include <QWindow>
 
-#ifdef Q_OS_WIN
-#include <windows.h>
-#include <dwmapi.h>
-#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
-#define DWMWA_WINDOW_CORNER_PREFERENCE 33
-#endif
-#ifndef DWMWA_SYSTEMBACKDROP_TYPE
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
-#endif
-#endif
+#include "PlatformWindow.h"
 
 static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
 {
@@ -319,20 +310,7 @@ void StyledAlertWidget::paintEvent(QPaintEvent *event)
 void StyledAlertWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-#ifdef Q_OS_WIN
-    HWND hwnd = reinterpret_cast<HWND>(winId());
-    if (hwnd) {
-        const int doNotRound = 1;
-        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                              &doNotRound, sizeof(doNotRound));
-        const int backdropNone = 1;
-        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                              &backdropNone, sizeof(backdropNone));
-        const int ncRenderingDisabled = 1;
-        DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                              &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-    }
-#endif
+    PlatformWindow::applyDwmFramelessAttributes(this);
     if (m_petWindow) {
         positionRelativeTo(m_petWindow);
     } else {

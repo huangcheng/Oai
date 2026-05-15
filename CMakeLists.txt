@@ -367,6 +367,8 @@ qt_add_executable(Oai
     src/EcgWidget.h
     src/MacFocusFix.h
     $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
+    src/PlatformWindow.cpp
+    src/PlatformWindow.h
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
     src/GlobalShortcutManager.cpp

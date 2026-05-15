@@ -43,17 +43,12 @@
 #include "../thirdparty/miniz/miniz.h"
 
 #ifdef Q_OS_WIN
+// windows.h stays because we handle WM_DISPLAYCHANGE in nativeEvent() and
+// reach into MSG. The DWM-specific stuff (dwmapi.h + DWMWA_* fallbacks)
+// moved into src/PlatformWindow.cpp — see PlatformWindow::applyDwmFramelessAttributes.
 #include <windows.h>
-#include <dwmapi.h>
-// Older MinGW SDKs lack the Win11-era attribute IDs; fall back to the
-// numeric values from the Microsoft docs.
-#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
-#define DWMWA_WINDOW_CORNER_PREFERENCE 33
 #endif
-#ifndef DWMWA_SYSTEMBACKDROP_TYPE
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
-#endif
-#endif
+#include "PlatformWindow.h"
 
 MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *parent)
     : QWidget(parent)
@@ -171,31 +166,11 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_dwmRefreshTimer = new QTimer(this);
     m_dwmRefreshTimer->setInterval(30000);
     connect(m_dwmRefreshTimer, &QTimer::timeout, this, [this]() {
-        HWND hwnd = reinterpret_cast<HWND>(winId());
-        if (hwnd) {
-            const int doNotRound = 1;
-            DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                                  &doNotRound, sizeof(doNotRound));
-            const int backdropNone = 1;
-            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                                  &backdropNone, sizeof(backdropNone));
-            const int ncRenderingDisabled = 1;
-            DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                                  &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-
-            // Re-apply the Qt attribute that suppresses the system background
-            // paint — DWM restart can silently drop it, leaving a white rect.
-            setAttribute(Qt::WA_NoSystemBackground, true);
-
-            // Force Windows to re-evaluate the window frame / composition.
-            SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
-                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                         SWP_FRAMECHANGED | SWP_NOACTIVATE);
-
-            // Ensure Qt schedules a repaint; without this the backing store
-            // may stay stale after DWM recreates its composition surface.
-            update();
-        }
+        PlatformWindow::applyDwmFramelessAttributes(this);
+        // Re-apply the Qt attribute that suppresses the system background
+        // paint — DWM restart can silently drop it, leaving a white rect.
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        PlatformWindow::refreshComposition(this);
 
         // Keep the floating widgets in sync — they have their own native
         // windows and their DWM attributes can degrade independently.
@@ -283,25 +258,12 @@ void MainWindow::setupWindowFlags()
 void MainWindow::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
-#ifdef Q_OS_WIN
     // Windows 11's DWM auto-applies rounded corners, a drop shadow, and a
     // Mica/Acrylic backdrop tint to top-level windows by default — even
     // frameless tool windows with TranslucentBackground+NoSystemBackground
     // get the chrome. Opt out per-window via the DWM API. winId() is valid
     // by showEvent() because the native window has just been realised.
-    HWND hwnd = reinterpret_cast<HWND>(winId());
-    if (hwnd) {
-        const int doNotRound = 1;          // DWMWCP_DONOTROUND
-        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                              &doNotRound, sizeof(doNotRound));
-        const int backdropNone = 1;        // DWMSBT_NONE (Win11 22H2+)
-        DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                              &backdropNone, sizeof(backdropNone));
-        const int ncRenderingDisabled = 1; // DWMNCRP_DISABLED
-        DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                              &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-    }
-#endif
+    PlatformWindow::applyDwmFramelessAttributes(this);
 }
 
 #ifdef Q_OS_WIN
@@ -314,24 +276,9 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr
             // connect/disconnect, RDP session).  DWM may have restarted, so
             // re-apply attributes immediately instead of waiting for the
             // 30-second timer.
-            HWND hwnd = reinterpret_cast<HWND>(winId());
-            if (hwnd) {
-                const int doNotRound = 1;
-                DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-                                      &doNotRound, sizeof(doNotRound));
-                const int backdropNone = 1;
-                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-                                      &backdropNone, sizeof(backdropNone));
-                const int ncRenderingDisabled = 1;
-                DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY,
-                                      &ncRenderingDisabled, sizeof(ncRenderingDisabled));
-
-                setAttribute(Qt::WA_NoSystemBackground, true);
-                SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                             SWP_FRAMECHANGED | SWP_NOACTIVATE);
-                update();
-            }
+            PlatformWindow::applyDwmFramelessAttributes(this);
+            setAttribute(Qt::WA_NoSystemBackground, true);
+            PlatformWindow::refreshComposition(this);
             if (m_tipWidget) m_tipWidget->refreshDwmAttributes();
         }
     }
