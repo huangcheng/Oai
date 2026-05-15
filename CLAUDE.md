@@ -16,7 +16,7 @@ cmake --build .
 
 # Optional build flags:
 #   -DSEELIE_TTS_ENABLED=OFF     drop the TTS AI tab + providers
-#   -DSEELIE_INCLUDE_NSFW=ON     bundle NSFW categories (azur_lane) in the installer
+#   -DSEELIE_INCLUDE_NSFW=ON     bundle packs whose manifest tags include "nsfw"
 
 # Run
 open build/Seelie.app             # macOS

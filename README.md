@@ -72,7 +72,7 @@ See `schemas/character-pack-v1.schema.json` for the pack format specification.
 | Option | Default | Effect |
 |--------|---------|--------|
 | `SEELIE_TTS_ENABLED` | `ON` | Build the Text-to-Speech AI tab and providers |
-| `SEELIE_INCLUDE_NSFW` | `OFF` | Bundle NSFW pack categories (currently `azur_lane`). Default builds ship a store-safe lineup only. Pass `-DSEELIE_INCLUDE_NSFW=ON` to include them. This gate only affects what the installer bundles — users can always drop any `.spk` into `~/.config/Seelie/packs/` at runtime. |
+| `SEELIE_INCLUDE_NSFW` | `OFF` | Bundle packs whose `manifest.json` `tags` array contains `"nsfw"`. Default builds ship a store-safe lineup only. Pass `-DSEELIE_INCLUDE_NSFW=ON` to include them. Classification is per-pack — clear a single pack by removing the `nsfw` tag from its manifest. This gate only affects what the installer bundles; users can always drop any `.spk` into `~/.config/Seelie/packs/` at runtime. |
 
 ### macOS
 

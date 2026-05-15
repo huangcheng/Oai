@@ -72,7 +72,7 @@ cmake --build build --target generate_packs
 | 选项 | 默认 | 作用 |
 |------|------|------|
 | `SEELIE_TTS_ENABLED` | `ON` | 构建 TTS（语音合成）AI 标签页与各 provider |
-| `SEELIE_INCLUDE_NSFW` | `OFF` | 是否把 NSFW 分类（目前为 `azur_lane`）一起打进安装包。默认构建只发布 store-safe 的资产；需要时加 `-DSEELIE_INCLUDE_NSFW=ON`。此开关只影响安装包内置的内容——用户始终可以把任意 `.spk` 文件丢到 `~/.config/Seelie/packs/` 让运行时加载。 |
+| `SEELIE_INCLUDE_NSFW` | `OFF` | 是否把 `manifest.json` `tags` 数组中包含 `"nsfw"` 的包打进安装包。默认构建只发布 store-safe 的资产；需要时加 `-DSEELIE_INCLUDE_NSFW=ON`。分类是按包独立判断的——想放行单个包，删除其 manifest 里的 `nsfw` tag 即可。此开关只影响安装包内置的内容；用户始终可以把任意 `.spk` 文件丢到 `~/.config/Seelie/packs/` 让运行时加载。 |
 
 ### macOS
 

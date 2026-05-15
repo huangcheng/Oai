@@ -57,7 +57,7 @@
     },
     "tags": {
       "type": "array",
-      "description": "Search/discovery tags",
+      "description": "Search/discovery tags. The reserved tag \"nsfw\" marks a pack as not-safe-for-work; default builds exclude such packs from the bundled installer (override with the SEELIE_INCLUDE_NSFW CMake option).",
       "items": {
         "type": "string",
         "minLength": 1,

@@ -31,12 +31,11 @@ option(SEELIE_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
 # can still drop NSFW .spk archives into ~/.config/Seelie/packs/ at runtime —
 # this gate only controls what ships in the installer.
 # Enable with: cmake -DSEELIE_INCLUDE_NSFW=ON ..
-option(SEELIE_INCLUDE_NSFW "Bundle NSFW pack categories (e.g. azur_lane)" OFF)
-
-# Single source of truth for which manifest `category` values are NSFW.
-# Add new categories here as the pack lineup grows. Used in the pack-discovery
-# loop further down.
-set(SEELIE_NSFW_CATEGORIES azur_lane)
+#
+# Classification is per-pack: a pack is NSFW iff its manifest.json `tags`
+# array contains the literal string "nsfw". No category is banned wholesale —
+# any individual pack can be cleared by removing that tag from its manifest.
+option(SEELIE_INCLUDE_NSFW "Bundle packs whose manifest tags include \"nsfw\"" OFF)
 
 qt_standard_project_setup()
 
@@ -647,16 +646,27 @@ foreach(_manifest ${_PACK_MANIFESTS})
     get_filename_component(_pack_dir ${_manifest} DIRECTORY)
     get_filename_component(_pack_name ${_pack_dir} NAME)
 
-    # NSFW gate: read the manifest's `category` and drop the pack from the
-    # bundled set when its category is NSFW and SEELIE_INCLUDE_NSFW is OFF.
-    # string(JSON) needs CMake >= 3.19 (already our minimum). A missing or
-    # malformed category is treated as SFW (fail-open: never silently drop a
-    # legit pack because of a parse hiccup).
+    # NSFW gate (per-pack): a pack is NSFW iff its manifest `tags` array
+    # contains the literal "nsfw". Drop it from the bundled set when
+    # SEELIE_INCLUDE_NSFW is OFF. string(JSON) needs CMake >= 3.19 (already
+    # our minimum). A missing/malformed/empty tags array is treated as SFW
+    # (fail-open: never silently drop a legit pack because of a parse hiccup).
     if(NOT SEELIE_INCLUDE_NSFW)
         file(READ ${_manifest} _manifest_json)
-        string(JSON _pack_category ERROR_VARIABLE _json_err
-               GET "${_manifest_json}" category)
-        if(NOT _json_err AND _pack_category IN_LIST SEELIE_NSFW_CATEGORIES)
+        set(_is_nsfw FALSE)
+        string(JSON _tags_count ERROR_VARIABLE _tags_err
+               LENGTH "${_manifest_json}" tags)
+        if(NOT _tags_err AND _tags_count GREATER 0)
+            math(EXPR _tags_last "${_tags_count} - 1")
+            foreach(_ti RANGE ${_tags_last})
+                string(JSON _tag GET "${_manifest_json}" tags ${_ti})
+                if(_tag STREQUAL "nsfw")
+                    set(_is_nsfw TRUE)
+                    break()
+                endif()
+            endforeach()
+        endif()
+        if(_is_nsfw)
             math(EXPR _skipped_nsfw_count "${_skipped_nsfw_count} + 1")
             continue()
         endif()
