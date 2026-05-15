@@ -112,21 +112,32 @@ void UpdateChecker::checkForUpdates(bool userTriggered)
     }
 
     m_pendingSeq = static_cast<quint16>(QRandomGenerator::global()->bounded(1, 0x10000));
-    const QByteArray packet = encodeCheck(m_pendingSeq);
 
     QHostAddress addr(host);
-    if (addr.isNull()) {
-        // Resolve hostname synchronously — endpoints are typically literal IPs
-        // and the lookup is rare (manual user trigger), so blocking is fine.
-        const QHostInfo info = QHostInfo::fromName(host);
+    if (!addr.isNull()) {
+        // Literal IP — send immediately.
+        sendCheckPacket(addr, port);
+        return;
+    }
+
+    // Hostname — resolve asynchronously so a slow DNS query doesn't freeze
+    // the GUI thread (audit M1). The callback fires on whichever thread
+    // QHostInfo picks; capture by value and bounce through the QObject
+    // receiver so we run on this thread.
+    qDebug() << "UpdateChecker: resolving" << host << "asynchronously";
+    QHostInfo::lookupHost(host, this, [this, host, port](const QHostInfo &info) {
         if (info.error() != QHostInfo::NoError || info.addresses().isEmpty()) {
             emit checkFailed(QStringLiteral("dns lookup failed for %1: %2")
                                  .arg(host, info.errorString()));
             return;
         }
-        addr = info.addresses().first();
-    }
+        sendCheckPacket(info.addresses().first(), port);
+    });
+}
 
+void UpdateChecker::sendCheckPacket(const QHostAddress &addr, quint16 port)
+{
+    const QByteArray packet = encodeCheck(m_pendingSeq);
     qDebug() << "UpdateChecker: CHECK to" << addr.toString() << ":" << port
              << "seq=" << m_pendingSeq << "current=" << currentVersion();
     const qint64 sent = m_socket->writeDatagram(packet, addr, port);

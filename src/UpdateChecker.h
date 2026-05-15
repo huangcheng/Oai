@@ -63,6 +63,10 @@ private:
     static quint16 crc16ccitt(const QByteArray &data);
     static QString platformTag();
 
+    // Emit the CHECK datagram once the server's IP address is known.
+    // Used by both the literal-IP fast path and the QHostInfo callback.
+    void sendCheckPacket(const QHostAddress &addr, quint16 port);
+
     ConfigManager *m_config;
     QUdpSocket *m_socket = nullptr;
     QTimer *m_timeout = nullptr;
