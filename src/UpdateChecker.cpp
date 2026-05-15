@@ -170,7 +170,7 @@ void UpdateChecker::onReadyRead()
 
         // Validate framing: 10-byte header + N-byte payload + 2-byte CRC trailer.
         if (buf.size() < 12) { qWarning() << "UpdateChecker: packet too short"; continue; }
-        if (buf[0] != 'O' || buf[1] != 'A' || buf[2] != 'I' || buf[3] != 0x01) {
+        if (buf[0] != 'H' || buf[1] != 'C' || buf[2] != 'H' || buf[3] != 0x01) {
             qWarning() << "UpdateChecker: bad magic"; continue;
         }
         const quint8 cmd = static_cast<quint8>(buf[5]);
