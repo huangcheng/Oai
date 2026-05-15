@@ -40,11 +40,30 @@ void TTSEngine::start()
 
 void TTSEngine::stop()
 {
-    if (m_thread && m_thread->isRunning()) {
-        QMetaObject::invokeMethod(this, [this]() { resetAudio(); m_provider.reset(); },
-                                  Qt::BlockingQueuedConnection);
-        m_thread->quit();
-        m_thread->wait(3000);
+    if (!m_thread || !m_thread->isRunning()) return;
+
+    // Cleanup must happen on the engine thread (m_audioSink and friends
+    // were created there and ~QAudioSink touches CoreAudio state that's
+    // pinned to that thread). Queue the cleanup, then post quit() — both
+    // events drain in FIFO order, so the event loop exits AFTER cleanup
+    // runs.
+    //
+    // We deliberately do NOT use BlockingQueuedConnection. If the CoreAudio
+    // backend wedges inside m_audioSink->stop() — observed on Qt 6.11.1 /
+    // macOS during shutdown while playback is active — a blocking invoke
+    // hangs the GUI thread indefinitely (see spindump, 62s+ at QLatch::wait
+    // on app exit). The bounded wait below caps shutdown latency at 2s and
+    // falls back to terminate() so quit always finishes.
+    QMetaObject::invokeMethod(this, [this]() {
+        resetAudio();
+        m_provider.reset();
+    }, Qt::QueuedConnection);
+
+    m_thread->quit();
+    if (!m_thread->wait(2000)) {
+        qCWarning(lcTts) << "TTS thread did not finish in 2s; terminating";
+        m_thread->terminate();
+        m_thread->wait(500);
     }
 }
 
