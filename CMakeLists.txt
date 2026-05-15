@@ -954,11 +954,9 @@ if(SEELIE_QTIFW_BINARYCREATOR)
 
     # Compile installer-specific translations into meta/<basename>.qm.
     # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
-    # English is listed first so it serves as the fallback when the system
-    # locale does not match any bundled translation.
+    # English-only for v1.0.0 — see installer/config.xml.in for rationale.
     set(SEELIE_IFW_TS_FILES
-        ${SEELIE_IFW_DIR}/translations/seelie_installer_en.ts
-        ${SEELIE_IFW_DIR}/translations/seelie_installer_zh_CN.ts)
+        ${SEELIE_IFW_DIR}/translations/seelie_installer_en.ts)
 
     set(SEELIE_IFW_QM_FILES "")
     foreach(_ts ${SEELIE_IFW_TS_FILES})

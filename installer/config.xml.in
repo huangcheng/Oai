@@ -17,18 +17,11 @@
 
     <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
 
-    <!--
-        Qt IFW ships built-in chrome translations (Next/Cancel/...) for many
-        languages; they auto-load from the user's locale.  We additionally
-        bundle our own .qm files so package-level qsTr() strings compiled from
-        translations/*.ts get picked up too.  The .qm files are produced by
-        `lrelease` at build time (see top-level CMakeLists.txt).
-
-        English is listed explicitly so the installer can be forced to run in
-        English on a Chinese system (e.g., for testing or user preference).
-    -->
+    <!-- Installer is English-only for v1.0.0. Qt IFW's bundled chrome
+         translations cover Next/Cancel/etc. for many languages, but its
+         zh_CN coverage is incomplete in 4.11. Re-introduce localized
+         translations once we can ship a complete chrome translation. -->
     <Translations>
         <Translation>seelie_installer_en.qm</Translation>
-        <Translation>seelie_installer_zh_CN.qm</Translation>
     </Translations>
 </Installer>
