@@ -114,15 +114,22 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
 
     if (!logFile->isOpen()) return;
     const char *level = "DEBUG";
+    bool flushImmediately = false;
     switch (type) {
         case QtWarningMsg:  level = "WARN";  break;
-        case QtCriticalMsg: level = "CRIT";  break;
-        case QtFatalMsg:    level = "FATAL"; break;
+        case QtCriticalMsg: level = "CRIT";  flushImmediately = true; break;
+        case QtFatalMsg:    level = "FATAL"; flushImmediately = true; break;
         case QtInfoMsg:     level = "INFO";  break;
         default: break;
     }
     QTextStream(logFile.get()) << '[' << level << "] " << msg << '\n';
-    logFile->flush();
+    // Coalesced flushing: previously every message did a synchronous flush()
+    // which serialized every logging thread on a disk fsync. The OS already
+    // buffers writes; we only force a flush for messages that signal an
+    // imminent crash (Critical / Fatal) so the tail of the log survives.
+    // Routine debug/info messages get flushed at process exit via the
+    // qInstallMessageHandler cleanup path. Audit M2.
+    if (flushImmediately) logFile->flush();
 }
 
 int main(int argc, char *argv[])
