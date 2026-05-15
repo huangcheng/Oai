@@ -1,9 +1,9 @@
-; Oai portable defaults — shipped by the installer next to Oai.exe.
+; Seelie portable defaults — shipped by the installer next to Seelie.exe.
 ;
 ; Read once on every startup by ConfigManager (see src/ConfigManager.cpp).
 ; Values here become the in-memory default for fields that have no override
-; in the user's roaming config (~/AppData/Roaming/Oai/Oai.ini on Windows,
-; ~/.config/Oai/Oai.ini on Linux). The user-scope file always wins on save,
+; in the user's roaming config (~/AppData/Roaming/Seelie/Seelie.ini on Windows,
+; ~/.config/Seelie/Seelie.ini on Linux). The user-scope file always wins on save,
 ; so settings the user changes via the UI persist independently of this file.
 ;
 ; Use cases:
@@ -16,11 +16,11 @@
 
 [General]
 ; UDP server for version checks. The default below is substituted at
-; CMake-configure time from the OAI_DEFAULT_UPDATE_ENDPOINT cache variable
+; CMake-configure time from the SEELIE_DEFAULT_UPDATE_ENDPOINT cache variable
 ; (see CMakeLists.txt). Override during installer build to point at staging
 ; or a local Erlang server, e.g.:
-;   cmake -DOAI_DEFAULT_UPDATE_ENDPOINT=192.168.1.10:9340 ..
-updateServerEndpoint=@OAI_DEFAULT_UPDATE_ENDPOINT@
+;   cmake -DSEELIE_DEFAULT_UPDATE_ENDPOINT=192.168.1.10:9340 ..
+updateServerEndpoint=@SEELIE_DEFAULT_UPDATE_ENDPOINT@
 
 ; Local IPC endpoint for incoming gateway events.
 ; ipcEndpoint=127.0.0.1:52847

@@ -8,7 +8,7 @@
 
 The Codex pet format (loaded via `CharacterPack::loadFromCodexPet`) ships a fixed 8×9 atlas with nine named animation rows: `idle`, `running-right`, `running-left`, `waving`, `jumping`, `failed`, `waiting`, `running`, `review`. Each row has authoring rules from the upstream `hatch-pet` SKILL.md (e.g. `running` means "active working/in-progress loop," not literal locomotion; `waving` shows the wave through paw pose only, no motion arcs).
 
-Today, Oai dispatches gateway events to animations through two parallel paths:
+Today, Seelie dispatches gateway events to animations through two parallel paths:
 
 1. `EventRouter::routeEvent` — maps each canonical event directly to an animation chain via `m_eventMap` (`EventRouter.cpp:148-164`) and fires `playAnimation()` on whichever engine has data loaded (Live2D > Lottie > Sprite).
 2. `EmotionEngine::processEvent` — accumulates valence/arousal scores per event, classifies into a mood (`happy`, `frustrated`, `bored`, `focused`, `stressed`, `neutral`), and emits `moodChanged(animationName)` which `main.cpp:384-397` also pipes into `playAnimation()`.

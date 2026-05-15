@@ -10,17 +10,17 @@ class QTimer;
 class ConfigManager;
 
 /**
- * @brief Speaks the OAI binary UDP protocol against the update server to
+ * @brief Speaks the Seelie binary UDP protocol against the update server to
  *        ask "is there a newer version?".
  *
- * Datagram layout (see .claude/skills/oai-server/SKILL.md):
- *   magic 'OAI'\x01 | ver=1 | cmd | seq u16BE | len u16BE | json | crc16-ccitt u16BE
+ * Datagram layout (see .claude/skills/seelie-server/SKILL.md):
+ *   magic 'HCH'\x01 | ver=1 | cmd | seq u16BE | len u16BE | json | crc16-ccitt u16BE
  *
  * Command 1 (CHECK)    — client sends {"current_version","platform"}
  * Command 2 (ANNOUNCE) — server replies {"available", "latest_version"?}
  *
  * The endpoint is read from ConfigManager::updateServerEndpoint(), which
- * defaults to the OAI_DEFAULT_UPDATE_ENDPOINT compiled in via CMake and
+ * defaults to the SEELIE_DEFAULT_UPDATE_ENDPOINT compiled in via CMake and
  * can be overridden at runtime via QSettings for local-server development
  * without rebuilding.
  */

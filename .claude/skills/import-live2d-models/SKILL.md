@@ -3,7 +3,7 @@ name: import-live2d-models
 description: Import Live2D character packs from the upstream Eikanya/Live2d-model archive (or any local clone of it) into assets/packs/. Use when the user wants to add new characters, expand a category, import a specific shipgirl/idol/etc, or refresh the imported pack lineup. Also covers re-running imports after updating the upstream submodule pin.
 license: MIT
 metadata:
-  author: oai
+  author: seelie
   version: "1.0"
 ---
 
@@ -100,15 +100,15 @@ cmake --build build --target generate_packs
 
 ### 6. Smoke-test in the running app
 
-The app installs `.opk`s from `build/.../packs/` into `<APPDATA_LOCAL>/Oai/packs/<id>/` on first launch. To force a fresh extraction of a specific pack:
+The app installs `.opk`s from `build/.../packs/` into `<APPDATA_LOCAL>/Seelie/packs/<id>/` on first launch. To force a fresh extraction of a specific pack:
 
 ```bash
-rm -rf "$LOCALAPPDATA/Oai/packs/im.cheng.oai.<id>"   # bash
+rm -rf "$LOCALAPPDATA/Seelie/packs/im.cheng.seelie.<id>"   # bash
 # or
-rmdir /s /q "%LOCALAPPDATA%\Oai\packs\im.cheng.oai.<id>"   # cmd
+rmdir /s /q "%LOCALAPPDATA%\Seelie\packs\im.cheng.seelie.<id>"   # cmd
 ```
 
-Then launch Oai. Check `<exeDir>/oai_debug.log` for these markers:
+Then launch Seelie. Check `<exeDir>/seelie_debug.log` for these markers:
 - `CharacterPackManager: Discovered N packs` — should match your category sum
 - `SystemTray::refreshPackMenu — populated N packs across M categories` — confirms menu wiring
 - For a specific pack: `Switched to pack: "<DisplayName>"` then `Loaded model with N motion groups: QList(...)` (no crash)
@@ -122,7 +122,7 @@ If a pack crashes, the log will end at `Live2D: loading motion 0 :` of a specifi
 
 - **Imports are gitignored.** A new pack lives only on this machine until they explicitly track it, which they shouldn't — the canonical source is the submodule + script. Don't `git add` imported packs.
 - **Repo size discipline.** A normal full import is ~700 MB raw / ~400 MB compressed in .opks. Both stay local. `installer/packages/.../data/` is also gitignored.
-- **Menu structure.** New categories appear automatically in tray + settings. Display labels for new categories need entries in `kCategoryOrder[]` (mirrored in `src/SystemTray.cpp` and `src/SettingsPanelWidget.cpp`) — otherwise the raw category id shows up as the menu label. Translations go in `Oai_zh_CN.ts` for both contexts.
+- **Menu structure.** New categories appear automatically in tray + settings. Display labels for new categories need entries in `kCategoryOrder[]` (mirrored in `src/SystemTray.cpp` and `src/SettingsPanelWidget.cpp`) — otherwise the raw category id shows up as the menu label. Translations go in `Seelie_zh_CN.ts` for both contexts.
 - **NSFW / oversize categories** are deliberately omitted from `LOCAL_CATEGORIES`: 少女咖啡枪 (1.1 GB moc3 only), `galgame live2d` (NSFW), `sin 七大罪`, `凍京Nerco`, `イモコネー`, `Sacred Sword princesses`, `アンノウンブライド`. Don't add them without explicit user consent.
 
 ## Reference: where things live

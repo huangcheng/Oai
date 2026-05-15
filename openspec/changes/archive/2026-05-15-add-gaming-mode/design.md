@@ -1,15 +1,15 @@
 ## Context
 
-Oai is a Qt6/C++ desktop pet that always renders above all other windows via `Qt::WindowStaysOnTopHint`. This flag is set unconditionally in `MainWindow`, `TipBubbleWidget`, `EcgWidget`, and `SettingsPanelWidget`. Fullscreen games (e.g., Genshin Impact) render to a fullscreen surface; Qt's always-on-top window still composites above it on Windows and Linux (on macOS the game runs in its own Space so overlap is rare but still possible in windowed-fullscreen mode). There is no existing mechanism for Oai to detect games or yield window priority.
+Seelie is a Qt6/C++ desktop pet that always renders above all other windows via `Qt::WindowStaysOnTopHint`. This flag is set unconditionally in `MainWindow`, `TipBubbleWidget`, `EcgWidget`, and `SettingsPanelWidget`. Fullscreen games (e.g., Genshin Impact) render to a fullscreen surface; Qt's always-on-top window still composites above it on Windows and Linux (on macOS the game runs in its own Space so overlap is rare but still possible in windowed-fullscreen mode). There is no existing mechanism for Seelie to detect games or yield window priority.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Detect when a fullscreen non-Oai application (game) is the foreground window
-- Auto-hide all Oai windows (main pet, tip bubble, ECG widget) on fullscreen detection
-- Auto-restore Oai windows when the fullscreen app exits or loses focus
+- Detect when a fullscreen non-Seelie application (game) is the foreground window
+- Auto-hide all Seelie windows (main pet, tip bubble, ECG widget) on fullscreen detection
+- Auto-restore Seelie windows when the fullscreen app exits or loses focus
 - Provide a user toggle (tray menu + config persistence) to enable/disable Gaming Mode
-- Show a tray tooltip when Oai hides/restores itself due to Gaming Mode
+- Show a tray tooltip when Seelie hides/restores itself due to Gaming Mode
 
 **Non-Goals:**
 - Detecting specific games by name/process (allowlist/blocklist): out of scope for v1
@@ -21,7 +21,7 @@ Oai is a Qt6/C++ desktop pet that always renders above all other windows via `Qt
 
 ### Decision 1: Hide vs. lower z-order
 
-**Choice**: **Hide** (`QWidget::hide()`) all Oai windows when fullscreen is detected.
+**Choice**: **Hide** (`QWidget::hide()`) all Seelie windows when fullscreen is detected.
 
 **Rationale**: Simply removing `WindowStaysOnTopHint` at runtime requires `setWindowFlags()` which re-parents the native window handle, causing a visible flash and losing window position on some platforms. Hiding is instant, clean, and fully reversible with `show()`. The pet is not useful while a fullscreen game is running anyway.
 
@@ -39,8 +39,8 @@ Oai is a Qt6/C++ desktop pet that always renders above all other windows via `Qt
 
 | Platform | API used |
 |---|---|
-| Windows | `GetForegroundWindow()` → `GetWindowRect()` + `GetMonitorInfo()` to compare window rect against monitor rect; exclude Oai's own `HWND` |
-| macOS | `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly)` — look for a window at level ≥ `CGWindowLevelForKey(kCGMainMenuWindowLevelKey)` covering the full display, excluding Oai processes |
+| Windows | `GetForegroundWindow()` → `GetWindowRect()` + `GetMonitorInfo()` to compare window rect against monitor rect; exclude Seelie's own `HWND` |
+| macOS | `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly)` — look for a window at level ≥ `CGWindowLevelForKey(kCGMainMenuWindowLevelKey)` covering the full display, excluding Seelie processes |
 | Linux/X11 | `_NET_ACTIVE_WINDOW` root property → `_NET_WM_STATE` atom check for `_NET_WM_STATE_FULLSCREEN`; fallback to window geometry vs screen geometry |
 
 Platform-specific code lives in `src/FullscreenWatcher_win.cpp`, `_mac.mm`, `_x11.cpp` selected via `CMakeLists.txt`.
@@ -53,7 +53,7 @@ Platform-specific code lives in `src/FullscreenWatcher_win.cpp`, `_mac.mm`, `_x1
 
 ## Risks / Trade-offs
 
-- [Risk] False positives on non-game fullscreen apps (e.g., YouTube in fullscreen browser) → Oai hides unnecessarily. **Mitigation**: User can disable Gaming Mode; v2 may add an app allowlist.
+- [Risk] False positives on non-game fullscreen apps (e.g., YouTube in fullscreen browser) → Seelie hides unnecessarily. **Mitigation**: User can disable Gaming Mode; v2 may add an app allowlist.
 - [Risk] macOS Space isolation may mean the pet never overlaps a fullscreen game on macOS. **Mitigation**: Gaming Mode still works correctly (it will just hide unnecessarily rarely) — no regression.
 - [Risk] Wayland does not expose foreground window or fullscreen state to client apps. **Mitigation**: Linux detection is X11-only; on Wayland, `isFullscreenAppActive()` returns `false` (Gaming Mode is a no-op but doesn't crash). Document this limitation.
 - [Risk] 2-second polling wake: minimal CPU impact, but adds a timer to the event loop. **Mitigation**: Timer only runs when Gaming Mode is enabled.

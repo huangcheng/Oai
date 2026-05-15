@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Import a ClippyJS agent into an Oai sprite pack.
+Import a ClippyJS agent into an Seelie sprite pack.
 
 Downloads map.png and agent.js from clippyjs/clippy.js GitHub repo,
-converts the agent.js animation data to Oai manifest.json format,
+converts the agent.js animation data to Seelie manifest.json format,
 and writes the pack to assets/packs/<name>/.
 
 Usage:
@@ -60,7 +60,7 @@ EVENT_MAP_CANDIDATES = {
 
 def download(url):
     """Download a URL and return bytes."""
-    req = urllib.request.Request(url, headers={"User-Agent": "oai-importer/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "seelie-importer/1.0"})
     with urllib.request.urlopen(req) as resp:
         return resp.read()
 
@@ -76,7 +76,7 @@ def parse_agent_js(data):
 
 
 def convert_animation(anim_data, frame_w, frame_h):
-    """Convert a clippy.js animation to Oai frame definitions."""
+    """Convert a clippy.js animation to Seelie frame definitions."""
     frames = []
     for frame in anim_data.get("frames", []):
         duration = frame.get("duration", 0)
@@ -160,7 +160,7 @@ def import_character(name):
     # Build manifest
     manifest = {
         "formatVersion": "1.0.0",
-        "id": f"im.cheng.oai.{name.lower()}",
+        "id": f"im.cheng.seelie.{name.lower()}",
         "name": name,
         "author": "Microsoft / ClippyJS (MIT)",
         "version": "1.0.0",

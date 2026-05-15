@@ -1,6 +1,6 @@
 **English** | [简体中文](README_CN.md)
 
-# Oai Desktop Pet
+# Seelie Desktop Pet
 
 A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application with a sprite pack engine for customizable characters.
 
@@ -18,7 +18,7 @@ A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight
 
 ## Sprite Packs
 
-Oai supports customizable characters through sprite packs (`.opk` files) and Codex pets (`.codex-pet` files). Each pack contains:
+Seelie supports customizable characters through sprite packs (`.opk` files) and Codex pets (`.codex-pet` files). Each pack contains:
 - Sprite sheet or Lottie animations
 - Animation definitions
 - Event-to-animation mappings
@@ -27,7 +27,7 @@ Oai supports customizable characters through sprite packs (`.opk` files) and Cod
 ### Installing Packs
 
 1. **Drag-and-drop**: Drop `.opk` or `.codex-pet` file onto the pet window
-2. **Manual**: Copy the file to `~/.config/Oai/packs/`
+2. **Manual**: Copy the file to `~/.config/Seelie/packs/`
 3. **Built-in**: Official packs are generated during build
 
 ### Codex pets
@@ -36,7 +36,7 @@ Oai supports customizable characters through sprite packs (`.opk` files) and Cod
   <img src="assets/screenshots/codex-pet.png" alt="Codex pet example" width="170">
 </p>
 
-Oai natively reads `.codex-pet` archives produced by the upstream [openai/skills `hatch-pet`](https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md) skill. The format ships a fixed 8×9 atlas (`spritesheet.webp`, 1536×1872 px, 192×208 cells) plus a `pet.json` manifest. Drop the archive on the pet window — Oai auto-detects and renders it without conversion. The 9 animation rows (`idle`, `running-right`, `running-left`, `waving`, `jumping`, `failed`, `waiting`, `running`, `review`) map directly onto the pet state machine.
+Seelie natively reads `.codex-pet` archives produced by the upstream [openai/skills `hatch-pet`](https://github.com/openai/skills/blob/main/skills/.curated/hatch-pet/SKILL.md) skill. The format ships a fixed 8×9 atlas (`spritesheet.webp`, 1536×1872 px, 192×208 cells) plus a `pet.json` manifest. Drop the archive on the pet window — Seelie auto-detects and renders it without conversion. The 9 animation rows (`idle`, `running-right`, `running-left`, `waving`, `jumping`, `failed`, `waiting`, `running`, `review`) map directly onto the pet state machine.
 
 ### Pulling community Live2D packs from the upstream archive
 
@@ -79,10 +79,10 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Create .app bundle
-macdeployqt Oai.app
+macdeployqt Seelie.app
 
 # Run
-open Oai.app
+open Seelie.app
 ```
 
 ### Windows (MSVC)
@@ -98,10 +98,10 @@ cmake .. -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\msvc2022_64"
 cmake --build . --config Release
 
 # Bundle Qt DLLs
-windeployqt Release\Oai.exe
+windeployqt Release\Seelie.exe
 
 # Run
-Release\Oai.exe
+Release\Seelie.exe
 ```
 
 ### Windows (MinGW)
@@ -116,10 +116,10 @@ cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:\Qt\6.x.x\mingw_64"
 cmake --build .
 
 # Bundle Qt DLLs
-windeployqt Oai.exe
+windeployqt Seelie.exe
 
 # Run
-Oai.exe
+Seelie.exe
 ```
 
 ### Linux
@@ -138,12 +138,12 @@ cmake ..
 cmake --build .
 
 # Run
-./Oai
+./Seelie
 ```
 
 ## IPC Protocol
 
-Oai accepts IPC messages over UDP localhost:
+Seelie accepts IPC messages over UDP localhost:
 
 | Transport | Default Endpoint |
 |---|---|
@@ -217,20 +217,20 @@ Newline-delimited JSON. Each message is a single JSON object terminated by `\n`.
 Install the CLI gateway globally from npm:
 
 ```bash
-npm install -g @eastlake/oai-gateway
+npm install -g @eastlake/seelie-gateway
 ```
 
-Verify it can reach a running Oai:
+Verify it can reach a running Seelie:
 
 ```bash
-oai-gateway --ping
+seelie-gateway --ping
 ```
 
 ### Using a Node version manager (fnm / nvm / asdf)
 
-If you installed Node through fnm, nvm, or asdf, the `oai-gateway` command lives in a per-shell shim directory that is **not on PATH** when AI tools spawn hook subprocesses. A bare `oai-gateway` call works in your terminal but silently fails from a hook.
+If you installed Node through fnm, nvm, or asdf, the `seelie-gateway` command lives in a per-shell shim directory that is **not on PATH** when AI tools spawn hook subprocesses. A bare `seelie-gateway` call works in your terminal but silently fails from a hook.
 
-Wrap it in a shell script that locates Node + the gateway CLI by absolute path. Save as `~/.local/bin/oai-gateway-hook` (and `chmod +x`):
+Wrap it in a shell script that locates Node + the gateway CLI by absolute path. Save as `~/.local/bin/seelie-gateway-hook` (and `chmod +x`):
 
 ```sh
 #!/bin/sh
@@ -244,15 +244,15 @@ for base in "$fnm_root"/*/installation; do
 done
 [ -z "$selected_base" ] && { echo "no fnm Node installation found" >&2; exit 127; }
 node_bin="$selected_base/bin/node"
-gateway_cli="$selected_base/lib/node_modules/@eastlake/oai-gateway/cli.mjs"
+gateway_cli="$selected_base/lib/node_modules/@eastlake/seelie-gateway/cli.mjs"
 [ -x "$node_bin" ] || { echo "node not found" >&2; exit 127; }
 [ -f "$gateway_cli" ] || { echo "gateway CLI not found" >&2; exit 127; }
 exec "$node_bin" "$gateway_cli" "$@"
 ```
 
-For nvm replace the `fnm_root` block with `node_bin="$HOME/.nvm/versions/node/<version>/bin/node"`. For system Node (Homebrew or distro package) you can skip the wrapper entirely and use `oai-gateway` directly in hooks.
+For nvm replace the `fnm_root` block with `node_bin="$HOME/.nvm/versions/node/<version>/bin/node"`. For system Node (Homebrew or distro package) you can skip the wrapper entirely and use `seelie-gateway` directly in hooks.
 
-Then reference the wrapper instead of `oai-gateway` in the hook configurations below — e.g. `~/.local/bin/oai-gateway-hook --source claude-code --event session.start`.
+Then reference the wrapper instead of `seelie-gateway` in the hook configurations below — e.g. `~/.local/bin/seelie-gateway-hook --source claude-code --event session.start`.
 
 ### Claude Code
 
@@ -264,7 +264,7 @@ Add hooks to `~/.claude/settings.json`:
     "SessionStart": [{
       "hooks": [{
         "type": "command",
-        "command": "oai-gateway --source claude-code --event session.start",
+        "command": "seelie-gateway --source claude-code --event session.start",
         "timeout": 3,
         "async": true
       }]
@@ -272,7 +272,7 @@ Add hooks to `~/.claude/settings.json`:
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "oai-gateway --source claude-code --event session.idle",
+        "command": "seelie-gateway --source claude-code --event session.idle",
         "timeout": 3,
         "async": true
       }]
@@ -280,7 +280,7 @@ Add hooks to `~/.claude/settings.json`:
     "PreToolUse": [{
       "hooks": [{
         "type": "command",
-        "command": "oai-gateway --source claude-code --event tool.before",
+        "command": "seelie-gateway --source claude-code --event tool.before",
         "timeout": 5,
         "async": true
       }]
@@ -288,7 +288,7 @@ Add hooks to `~/.claude/settings.json`:
     "PostToolUse": [{
       "hooks": [{
         "type": "command",
-        "command": "oai-gateway --source claude-code --event tool.after",
+        "command": "seelie-gateway --source claude-code --event tool.after",
         "timeout": 3,
         "async": true
       }]
@@ -299,10 +299,10 @@ Add hooks to `~/.claude/settings.json`:
 
 ### Health Check
 
-Check if Oai is running:
+Check if Seelie is running:
 
 ```bash
-oai-gateway --ping
+seelie-gateway --ping
 # Exit code 0 = alive, 1 = not responding
 ```
 
@@ -311,19 +311,19 @@ oai-gateway --ping
 Send a test event:
 
 ```bash
-oai-gateway --source claude-code --event session.start
+seelie-gateway --source claude-code --event session.start
 ```
 
 ## Project Structure
 
 ```
-oai/
+seelie/
 ├── CMakeLists.txt              # Build configuration
 ├── CLAUDE.md                   # AI-tooling project guide
 ├── CONTRIBUTING.md
 ├── LICENSE
 ├── README.md / README_CN.md
-├── Oai_zh_CN.ts                # Simplified Chinese translations
+├── Seelie_zh_CN.ts                # Simplified Chinese translations
 ├── src/
 │   ├── main.cpp                # Application entry point
 │   ├── mainwindow.h/cpp        # Transparent frameless pet window
@@ -373,10 +373,10 @@ oai/
 │       ├── specs/              # Design docs (TTS abstraction, etc.)
 │       └── plans/              # Implementation plans
 ├── gateways/
-│   └── oai-gateway/            # @eastlake/oai-gateway CLI (Node.js, zero deps)
+│   └── seelie-gateway/            # @eastlake/seelie-gateway CLI (Node.js, zero deps)
 ├── installer/
 │   ├── config.xml.in           # Qt Installer Framework root config
-│   ├── oai.ini.template        # Portable defaults shipped next to Oai.exe
+│   ├── seelie.ini.template        # Portable defaults shipped next to Seelie.exe
 │   ├── packages/               # IFW package payload (scripts, license, meta)
 │   └── translations/           # Installer UI translations
 ├── schemas/
@@ -389,7 +389,7 @@ oai/
 │   ├── test_ecg.cpp / test_gaming_mode.cpp
 │   ├── test_tts_providers.cpp         # Per-adapter unit tests (QHttpServer)
 │   ├── test_tts_engine.cpp            # FakeProvider contract tests
-│   └── manual/test_tts_live.cpp       # Live-API smoke (gated by OAI_LIVE_TTS=1)
+│   └── manual/test_tts_live.cpp       # Live-API smoke (gated by SEELIE_LIVE_TTS=1)
 └── thirdparty/
     ├── CubismNativeFramework/  # Submodule — Live2D Cubism SDK
     ├── CubismNativeSamples/    # Submodule — Cubism samples (build-time only)
@@ -398,7 +398,7 @@ oai/
 
 ## Configuration
 
-Config file: `~/.config/Oai/config.json`
+Config file: `~/.config/Seelie/config.json`
 
 ```json
 {
@@ -414,7 +414,7 @@ The `ipcEndpoint` field defaults to `127.0.0.1:52847` and can be overridden.
 
 ## Text-to-Speech
 
-Oai can speak tips aloud through any of four cloud providers. The TTS engine runs on its own thread, uses HTTP synthesis (no streaming) so it stays stable on flaky networks, and hot-swaps providers without restart.
+Seelie can speak tips aloud through any of four cloud providers. The TTS engine runs on its own thread, uses HTTP synthesis (no streaming) so it stays stable on flaky networks, and hot-swaps providers without restart.
 
 ### Supported providers
 
@@ -434,13 +434,13 @@ Oai can speak tips aloud through any of four cloud providers. The TTS engine run
 
 The voice field is free-text — paste any voice ID your provider supports (system, cloned, or beta voices). All credentials are trimmed automatically; pasting with leading/trailing whitespace is safe.
 
-Synthesised audio is cached on disk under `~/.cache/Oai/tts_voice_cache/`, keyed by the active provider/voice/model fingerprint plus the (whitespace-normalised) text. Repeat tips replay instantly; the cache is bounded at 100 MB with LRU eviction and auto-invalidates when you change voice or model. Use **Clear voice cache** in the TTS tab to wipe it manually.
+Synthesised audio is cached on disk under `~/.cache/Seelie/tts_voice_cache/`, keyed by the active provider/voice/model fingerprint plus the (whitespace-normalised) text. Repeat tips replay instantly; the cache is bounded at 100 MB with LRU eviction and auto-invalidates when you change voice or model. Use **Clear voice cache** in the TTS tab to wipe it manually.
 
 ### Adding a new provider
 
 The provider abstraction is small enough that adding a fifth backend (say ElevenLabs) is ~150 LOC of pure protocol:
 
-1. Create `src/tts/<Name>HttpProvider.h/.cpp` implementing `oai::tts::ITtsProvider` (request builder + response parser; no audio code, no threading)
+1. Create `src/tts/<Name>HttpProvider.h/.cpp` implementing `seelie::tts::ITtsProvider` (request builder + response parser; no audio code, no threading)
 2. Append a `ProviderDescriptor` to `src/tts/TtsProviderRegistry.cpp` with the stable ID, display name, required/optional fields, and factory lambda
 3. Add a unit test in `tests/test_tts_providers.cpp` against the local `QHttpServer` fixture
 
@@ -451,11 +451,11 @@ The settings UI builds itself from the registry — no UI changes needed for the
 `tests/manual/test_tts_live.cpp` is gated behind environment variables and exercises the real provider APIs. Useful before releases:
 
 ```bash
-OAI_LIVE_TTS=1 \
-  OAI_STEPFUN_TOKEN=... \
-  OAI_MINIMAX_TOKEN=... \
-  OAI_AZURE_KEY=... OAI_AZURE_REGION=eastus \
-  OAI_OPENAI_TOKEN=... \
+SEELIE_LIVE_TTS=1 \
+  SEELIE_STEPFUN_TOKEN=... \
+  SEELIE_MINIMAX_TOKEN=... \
+  SEELIE_AZURE_KEY=... SEELIE_AZURE_REGION=eastus \
+  SEELIE_OPENAI_TOKEN=... \
   ./build/tests/test_tts_live
 ```
 

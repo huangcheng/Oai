@@ -7,7 +7,7 @@
 #include <QNetworkRequest>
 #include <QUrl>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -127,4 +127,4 @@ void StepFunHttpProvider::cancel(RequestHandle handle)
     if (reply) reply->abort();
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts

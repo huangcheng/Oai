@@ -10,9 +10,9 @@
 
 #include <algorithm>
 
-Q_LOGGING_CATEGORY(lcTtsCache, "oai.tts.cache")
+Q_LOGGING_CATEGORY(lcTtsCache, "seelie.tts.cache")
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -199,4 +199,4 @@ void TtsVoiceCache::wipeAll()
                        << failed << "failed (of" << files.size() << "files)";
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts

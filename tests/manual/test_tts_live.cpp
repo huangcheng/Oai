@@ -1,15 +1,15 @@
 /**
  * test_tts_live.cpp — Manual live-API smoke test.
  *
- * Skipped unless OAI_LIVE_TTS=1 is set in the environment. Reads
+ * Skipped unless SEELIE_LIVE_TTS=1 is set in the environment. Reads
  * credentials from per-provider env vars and exercises each adapter
  * against the real API. Run before releases.
  *
- *   OAI_LIVE_TTS=1 \
- *     OAI_STEPFUN_TOKEN=... \
- *     OAI_MINIMAX_TOKEN=... OAI_MINIMAX_GROUP=... \
- *     OAI_AZURE_KEY=...    OAI_AZURE_REGION=eastus \
- *     OAI_OPENAI_TOKEN=... \
+ *   SEELIE_LIVE_TTS=1 \
+ *     SEELIE_STEPFUN_TOKEN=... \
+ *     SEELIE_MINIMAX_TOKEN=... SEELIE_MINIMAX_GROUP=... \
+ *     SEELIE_AZURE_KEY=...    SEELIE_AZURE_REGION=eastus \
+ *     SEELIE_OPENAI_TOKEN=... \
  *     ./test_tts_live
  */
 
@@ -23,7 +23,7 @@
 #include "tts/AzureSpeechProvider.h"
 #include "tts/OpenAiTtsProvider.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 namespace {
 QString env(const char* name) { return QString::fromLocal8Bit(qgetenv(name)); }
@@ -35,14 +35,14 @@ class TestTtsLive : public QObject
 
 private slots:
     void initTestCase() {
-        if (env("OAI_LIVE_TTS") != "1")
-            QSKIP("Set OAI_LIVE_TTS=1 to run live-API tests");
+        if (env("SEELIE_LIVE_TTS") != "1")
+            QSKIP("Set SEELIE_LIVE_TTS=1 to run live-API tests");
         m_nam = new QNetworkAccessManager(this);
     }
 
     void stepFun() {
-        const QString token = env("OAI_STEPFUN_TOKEN");
-        if (token.isEmpty()) QSKIP("OAI_STEPFUN_TOKEN not set");
+        const QString token = env("SEELIE_STEPFUN_TOKEN");
+        if (token.isEmpty()) QSKIP("SEELIE_STEPFUN_TOKEN not set");
         ProviderConfig cfg{{
             {"baseUrl", "https://api.stepfun.com"},
             {"token", token},
@@ -53,10 +53,10 @@ private slots:
     }
 
     void miniMax() {
-        const QString token = env("OAI_MINIMAX_TOKEN");
-        const QString group = env("OAI_MINIMAX_GROUP");
+        const QString token = env("SEELIE_MINIMAX_TOKEN");
+        const QString group = env("SEELIE_MINIMAX_GROUP");
         if (token.isEmpty() || group.isEmpty())
-            QSKIP("OAI_MINIMAX_TOKEN and OAI_MINIMAX_GROUP required");
+            QSKIP("SEELIE_MINIMAX_TOKEN and SEELIE_MINIMAX_GROUP required");
         ProviderConfig cfg{{
             {"baseUrl", "https://api.minimaxi.com"},
             {"token", token}, {"groupId", group},
@@ -67,10 +67,10 @@ private slots:
     }
 
     void azure() {
-        const QString key = env("OAI_AZURE_KEY");
-        const QString region = env("OAI_AZURE_REGION");
+        const QString key = env("SEELIE_AZURE_KEY");
+        const QString region = env("SEELIE_AZURE_REGION");
         if (key.isEmpty() || region.isEmpty())
-            QSKIP("OAI_AZURE_KEY and OAI_AZURE_REGION required");
+            QSKIP("SEELIE_AZURE_KEY and SEELIE_AZURE_REGION required");
         ProviderConfig cfg{{
             {"key", key}, {"region", region},
             {"voice", "en-US-JennyNeural"},
@@ -80,8 +80,8 @@ private slots:
     }
 
     void openAi() {
-        const QString token = env("OAI_OPENAI_TOKEN");
-        if (token.isEmpty()) QSKIP("OAI_OPENAI_TOKEN not set");
+        const QString token = env("SEELIE_OPENAI_TOKEN");
+        if (token.isEmpty()) QSKIP("SEELIE_OPENAI_TOKEN not set");
         ProviderConfig cfg{{
             {"baseUrl", "https://api.openai.com/v1"},
             {"token", token}, {"voice", "nova"},
@@ -95,7 +95,7 @@ private:
         QByteArray audio;
         QString err;
         QEventLoop loop;
-        provider.synthesize({QStringLiteral("Oai live test."), {}},
+        provider.synthesize({QStringLiteral("Seelie live test."), {}},
             [&](SynthesisResult r){ audio = r.audio; loop.quit(); },
             [&](TtsError e){ err = e.message; loop.quit(); });
         QTimer::singleShot(15000, &loop, &QEventLoop::quit);

@@ -3,7 +3,7 @@
 
 #include "tts/TtsVoiceCache.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 class TestTtsVoiceCache : public QObject
 {
@@ -31,7 +31,7 @@ void TestTtsVoiceCache::initTestCase()
 {
     // Use an isolated cache dir per test run to keep results deterministic
     // and avoid clobbering any real cache on the developer's machine.
-    qputenv("XDG_CACHE_HOME", "/tmp/oai_test_cache");
+    qputenv("XDG_CACHE_HOME", "/tmp/seelie_test_cache");
     QStandardPaths::setTestModeEnabled(true);
 }
 

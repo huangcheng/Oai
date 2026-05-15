@@ -6,7 +6,7 @@
 class QTimer;
 
 /**
- * FullscreenWatcher polls the OS to detect whether a fullscreen non-Oai
+ * FullscreenWatcher polls the OS to detect whether a fullscreen non-Seelie
  * application is the foreground window.  When the state changes it emits
  * fullscreenAppStarted() or fullscreenAppStopped().
  *

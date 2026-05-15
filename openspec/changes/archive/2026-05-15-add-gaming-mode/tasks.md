@@ -8,16 +8,16 @@
 
 - [x] 2.1 Create `src/FullscreenWatcher.h` — QObject subclass with `bool isFullscreenAppActive()` pure-virtual-like method and `QTimer` polling; signals `fullscreenAppStarted()` and `fullscreenAppStopped()`
 - [x] 2.2 Create `src/FullscreenWatcher.cpp` — shared polling loop: start/stop timer, track previous state, emit signals on transitions only
-- [x] 2.3 Create `src/FullscreenWatcher_win.cpp` — Windows implementation using `GetForegroundWindow()`, `GetWindowRect()`, `MonitorFromWindow()`, `GetMonitorInfo()`, excluding Oai's own HWND
-- [x] 2.4 Create `src/FullscreenWatcher_mac.mm` — macOS implementation using `CGWindowListCopyWindowInfo` to detect a window at fullscreen level covering the full display, excluding Oai's `NSApp` windows
+- [x] 2.3 Create `src/FullscreenWatcher_win.cpp` — Windows implementation using `GetForegroundWindow()`, `GetWindowRect()`, `MonitorFromWindow()`, `GetMonitorInfo()`, excluding Seelie's own HWND
+- [x] 2.4 Create `src/FullscreenWatcher_mac.mm` — macOS implementation using `CGWindowListCopyWindowInfo` to detect a window at fullscreen level covering the full display, excluding Seelie's `NSApp` windows
 - [x] 2.5 Create `src/FullscreenWatcher_x11.cpp` — Linux/X11 implementation using `_NET_ACTIVE_WINDOW` root property + `_NET_WM_STATE_FULLSCREEN` atom check; return `false` gracefully on Wayland
 - [x] 2.6 Wire platform files in `CMakeLists.txt` using `if(WIN32)` / `elseif(APPLE)` / `else()` conditionals
 
 ## 3. MainWindow Integration
 
 - [x] 3.1 Instantiate `FullscreenWatcher` in `MainWindow` constructor when `ConfigManager::gamingModeEnabled()` is true; store as `m_fullscreenWatcher`
-- [x] 3.2 Connect `FullscreenWatcher::fullscreenAppStarted` → slot `onFullscreenStarted()`: hide MainWindow + TipBubbleWidget + EcgWidget (only if visible and not already user-hidden); set `m_hiddenByGamingMode = true`; show tray message "Gaming Mode: Oai is hiding while you play"
-- [x] 3.3 Connect `FullscreenWatcher::fullscreenAppStopped` → slot `onFullscreenStopped()`: if `m_hiddenByGamingMode`, show all windows and clear flag; show tray message "Gaming Mode: Oai is back!"
+- [x] 3.2 Connect `FullscreenWatcher::fullscreenAppStarted` → slot `onFullscreenStarted()`: hide MainWindow + TipBubbleWidget + EcgWidget (only if visible and not already user-hidden); set `m_hiddenByGamingMode = true`; show tray message "Gaming Mode: Seelie is hiding while you play"
+- [x] 3.3 Connect `FullscreenWatcher::fullscreenAppStopped` → slot `onFullscreenStopped()`: if `m_hiddenByGamingMode`, show all windows and clear flag; show tray message "Gaming Mode: Seelie is back!"
 - [x] 3.4 Add `bool m_hiddenByGamingMode = false` member to `MainWindow` to distinguish Gaming Mode hides from user-initiated hides
 - [x] 3.5 Connect `ConfigManager::gamingModeEnabledChanged` in `MainWindow`: start/stop `FullscreenWatcher` and restore windows if Gaming Mode is disabled while pet is hidden by it
 
@@ -27,7 +27,7 @@
 - [x] 4.2 Initialize the action's checked state from `ConfigManager::gamingModeEnabled()` on menu construction
 - [x] 4.3 Connect action `toggled` → `ConfigManager::setGamingModeEnabled()`
 - [x] 4.4 Connect `ConfigManager::gamingModeEnabledChanged` → update the tray action's checked state (in case it's changed from another UI surface)
-- [x] 4.5 Add i18n string for "Gaming Mode" using `tr()` and add to `Oai_zh_CN.ts` translation file
+- [x] 4.5 Add i18n string for "Gaming Mode" using `tr()` and add to `Seelie_zh_CN.ts` translation file
 
 ## 5. Settings Panel (optional toggle)
 

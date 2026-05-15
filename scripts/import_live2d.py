@@ -286,7 +286,7 @@ def write_manifest(pack_dir: Path, local_id: str, name_en: str, name_zh: str,
                    author: str = f"Imported from github.com/{REPO}") -> None:
     manifest = {
         "formatVersion": "1.0.0",
-        "id": f"im.cheng.oai.{local_id}",
+        "id": f"im.cheng.seelie.{local_id}",
         "name": name_en,
         "nameLocalized": {"zh_CN": name_zh} if name_zh and name_zh != name_en else {},
         "author": author,

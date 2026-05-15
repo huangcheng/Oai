@@ -6,7 +6,7 @@
 
 #include <QCoreApplication>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -123,4 +123,4 @@ const ProviderDescriptor* TtsProviderRegistry::findByStableId(const QString& sta
     return nullptr;
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts

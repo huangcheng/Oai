@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Oai — a native Qt6/C++ desktop pet that reacts to AI coding tool events (Claude Code, Codex, OpenCode). Lightweight, cross-platform (macOS/Windows/Linux), < 10MB RAM. Features a sprite pack engine for customizable characters.
+Seelie — a native Qt6/C++ desktop pet that reacts to AI coding tool events (Claude Code, Codex, OpenCode). Lightweight, cross-platform (macOS/Windows/Linux), < 10MB RAM. Features a sprite pack engine for customizable characters.
 
 ## Build Commands
 
@@ -15,8 +15,8 @@ cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
 cmake --build .
 
 # Run
-open build/Oai.app             # macOS
-./build/Oai                    # Linux
+open build/Seelie.app             # macOS
+./build/Seelie                    # Linux
 
 # Tests (all)
 cd build && ctest
@@ -25,8 +25,8 @@ cd build && ctest
 cd build && ./tests/test_ipc_animations
 
 # Gateway CLI (uses --flag syntax, not subcommands)
-oai-gateway --source claude-code --event session.start   # send test event
-oai-gateway --ping                                        # health check
+seelie-gateway --source claude-code --event session.start   # send test event
+seelie-gateway --ping                                        # health check
 ```
 
 ## Architecture
@@ -43,14 +43,14 @@ The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips →
 - **SpritePack / SpritePackManager** — Pack data structure with manifest parsing; discovers, loads, and switches between `.opk` sprite packs.
 - **TipBubbleWidget** — Win98-style speech bubble with asymmetric tail, fade animations, auto-dismiss (6s status / 12s tips).
 - **TipsEngine** — Pattern matcher on a 30-second event window. Detects behaviors (repeated errors, rapid edits, idle, permission denials) and suggests contextual tips. 5-minute cooldown per tip type.
-- **ConfigManager** — Persists to `~/.config/Oai/config.json` (window position, language, auto-start, IPC endpoint).
+- **ConfigManager** — Persists to `~/.config/Seelie/config.json` (window position, language, auto-start, IPC endpoint).
 - **SettingsPanelWidget** — UI panel for configuring settings (language, sprite pack, endpoint).
 - **UpdateChecker** — Checks for new releases via network.
 - **MainWindow** — Frameless, always-on-top, transparent 124×200 window. Owns the animation engine, effects overlay, tip bubble, settings panel, and system tray.
 
 ### Node.js Gateway (gateways/)
 
-- **oai-gateway/** (`@eastlake/oai-gateway`) — CLI tool for sending events and health checks. Contains `lib/ipc.mjs` for the UDP transport layer.
+- **seelie-gateway/** (`@eastlake/seelie-gateway`) — CLI tool for sending events and health checks. Contains `lib/ipc.mjs` for the UDP transport layer.
 
 Gateways are pure ES modules (`.mjs`) with zero npm dependencies — only Node.js built-ins. Requires Node.js >= 18.
 
@@ -72,7 +72,7 @@ Transport: **UDP**, newline-delimited JSON. Fire-and-forget for events (no respo
 - C++17 with Qt6 (Core, Gui, Widgets, Network, LinguistTools, Test). Qt signals/slots throughout.
 - rlottie v0.2 fetched via CMake FetchContent (patched for Apple Silicon NEON and GCC 13+ `<limits>` include).
 - Animation names: PascalCase in C++ (`SpriteAnimationEngine`), snake_case over IPC. The engine handles mapping.
-- i18n: Chinese translation in `Oai_zh_CN.ts`. All user-visible strings use `tr()`.
+- i18n: Chinese translation in `Seelie_zh_CN.ts`. All user-visible strings use `tr()`.
 - Tests use Qt Test framework on a separate UDP port (52848) to avoid conflicts with running app.
-- App version set in `CMakeLists.txt` (`project(Oai VERSION x.y.z)`), passed to C++ via `PROJECT_VERSION` compile definition.
+- App version set in `CMakeLists.txt` (`project(Seelie VERSION x.y.z)`), passed to C++ via `PROJECT_VERSION` compile definition.
 - macOS bundle hides Dock icon via `scripts/hide_dock_icon.py` post-build step.

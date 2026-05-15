@@ -1,4 +1,4 @@
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
 
 // GLEW must be included BEFORE any Qt/OpenGL headers
 #include <GL/glew.h>
@@ -38,7 +38,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 // ---------------------------------------------------------------------------
 // CubismAllocator — required by the framework
 // ---------------------------------------------------------------------------
-class OaiCubismAllocator : public Csm::ICubismAllocator
+class SeelieCubismAllocator : public Csm::ICubismAllocator
 {
     void *Allocate(const Csm::csmSizeType size) override { return malloc(size); }
     void Deallocate(void *addr) override { free(addr); }
@@ -58,14 +58,14 @@ class OaiCubismAllocator : public Csm::ICubismAllocator
     }
 };
 
-static OaiCubismAllocator s_allocator;
+static SeelieCubismAllocator s_allocator;
 static bool s_frameworkInitialized = false;
 
 // Cubism Framework loads shader source from disk via this callback.
 // We ship the framework's shader files as Qt resources under :/live2d/
 // with aliases that match the paths the framework requests
 // (e.g. "FrameworkShaders/VertShaderSrc.vert").
-static Csm::csmByte *oaiCubismLoadFile(const std::string filePath, Csm::csmSizeInt *outSize)
+static Csm::csmByte *seelieCubismLoadFile(const std::string filePath, Csm::csmSizeInt *outSize)
 {
     const QString resourcePath = ":/live2d/" + QString::fromStdString(filePath);
     QFile f(resourcePath);
@@ -85,7 +85,7 @@ static Csm::csmByte *oaiCubismLoadFile(const std::string filePath, Csm::csmSizeI
     return buf;
 }
 
-static void oaiCubismReleaseBytes(Csm::csmByte *buf)
+static void seelieCubismReleaseBytes(Csm::csmByte *buf)
 {
     free(buf);
 }
@@ -101,8 +101,8 @@ static void ensureFrameworkInitialized()
         CubismFramework::Option o;
         o.LogFunction = [](const char *msg) { qDebug() << "[Live2D]" << msg; };
         o.LoggingLevel = CubismFramework::Option::LogLevel_Warning;
-        o.LoadFileFunction = &oaiCubismLoadFile;
-        o.ReleaseBytesFunction = &oaiCubismReleaseBytes;
+        o.LoadFileFunction = &seelieCubismLoadFile;
+        o.ReleaseBytesFunction = &seelieCubismReleaseBytes;
         return o;
     }();
 
@@ -926,4 +926,4 @@ void Live2DAnimationEngine::startIdleAnimation()
     playAnimation(m_idleAnims.first(), NormalPriority);
 }
 
-#endif // OAI_LIVE2D_SUPPORT
+#endif // SEELIE_LIVE2D_SUPPORT

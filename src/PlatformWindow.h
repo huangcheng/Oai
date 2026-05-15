@@ -1,5 +1,5 @@
-#ifndef OAI_PLATFORMWINDOW_H
-#define OAI_PLATFORMWINDOW_H
+#ifndef SEELIE_PLATFORMWINDOW_H
+#define SEELIE_PLATFORMWINDOW_H
 
 class QWidget;
 
@@ -31,4 +31,4 @@ void refreshComposition(QWidget *widget);
 
 } // namespace PlatformWindow
 
-#endif // OAI_PLATFORMWINDOW_H
+#endif // SEELIE_PLATFORMWINDOW_H

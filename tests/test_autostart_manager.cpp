@@ -28,14 +28,14 @@ private slots:
 void TestAutoStartManager::initTestCase()
 {
     QStandardPaths::setTestModeEnabled(true);
-    QCoreApplication::setApplicationName("OaiTestAutoStart");
+    QCoreApplication::setApplicationName("SeelieTestAutoStart");
 }
 
 #if defined(Q_OS_MAC)
 void TestAutoStartManager::macOsPlistRoundTrip()
 {
     const QString plistPath = QDir::homePath()
-        + QStringLiteral("/Library/LaunchAgents/im.cheng.oai.plist");
+        + QStringLiteral("/Library/LaunchAgents/im.cheng.seelie.plist");
     // Ensure baseline is clean — if a previous test failed mid-flight we
     // don't want to assert against stale state.
     QFile::remove(plistPath);
@@ -50,7 +50,7 @@ void TestAutoStartManager::macOsPlistRoundTrip()
     f.close();
 
     QVERIFY(contents.contains(QStringLiteral("<key>Label</key>")));
-    QVERIFY(contents.contains(QStringLiteral("<string>im.cheng.oai</string>")));
+    QVERIFY(contents.contains(QStringLiteral("<string>im.cheng.seelie</string>")));
     QVERIFY(contents.contains(QStringLiteral("<key>RunAtLoad</key>")));
 
     AutoStartManager::setEnabled(false);
@@ -63,7 +63,7 @@ void TestAutoStartManager::linuxDesktopFileRoundTrip()
 {
     const QString desktopPath = QStandardPaths::writableLocation(
         QStandardPaths::GenericConfigLocation)
-        + QStringLiteral("/autostart/oai.desktop");
+        + QStringLiteral("/autostart/seelie.desktop");
     QFile::remove(desktopPath);
     QVERIFY(!QFile::exists(desktopPath));
 
@@ -76,7 +76,7 @@ void TestAutoStartManager::linuxDesktopFileRoundTrip()
     f.close();
     QVERIFY(contents.contains(QStringLiteral("[Desktop Entry]")));
     QVERIFY(contents.contains(QStringLiteral("Type=Application")));
-    QVERIFY(contents.contains(QStringLiteral("Name=Oai")));
+    QVERIFY(contents.contains(QStringLiteral("Name=Seelie")));
 
     AutoStartManager::setEnabled(false);
     QVERIFY2(!QFile::exists(desktopPath), "setEnabled(false) must remove the desktop file");

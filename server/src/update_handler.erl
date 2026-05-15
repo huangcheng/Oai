@@ -69,7 +69,7 @@ handle_pull(Payload) ->
 
 -spec latest_version_from_cmake() -> {ok, binary()} | {error, term()}.
 latest_version_from_cmake() ->
-    File = application:get_env(server, version_file, "/opt/oai-server/CMakeLists.txt"),
+    File = application:get_env(server, version_file, "/opt/seelie-server/CMakeLists.txt"),
     case file:read_file(File) of
         {ok, Bin} ->
             case extract_cmake_version(Bin) of
@@ -82,7 +82,7 @@ latest_version_from_cmake() ->
 
 -spec extract_cmake_version(binary()) -> {match, binary()} | nomatch.
 extract_cmake_version(Bin) ->
-    %% Matches: project(Oai VERSION 1.2.0 ...)
+    %% Matches: project(Seelie VERSION 1.2.0 ...)
     case re:run(Bin, <<"project\\s*\\([^)]*VERSION\\s+([0-9]+\\.[0-9]+\\.[0-9]+)">>, [
         caseless, {capture, all_but_first, binary}
     ]) of

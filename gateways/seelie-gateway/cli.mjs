@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * oai-gateway — CLI tool for sending events to Oai desktop pet.
+ * seelie-gateway — CLI tool for sending events to Seelie desktop pet.
  *
  * Usage:
- *   oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
- *   oai-gateway --title <title> --content <body> [--animation <name>] [--endpoint <path>]
- *   oai-gateway --ping [--endpoint <path>]
+ *   seelie-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--endpoint <path>]
+ *   seelie-gateway --title <title> --content <body> [--animation <name>] [--endpoint <path>]
+ *   seelie-gateway --ping [--endpoint <path>]
  */
 
 import { platform } from 'node:process';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { getEndpoint, sendToOai, pingOai } from './lib/ipc.mjs';
+import { getEndpoint, sendToSeelie, pingSeelie } from './lib/ipc.mjs';
 
 // --- Argument parsing -------------------------------------------------------
 
@@ -40,12 +40,12 @@ const args = parseArgs(process.argv);
 // --- Ping mode -------------------------------------------------------------
 
 if (args.ping) {
-  const alive = await pingOai({ endpoint: args.endpoint });
+  const alive = await pingSeelie({ endpoint: args.endpoint });
   if (alive) {
-    console.log('Oai is alive');
+    console.log('Seelie is alive');
     process.exit(0);
   } else {
-    console.log('Oai is not responding');
+    console.log('Seelie is not responding');
     process.exit(1);
   }
 }
@@ -53,12 +53,12 @@ if (args.ping) {
 // --- Health check mode -------------------------------------------------------
 
 if (args.health) {
-  const alive = await pingOai({ endpoint: args.endpoint });
+  const alive = await pingSeelie({ endpoint: args.endpoint });
   if (alive) {
-    console.log('Oai IPC server is healthy');
+    console.log('Seelie IPC server is healthy');
     process.exit(0);
   } else {
-    console.log('Oai IPC server is not responding');
+    console.log('Seelie IPC server is not responding');
     process.exit(1);
   }
 }
@@ -74,7 +74,7 @@ async function sendTip(opts = {}) {
   };
 
   if (!tipMessage.title) return;
-  await sendToOai(tipMessage, { endpoint: opts.endpoint || args.endpoint, retries: 2 });
+  await sendToSeelie(tipMessage, { endpoint: opts.endpoint || args.endpoint, retries: 2 });
 }
 
 // Standalone tip mode (no event args)
@@ -91,9 +91,9 @@ if (args.title && !args.source && !args.event) {
 // --- Event mode ------------------------------------------------------------
 
 if (!args.source || !args.event) {
-  console.error('Usage: oai-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--title <title>] [--content <body>] [--endpoint <path>]');
-  console.error('       oai-gateway --title <title> [--content <body>] [--animation <name>] [--endpoint <path>]');
-  console.error('       oai-gateway --ping [--endpoint <path>]');
+  console.error('Usage: seelie-gateway --source <tool> --event <name> [--tool-name <name>] [--file-path <path>] [--title <title>] [--content <body>] [--endpoint <path>]');
+  console.error('       seelie-gateway --title <title> [--content <body>] [--animation <name>] [--endpoint <path>]');
+  console.error('       seelie-gateway --ping [--endpoint <path>]');
   console.error('');
   console.error('Sources: opencode, claude-code, codex');
   console.error('Events: session.start, session.end, session.idle, session.error,');
@@ -156,7 +156,7 @@ if (args['file-path']) {
 
 try {
   // Send the event
-  await sendToOai(message, { endpoint: args.endpoint, retries: 2 });
+  await sendToSeelie(message, { endpoint: args.endpoint, retries: 2 });
   // Also send a tip if title/content provided alongside event
   if (args.title) {
     await sendTip();

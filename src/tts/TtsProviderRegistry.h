@@ -1,5 +1,5 @@
-#ifndef OAI_TTS_PROVIDERREGISTRY_H
-#define OAI_TTS_PROVIDERREGISTRY_H
+#ifndef SEELIE_TTS_PROVIDERREGISTRY_H
+#define SEELIE_TTS_PROVIDERREGISTRY_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -12,7 +12,7 @@
 
 class QNetworkAccessManager;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 enum class TtsProviderId {
     StepFun,
@@ -48,6 +48,6 @@ public:
     static const ProviderDescriptor* findByStableId(const QString& stableId);
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif

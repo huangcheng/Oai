@@ -1,6 +1,6 @@
 ## Context
 
-The Oai desktop pet uses TTS (text-to-speech) to vocalize tips and notifications via 4 provider backends: StepFun, MiniMax, Azure Speech, and OpenAI. The `TTSEngine` sits on its own QThread and calls `ITtsProvider::synthesize()` for every `speak()` invocation. There is no caching — identical text spoken twice results in two billable API calls.
+The Seelie desktop pet uses TTS (text-to-speech) to vocalize tips and notifications via 4 provider backends: StepFun, MiniMax, Azure Speech, and OpenAI. The `TTSEngine` sits on its own QThread and calls `ITtsProvider::synthesize()` for every `speak()` invocation. There is no caching — identical text spoken twice results in two billable API calls.
 
 The tip content is quasi-static: bubble text comes from a fixed set of `TipDatabase` entries and user notification strings generated from a known template set. This means a significant fraction of `speak()` calls are repeated text.
 
@@ -39,9 +39,9 @@ The following config fields are **not** cache-relevant (changing them does not r
 
 ### 2. Cache Storage Location
 
-**Decision:** `~/.cache/Oai/tts_voice_cache/` (Qt `QStandardPaths::CacheLocation`).
+**Decision:** `~/.cache/Seelie/tts_voice_cache/` (Qt `QStandardPaths::CacheLocation`).
 
-**Rationale:** Follows the XDG cache convention. `QStandardPaths` resolves this correctly on macOS (`~/Library/Caches/Oai/`), Windows, and Linux. The cache survives app restarts and does not pollute the config directory.
+**Rationale:** Follows the XDG cache convention. `QStandardPaths` resolves this correctly on macOS (`~/Library/Caches/Seelie/`), Windows, and Linux. The cache survives app restarts and does not pollute the config directory.
 
 ### 3. Cache Invalidation Mechanism
 
@@ -72,7 +72,7 @@ The following config fields are **not** cache-relevant (changing them does not r
 
 | Risk | Mitigation |
 |------|------------|
-| Cache grows unbounded over time | Users can manually delete `~/.cache/Oai/tts_voice_cache/`. Future enhancement: add a cache size limit with LRU eviction. |
+| Cache grows unbounded over time | Users can manually delete `~/.cache/Seelie/tts_voice_cache/`. Future enhancement: add a cache size limit with LRU eviction. |
 | Cache serves stale audio after provider API update | Cache is invalidated on any relevant config change. A provider-side API change without config change would serve stale audio — unlikely in practice and recoverable by manual cache clear. |
 | SHA-256 collision (theoretical) | SHA-256 output space is 2^256; practical collisions for short text inputs are astronomically unlikely. |
 | Concurrent cache writes from simultaneous `speak()` calls | Debounce in `TTSEngine` prevents concurrent `doSynthesize()`. Only one synthesis + write at a time. |

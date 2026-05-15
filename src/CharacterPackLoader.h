@@ -1,5 +1,5 @@
-#ifndef OAI_CHARACTERPACKLOADER_H
-#define OAI_CHARACTERPACKLOADER_H
+#ifndef SEELIE_CHARACTERPACKLOADER_H
+#define SEELIE_CHARACTERPACKLOADER_H
 
 #include <QString>
 #include <QJsonObject>
@@ -46,4 +46,4 @@ QString readOpkPackId(const QString &opkPath);
 
 } // namespace CharacterPackLoader
 
-#endif // OAI_CHARACTERPACKLOADER_H
+#endif // SEELIE_CHARACTERPACKLOADER_H

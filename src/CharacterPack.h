@@ -88,7 +88,7 @@ public:
         QStringList tags;         ///< Search/discovery tags
         QString license;          ///< SPDX license identifier
         QString category;         ///< Source/franchise grouping (e.g. "azur_lane", "originals")
-        QString minAppVersion;    ///< Minimum Oai version required
+        QString minAppVersion;    ///< Minimum Seelie version required
 
         /**
          * @brief Resolve display name for a locale.

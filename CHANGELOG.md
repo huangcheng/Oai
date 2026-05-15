@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Oai are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to Seelie are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
@@ -88,7 +88,7 @@ feature work will lean on.
   reformatted; the config is for on-touch use going forward.
 - `.gitignore` now covers `.tmux-ide/` and `ide.yml` so local IDE state
   doesn't accidentally land in commits.
-- Live2D `#ifdef OAI_LIVE2D_SUPPORT` reduced from 18 sites to 15 (header
+- Live2D `#ifdef SEELIE_LIVE2D_SUPPORT` reduced from 18 sites to 15 (header
   forward decl + member pointer + accessor are unconditional now).
 
 ### Internal
@@ -101,7 +101,7 @@ feature work will lean on.
 Stability + security pass driven by an end-to-end audit, plus a TTS voice cache and the related UI polish.
 
 ### Added
-- **TTS voice cache** — synthesised audio is cached on disk under `~/.cache/Oai/tts_voice_cache/`, keyed by SHA-256 of `(provider, voice, model, options, normalized text)`. Cache hits replay instantly without a network round-trip. Bounded at 100 MB with LRU eviction. Cleared automatically when voice/model/active provider changes; users can also click **Clear voice cache** in the TTS settings tab.
+- **TTS voice cache** — synthesised audio is cached on disk under `~/.cache/Seelie/tts_voice_cache/`, keyed by SHA-256 of `(provider, voice, model, options, normalized text)`. Cache hits replay instantly without a network round-trip. Bounded at 100 MB with LRU eviction. Cleared automatically when voice/model/active provider changes; users can also click **Clear voice cache** in the TTS settings tab.
 - **Project `.clang-format`** matching the existing house style: 4-space indent, Allman-for-functions / K&R-for-control-flow braces, right-aligned pointers, 100-col limit. Editors auto-pick it up; existing files were intentionally not mass-reformatted.
 
 ### Fixed
@@ -154,7 +154,7 @@ Stability + security pass driven by an end-to-end audit, plus a TTS voice cache 
 
 ### Removed
 - `EmotionEngine` — its mood-to-animation fan-out duplicated what the state machine now expresses. Streak amplification can return as an `m_intensity` field on the FSM if the behavior is missed in practice.
-- Gaming-mode tray balloon notifications (`Oai is hiding while you play` / `Oai is back!`) — the visibility change is already obvious from the missing window.
+- Gaming-mode tray balloon notifications (`Seelie is hiding while you play` / `Seelie is back!`) — the visibility change is already obvious from the missing window.
 
 ### Fixed
 - One-shot states (Failed/Celebrating/Greeting) restore the sustained state from `m_savedSustained` rather than reading the current `m_baseState`, so a `tool.before` arriving during a `Failed` overlay no longer corrupts restoration.
@@ -231,9 +231,9 @@ Stability + security pass driven by an end-to-end audit, plus a TTS voice cache 
 ### Changed
 - Single source of truth for version: bump `CMakeLists.txt` and everything else (installer, server, in-app About) follows.
 
-[Unreleased]: https://github.com/huangcheng/Oai/compare/v1.2.5...HEAD
-[1.2.5]: https://github.com/huangcheng/Oai/compare/v1.2.4...v1.2.5
-[1.2.4]: https://github.com/huangcheng/Oai/compare/v1.2.3...v1.2.4
-[1.2.3]: https://github.com/huangcheng/Oai/compare/v1.2.2...v1.2.3
-[1.2.2]: https://github.com/huangcheng/Oai/compare/v1.2.1...v1.2.2
-[1.2.1]: https://github.com/huangcheng/Oai/releases/tag/v1.2.1
+[Unreleased]: https://github.com/huangcheng/Seelie/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/huangcheng/Seelie/compare/v1.2.4...v1.2.5
+[1.2.4]: https://github.com/huangcheng/Seelie/compare/v1.2.3...v1.2.4
+[1.2.3]: https://github.com/huangcheng/Seelie/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/huangcheng/Seelie/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/huangcheng/Seelie/releases/tag/v1.2.1

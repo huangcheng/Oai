@@ -1,6 +1,6 @@
 ## Why
 
-Oai's pet window uses `Qt::WindowStaysOnTopHint` unconditionally, which causes it to render on top of fullscreen games (e.g., Genshin Impact, Steam titles). This breaks immersion and forces users to manually hide the pet before gaming and re-show it afterward — a frustrating UX gap for the core audience of developers who also game.
+Seelie's pet window uses `Qt::WindowStaysOnTopHint` unconditionally, which causes it to render on top of fullscreen games (e.g., Genshin Impact, Steam titles). This breaks immersion and forces users to manually hide the pet before gaming and re-show it afterward — a frustrating UX gap for the core audience of developers who also game.
 
 ## What Changes
 
@@ -13,7 +13,7 @@ Oai's pet window uses `Qt::WindowStaysOnTopHint` unconditionally, which causes i
 
 ### New Capabilities
 
-- `gaming-mode`: Fullscreen detection poller and auto-hide/restore logic. Polls the foreground window state at a configurable interval; hides all Oai windows (MainWindow, TipBubbleWidget, EcgWidget) when a fullscreen non-Oai app is active and restores them when it is not.
+- `gaming-mode`: Fullscreen detection poller and auto-hide/restore logic. Polls the foreground window state at a configurable interval; hides all Seelie windows (MainWindow, TipBubbleWidget, EcgWidget) when a fullscreen non-Seelie app is active and restores them when it is not.
 
 ### Modified Capabilities
 

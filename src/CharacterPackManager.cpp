@@ -221,7 +221,7 @@ bool CharacterPackManager::installPack(const QString &archivePath)
     int manifestIdx = mz_zip_reader_locate_file(&zip, "manifest.json", nullptr, 0);
     if (manifestIdx < 0) {
         qWarning() << "CharacterPackManager: No manifest.json in archive:" << archivePath;
-        m_lastError = tr("Archive is missing manifest.json — not a valid Oai pack.");
+        m_lastError = tr("Archive is missing manifest.json — not a valid Seelie pack.");
         mz_zip_reader_end(&zip);
         return false;
     }

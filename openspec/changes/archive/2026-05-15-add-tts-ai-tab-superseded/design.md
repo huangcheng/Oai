@@ -6,7 +6,7 @@
 
 ## Context
 
-The Oai desktop pet currently has a single-page settings panel (`SettingsPanelWidget`) with a vertical grid layout showing all configuration options. The pet communicates visually through tip bubbles only. Users have requested adding Text-to-Speech (TTS) capabilities so the pet can speak tips and greetings aloud.
+The Seelie desktop pet currently has a single-page settings panel (`SettingsPanelWidget`) with a vertical grid layout showing all configuration options. The pet communicates visually through tip bubbles only. Users have requested adding Text-to-Speech (TTS) capabilities so the pet can speak tips and greetings aloud.
 
 The settings panel uses a custom Win98-style design with skewed parallelogram shapes, orange accents (`#F36F1A`), and `HarmonyOS Sans SC` font. All existing settings are managed through `ConfigManager` with QSettings persistence.
 
@@ -62,7 +62,7 @@ Current settings include: language, auto-start, display mode, IPC endpoint, acti
 
 ## Risks / Trade-offs
 
-- **[Risk]** QtWebSockets may not be available in all build environments → **Mitigation:** Make TTS compilation conditional via CMake option `OAI_TTS_ENABLED` (default ON if QtWebSockets found)
+- **[Risk]** QtWebSockets may not be available in all build environments → **Mitigation:** Make TTS compilation conditional via CMake option `SEELIE_TTS_ENABLED` (default ON if QtWebSockets found)
 - **[Risk]** WebSocket connection failures in restricted networks → **Mitigation:** Implement connection retry with exponential backoff; surface connection status in UI
 - **[Risk]** Audio playback conflicts with system sounds → **Mitigation:** Use Qt Multimedia `QMediaPlayer` at low volume; allow volume control in settings
 - **[Risk]** API tokens stored in plain text QSettings → **Mitigation:** Use Qt Keychain (`qtkeychain`) or macOS Keychain for token storage (future enhancement)
@@ -76,9 +76,9 @@ Current settings include: language, auto-start, display mode, IPC endpoint, acti
 4. Add TTS configuration UI to AI tab
 5. Implement TTSEngine with WebSocket support
 6. Integrate TTS calls into TipWidget show flow
-7. Update translations (`Oai_zh_CN.ts`)
+7. Update translations (`Seelie_zh_CN.ts`)
 
-Rollback: Remove `OAI_TTS_ENABLED` CMake flag or disable at compile time. Existing settings remain backward compatible.
+Rollback: Remove `SEELIE_TTS_ENABLED` CMake flag or disable at compile time. Existing settings remain backward compatible.
 
 ## Open Questions
 

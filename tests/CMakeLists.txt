@@ -1,5 +1,5 @@
 # Source files shared between the app and tests (excluding main.cpp)
-set(OAIPET_LIB_SOURCES
+set(SEELIEPET_LIB_SOURCES
     ${CMAKE_SOURCE_DIR}/src/IpcServer.cpp
     ${CMAKE_SOURCE_DIR}/src/IpcServer.h
     ${CMAKE_SOURCE_DIR}/src/UdpWorker.cpp
@@ -62,7 +62,7 @@ set(OAIPET_LIB_SOURCES
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/manual)
 qt_add_executable(test_tts_live
     manual/test_tts_live.cpp
-    ${OAIPET_LIB_SOURCES}
+    ${SEELIEPET_LIB_SOURCES}
 )
 target_link_libraries(test_tts_live PRIVATE
     Qt::Core Qt::Gui Qt::Widgets Qt::Network Qt::Multimedia Qt::Test rlottie::rlottie)
@@ -72,7 +72,7 @@ target_include_directories(test_tts_live PRIVATE
 target_compile_definitions(test_tts_live PRIVATE
     SOURCE_DIR="${CMAKE_SOURCE_DIR}"
     PROJECT_VERSION="${PROJECT_VERSION}"
-    OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}")
+    SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}")
 if(WIN32)
     target_link_libraries(test_tts_live PRIVATE dwmapi)
 endif()
@@ -97,7 +97,7 @@ foreach(test_src ${TEST_SOURCES})
     get_filename_component(test_name ${test_src} NAME_WE)
     qt_add_executable(${test_name}
         ${test_src}
-        ${OAIPET_LIB_SOURCES}
+        ${SEELIEPET_LIB_SOURCES}
     )
     target_link_libraries(${test_name}
         PRIVATE
@@ -126,14 +126,14 @@ foreach(test_src ${TEST_SOURCES})
     target_compile_definitions(${test_name} PRIVATE
         SOURCE_DIR="${CMAKE_SOURCE_DIR}"
         PROJECT_VERSION="${PROJECT_VERSION}"
-        OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}"
+        SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}"
     )
     add_test(NAME ${test_name} COMMAND ${test_name})
 
     find_package(Qt6 6.5 COMPONENTS HttpServer QUIET)
     if(Qt6HttpServer_FOUND)
         target_link_libraries(${test_name} PRIVATE Qt6::HttpServer)
-        target_compile_definitions(${test_name} PRIVATE OAI_HAS_QHTTPSERVER=1)
+        target_compile_definitions(${test_name} PRIVATE SEELIE_HAS_QHTTPSERVER=1)
     endif()
 
     # On Windows the Qt6 DLLs live in Qt's bin/, which is not on the PATH that

@@ -66,7 +66,7 @@ QByteArray UpdateChecker::encodeCheck(quint16 seq) const
 
     QByteArray header;
     header.reserve(10);
-    header.append('O').append('A').append('I').append(static_cast<char>(0x01));   // magic
+    header.append('H').append('C').append('H').append(static_cast<char>(0x01));   // magic
     header.append(static_cast<char>(0x01));                                        // protocol version
     header.append(static_cast<char>(CMD_CHECK));                                   // command
     char seqBytes[2]; qToBigEndian<quint16>(seq, seqBytes);  header.append(seqBytes, 2);

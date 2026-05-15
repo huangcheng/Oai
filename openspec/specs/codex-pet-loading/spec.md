@@ -11,7 +11,7 @@ The system SHALL discover `.codex-pet` files in both the built-in packs director
 - **THEN** any `.codex-pet` files in the built-in packs directory appear in the pack list
 
 #### Scenario: User Codex pet discovery
-- **WHEN** a user places a `.codex-pet` file in `~/.config/Oai/packs/`
+- **WHEN** a user places a `.codex-pet` file in `~/.config/Seelie/packs/`
 - **THEN** the pet appears in the pack list without restarting the application
 
 ### Requirement: System can load Codex pet metadata

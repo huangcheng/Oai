@@ -1,5 +1,5 @@
-#ifndef OAI_TTS_STEPFUNHTTPPROVIDER_H
-#define OAI_TTS_STEPFUNHTTPPROVIDER_H
+#ifndef SEELIE_TTS_STEPFUNHTTPPROVIDER_H
+#define SEELIE_TTS_STEPFUNHTTPPROVIDER_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -11,7 +11,7 @@
 class QNetworkAccessManager;
 class QNetworkReply;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 class StepFunHttpProvider : public QObject, public ITtsProvider {
     Q_OBJECT
@@ -39,6 +39,6 @@ private:
     RequestHandle m_nextHandle = 1;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif

@@ -5,7 +5,7 @@
 #include <QNetworkRequest>
 #include <QUrl>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -98,7 +98,7 @@ RequestHandle AzureSpeechProvider::synthesize(
     qreq.setRawHeader("Ocp-Apim-Subscription-Key", m_cfg.get("key").trimmed().toUtf8());
     qreq.setRawHeader("Content-Type", "application/ssml+xml");
     qreq.setRawHeader("X-Microsoft-OutputFormat", "audio-24khz-48kbitrate-mono-mp3");
-    qreq.setRawHeader("User-Agent", "Oai");
+    qreq.setRawHeader("User-Agent", "Seelie");
     qreq.setTransferTimeout(30000);
 
     QNetworkReply* reply = m_nam->post(qreq, ssml.toUtf8());
@@ -142,4 +142,4 @@ void AzureSpeechProvider::cancel(RequestHandle handle)
     if (reply) reply->abort();
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts

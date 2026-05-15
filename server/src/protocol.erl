@@ -18,7 +18,7 @@
 %%  | 2 B                                                     |
 %%  +---------------------------------------------------------+
 %%
-%%  Magic       = <<"OAI",1>>      (4 bytes)
+%%  Magic       = <<"HCH",1>>      (4 bytes)
 %%  Version     = 1                (1 byte)
 %%  Command     = see command_name/1
 %%  Seq         = uint16 big-endian
@@ -28,7 +28,7 @@
 %%
 %% ------------------------------------------------------------------
 
--define(MAGIC, <<"OAI", 1>>).
+-define(MAGIC, <<"HCH", 1>>).
 -define(VERSION, 1).
 -define(MAX_PAYLOAD, 1384).
 

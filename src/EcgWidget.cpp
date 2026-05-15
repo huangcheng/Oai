@@ -690,7 +690,7 @@ void EcgWidget::initAudio()
     // file on disk). The QSoundEffects below already have `this` as
     // parent — no manual delete needed in ~EcgWidget.
     m_beepFile = new QTemporaryFile(
-        QDir::tempPath() + QStringLiteral("/oai_ecg_beep_XXXXXX.wav"),
+        QDir::tempPath() + QStringLiteral("/seelie_ecg_beep_XXXXXX.wav"),
         this);
     m_beepFile->setAutoRemove(true);
     if (!m_beepFile->open()) {
@@ -711,7 +711,7 @@ void EcgWidget::initAudio()
     m_beep->setVolume(static_cast<float>(m_volume));
 
     m_flatlineBeepFile = new QTemporaryFile(
-        QDir::tempPath() + QStringLiteral("/oai_ecg_flatline_XXXXXX.wav"),
+        QDir::tempPath() + QStringLiteral("/seelie_ecg_flatline_XXXXXX.wav"),
         this);
     m_flatlineBeepFile->setAutoRemove(true);
     if (m_flatlineBeepFile->open()) {

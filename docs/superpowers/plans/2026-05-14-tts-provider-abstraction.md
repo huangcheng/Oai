@@ -30,8 +30,8 @@
 - `src/ConfigManager.h`/`.cpp` — replace flat TTS keys with provider-namespaced keys, add migration, add `activeProviderChanged` signal
 - `src/SettingsPanelWidget.h`/`.cpp` — AI tab becomes provider dropdown + `QStackedWidget` of per-provider forms
 - `CMakeLists.txt` — drop `Qt6::WebSockets`, add new source files, add new test sources
-- `tests/CMakeLists.txt` — add new TTS source files to `OAIPET_LIB_SOURCES`, add the two new test executables
-- `Oai_zh_CN.ts` — translations for new UI strings (added by `lupdate` after UI is in place)
+- `tests/CMakeLists.txt` — add new TTS source files to `SEELIEPET_LIB_SOURCES`, add the two new test executables
+- `Seelie_zh_CN.ts` — translations for new UI strings (added by `lupdate` after UI is in place)
 
 ---
 
@@ -43,8 +43,8 @@
 - [ ] **Step 1: Create the header**
 
 ```cpp
-#ifndef OAI_ITTSPROVIDER_H
-#define OAI_ITTSPROVIDER_H
+#ifndef SEELIE_ITTSPROVIDER_H
+#define SEELIE_ITTSPROVIDER_H
 
 #include <QByteArray>
 #include <QString>
@@ -52,7 +52,7 @@
 #include <memory>
 #include <optional>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 enum class Emotion {
     Neutral,
@@ -114,7 +114,7 @@ public:
     virtual void cancel(RequestHandle handle) = 0;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif
 ```
@@ -137,13 +137,13 @@ git commit -m "tts: add ITtsProvider contract types"
 - [ ] **Step 1: Create `ProviderConfig.h`**
 
 ```cpp
-#ifndef OAI_TTS_PROVIDERCONFIG_H
-#define OAI_TTS_PROVIDERCONFIG_H
+#ifndef SEELIE_TTS_PROVIDERCONFIG_H
+#define SEELIE_TTS_PROVIDERCONFIG_H
 
 #include <QHash>
 #include <QString>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 // Free-form per-provider settings. The keys understood by each adapter are
 // listed in its corresponding ProviderDescriptor::requiredFields/optionalFields.
@@ -159,7 +159,7 @@ struct ProviderConfig {
     bool has(const QString& key) const { return values.contains(key); }
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif
 ```
@@ -167,8 +167,8 @@ struct ProviderConfig {
 - [ ] **Step 2: Create the registry header `TtsProviderRegistry.h`**
 
 ```cpp
-#ifndef OAI_TTS_PROVIDERREGISTRY_H
-#define OAI_TTS_PROVIDERREGISTRY_H
+#ifndef SEELIE_TTS_PROVIDERREGISTRY_H
+#define SEELIE_TTS_PROVIDERREGISTRY_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -181,7 +181,7 @@ struct ProviderConfig {
 
 class QNetworkAccessManager;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 enum class TtsProviderId {
     StepFun,
@@ -217,7 +217,7 @@ public:
     static const ProviderDescriptor* findByStableId(const QString& stableId);
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif
 ```
@@ -246,7 +246,7 @@ This task wires up the registry skeleton with empty voice catalogs and a placeho
 #include <QCoreApplication>
 #include <stdexcept>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -364,7 +364,7 @@ const ProviderDescriptor* TtsProviderRegistry::findByStableId(const QString& sta
     return nullptr;
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts
 ```
 
 - [ ] **Step 2: Commit**
@@ -541,7 +541,7 @@ Keep the existing `setTtsEnabled` definition unchanged.
 
 - [ ] **Step 5: Build to verify there are no callers of the deleted flat API**
 
-Run: `cmake --build build --target Oai 2>&1 | grep -E "ttsBaseUrl|ttsToken|ttsModel|ttsLanguage|ttsVoice"`
+Run: `cmake --build build --target Seelie 2>&1 | grep -E "ttsBaseUrl|ttsToken|ttsModel|ttsLanguage|ttsVoice"`
 Expected: Empty output, OR errors that come **only** from `src/TTSEngine.cpp` and `src/SettingsPanelWidget.cpp` (those are rewritten in later tasks).
 
 If errors appear from any other file, fix those callers now: replace each flat read with `ttsProviderField(ttsActiveProvider(), "<field>")`.
@@ -596,7 +596,7 @@ Create `tests/test_tts_providers.cpp`:
 #include "tts/ProviderConfig.h"
 #include "tts/StepFunHttpProvider.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 class TestTtsProviders : public QObject
 {
@@ -739,7 +739,7 @@ QTEST_MAIN(TestTtsProviders)
 
 - [ ] **Step 2: Wire the test into CMake**
 
-In `tests/CMakeLists.txt`, add `${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.cpp`, `${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.cpp` and the related headers to `OAIPET_LIB_SOURCES` (around line 36, before the closing parenthesis):
+In `tests/CMakeLists.txt`, add `${CMAKE_SOURCE_DIR}/src/tts/TtsProviderRegistry.cpp`, `${CMAKE_SOURCE_DIR}/src/tts/StepFunHttpProvider.cpp` and the related headers to `SEELIEPET_LIB_SOURCES` (around line 36, before the closing parenthesis):
 
 ```cmake
     ${CMAKE_SOURCE_DIR}/src/tts/ITtsProvider.h
@@ -762,7 +762,7 @@ QHttpServer requires Qt::HttpServer. Add a conditional link in the test loop, af
     find_package(Qt6 6.5 COMPONENTS HttpServer QUIET)
     if(Qt6HttpServer_FOUND)
         target_link_libraries(${test_name} PRIVATE Qt::HttpServer)
-        target_compile_definitions(${test_name} PRIVATE OAI_HAS_QHTTPSERVER=1)
+        target_compile_definitions(${test_name} PRIVATE SEELIE_HAS_QHTTPSERVER=1)
     endif()
 ```
 
@@ -776,8 +776,8 @@ Expected: FAIL with "StepFunHttpProvider.h: No such file or directory"
 - [ ] **Step 4: Create `src/tts/StepFunHttpProvider.h`**
 
 ```cpp
-#ifndef OAI_TTS_STEPFUNHTTPPROVIDER_H
-#define OAI_TTS_STEPFUNHTTPPROVIDER_H
+#ifndef SEELIE_TTS_STEPFUNHTTPPROVIDER_H
+#define SEELIE_TTS_STEPFUNHTTPPROVIDER_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -789,7 +789,7 @@ Expected: FAIL with "StepFunHttpProvider.h: No such file or directory"
 class QNetworkAccessManager;
 class QNetworkReply;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 class StepFunHttpProvider : public QObject, public ITtsProvider {
     Q_OBJECT
@@ -817,7 +817,7 @@ private:
     RequestHandle m_nextHandle = 1;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif
 ```
@@ -834,7 +834,7 @@ private:
 #include <QNetworkRequest>
 #include <QUrl>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -943,7 +943,7 @@ void StepFunHttpProvider::cancel(RequestHandle handle)
     m_inFlight.erase(it);   // drops callbacks; finished() lookup will miss
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts
 ```
 
 - [ ] **Step 6: Wire StepFun into the registry factory**
@@ -1090,8 +1090,8 @@ Expected: FAIL with "MiniMaxHttpProvider.h: No such file or directory"
 - [ ] **Step 3: Create `src/tts/MiniMaxHttpProvider.h`**
 
 ```cpp
-#ifndef OAI_TTS_MINIMAXHTTPPROVIDER_H
-#define OAI_TTS_MINIMAXHTTPPROVIDER_H
+#ifndef SEELIE_TTS_MINIMAXHTTPPROVIDER_H
+#define SEELIE_TTS_MINIMAXHTTPPROVIDER_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -1103,7 +1103,7 @@ Expected: FAIL with "MiniMaxHttpProvider.h: No such file or directory"
 class QNetworkAccessManager;
 class QNetworkReply;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 class MiniMaxHttpProvider : public QObject, public ITtsProvider {
     Q_OBJECT
@@ -1130,7 +1130,7 @@ private:
     RequestHandle m_nextHandle = 1;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 #endif
 ```
 
@@ -1147,7 +1147,7 @@ private:
 #include <QUrl>
 #include <QUrlQuery>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -1273,7 +1273,7 @@ void MiniMaxHttpProvider::cancel(RequestHandle handle)
     m_inFlight.erase(it);
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts
 ```
 
 - [ ] **Step 5: Wire MiniMax factory in registry**
@@ -1289,14 +1289,14 @@ In `src/tts/TtsProviderRegistry.cpp`, add `#include "MiniMaxHttpProvider.h"` nea
 
 - [ ] **Step 6: Add MiniMax sources to CMake**
 
-In `tests/CMakeLists.txt`, append to `OAIPET_LIB_SOURCES`:
+In `tests/CMakeLists.txt`, append to `SEELIEPET_LIB_SOURCES`:
 
 ```cmake
     ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/MiniMaxHttpProvider.cpp
 ```
 
-In root `CMakeLists.txt`, add to `qt_add_executable(Oai ...)` source list (around line 384):
+In root `CMakeLists.txt`, add to `qt_add_executable(Seelie ...)` source list (around line 384):
 
 ```cmake
     src/tts/MiniMaxHttpProvider.cpp
@@ -1444,8 +1444,8 @@ Expected: FAIL with "AzureSpeechProvider.h: No such file or directory"
 - [ ] **Step 3: Create `src/tts/AzureSpeechProvider.h`**
 
 ```cpp
-#ifndef OAI_TTS_AZURESPEECHPROVIDER_H
-#define OAI_TTS_AZURESPEECHPROVIDER_H
+#ifndef SEELIE_TTS_AZURESPEECHPROVIDER_H
+#define SEELIE_TTS_AZURESPEECHPROVIDER_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -1457,7 +1457,7 @@ Expected: FAIL with "AzureSpeechProvider.h: No such file or directory"
 class QNetworkAccessManager;
 class QNetworkReply;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 class AzureSpeechProvider : public QObject, public ITtsProvider {
     Q_OBJECT
@@ -1484,7 +1484,7 @@ private:
     RequestHandle m_nextHandle = 1;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 #endif
 ```
 
@@ -1498,7 +1498,7 @@ private:
 #include <QNetworkRequest>
 #include <QUrl>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -1586,7 +1586,7 @@ RequestHandle AzureSpeechProvider::synthesize(
     qreq.setRawHeader("Ocp-Apim-Subscription-Key", m_cfg.get("key").toUtf8());
     qreq.setRawHeader("Content-Type", "application/ssml+xml");
     qreq.setRawHeader("X-Microsoft-OutputFormat", "audio-24khz-48kbitrate-mono-mp3");
-    qreq.setRawHeader("User-Agent", "Oai");
+    qreq.setRawHeader("User-Agent", "Seelie");
 
     QNetworkReply* reply = m_nam->post(qreq, ssml.toUtf8());
     const RequestHandle handle = m_nextHandle++;
@@ -1627,7 +1627,7 @@ void AzureSpeechProvider::cancel(RequestHandle handle)
     m_inFlight.erase(it);
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts
 ```
 
 - [ ] **Step 5: Wire Azure factory and CMake sources**
@@ -1641,14 +1641,14 @@ In `src/tts/TtsProviderRegistry.cpp`: `#include "AzureSpeechProvider.h"`, replac
             },
 ```
 
-Append to `OAIPET_LIB_SOURCES` in `tests/CMakeLists.txt`:
+Append to `SEELIEPET_LIB_SOURCES` in `tests/CMakeLists.txt`:
 
 ```cmake
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.h
     ${CMAKE_SOURCE_DIR}/src/tts/AzureSpeechProvider.cpp
 ```
 
-Append to `qt_add_executable(Oai ...)` in root `CMakeLists.txt`:
+Append to `qt_add_executable(Seelie ...)` in root `CMakeLists.txt`:
 
 ```cmake
     src/tts/AzureSpeechProvider.cpp
@@ -1763,8 +1763,8 @@ Expected: FAIL with "OpenAiTtsProvider.h: No such file or directory"
 - [ ] **Step 3: Create `src/tts/OpenAiTtsProvider.h`**
 
 ```cpp
-#ifndef OAI_TTS_OPENAITTSPROVIDER_H
-#define OAI_TTS_OPENAITTSPROVIDER_H
+#ifndef SEELIE_TTS_OPENAITTSPROVIDER_H
+#define SEELIE_TTS_OPENAITTSPROVIDER_H
 
 #include "ITtsProvider.h"
 #include "ProviderConfig.h"
@@ -1776,7 +1776,7 @@ Expected: FAIL with "OpenAiTtsProvider.h: No such file or directory"
 class QNetworkAccessManager;
 class QNetworkReply;
 
-namespace oai::tts {
+namespace seelie::tts {
 
 class OpenAiTtsProvider : public QObject, public ITtsProvider {
     Q_OBJECT
@@ -1803,7 +1803,7 @@ private:
     RequestHandle m_nextHandle = 1;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 #endif
 ```
 
@@ -1819,7 +1819,7 @@ private:
 #include <QNetworkRequest>
 #include <QUrl>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 namespace {
 
@@ -1905,7 +1905,7 @@ void OpenAiTtsProvider::cancel(RequestHandle handle)
     m_inFlight.erase(it);
 }
 
-} // namespace oai::tts
+} // namespace seelie::tts
 ```
 
 - [ ] **Step 5: Wire OpenAI factory and CMake**
@@ -1919,7 +1919,7 @@ In `src/tts/TtsProviderRegistry.cpp`: `#include "OpenAiTtsProvider.h"`, replace 
             },
 ```
 
-Append to `OAIPET_LIB_SOURCES` in `tests/CMakeLists.txt` and to root `CMakeLists.txt`'s executable source list:
+Append to `SEELIEPET_LIB_SOURCES` in `tests/CMakeLists.txt` and to root `CMakeLists.txt`'s executable source list:
 
 ```cmake
     src/tts/OpenAiTtsProvider.h
@@ -1987,7 +1987,7 @@ public:
 
 public slots:
     void speak(const QString &text);
-    void speakWithOptions(const QString &text, oai::tts::SpeakOptions opts);
+    void speakWithOptions(const QString &text, seelie::tts::SpeakOptions opts);
 
 signals:
     void speakingStarted();
@@ -2006,9 +2006,9 @@ private slots:
 private:
     void initOnThread();           // runs on m_thread after start()
     void rebuildProvider();        // tear down, re-instantiate from current config
-    void doSynthesize(const QString &text, oai::tts::SpeakOptions opts);
-    void onSynthesisSuccess(oai::tts::SynthesisResult result);
-    void onSynthesisError(oai::tts::TtsError err);
+    void doSynthesize(const QString &text, seelie::tts::SpeakOptions opts);
+    void onSynthesisSuccess(seelie::tts::SynthesisResult result);
+    void onSynthesisError(seelie::tts::TtsError err);
     void scheduleRetry();
     void resetAudio();
 
@@ -2016,13 +2016,13 @@ private:
     QThread *m_thread = nullptr;
 
     QNetworkAccessManager *m_nam = nullptr;
-    std::unique_ptr<oai::tts::ITtsProvider> m_provider;
+    std::unique_ptr<seelie::tts::ITtsProvider> m_provider;
     QString m_currentProviderStableId;
 
     // Active request bookkeeping.
-    oai::tts::RequestHandle m_inFlight = 0;
+    seelie::tts::RequestHandle m_inFlight = 0;
     QString m_pendingText;
-    oai::tts::SpeakOptions m_pendingOptions;
+    seelie::tts::SpeakOptions m_pendingOptions;
     int m_retryCount = 0;
     QTimer *m_retryTimer = nullptr;
 
@@ -2050,7 +2050,7 @@ private:
 #include <QMediaDevices>
 #include <QNetworkAccessManager>
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     : QObject(parent), m_config(config)
@@ -2298,7 +2298,7 @@ This test does NOT exercise audio playback (depends on the host audio device); i
 #include "tts/ProviderConfig.h"
 #include "tts/TtsProviderRegistry.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 namespace {
 
@@ -2469,20 +2469,20 @@ The current AI tab has a single hard-coded form (enable, baseUrl, token, model, 
 
 - [ ] **Step 1: Update `SettingsPanelWidget.h`**
 
-Replace the entire `#ifdef OAI_TTS_ENABLED` slot block (lines 66-73) with:
+Replace the entire `#ifdef SEELIE_TTS_ENABLED` slot block (lines 66-73) with:
 
 ```cpp
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     void onTtsEnabledToggled(bool checked);
     void onTtsProviderChanged(int comboIndex);
     void onTtsProviderFieldEdited();        // shared slot for all field editors
 #endif
 ```
 
-Replace the `#ifdef OAI_TTS_ENABLED` UI member block (lines 114-128) with:
+Replace the `#ifdef SEELIE_TTS_ENABLED` UI member block (lines 114-128) with:
 
 ```cpp
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     QLabel       *m_ttsEnabledLabel = nullptr;
     QCheckBox    *m_ttsEnabledCheck = nullptr;
     QLabel       *m_ttsProviderLabel = nullptr;
@@ -2516,7 +2516,7 @@ Add forward declaration at the top of the file: `class QStackedWidget;`
 Locate the existing TTS UI construction in `setupUi()` (search for `m_ttsEnabledCheck`). Replace the entire TTS UI block — including the per-field labels, line edits, and signal connections — with this construction. Use the registry to drive page generation:
 
 ```cpp
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     // === AI tab content ===
     QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
     aiLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);
@@ -2548,7 +2548,7 @@ Locate the existing TTS UI construction in `setupUi()` (search for `m_ttsEnabled
     aiLayout->addWidget(m_ttsProviderStack, 1);
 
     // Build one page per descriptor.
-    using namespace oai::tts;
+    using namespace seelie::tts;
     int activeIndex = 0;
     int comboIndex = 0;
     for (const ProviderDescriptor& desc : TtsProviderRegistry::descriptors()) {
@@ -2638,7 +2638,7 @@ Locate the existing TTS UI construction in `setupUi()` (search for `m_ttsEnabled
 Delete the old per-field slot definitions (`onTtsBaseUrlChanged`, `onTtsTokenChanged`, etc.) and replace them with:
 
 ```cpp
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
 void SettingsPanelWidget::onTtsEnabledToggled(bool checked)
 {
     m_config->setTtsEnabled(checked);
@@ -2681,12 +2681,12 @@ At the top of `SettingsPanelWidget.cpp`, add:
 
 - [ ] **Step 5: Build and run the app**
 
-Run: `cmake --build build --target Oai`
+Run: `cmake --build build --target Seelie`
 
 Then launch:
-- Windows: `./build/Oai.exe`
-- Linux: `./build/Oai`
-- macOS: `open build/Oai.app`
+- Windows: `./build/Seelie.exe`
+- Linux: `./build/Seelie`
+- macOS: `open build/Seelie.app`
 
 Verify:
 1. Open settings → AI tab. Provider dropdown lists "StepFun", "MiniMax", "Azure Speech", "OpenAI".
@@ -2726,45 +2726,45 @@ Edit `CMakeLists.txt`. Replace lines 25-33 (the `find_package(Qt6 ... WebSockets
 ```cmake
 # TTS support is now HTTP-based (no WebSocket dependency). Kept as an
 # optional feature so the build can still drop the AI tab on minimal builds.
-option(OAI_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
+option(SEELIE_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
 ```
 
-Also remove lines 449-453 (the `if(OAI_TTS_ENABLED) target_link_libraries(... Qt::WebSockets)` block) and replace with:
+Also remove lines 449-453 (the `if(SEELIE_TTS_ENABLED) target_link_libraries(... Qt::WebSockets)` block) and replace with:
 
 ```cmake
-if(OAI_TTS_ENABLED)
-    target_compile_definitions(Oai PRIVATE OAI_TTS_ENABLED=1)
+if(SEELIE_TTS_ENABLED)
+    target_compile_definitions(Seelie PRIVATE SEELIE_TTS_ENABLED=1)
 endif()
 ```
 
 - [ ] **Step 2: Add a `tts/` source list to executable**
 
-Inside `qt_add_executable(Oai ...)` source list, replace the two `$<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.cpp/.h>` lines with the full TTS source list, all guarded:
+Inside `qt_add_executable(Seelie ...)` source list, replace the two `$<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.cpp/.h>` lines with the full TTS source list, all guarded:
 
 ```cmake
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ITtsProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ProviderConfig.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/AzureSpeechProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/AzureSpeechProvider.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ITtsProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ProviderConfig.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/AzureSpeechProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/AzureSpeechProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.cpp>
 ```
 
 - [ ] **Step 3: Add a `showAuthFailedHint()` slot to the panel**
 
-In `SettingsPanelWidget.h`, add inside the public slots section under the `#ifdef OAI_TTS_ENABLED` block:
+In `SettingsPanelWidget.h`, add inside the public slots section under the `#ifdef SEELIE_TTS_ENABLED` block:
 
 ```cpp
 public slots:
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     void showAuthFailedHint(const QString &providerStableId);
 #endif
 ```
@@ -2772,7 +2772,7 @@ public slots:
 In `SettingsPanelWidget.cpp`, implement:
 
 ```cpp
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
 void SettingsPanelWidget::showAuthFailedHint(const QString &providerStableId)
 {
     for (const TtsFieldEdit& f : m_ttsFieldEdits) {
@@ -2790,7 +2790,7 @@ void SettingsPanelWidget::showAuthFailedHint(const QString &providerStableId)
 
 - [ ] **Step 4: Wire the signal in `mainwindow.cpp`**
 
-Find where `TTSEngine` is constructed and `SettingsPanelWidget` exists. Add (under `#ifdef OAI_TTS_ENABLED`):
+Find where `TTSEngine` is constructed and `SettingsPanelWidget` exists. Add (under `#ifdef SEELIE_TTS_ENABLED`):
 
 ```cpp
 connect(m_ttsEngine, &TTSEngine::authFailed,
@@ -2799,7 +2799,7 @@ connect(m_ttsEngine, &TTSEngine::authFailed,
 
 - [ ] **Step 5: Verify build**
 
-Run: `cmake --build build --target Oai`
+Run: `cmake --build build --target Seelie`
 Expected: clean build, no WebSockets references in linker output.
 
 - [ ] **Step 6: Commit**
@@ -2814,19 +2814,19 @@ git commit -m "tts: drop Qt::WebSockets dep; show auth-failure hint in AI tab"
 ## Task 12: Translations + manual live test + retire old design doc
 
 **Files:**
-- Modify: `Oai_zh_CN.ts` (regenerate via lupdate)
+- Modify: `Seelie_zh_CN.ts` (regenerate via lupdate)
 - Create: `tests/manual/test_tts_live.cpp`
 - Modify: `tests/CMakeLists.txt`
 - Modify: `openspec/changes/add-tts-ai-tab/design.md` (mark superseded)
 
 - [ ] **Step 1: Regenerate translations**
 
-The Qt translation file `Oai_zh_CN.ts` is updated by `lupdate` against the source tree. Run from the repo root:
+The Qt translation file `Seelie_zh_CN.ts` is updated by `lupdate` against the source tree. Run from the repo root:
 
-Windows: `& "$env:Qt6_DIR/bin/lupdate.exe" -recursive src -ts Oai_zh_CN.ts`
-macOS / Linux: `lupdate -recursive src -ts Oai_zh_CN.ts`
+Windows: `& "$env:Qt6_DIR/bin/lupdate.exe" -recursive src -ts Seelie_zh_CN.ts`
+macOS / Linux: `lupdate -recursive src -ts Seelie_zh_CN.ts`
 
-Open `Oai_zh_CN.ts` and provide Chinese translations for the new strings (look for `<source>...</source>` entries with `type="unfinished"`). The strings introduced by Tasks 3, 10, and 11 are:
+Open `Seelie_zh_CN.ts` and provide Chinese translations for the new strings (look for `<source>...</source>` entries with `type="unfinished"`). The strings introduced by Tasks 3, 10, and 11 are:
 
 | English | Chinese |
 | --- | --- |
@@ -2862,15 +2862,15 @@ Set each `<translation type="unfinished">` to the matching Chinese string and re
 /**
  * test_tts_live.cpp — Manual live-API smoke test.
  *
- * Skipped unless OAI_LIVE_TTS=1 is set in the environment. Reads
+ * Skipped unless SEELIE_LIVE_TTS=1 is set in the environment. Reads
  * credentials from per-provider env vars and exercises each adapter
  * against the real API. Run before releases.
  *
- *   OAI_LIVE_TTS=1 \
- *     OAI_STEPFUN_TOKEN=... \
- *     OAI_MINIMAX_TOKEN=... OAI_MINIMAX_GROUP=... \
- *     OAI_AZURE_KEY=...    OAI_AZURE_REGION=eastus \
- *     OAI_OPENAI_TOKEN=... \
+ *   SEELIE_LIVE_TTS=1 \
+ *     SEELIE_STEPFUN_TOKEN=... \
+ *     SEELIE_MINIMAX_TOKEN=... SEELIE_MINIMAX_GROUP=... \
+ *     SEELIE_AZURE_KEY=...    SEELIE_AZURE_REGION=eastus \
+ *     SEELIE_OPENAI_TOKEN=... \
  *     ./test_tts_live
  */
 
@@ -2884,7 +2884,7 @@ Set each `<translation type="unfinished">` to the matching Chinese string and re
 #include "tts/AzureSpeechProvider.h"
 #include "tts/OpenAiTtsProvider.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 namespace {
 QString env(const char* name) { return QString::fromLocal8Bit(qgetenv(name)); }
@@ -2896,14 +2896,14 @@ class TestTtsLive : public QObject
 
 private slots:
     void initTestCase() {
-        if (env("OAI_LIVE_TTS") != "1")
-            QSKIP("Set OAI_LIVE_TTS=1 to run live-API tests");
+        if (env("SEELIE_LIVE_TTS") != "1")
+            QSKIP("Set SEELIE_LIVE_TTS=1 to run live-API tests");
         m_nam = new QNetworkAccessManager(this);
     }
 
     void stepFun() {
-        const QString token = env("OAI_STEPFUN_TOKEN");
-        if (token.isEmpty()) QSKIP("OAI_STEPFUN_TOKEN not set");
+        const QString token = env("SEELIE_STEPFUN_TOKEN");
+        if (token.isEmpty()) QSKIP("SEELIE_STEPFUN_TOKEN not set");
         ProviderConfig cfg{{
             {"baseUrl", "https://api.stepfun.com"},
             {"token", token},
@@ -2914,10 +2914,10 @@ private slots:
     }
 
     void miniMax() {
-        const QString token = env("OAI_MINIMAX_TOKEN");
-        const QString group = env("OAI_MINIMAX_GROUP");
+        const QString token = env("SEELIE_MINIMAX_TOKEN");
+        const QString group = env("SEELIE_MINIMAX_GROUP");
         if (token.isEmpty() || group.isEmpty())
-            QSKIP("OAI_MINIMAX_TOKEN and OAI_MINIMAX_GROUP required");
+            QSKIP("SEELIE_MINIMAX_TOKEN and SEELIE_MINIMAX_GROUP required");
         ProviderConfig cfg{{
             {"baseUrl", "https://api.minimaxi.com"},
             {"token", token}, {"groupId", group},
@@ -2928,10 +2928,10 @@ private slots:
     }
 
     void azure() {
-        const QString key = env("OAI_AZURE_KEY");
-        const QString region = env("OAI_AZURE_REGION");
+        const QString key = env("SEELIE_AZURE_KEY");
+        const QString region = env("SEELIE_AZURE_REGION");
         if (key.isEmpty() || region.isEmpty())
-            QSKIP("OAI_AZURE_KEY and OAI_AZURE_REGION required");
+            QSKIP("SEELIE_AZURE_KEY and SEELIE_AZURE_REGION required");
         ProviderConfig cfg{{
             {"key", key}, {"region", region},
             {"voice", "en-US-JennyNeural"},
@@ -2941,8 +2941,8 @@ private slots:
     }
 
     void openAi() {
-        const QString token = env("OAI_OPENAI_TOKEN");
-        if (token.isEmpty()) QSKIP("OAI_OPENAI_TOKEN not set");
+        const QString token = env("SEELIE_OPENAI_TOKEN");
+        if (token.isEmpty()) QSKIP("SEELIE_OPENAI_TOKEN not set");
         ProviderConfig cfg{{
             {"baseUrl", "https://api.openai.com/v1"},
             {"token", token}, {"voice", "nova"},
@@ -2956,7 +2956,7 @@ private:
         QByteArray audio;
         QString err;
         QEventLoop loop;
-        provider.synthesize({QStringLiteral("Oai live test."), {}},
+        provider.synthesize({QStringLiteral("Seelie live test."), {}},
             [&](SynthesisResult r){ audio = r.audio; loop.quit(); },
             [&](TtsError e){ err = e.message; loop.quit(); });
         QTimer::singleShot(15000, &loop, &QEventLoop::quit);
@@ -2981,7 +2981,7 @@ In `tests/CMakeLists.txt`, BEFORE the `foreach(test_src ${TEST_SOURCES})` block,
 # but not added to ctest — they require real credentials and network.
 qt_add_executable(test_tts_live
     manual/test_tts_live.cpp
-    ${OAIPET_LIB_SOURCES}
+    ${SEELIEPET_LIB_SOURCES}
 )
 target_link_libraries(test_tts_live PRIVATE
     Qt::Core Qt::Network Qt::Test rlottie::rlottie)
@@ -2991,7 +2991,7 @@ target_include_directories(test_tts_live PRIVATE
 target_compile_definitions(test_tts_live PRIVATE
     SOURCE_DIR="${CMAKE_SOURCE_DIR}"
     PROJECT_VERSION="${PROJECT_VERSION}"
-    OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}")
+    SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}")
 ```
 
 Create the directory before this command runs:
@@ -3018,14 +3018,14 @@ At the top of `openspec/changes/add-tts-ai-tab/design.md`, prepend:
 Run: `cmake --build build && ctest --test-dir build --output-on-failure`
 Expected: all existing + new automated tests PASS. The manual live test is built but not run.
 
-If `OAI_LIVE_TTS=1` and credentials are exported, optionally run:
+If `SEELIE_LIVE_TTS=1` and credentials are exported, optionally run:
 `./build/tests/test_tts_live`
 Expected: 1 test per configured provider, each producing >1KB of audio.
 
 - [ ] **Step 6: Commit**
 
 ```
-git add Oai_zh_CN.ts tests/manual/test_tts_live.cpp tests/CMakeLists.txt \
+git add Seelie_zh_CN.ts tests/manual/test_tts_live.cpp tests/CMakeLists.txt \
         openspec/changes/add-tts-ai-tab/design.md
 git commit -m "tts: zh translations, manual live test, mark old spec superseded"
 ```
@@ -3059,7 +3059,7 @@ If no changes were needed, skip this commit.
 Before declaring done:
 
 - [ ] `cmake --build build && ctest --test-dir build --output-on-failure` is green.
-- [ ] Manual UI test: launch Oai → AI tab → switch through all 4 providers → fields swap, voices populate, "Custom..." reveals text input.
+- [ ] Manual UI test: launch Seelie → AI tab → switch through all 4 providers → fields swap, voices populate, "Custom..." reveals text input.
 - [ ] Manual end-to-end test on at least one provider: enable TTS, fire an event that triggers a tip (or call the gateway with `--event session.start`), audio plays without artifacts.
 - [ ] Restart with config from a prior version that has `tts/baseUrl`, `tts/token` etc.: keys are migrated to `tts/providers/stepfun/*` and the old keys are gone.
 - [ ] No references to `Qt::WebSockets` remain in any CMake file.
@@ -3070,7 +3070,7 @@ Before declaring done:
 
 - **`Retry-After` on 429:** the engine currently retries with fixed 250ms / 1s backoff for both 5xx and 429. The spec contemplates honoring the server's `Retry-After` header on 429. File a follow-up issue if any of the four providers is observed sending a `Retry-After` value larger than 1s in production.
 - **Engine-level integration test injecting `FakeProvider`:** would require adding a test-only registry override on `TTSEngine`. Not worth the friend-test surface for ship one. Coverage comes from per-adapter unit tests + manual live test.
-- **`Oai_zh_CN.ts` placeholder rows:** the table in Task 12 lists strings to translate, but the .ts file is regenerated by `lupdate` against the source — if any string in this plan changed by the time of execution, the actual unfinished entries take precedence. Translate whatever lupdate emits.
+- **`Seelie_zh_CN.ts` placeholder rows:** the table in Task 12 lists strings to translate, but the .ts file is regenerated by `lupdate` against the source — if any string in this plan changed by the time of execution, the actual unfinished entries take precedence. Translate whatever lupdate emits.
 
 
 

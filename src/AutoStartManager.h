@@ -1,5 +1,5 @@
-#ifndef OAI_AUTOSTARTMANAGER_H
-#define OAI_AUTOSTARTMANAGER_H
+#ifndef SEELIE_AUTOSTARTMANAGER_H
+#define SEELIE_AUTOSTARTMANAGER_H
 
 // Reflect the user's "launch at login" preference into the OS's per-user
 // auto-start facility. Stateless namespace — call setEnabled() whenever
@@ -7,9 +7,9 @@
 // itself.
 //
 // Per-platform:
-//   Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Oai
-//   macOS:   ~/Library/LaunchAgents/im.cheng.oai.plist (launchd LaunchAgent)
-//   Linux:   ~/.config/autostart/oai.desktop (XDG autostart spec)
+//   Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Seelie
+//   macOS:   ~/Library/LaunchAgents/im.cheng.seelie.plist (launchd LaunchAgent)
+//   Linux:   ~/.config/autostart/seelie.desktop (XDG autostart spec)
 //
 // On AppImage builds the Linux path uses $APPIMAGE rather than the
 // transient FUSE-mount path returned by applicationFilePath().
@@ -26,4 +26,4 @@ void setEnabled(bool enabled);
 
 } // namespace AutoStartManager
 
-#endif // OAI_AUTOSTARTMANAGER_H
+#endif // SEELIE_AUTOSTARTMANAGER_H

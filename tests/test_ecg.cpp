@@ -42,7 +42,7 @@ static void removeTestConfig()
 {
     {
         QSettings s(QSettings::IniFormat, QSettings::UserScope,
-                    QStringLiteral("OaiTests"), QStringLiteral("OaiTests-Ecg"));
+                    QStringLiteral("SeelieTests"), QStringLiteral("SeelieTests-Ecg"));
         s.clear();
         s.sync();
     }
@@ -54,8 +54,8 @@ static void removeTestConfig()
 
 void TestEcg::initTestCase()
 {
-    QCoreApplication::setOrganizationName("OaiTests");
-    QCoreApplication::setApplicationName("OaiTests-Ecg");
+    QCoreApplication::setOrganizationName("SeelieTests");
+    QCoreApplication::setApplicationName("SeelieTests-Ecg");
     removeTestConfig();
 }
 
@@ -113,7 +113,7 @@ void TestEcg::configMigratesFromOldEcgEnabledKey()
     // Write the old-style key directly via QSettings
     {
         QSettings s(QSettings::IniFormat, QSettings::UserScope,
-                    QStringLiteral("OaiTests"), QStringLiteral("OaiTests-Ecg"));
+                    QStringLiteral("SeelieTests"), QStringLiteral("SeelieTests-Ecg"));
         s.setValue("language", "en"); // ensure the file exists (load() short-circuits otherwise)
         s.setValue("ecgEnabled", true);
         s.sync();
@@ -127,7 +127,7 @@ void TestEcg::configMigratesFromOldEcgEnabledKey()
 
         // Verify old key was removed and new key written
         QSettings s(QSettings::IniFormat, QSettings::UserScope,
-                    QStringLiteral("OaiTests"), QStringLiteral("OaiTests-Ecg"));
+                    QStringLiteral("SeelieTests"), QStringLiteral("SeelieTests-Ecg"));
         QVERIFY(!s.contains("ecgEnabled"));
         QVERIFY(s.contains("displayMode"));
         QCOMPARE(s.value("displayMode").toString(), QStringLiteral("ecg"));

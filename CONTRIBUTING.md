@@ -1,4 +1,4 @@
-# Contributing to Oai
+# Contributing to Seelie
 
 ## Quick Start
 
@@ -93,4 +93,4 @@ it across the whole tree.
 
 - Keep changes focused — one concern per PR
 - Run `cd build && ctest` before pushing
-- If you change IPC behavior, update both this repo and the gateway (`gateways/oai-gateway/`)
+- If you change IPC behavior, update both this repo and the gateway (`gateways/seelie-gateway/`)

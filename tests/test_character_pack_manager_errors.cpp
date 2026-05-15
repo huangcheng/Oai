@@ -22,7 +22,7 @@ private slots:
 void TestCharacterPackManagerErrors::initTestCase()
 {
     QStandardPaths::setTestModeEnabled(true);
-    QCoreApplication::setApplicationName("OaiTestPackErrors");
+    QCoreApplication::setApplicationName("SeelieTestPackErrors");
 }
 
 void TestCharacterPackManagerErrors::installNonexistentFile()

@@ -2,7 +2,7 @@
 #include "ConfigManager.h"
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
 #include "tts/TtsProviderRegistry.h"
 #endif
 
@@ -571,7 +571,7 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_tipBubblesLabel, 7, 0, Qt::AlignLeft | Qt::AlignVCenter);
     formGrid->addWidget(m_tipBubblesCheck, 7, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     // Enable TTS — lives on the General tab beside Event Tips, since users
     // think of it as a feature toggle (like tips) rather than provider config.
     m_ttsEnabledLabel = new QLabel(tr("Enable TTS"), m_contentWidget);
@@ -648,7 +648,7 @@ void SettingsPanelWidget::setupUi()
     // AI tab content
     m_aiTab = new QWidget(m_contentWidget);
     m_aiTab->setVisible(false);
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     QVBoxLayout *aiLayout = new QVBoxLayout(m_aiTab);
     aiLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);
     aiLayout->setSpacing(VERTICAL_SPACING);
@@ -658,7 +658,7 @@ void SettingsPanelWidget::setupUi()
     aiLayout->setSpacing(VERTICAL_SPACING);
 #endif
 
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     // === AI tab content ===
     // (Enable TTS toggle lives on the General tab — see above.)
     setupTtsTabContents(aiLayout, comboStyleSheet);
@@ -905,7 +905,7 @@ void SettingsPanelWidget::onTabChanged(int tabIndex)
     m_aiTabBtn->setStyleSheet(tabIndex == 1 ? activeStyle : inactiveStyle);
 }
 
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
 void SettingsPanelWidget::onTtsEnabledToggled(bool checked)
 {
     m_config->setTtsEnabled(checked);
@@ -1086,7 +1086,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     m_packLabel->setText(tr("Model"));
     if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
     if (m_ttsProviderLabel) m_ttsProviderLabel->setText(tr("Provider"));
@@ -1110,7 +1110,7 @@ void SettingsPanelWidget::retranslateUi()
     }
 }
 
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
 void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
                                                const QString &comboStyleSheet)
 {
@@ -1140,7 +1140,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
     aiLayout->addWidget(m_ttsProviderStack, 1);
 
     // Build one page per descriptor.
-    using namespace oai::tts;
+    using namespace seelie::tts;
     int activeIndex = 0;
     int comboIndex = 0;
     for (const ProviderDescriptor& desc : TtsProviderRegistry::descriptors()) {
@@ -1227,7 +1227,7 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
         }
     )"));
     connect(m_ttsTestButton, &QPushButton::clicked, this, [this]() {
-        emit testTtsRequested(tr("Hello. This is a TTS test from Oai."));
+        emit testTtsRequested(tr("Hello. This is a TTS test from Seelie."));
     });
 
     m_ttsClearCacheButton = new QPushButton(tr("Clear voice cache"), m_aiTab);

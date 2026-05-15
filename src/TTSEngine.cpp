@@ -8,9 +8,9 @@
 #include <QMediaDevices>
 #include <QNetworkAccessManager>
 
-Q_LOGGING_CATEGORY(lcTts, "oai.tts")
+Q_LOGGING_CATEGORY(lcTts, "seelie.tts")
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     : QObject(parent), m_config(config)
@@ -102,10 +102,10 @@ void TTSEngine::initOnThread()
         doSynthesize(m_pendingText, m_pendingOptions);
     });
 
-    m_voiceCache = std::make_unique<oai::tts::TtsVoiceCache>();
+    m_voiceCache = std::make_unique<seelie::tts::TtsVoiceCache>();
     if (m_config) {
         connect(m_config, &ConfigManager::ttsCacheInvalidated,
-                m_voiceCache.get(), &oai::tts::TtsVoiceCache::wipeAll,
+                m_voiceCache.get(), &seelie::tts::TtsVoiceCache::wipeAll,
                 Qt::QueuedConnection);
     }
 
@@ -128,7 +128,7 @@ void TTSEngine::rebuildProvider()
     // can hold references that briefly outlive the cancel call. Move the
     // unique_ptr into a local — it destructs at scope exit, after all
     // synchronous work is complete. Audit H8.
-    std::unique_ptr<oai::tts::ITtsProvider> oldProvider = std::move(m_provider);
+    std::unique_ptr<seelie::tts::ITtsProvider> oldProvider = std::move(m_provider);
     (void)oldProvider;  // RAII: destructs at end of this function
 
     m_currentProviderStableId.clear();
@@ -221,7 +221,7 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
     // / 400 several seconds later. Audit L6.
     if (m_config) {
         const QString providerStableId = m_config->ttsActiveProvider();
-        const auto *desc = oai::tts::TtsProviderRegistry::findByStableId(providerStableId);
+        const auto *desc = seelie::tts::TtsProviderRegistry::findByStableId(providerStableId);
         if (desc) {
             QStringList missing;
             for (const QString &field : desc->requiredFields) {
@@ -243,7 +243,7 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
         const QString providerId = m_config->ttsActiveProvider();
         const QString voiceId = m_config->ttsProviderField(providerId, QStringLiteral("voice"));
         const QString modelId = m_config->ttsProviderField(providerId, QStringLiteral("model"));
-        m_pendingCacheKey = oai::tts::TtsVoiceCache::cacheKey(
+        m_pendingCacheKey = seelie::tts::TtsVoiceCache::cacheKey(
             providerId, voiceId, modelId, opts, text);
 
         if (m_voiceCache->hasCachedAudio(m_pendingCacheKey)) {

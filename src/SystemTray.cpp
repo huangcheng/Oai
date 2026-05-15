@@ -23,7 +23,7 @@ SystemTray::SystemTray(QWidget *mainWindow, ConfigManager *config, QObject *pare
     , m_config(config)
 {
     m_trayIcon = new QSystemTrayIcon(this);
-    m_trayIcon->setToolTip(tr("Oai Desktop Pet"));
+    m_trayIcon->setToolTip(tr("Seelie Desktop Pet"));
 
     // Use the application icon scaled for the system tray
     QIcon appIcon = qApp->windowIcon();
@@ -323,7 +323,7 @@ void SystemTray::refreshPackMenu()
 
 void SystemTray::retranslateUi()
 {
-    m_trayIcon->setToolTip(tr("Oai Desktop Pet"));
+    m_trayIcon->setToolTip(tr("Seelie Desktop Pet"));
     if (m_toggleAction) {
         m_toggleAction->setText(tr("Show/Hide"));
     }

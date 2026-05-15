@@ -1,4 +1,4 @@
-# Oai project clang-format config.
+# Seelie project clang-format config.
 #
 # Tuned to match the codebase's existing style — running this against
 # src/ and tests/ should produce near-zero diff. Style is essentially

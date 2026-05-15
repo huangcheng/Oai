@@ -1,5 +1,5 @@
-#ifndef OAI_PACKDROPHANDLER_H
-#define OAI_PACKDROPHANDLER_H
+#ifndef SEELIE_PACKDROPHANDLER_H
+#define SEELIE_PACKDROPHANDLER_H
 
 #include <QString>
 
@@ -48,4 +48,4 @@ void handleDrop(QDropEvent *event,
 
 } // namespace PackDropHandler
 
-#endif // OAI_PACKDROPHANDLER_H
+#endif // SEELIE_PACKDROPHANDLER_H

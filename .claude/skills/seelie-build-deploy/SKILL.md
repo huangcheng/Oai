@@ -1,13 +1,13 @@
 ---
-name: oai-build-deploy
-description: Bring up the Oai project on a fresh machine — install Qt + Cubism SDK Core, populate submodules, build with scripts/build_release.py, and produce the platform installer (.exe / .dmg / .AppImage). Use when the user is setting up on a new machine, getting a build error before reaching `Configuring done`, debugging a packaging failure, or asking how to ship a release. Triggers on phrases like "build the project", "make an installer", "deploy", "first build", "Live2DCubismCore not found", "GLEW not found", "package_installer", "windeployqt", "macdeployqt", "appimagetool", "fresh clone", "new machine setup", "pet window invisible", "WEBP not supported", "Codex pet fails to load", "build app crashes", "Qt platform plugin".
+name: seelie-build-deploy
+description: Bring up the Seelie project on a fresh machine — install Qt + Cubism SDK Core, populate submodules, build with scripts/build_release.py, and produce the platform installer (.exe / .dmg / .AppImage). Use when the user is setting up on a new machine, getting a build error before reaching `Configuring done`, debugging a packaging failure, or asking how to ship a release. Triggers on phrases like "build the project", "make an installer", "deploy", "first build", "Live2DCubismCore not found", "GLEW not found", "package_installer", "windeployqt", "macdeployqt", "appimagetool", "fresh clone", "new machine setup", "pet window invisible", "WEBP not supported", "Codex pet fails to load", "build app crashes", "Qt platform plugin".
 license: MIT
 metadata:
-  author: oai
+  author: seelie
   version: "1.1"
 ---
 
-Oai is a native Qt6/C++ desktop pet that renders Live2D Cubism characters and reacts to AI-coding-tool events over UDP. Getting from `git clone` to a shippable installer involves five moving parts that bite first-time setups in predictable ways. This skill captures the entire pipeline plus the workarounds for the gotchas we've actually hit.
+Seelie is a native Qt6/C++ desktop pet that renders Live2D Cubism characters and reacts to AI-coding-tool events over UDP. Getting from `git clone` to a shippable installer involves five moving parts that bite first-time setups in predictable ways. This skill captures the entire pipeline plus the workarounds for the gotchas we've actually hit.
 
 ## When to use
 
@@ -23,7 +23,7 @@ Skip when the question is about runtime behaviour (event routing, IPC, character
 ## Project at a glance
 
 ```
-F:/Oai/  (or wherever the repo is)
+F:/Seelie/  (or wherever the repo is)
 ├── src/                        # C++ sources (Qt 6, OpenGL via GLEW)
 ├── assets/
 │   ├── packs/                  # Live2D character packs (.opk source dirs)
@@ -35,14 +35,14 @@ F:/Oai/  (or wherever the repo is)
 │   └── upstream-live2d/        # SUBMODULE — Eikanya asset archive (~16 GB, opt-in)
 ├── installer/                  # Qt Installer Framework config
 │   ├── config.xml.in           # rendered to config.xml at configure time
-│   └── packages/im.cheng.oai.desktop/
+│   └── packages/im.cheng.seelie.desktop/
 ├── scripts/
 │   ├── build_release.py        # one-shot build + package driver
 │   └── import_live2d.py        # bake .opks from upstream archive
 └── CMakeLists.txt              # entry point for both build flavours
 ```
 
-Three things ship in the installer: the `Oai.exe` binary, ~116 Live2D `.opk` packs, and `Live2DCubismCore.dll` (or platform equivalent) next to the executable.
+Three things ship in the installer: the `Seelie.exe` binary, ~116 Live2D `.opk` packs, and `Live2DCubismCore.dll` (or platform equivalent) next to the executable.
 
 ## Prerequisites
 
@@ -61,8 +61,8 @@ The build script auto-detects all of these — you do not have to put any of the
 ## Step 1 — Clone and submodules
 
 ```bash
-git clone git@github.com:huangcheng/Oai.git
-cd Oai
+git clone git@github.com:huangcheng/Seelie.git
+cd Seelie
 git submodule update --init thirdparty/CubismNativeFramework thirdparty/CubismNativeSamples
 ```
 
@@ -107,9 +107,9 @@ That's it. The script:
 2. Configures the build into `build/` (or `--build-dir` arg).
 3. Runs `cmake --build` with `--parallel`.
 4. Hands off to the platform packager:
-   - **Windows** → `cmake --target package_installer` (which stages files via QtIFW's data dir, runs `windeployqt`, then `binarycreator --offline-only`). Output: `build/OaiInstaller-<version>.exe` (~2 GB with all 116 packs).
-   - **macOS** → `macdeployqt` on `Oai.app`, ad-hoc `codesign`, then `hdiutil create ... -format UDZO`. Output: `build/Oai-<version>.dmg`.
-   - **Linux** → `cmake --install` to `build/AppDir/usr/`, write a `.desktop` file, copy the icon to `hicolor/256x256/apps/`, then `appimagetool` (or `linuxdeploy --output appimage`). Output: `build/Oai-<version>-<arch>.AppImage`.
+   - **Windows** → `cmake --target package_installer` (which stages files via QtIFW's data dir, runs `windeployqt`, then `binarycreator --offline-only`). Output: `build/SeelieInstaller-<version>.exe` (~2 GB with all 116 packs).
+   - **macOS** → `macdeployqt` on `Seelie.app`, ad-hoc `codesign`, then `hdiutil create ... -format UDZO`. Output: `build/Seelie-<version>.dmg`.
+   - **Linux** → `cmake --install` to `build/AppDir/usr/`, write a `.desktop` file, copy the icon to `hicolor/256x256/apps/`, then `appimagetool` (or `linuxdeploy --output appimage`). Output: `build/Seelie-<version>-<arch>.AppImage`.
 
 Useful flags:
 - `--skip-build` — re-run packaging only (binaries already built).
@@ -150,22 +150,22 @@ undefined reference to `Live2DAnimationEngine::staticMetaObject'
 undefined reference to `vtable for Live2DAnimationEngine'
 ```
 
-Cause: `Q_OBJECT` macros inside `#ifdef OAI_LIVE2D_SUPPORT` weren't seen by `moc` on the first pass, and ninja didn't re-run moc when the macro flipped because the header mtime didn't change.
+Cause: `Q_OBJECT` macros inside `#ifdef SEELIE_LIVE2D_SUPPORT` weren't seen by `moc` on the first pass, and ninja didn't re-run moc when the macro flipped because the header mtime didn't change.
 
 Fix:
 ```bash
-rm -rf build/Oai_autogen build/CMakeFiles/Oai.dir
+rm -rf build/Seelie_autogen build/CMakeFiles/Seelie.dir
 touch src/Live2DAnimationEngine.h src/mainwindow.h src/EventRouter.h
 python scripts/build_release.py --skip-package
 ```
 
 ### 4. Stale installer staging — "ships old packs even after re-import"
 
-The `installer_stage` CMake target depends on `Oai` and `${ALL_PACK_OPKS}`. If you somehow regenerate packs without touching either (rare — manual file edits inside the staging dir, partial cleanups), the installer can ship a stale data dir.
+The `installer_stage` CMake target depends on `Seelie` and `${ALL_PACK_OPKS}`. If you somehow regenerate packs without touching either (rare — manual file edits inside the staging dir, partial cleanups), the installer can ship a stale data dir.
 
 Fix:
 ```bash
-rm -rf installer/packages/im.cheng.oai.desktop/data build/installer_stage.stamp
+rm -rf installer/packages/im.cheng.seelie.desktop/data build/installer_stage.stamp
 python scripts/build_release.py --skip-build
 ```
 
@@ -192,13 +192,13 @@ Qt 6.11+'s `qwindows.dll` realises frameless tool windows in a way that Win11's 
 Fix is already committed (`f6513dc`). If it regresses, check that:
 - `WA_NoSystemBackground` is set on both windows on all platforms (not just `#ifdef Q_OS_MAC`).
 - `showEvent` calls `DwmSetWindowAttribute` for `DWMWA_WINDOW_CORNER_PREFERENCE` (=DWMWCP_DONOTROUND), `DWMWA_SYSTEMBACKDROP_TYPE` (=DWMSBT_NONE), `DWMWA_NCRENDERING_POLICY` (=DWMNCRP_DISABLED).
-- `dwmapi` is in `target_link_libraries` for `Oai` and any test binary that pulls in `TipBubbleWidget.cpp`.
+- `dwmapi` is in `target_link_libraries` for `Seelie` and any test binary that pulls in `TipBubbleWidget.cpp`.
 
-### 7. The path you have entered is not valid \Oai
+### 7. The path you have entered is not valid \Seelie
 
-The QtIFW wizard's TargetDir line was ending up as a literal `/Oai`, resolving to root-of-current-drive. Cause: `configure_file`'s @-substitution was eating `@ApplicationsDir@` (which is meant to be substituted by IFW at install time, not by CMake at configure time).
+The QtIFW wizard's TargetDir line was ending up as a literal `/Seelie`, resolving to root-of-current-drive. Cause: `configure_file`'s @-substitution was eating `@ApplicationsDir@` (which is meant to be substituted by IFW at install time, not by CMake at configure time).
 
-Fix already committed (`ecc27a5`): route through a CMake variable `IFW_TARGET_DIR` whose *value* is `@ApplicationsDir@/Oai`. `configure_file` writes the `@-token` verbatim; IFW expands it later. If this regresses, check `installer/config.xml.in` says `<TargetDir>@IFW_TARGET_DIR@</TargetDir>` and `CMakeLists.txt` does `set(IFW_TARGET_DIR "@ApplicationsDir@/Oai")` before the `configure_file` call.
+Fix already committed (`ecc27a5`): route through a CMake variable `IFW_TARGET_DIR` whose *value* is `@ApplicationsDir@/Seelie`. `configure_file` writes the `@-token` verbatim; IFW expands it later. If this regresses, check `installer/config.xml.in` says `<TargetDir>@IFW_TARGET_DIR@</TargetDir>` and `CMakeLists.txt` does `set(IFW_TARGET_DIR "@ApplicationsDir@/Seelie")` before the `configure_file` call.
 
 ### 8. CMake picks the wrong Qt kit
 
@@ -227,10 +227,10 @@ git update-index --add --cacheinfo 160000 $SHA thirdparty/upstream-live2d
 git commit -m "build: restore upstream-live2d submodule pin"
 ```
 
-### 10. Installed Oai.exe crashes with "Live2DCubismCore.dll was not found"
+### 10. Installed Seelie.exe crashes with "Live2DCubismCore.dll was not found"
 
 ```
-Oai.exe - System Error
+Seelie.exe - System Error
 The code execution cannot proceed because Live2DCubismCore.dll was not found.
 Reinstalling the program may fix this problem.
 ```
@@ -244,12 +244,12 @@ Fix already committed (`7ebadcb`) for Cubism Core specifically. The pattern for 
 install(FILES ${PATH_TO_DLL}/Foo.dll
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# 2. Stage it next to Oai.exe in the build dir so direct-run from
-#    Qt Creator / `./Oai.exe` works without a manual cp.
-add_custom_command(TARGET Oai POST_BUILD
+# 2. Stage it next to Seelie.exe in the build dir so direct-run from
+#    Qt Creator / `./Seelie.exe` works without a manual cp.
+add_custom_command(TARGET Seelie POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${PATH_TO_DLL}/Foo.dll
-            $<TARGET_FILE_DIR:Oai>
+            $<TARGET_FILE_DIR:Seelie>
     VERBATIM)
 ```
 
@@ -257,24 +257,24 @@ After applying:
 
 ```bash
 # Wipe stale install staging — installer_stage's DEPENDS doesn't track
-# new install() rules, only Oai + ${ALL_PACK_OPKS}.
-rm -rf installer/packages/im.cheng.oai.desktop/data build/installer_stage.stamp
+# new install() rules, only Seelie + ${ALL_PACK_OPKS}.
+rm -rf installer/packages/im.cheng.seelie.desktop/data build/installer_stage.stamp
 python scripts/build_release.py
 ```
 
 Verify the DLL made it:
 ```bash
-ls installer/packages/im.cheng.oai.desktop/data/Foo.dll  # at root, NOT data/bin/
+ls installer/packages/im.cheng.seelie.desktop/data/Foo.dll  # at root, NOT data/bin/
 ```
 
-(The staging step flattens `bin/` into the data root — that matches the installer's flat target layout next to `Oai.exe`.)
+(The staging step flattens `bin/` into the data root — that matches the installer's flat target layout next to `Seelie.exe`.)
 
 The MSVC Windows path doesn't need this: the `_MD.lib` it links against is the **static** Cubism Core variant, not an import library. Static linkage keeps the runtime DLL out of the picture entirely. macOS / Linux also static-link Cubism (`libLive2DCubismCore.a`) and are similarly unaffected. The install-rule pattern above is specifically for **MinGW + import-library DLLs**.
 
-### 11. Installed Oai.exe crashes with "no Qt platform plugin could be initialized"
+### 11. Installed Seelie.exe crashes with "no Qt platform plugin could be initialized"
 
 ```
-Oai
+Seelie
 This application failed to start because no Qt platform plugin could
 be initialized. Reinstalling the application may fix this problem.
 ```
@@ -286,7 +286,7 @@ Cause: `windeployqt` writes
 [Paths]
 Prefix = ..
 ```
-into `qt.conf` because it assumes `Oai.exe` lives in `<root>/bin/` and Qt should walk up one level to find `<root>/plugins/`. But our staging step (CMakeLists.txt staging custom command) flattens `<root>/bin/` into the data root — the installed layout is `<install>/Oai.exe`, `<install>/plugins/`, `<install>/qt.conf`. With `Prefix = ..` Qt looks for plugins one level *above* the install dir (e.g. `C:\Program Files\plugins\platforms\`) and finds nothing.
+into `qt.conf` because it assumes `Seelie.exe` lives in `<root>/bin/` and Qt should walk up one level to find `<root>/plugins/`. But our staging step (CMakeLists.txt staging custom command) flattens `<root>/bin/` into the data root — the installed layout is `<install>/Seelie.exe`, `<install>/plugins/`, `<install>/qt.conf`. With `Prefix = ..` Qt looks for plugins one level *above* the install dir (e.g. `C:\Program Files\plugins\platforms\`) and finds nothing.
 
 Fix already committed (`238d9c7`): generate `qt.conf.flat` at configure time with `Prefix = .` and copy it over the windeployqt-written file in the staging step, after the bin/-flatten. The CMakeLists pattern:
 
@@ -297,12 +297,12 @@ file(WRITE ${CMAKE_BINARY_DIR}/qt.conf.flat "[Paths]\nPrefix = .\n")
 # Build-time: in the installer_stage custom_command, after the bin-flatten:
 COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_BINARY_DIR}/qt.conf.flat
-        ${OAI_IFW_PKG_DATA}/qt.conf
+        ${SEELIE_IFW_PKG_DATA}/qt.conf
 ```
 
 Verify after a rebuild:
 ```bash
-cat installer/packages/im.cheng.oai.desktop/data/qt.conf
+cat installer/packages/im.cheng.seelie.desktop/data/qt.conf
 # Expected:
 # [Paths]
 # Prefix = .
@@ -316,22 +316,22 @@ This pitfall is closely related to #4 and #10: every "ships and crashes immediat
 
 Two distinct caches conspire here.
 
-**a) MinGW windres dependency tracking is incomplete.** `oai.rc` does
+**a) MinGW windres dependency tracking is incomplete.** `seelie.rc` does
 ```
-IDI_ICON1 ICON "@CMAKE_SOURCE_DIR@/assets/oai.ico"
+IDI_ICON1 ICON "@CMAKE_SOURCE_DIR@/assets/seelie.ico"
 ```
-but `windres` doesn't emit a `.d` deps file listing `oai.ico` as an input. Ninja therefore doesn't know to rebuild `oai.rc.obj` when only `oai.ico` changes — and the linked `Oai.exe` ships with the previous icon embedded, even though the on-disk `.ico` is fresh.
+but `windres` doesn't emit a `.d` deps file listing `seelie.ico` as an input. Ninja therefore doesn't know to rebuild `seelie.rc.obj` when only `seelie.ico` changes — and the linked `Seelie.exe` ships with the previous icon embedded, even though the on-disk `.ico` is fresh.
 
 Fix already committed (`dcdf212`): make the dep explicit.
 
 ```cmake
-set_source_files_properties(${CMAKE_BINARY_DIR}/oai.rc PROPERTIES
-    OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/assets/oai.ico)
+set_source_files_properties(${CMAKE_BINARY_DIR}/seelie.rc PROPERTIES
+    OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/assets/seelie.ico)
 ```
 
 If this regresses, the manual recovery is one-shot:
 ```bash
-rm build/CMakeFiles/Oai.dir/oai.rc.obj
+rm build/CMakeFiles/Seelie.dir/seelie.rc.obj
 python scripts/build_release.py --skip-package
 ```
 
@@ -349,16 +349,16 @@ Or restart Explorer:
 taskkill /f /im explorer.exe & start explorer.exe
 ```
 
-Or — since the Oai installer puts the binary at a fixed path (`C:\Program Files\Oai\Oai.exe`) — uninstalling and reinstalling tends to invalidate the cache for that path naturally. The in-app tray icon and the SystemTray-rendered icon load from the qrc resource (`oai.png`), not from the exe's embedded icon, so they refresh as soon as a fresh `Oai.exe` runs — those aren't affected by IconCache, only Explorer's per-exe thumbnails are.
+Or — since the Seelie installer puts the binary at a fixed path (`C:\Program Files\Seelie\Seelie.exe`) — uninstalling and reinstalling tends to invalidate the cache for that path naturally. The in-app tray icon and the SystemTray-rendered icon load from the qrc resource (`seelie.png`), not from the exe's embedded icon, so they refresh as soon as a fresh `Seelie.exe` runs — those aren't affected by IconCache, only Explorer's per-exe thumbnails are.
 
 When debugging an "icon won't update" complaint:
-1. `stat` mtimes to check `oai.rc.obj` is newer than `oai.ico` — if not, it's (a).
-2. `Oai.exe` mtime is newer than `oai.rc.obj` — confirms the link picked up the new .obj.
+1. `stat` mtimes to check `seelie.rc.obj` is newer than `seelie.ico` — if not, it's (a).
+2. `Seelie.exe` mtime is newer than `seelie.rc.obj` — confirms the link picked up the new .obj.
 3. If both check out, it's (b) — kick the IconCache.
 
 ### 13. macOS: Build-directory app crashes with Qt platform plugin conflict
 
-Running `./build/Oai.app/Contents/MacOS/Oai` directly crashes immediately:
+Running `./build/Seelie.app/Contents/MacOS/Seelie` directly crashes immediately:
 ```
 abort() called
 QGuiApplicationPrivate::createPlatformIntegration()
@@ -371,26 +371,26 @@ Cause: The binary links to Qt via `@rpath`, but the shell environment has `DYLD_
 Fix: Always test via LaunchServices:
 ```bash
 # Install and test the proper way
-rm -rf /Applications/Oai.app
-cp -R build/Oai.app /Applications/Oai.app
-xattr -cr /Applications/Oai.app          # remove quarantine
-open /Applications/Oai.app
+rm -rf /Applications/Seelie.app
+cp -R build/Seelie.app /Applications/Seelie.app
+xattr -cr /Applications/Seelie.app          # remove quarantine
+open /Applications/Seelie.app
 ```
 
 Or use `open -n` for a second instance while one is already running:
 ```bash
-open -n /Applications/Oai.app
+open -n /Applications/Seelie.app
 ```
 
-### 14. macOS: `open build/Oai.app` launches the wrong binary
+### 14. macOS: `open build/Seelie.app` launches the wrong binary
 
-After copying a fresh build to `/Applications/Oai.app`, running `open build/Oai.app` still opens the **old** installed version. Both bundles share the same bundle ID (`im.cheng.oai`), so LaunchServices resolves `build/Oai.app` to the already-registered `/Applications/Oai.app`.
+After copying a fresh build to `/Applications/Seelie.app`, running `open build/Seelie.app` still opens the **old** installed version. Both bundles share the same bundle ID (`im.cheng.seelie`), so LaunchServices resolves `build/Seelie.app` to the already-registered `/Applications/Seelie.app`.
 
 Fix: Remove or replace the installed app first, or use absolute path with `-n`:
 ```bash
-rm -rf /Applications/Oai.app
-cp -R build/Oai.app /Applications/Oai.app
-open /Applications/Oai.app
+rm -rf /Applications/Seelie.app
+cp -R build/Seelie.app /Applications/Seelie.app
+open /Applications/Seelie.app
 ```
 
 ### 15. macOS: WEBP plugin corrupted by macdeployqt — Codex pets fail to load
@@ -422,18 +422,18 @@ Fix (already integrated into `scripts/build_release.py`):
 The build script now handles this automatically. If you're debugging a custom build pipeline, verify:
 ```bash
 # WEBP plugin should have @rpath deps, not /opt/homebrew/...
-otool -L Oai.app/Contents/PlugIns/imageformats/libqwebp.dylib | grep webp
+otool -L Seelie.app/Contents/PlugIns/imageformats/libqwebp.dylib | grep webp
 # Expected: @rpath/libwebp.7.dylib, @rpath/libsharpyuv.0.dylib, etc.
 
 # sharpyuv must exist in Frameworks/
-ls Oai.app/Contents/Frameworks/libsharpyuv.0.dylib
+ls Seelie.app/Contents/Frameworks/libsharpyuv.0.dylib
 ```
 
 ### 16. macOS: Invisible pet window — broken pack loading
 
 The pet window exists but shows nothing (transparent/black). Common causes:
 
-**a) Preferred pack fails to load, no fallback.** If the user's config (`~/.config/Oai/Oai.ini`) has `activePackId=dario` but dario can't load (e.g., missing WEBP plugin), the old code left `m_activePack = nullptr` and the pet rendered nothing.
+**a) Preferred pack fails to load, no fallback.** If the user's config (`~/.config/Seelie/Seelie.ini`) has `activePackId=dario` but dario can't load (e.g., missing WEBP plugin), the old code left `m_activePack = nullptr` and the pet rendered nothing.
 
 Fix (already committed): `CharacterPackManager::initialize()` now iterates through all available packs as fallback when the preferred pack fails:
 ```cpp
@@ -447,12 +447,12 @@ for (const QString &packId : candidates) {
 }
 ```
 
-**b) Window position saved off-screen.** If the pet was dragged to a now-disconnected monitor, `windowX`/`windowY` in `~/.config/Oai/Oai.ini` may place it outside the visible screen.
+**b) Window position saved off-screen.** If the pet was dragged to a now-disconnected monitor, `windowX`/`windowY` in `~/.config/Seelie/Seelie.ini` may place it outside the visible screen.
 
 Fix: Reset window position:
 ```bash
-sed -i '' 's/windowX=.*/windowX=100/' ~/.config/Oai/Oai.ini
-sed -i '' 's/windowY=.*/windowY=500/' ~/.config/Oai/Oai.ini
+sed -i '' 's/windowX=.*/windowX=100/' ~/.config/Seelie/Seelie.ini
+sed -i '' 's/windowY=.*/windowY=500/' ~/.config/Seelie/Seelie.ini
 ```
 
 **c) Missing assets directory.** The app searches for `animations.json` as a sentinel. If `findAssetsDir()` returns empty, the app has no animations to render.
@@ -460,8 +460,8 @@ sed -i '' 's/windowY=.*/windowY=500/' ~/.config/Oai/Oai.ini
 Verify:
 ```bash
 # In the installed app
-ls /Applications/Oai.app/Contents/Resources/assets/animations.json
-ls /Applications/Oai.app/Contents/Resources/assets/packs/
+ls /Applications/Seelie.app/Contents/Resources/assets/animations.json
+ls /Applications/Seelie.app/Contents/Resources/assets/packs/
 ```
 
 ### 13. macOS: "The application can't be opened" / LaunchServices error 153
@@ -472,38 +472,38 @@ error=Error Domain=RBSRequestErrorDomain Code=5 "Launch failed."
 NSPOSIXErrorDomain Code=153 "Launchd job spawn failed"
 ```
 
-The binary runs fine via `./Oai.app/Contents/MacOS/Oai` but `open Oai.app` (and Finder double-click) fail. Cause: `macdeployqt` bundles QML frameworks (QtQml, QtQmlModels, QtQmlWorkerScript, QtQuick) and the `platforminputcontexts/libqtvirtualkeyboardplugin.dylib` plugin even though Oai is a pure Widgets app. These frameworks have malformed Mach-O headers (`install_name_tool` reports "malformed object") and the virtual keyboard plugin has no `LC_ID_DYLIB`. LaunchServices validates signatures on all embedded binaries before launch — the malformed ones cause a blanket rejection even though the main binary is fine.
+The binary runs fine via `./Seelie.app/Contents/MacOS/Seelie` but `open Seelie.app` (and Finder double-click) fail. Cause: `macdeployqt` bundles QML frameworks (QtQml, QtQmlModels, QtQmlWorkerScript, QtQuick) and the `platforminputcontexts/libqtvirtualkeyboardplugin.dylib` plugin even though Seelie is a pure Widgets app. These frameworks have malformed Mach-O headers (`install_name_tool` reports "malformed object") and the virtual keyboard plugin has no `LC_ID_DYLIB`. LaunchServices validates signatures on all embedded binaries before launch — the malformed ones cause a blanket rejection even though the main binary is fine.
 
 Fix (already part of the packaging flow):
 
 ```bash
-# After macdeployqt, remove what Oai doesn't need:
-rm -rf Oai.app/Contents/PlugIns/platforminputcontexts
-rm -rf Oai.app/Contents/Frameworks/QtQml*.framework
-rm -rf Oai.app/Contents/Frameworks/QtQmlWorkerScript.framework
-rm -rf Oai.app/Contents/Frameworks/QtQuick.framework
+# After macdeployqt, remove what Seelie doesn't need:
+rm -rf Seelie.app/Contents/PlugIns/platforminputcontexts
+rm -rf Seelie.app/Contents/Frameworks/QtQml*.framework
+rm -rf Seelie.app/Contents/Frameworks/QtQmlWorkerScript.framework
+rm -rf Seelie.app/Contents/Frameworks/QtQuick.framework
 
 # Sign bottom-up: frameworks/dylibs first, then the main binary, then the bundle
-find Oai.app/Contents/Frameworks -type f \( -name "*.dylib" -o -path "*/Versions/A/*" \) \
+find Seelie.app/Contents/Frameworks -type f \( -name "*.dylib" -o -path "*/Versions/A/*" \) \
   -exec codesign --force --sign - {} \;
-find Oai.app/Contents/PlugIns -name "*.dylib" \
+find Seelie.app/Contents/PlugIns -name "*.dylib" \
   -exec codesign --force --sign - {} \;
-codesign --force --sign - Oai.app/Contents/MacOS/Oai
-codesign --deep --force --sign - Oai.app
+codesign --force --sign - Seelie.app/Contents/MacOS/Seelie
+codesign --deep --force --sign - Seelie.app
 ```
 
 Key points:
 - `--deep` alone is not reliable — it doesn't always re-sign nested components whose existing signature is "valid but ad-hoc". Sign leaf binaries explicitly first.
-- The quarantine attribute (`com.apple.quarantine`) is a separate issue: `xattr -r -d com.apple.quarantine Oai.app` removes it, but that alone won't help if signatures are broken.
+- The quarantine attribute (`com.apple.quarantine`) is a separate issue: `xattr -r -d com.apple.quarantine Seelie.app` removes it, but that alone won't help if signatures are broken.
 - If distributing to other machines without a Developer ID certificate, users will always need the `xattr` step after downloading.
 
 ## Cross-platform packaging summary
 
 | Platform | Built artefact | Bundles | Auto-discovered tooling |
 |----------|----------------|---------|-------------------------|
-| Windows | `OaiInstaller-<v>.exe` | Oai.exe, all .opks, Live2DCubismCore.dll, Qt DLLs (via windeployqt), 32 locale .qm files | `binarycreator`, `windeployqt`, MinGW from Qt Tools |
-| macOS | `Oai-<v>.dmg` | Oai.app (with packs in `Contents/Resources/packs/`, Cubism Core lib statically linked, Qt frameworks via macdeployqt, ad-hoc codesigned) | `macdeployqt`, `codesign`, `xattr`, `hdiutil` |
-| Linux | `Oai-<v>-<arch>.AppImage` | usr/bin/Oai, usr/lib/, usr/share/applications/oai.desktop, usr/share/icons/.../oai.png | `appimagetool` *or* `linuxdeploy` (whichever is on PATH) |
+| Windows | `SeelieInstaller-<v>.exe` | Seelie.exe, all .opks, Live2DCubismCore.dll, Qt DLLs (via windeployqt), 32 locale .qm files | `binarycreator`, `windeployqt`, MinGW from Qt Tools |
+| macOS | `Seelie-<v>.dmg` | Seelie.app (with packs in `Contents/Resources/packs/`, Cubism Core lib statically linked, Qt frameworks via macdeployqt, ad-hoc codesigned) | `macdeployqt`, `codesign`, `xattr`, `hdiutil` |
+| Linux | `Seelie-<v>-<arch>.AppImage` | usr/bin/Seelie, usr/lib/, usr/share/applications/seelie.desktop, usr/share/icons/.../seelie.png | `appimagetool` *or* `linuxdeploy` (whichever is on PATH) |
 
 The macOS path uses static Cubism linkage (`libLive2DCubismCore.a`); Win/Linux use the shared Cubism runtime. CMakeLists.txt:147–177 has the platform branching.
 
@@ -513,18 +513,18 @@ After a successful run, sanity checks:
 
 ```bash
 # Windows
-ls -la build/OaiInstaller-*.exe
+ls -la build/SeelieInstaller-*.exe
 ls build/Live2DCubismCore.dll              # must exist for direct-run from build/
-ls installer/packages/im.cheng.oai.desktop/data/packs/ | wc -l   # should be 116
+ls installer/packages/im.cheng.seelie.desktop/data/packs/ | wc -l   # should be 116
 
 # macOS
-ls -la build/Oai-*.dmg
-codesign -dv build/Oai.app                 # ad-hoc signed
-ls build/Oai.app/Contents/Resources/packs/ | wc -l
+ls -la build/Seelie-*.dmg
+codesign -dv build/Seelie.app                 # ad-hoc signed
+ls build/Seelie.app/Contents/Resources/packs/ | wc -l
 
 # Linux
-ls -la build/Oai-*.AppImage
-file build/Oai-*.AppImage                  # ELF executable, AppImage
+ls -la build/Seelie-*.AppImage
+file build/Seelie-*.AppImage                  # ELF executable, AppImage
 ```
 
 If the Windows installer comes out under ~250 MB, packs were not staged — either `installer_stage.stamp` is stale (see pitfall #4) or `assets/packs/` is empty (you forgot to import or only have the 21 first-party packs).
@@ -532,6 +532,6 @@ If the Windows installer comes out under ~250 MB, packs were not staged — eith
 ## Adjacent skills
 
 - `import-live2d-models` — bake more `.opk` files from the Eikanya archive into `assets/packs/`.
-- `oai-server` — the Aliyun-hosted UDP update server that the built binary phones home to.
+- `seelie-server` — the Aliyun-hosted UDP update server that the built binary phones home to.
 
 If you find yourself wanting to ship a build flavour without Cubism (e.g. an embedded sprite-only build), don't — change the asset story first by enabling sprite packs from `assets/packs-disabled/`. Live2D is currently a hard requirement of the build (commit `0520516`).

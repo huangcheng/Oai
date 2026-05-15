@@ -1,5 +1,5 @@
-#ifndef OAI_CANONICALEVENTS_H
-#define OAI_CANONICALEVENTS_H
+#ifndef SEELIE_CANONICALEVENTS_H
+#define SEELIE_CANONICALEVENTS_H
 
 // Canonical event names exchanged over the IPC protocol and dispatched
 // inside the C++ core. Defined as named constexpr constants so consumers
@@ -42,4 +42,4 @@ inline constexpr const char *TodoUpdated         = "todo.updated";
 
 } // namespace CanonicalEvents
 
-#endif // OAI_CANONICALEVENTS_H
+#endif // SEELIE_CANONICALEVENTS_H

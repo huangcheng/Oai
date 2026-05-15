@@ -1,10 +1,10 @@
 {
-  "name": "@eastlake/oai-gateway",
-  "version": "1.3.0",
-  "description": "CLI gateway for sending events to the Oai desktop pet",
+  "name": "@eastlake/seelie-gateway",
+  "version": "1.0.0",
+  "description": "CLI gateway for sending events to the Seelie desktop pet",
   "main": "./cli.mjs",
   "bin": {
-    "oai-gateway": "cli.mjs"
+    "seelie-gateway": "cli.mjs"
   },
   "type": "module",
   "files": [
@@ -12,7 +12,7 @@
     "lib/"
   ],
   "keywords": [
-    "oai",
+    "seelie",
     "desktop-pet",
     "ai",
     "codex",
@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/huangcheng/Oai.git",
-    "directory": "gateways/oai-gateway"
+    "url": "https://github.com/huangcheng/Seelie.git",
+    "directory": "gateways/seelie-gateway"
   }
 }

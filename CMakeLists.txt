@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(Oai VERSION 1.2.6 LANGUAGES C CXX)
+project(Seelie VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +24,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Lin
 
 # TTS support is now HTTP-based (no WebSocket dependency). Kept as an
 # optional feature so the build can still drop the AI tab on minimal builds.
-option(OAI_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
+option(SEELIE_TTS_ENABLED "Enable TTS (Text-to-Speech) support" ON)
 
 qt_standard_project_setup()
 
@@ -131,7 +131,7 @@ extern \"C\" void pixman_composite_over_n_8888_asm_neon(int32_t w, int32_t h,
     # Also patch out the example directory — rlottie v0.2 unconditionally builds
     # lottie2gif which Qt Creator auto-detects as a run target.
     string(REPLACE "add_subdirectory(example)"
-                    "# add_subdirectory(example)  # disabled by Oai"
+                    "# add_subdirectory(example)  # disabled by Seelie"
                     RLOTTIE_CMAKE_PACHED "${RLOTTIE_CMAKE_CONTENT}")
     if(NOT RLOTTIE_CMAKE_CONTENT STREQUAL RLOTTIE_CMAKE_PACHED)
         file(WRITE "${RLOTTIE_CMAKELISTS}" "${RLOTTIE_CMAKE_PACHED}")
@@ -153,7 +153,7 @@ set(CUBISM_FRAMEWORK_DIR ${CMAKE_SOURCE_DIR}/thirdparty/CubismNativeFramework)
 set(CUBISM_CORE_DIR ${CUBISM_SDK_DIR}/Core)
 
 # Live2D is non-optional. Every shipped pack is Live2D, so a build without
-# the SDK produces an Oai.exe that ships unrenderable assets and shows a
+# the SDK produces an Seelie.exe that ships unrenderable assets and shows a
 # transparent window at runtime. Refuse to configure rather than ship that.
 
 if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
@@ -212,15 +212,15 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
             )
             # Bundle the runtime DLL into the install tree so the packaged
             # build can find it. windeployqt only handles Qt's own DLLs;
-            # without this, an installed Oai.exe fails at startup with
+            # without this, an installed Seelie.exe fails at startup with
             #   "Live2DCubismCore.dll was not found".
             install(FILES ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.dll
                     DESTINATION ${CMAKE_INSTALL_BINDIR})
-            # Also stage it next to Oai.exe in the build dir so a direct-run
-            # (Qt Creator / `./Oai.exe`) works without a manual copy.
-            set(_OAI_CUBISM_RUNTIME_DLL
+            # Also stage it next to Seelie.exe in the build dir so a direct-run
+            # (Qt Creator / `./Seelie.exe`) works without a manual copy.
+            set(_SEELIE_CUBISM_RUNTIME_DLL
                 ${CUBISM_CORE_DIR}/dll/windows/${_CUBISM_ARCH}/Live2DCubismCore.dll
-                CACHE INTERNAL "Cubism runtime DLL to copy beside Oai.exe")
+                CACHE INTERNAL "Cubism runtime DLL to copy beside Seelie.exe")
         endif()
     else()
         # Linux
@@ -249,7 +249,7 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
     # Strategy: Use a Python script to replace each WinGlGetProcAddress("name") call
     # with a direct assignment from the corresponding GLEW __glew* global variable.
     file(READ "${_RENDERER_FILE}" _RENDERER_CONTENT2)
-    if(NOT _RENDERER_CONTENT2 MATCHES "OAI_GLEW_COPY_FROM_GLEW")
+    if(NOT _RENDERER_CONTENT2 MATCHES "SEELIE_GLEW_COPY_FROM_GLEW")
         find_package(Python3 COMPONENTS Interpreter REQUIRED)
         execute_process(
             COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/cmake/patch_cubism_gl.py" "${_RENDERER_FILE}"
@@ -279,7 +279,7 @@ if(EXISTS ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h)
     # OpenGL
     find_package(OpenGL REQUIRED)
 
-    set(OAI_HAS_LIVE2D TRUE)
+    set(SEELIE_HAS_LIVE2D TRUE)
 else()
     message(FATAL_ERROR
         "\n"
@@ -288,7 +288,7 @@ else()
         "Expected:  ${CUBISM_CORE_DIR}/include/Live2DCubismCore.h\n"
         "\n"
         "The SDK is mandatory — every shipped pack is Live2D, so a build\n"
-        "without it would produce an Oai.exe that renders a transparent\n"
+        "without it would produce an Seelie.exe that renders a transparent\n"
         "window at runtime. To install:\n"
         "\n"
         "  1. Download the Cubism SDK for Native (free, requires sign-in):\n"
@@ -306,20 +306,20 @@ endif()
 if(WIN32)
     # VERSIONINFO + icon resource: configure_file substitutes
     # @PROJECT_VERSION@ etc. so right-click → Properties → Details on
-    # Oai.exe shows the same version that's compiled in.
-    configure_file(${CMAKE_SOURCE_DIR}/assets/oai.rc.in
-                   ${CMAKE_BINARY_DIR}/oai.rc
+    # Seelie.exe shows the same version that's compiled in.
+    configure_file(${CMAKE_SOURCE_DIR}/assets/seelie.rc.in
+                   ${CMAKE_BINARY_DIR}/seelie.rc
                    @ONLY)
-    set(PLATFORM_SOURCES ${CMAKE_BINARY_DIR}/oai.rc)
+    set(PLATFORM_SOURCES ${CMAKE_BINARY_DIR}/seelie.rc)
     # MinGW's windres doesn't emit dep info for ICON-included files,
-    # so ninja can't tell oai.rc.obj depends on oai.ico. Without this,
-    # touching oai.ico does NOT rebuild oai.rc.obj — the linked binary
+    # so ninja can't tell seelie.rc.obj depends on seelie.ico. Without this,
+    # touching seelie.ico does NOT rebuild seelie.rc.obj — the linked binary
     # then ships with a stale embedded icon.
-    set_source_files_properties(${CMAKE_BINARY_DIR}/oai.rc PROPERTIES
-        OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/assets/oai.ico)
+    set_source_files_properties(${CMAKE_BINARY_DIR}/seelie.rc PROPERTIES
+        OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/assets/seelie.ico)
 endif()
 
-qt_add_executable(Oai
+qt_add_executable(Seelie
     WIN32 MACOSX_BUNDLE
     src/main.cpp
     ${PLATFORM_SOURCES}
@@ -383,62 +383,62 @@ qt_add_executable(Oai
     src/GlobalShortcutManager.h
     src/FullscreenWatcher.cpp
     src/FullscreenWatcher.h
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/TTSEngine.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ITtsProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/ProviderConfig.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsVoiceCache.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/TtsVoiceCache.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/AzureSpeechProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/AzureSpeechProvider.cpp>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.h>
-    $<$<BOOL:${OAI_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/TTSEngine.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ITtsProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/ProviderConfig.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsProviderRegistry.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsProviderRegistry.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsVoiceCache.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/TtsVoiceCache.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHttpProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/StepFunHttpProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/MiniMaxHttpProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/AzureSpeechProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/AzureSpeechProvider.cpp>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.h>
+    $<$<BOOL:${SEELIE_TTS_ENABLED}>:src/tts/OpenAiTtsProvider.cpp>
 )
 
-target_include_directories(Oai PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(Seelie PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Default endpoint for the version-check / update server. Baked into the
-# binary via OAI_DEFAULT_UPDATE_ENDPOINT and into the shipped Oai.ini via
+# binary via SEELIE_DEFAULT_UPDATE_ENDPOINT and into the shipped Seelie.ini via
 # configure_file. Override at configure time, e.g.:
-#   cmake -DOAI_DEFAULT_UPDATE_ENDPOINT=updates.example.com:9340 ..
+#   cmake -DSEELIE_DEFAULT_UPDATE_ENDPOINT=updates.example.com:9340 ..
 # The value is just a default — users can still override at runtime via
 # QSettings (`updateServerEndpoint` key) without rebuilding.
-set(OAI_DEFAULT_UPDATE_ENDPOINT "101.133.144.133:9340" CACHE STRING
-    "Default host:port for the Oai update server")
+set(SEELIE_DEFAULT_UPDATE_ENDPOINT "101.133.144.133:9340" CACHE STRING
+    "Default host:port for the Seelie update server")
 
-# Substitute @OAI_DEFAULT_UPDATE_ENDPOINT@ into the portable Oai.ini that
-# the installer ships next to Oai.exe.
+# Substitute @SEELIE_DEFAULT_UPDATE_ENDPOINT@ into the portable Seelie.ini that
+# the installer ships next to Seelie.exe.
 configure_file(
-    ${CMAKE_SOURCE_DIR}/installer/oai.ini.template
-    ${CMAKE_BINARY_DIR}/Oai.ini
+    ${CMAKE_SOURCE_DIR}/installer/seelie.ini.template
+    ${CMAKE_BINARY_DIR}/Seelie.ini
     @ONLY)
 
 # Pass version and source directory to C++ code
-target_compile_definitions(Oai PRIVATE
+target_compile_definitions(Seelie PRIVATE
     PROJECT_VERSION="${PROJECT_VERSION}"
-    OAI_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-    OAI_DEFAULT_UPDATE_ENDPOINT="${OAI_DEFAULT_UPDATE_ENDPOINT}"
+    SEELIE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    SEELIE_DEFAULT_UPDATE_ENDPOINT="${SEELIE_DEFAULT_UPDATE_ENDPOINT}"
     QT_DEBUG  # Force-enable qDebug() output even in Release builds
 )
 
 # --- Icon resource -----------------------------------------------------------
-qt_add_resources(Oai "icons"
+qt_add_resources(Seelie "icons"
     PREFIX "/icons"
     BASE "assets/icons"
     FILES
-        assets/icons/oai.png
+        assets/icons/seelie.png
 )
 
 # Per-locale tip messages (event tips + random greetings). Authoring lives
 # in plain JSON instead of Qt's .ts/.qm so non-engineers can add a language
 # by dropping in another `tips.<locale>.json`.
-qt_add_resources(Oai "tips_i18n"
+qt_add_resources(Seelie "tips_i18n"
     PREFIX "/i18n"
     BASE "assets"
     FILES
@@ -448,12 +448,12 @@ qt_add_resources(Oai "tips_i18n"
 
 # --- Translations ------------------------------------------------------------
 qt_add_translations(
-    TARGETS Oai
-    TS_FILES Oai_zh_CN.ts
+    TARGETS Seelie
+    TS_FILES Seelie_zh_CN.ts
 )
 
 # --- Link libraries ----------------------------------------------------------
-target_link_libraries(Oai
+target_link_libraries(Seelie
     PRIVATE
         Qt::Core
         Qt::Gui
@@ -465,56 +465,56 @@ target_link_libraries(Oai
 )
 
 # TTS support (HTTP-based, no WebSocket dependency)
-if(OAI_TTS_ENABLED)
-    target_compile_definitions(Oai PRIVATE OAI_TTS_ENABLED=1)
+if(SEELIE_TTS_ENABLED)
+    target_compile_definitions(Seelie PRIVATE SEELIE_TTS_ENABLED=1)
 endif()
 
 # rlottie header path (FetchContent puts it in build/_deps)
-target_include_directories(Oai PRIVATE
+target_include_directories(Seelie PRIVATE
     ${rlottie_SOURCE_DIR}/inc
 )
 
 # Live2D libraries (conditional)
-if(OAI_HAS_LIVE2D)
-    target_link_libraries(Oai PRIVATE Framework ${OPENGL_LIBRARIES})
-    target_include_directories(Oai PRIVATE
+if(SEELIE_HAS_LIVE2D)
+    target_link_libraries(Seelie PRIVATE Framework ${OPENGL_LIBRARIES})
+    target_include_directories(Seelie PRIVATE
         ${CUBISM_FRAMEWORK_DIR}/src
         ${CUBISM_CORE_DIR}/include
         ${GLEW_DIR}/include
     )
-    target_compile_definitions(Oai PRIVATE OAI_LIVE2D_SUPPORT)
+    target_compile_definitions(Seelie PRIVATE SEELIE_LIVE2D_SUPPORT)
     if(APPLE)
-        target_compile_definitions(Oai PRIVATE CSM_TARGET_MAC_GL)
+        target_compile_definitions(Seelie PRIVATE CSM_TARGET_MAC_GL)
     elseif(WIN32)
-        target_compile_definitions(Oai PRIVATE CSM_TARGET_WIN_GL)
-        # Stage Live2DCubismCore.dll next to Oai.exe in the build dir so
-        # direct-run (Qt Creator / `./Oai.exe`) works. The install rule
+        target_compile_definitions(Seelie PRIVATE CSM_TARGET_WIN_GL)
+        # Stage Live2DCubismCore.dll next to Seelie.exe in the build dir so
+        # direct-run (Qt Creator / `./Seelie.exe`) works. The install rule
         # above handles the packaged case; this handles dev iteration.
-        if(_OAI_CUBISM_RUNTIME_DLL)
-            add_custom_command(TARGET Oai POST_BUILD
+        if(_SEELIE_CUBISM_RUNTIME_DLL)
+            add_custom_command(TARGET Seelie POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        ${_OAI_CUBISM_RUNTIME_DLL}
-                        $<TARGET_FILE_DIR:Oai>
-                COMMENT "Staging Live2DCubismCore.dll next to Oai.exe"
+                        ${_SEELIE_CUBISM_RUNTIME_DLL}
+                        $<TARGET_FILE_DIR:Seelie>
+                COMMENT "Staging Live2DCubismCore.dll next to Seelie.exe"
                 VERBATIM)
         endif()
     else()
-        target_compile_definitions(Oai PRIVATE CSM_TARGET_LINUX_GL)
+        target_compile_definitions(Seelie PRIVATE CSM_TARGET_LINUX_GL)
     endif()
     # Qt OpenGL support
     find_package(Qt6 COMPONENTS OpenGL OpenGLWidgets QUIET)
     if(Qt6OpenGL_FOUND)
-        target_link_libraries(Oai PRIVATE Qt::OpenGL)
+        target_link_libraries(Seelie PRIVATE Qt::OpenGL)
     endif()
     if(Qt6OpenGLWidgets_FOUND)
-        target_link_libraries(Oai PRIVATE Qt::OpenGLWidgets)
+        target_link_libraries(Seelie PRIVATE Qt::OpenGLWidgets)
     endif()
 
     if(WIN32)
         # dwmapi: DwmSetWindowAttribute() is used in MainWindow::showEvent
         # to opt out of Windows 11's automatic rounded corners, drop shadow,
         # and Mica/Acrylic backdrop on the frameless pet window.
-        target_link_libraries(Oai PRIVATE dwmapi)
+        target_link_libraries(Seelie PRIVATE dwmapi)
     endif()
 
     # Bundle Cubism Framework shader sources as Qt resources.
@@ -531,7 +531,7 @@ if(OAI_HAS_LIVE2D)
         set_source_files_properties(${_shader} PROPERTIES
             QT_RESOURCE_ALIAS "FrameworkShaders/${_shader_name}")
     endforeach()
-    qt_add_resources(Oai "live2d_shaders"
+    qt_add_resources(Seelie "live2d_shaders"
         PREFIX "/live2d"
         FILES ${_LIVE2D_SHADER_FILES}
     )
@@ -540,7 +540,7 @@ endif()
 # --- Install -----------------------------------------------------------------
 include(GNUInstallDirs)
 
-install(TARGETS Oai
+install(TARGETS Seelie
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -606,7 +606,7 @@ set(ALL_PACK_OPKS "")
 #   cmake --build build --target generate_packs   # then build .opks
 #
 # `import_packs` is a manual target — it is NOT part of the default build,
-# so a fresh clone without the submodule still builds Oai.exe + the 21
+# so a fresh clone without the submodule still builds Seelie.exe + the 21
 # original .opks fine.
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/thirdparty/upstream-live2d/.git)
@@ -657,7 +657,7 @@ foreach(pack ${LIVE2D_PACKS})
 endforeach()
 
 add_custom_target(generate_packs ALL DEPENDS ${ALL_PACK_OPKS})
-add_dependencies(Oai generate_packs)
+add_dependencies(Seelie generate_packs)
 
 # Install the generated packs
 install(DIRECTORY ${PACKS_DIR}/
@@ -668,7 +668,7 @@ install(DIRECTORY ${PACKS_DIR}/
 if(APPLE)
     # AppKit is needed for MacFocusFix.mm (NSWindow / NSPanel APIs).
     # CoreGraphics is needed for FullscreenWatcher.cpp (CGWindowListCopyWindowInfo).
-    target_link_libraries(Oai PRIVATE "-framework AppKit" "-framework CoreGraphics")
+    target_link_libraries(Seelie PRIVATE "-framework AppKit" "-framework CoreGraphics")
     # Bake the @executable_path rpath into the binary at link time. macdeployqt
     # is supposed to do this post-build via install_name_tool, but it fails on
     # malformed bundled QtQml frameworks and aborts before fixing rpath. And
@@ -678,27 +678,27 @@ if(APPLE)
     # time sidesteps both issues.
     #
     # The Qt SDK lib dir is appended as a fallback so Qt Creator debug runs
-    # and direct ./Oai.app launches (which don't run macdeployqt) can still
+    # and direct ./Seelie.app launches (which don't run macdeployqt) can still
     # resolve frameworks like QtMultimedia. dyld checks rpaths in order, so
     # deployed bundles always find their bundled framework first; the SDK
     # path is only consulted on dev machines that have it.
     get_target_property(_qt_qmake_loc Qt6::qmake IMPORTED_LOCATION)
     get_filename_component(_qt_bin_dir "${_qt_qmake_loc}" DIRECTORY)
     get_filename_component(_qt_lib_dir "${_qt_bin_dir}/../lib" ABSOLUTE)
-    set_target_properties(Oai PROPERTIES
+    set_target_properties(Seelie PROPERTIES
         INSTALL_RPATH "@executable_path/../Frameworks;${_qt_lib_dir}"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
-    set_target_properties(Oai PROPERTIES
-        MACOSX_BUNDLE_ICON_FILE "oai.icns"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.oai"
+    set_target_properties(Seelie PROPERTIES
+        MACOSX_BUNDLE_ICON_FILE "seelie.icns"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.seelie"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     )
-    set_source_files_properties(assets/oai.icns PROPERTIES
+    set_source_files_properties(assets/seelie.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
     )
-    target_sources(Oai PRIVATE assets/oai.icns)
+    target_sources(Seelie PRIVATE assets/seelie.icns)
 
     # Include packs in the macOS bundle Resources.
     # Sprite packs disabled — see the generation block above. Re-enable both
@@ -706,55 +706,55 @@ if(APPLE)
     # set_source_files_properties(${PACKS_DIR}/clippy.opk PROPERTIES
     #     MACOSX_PACKAGE_LOCATION "Resources/packs"
     # )
-    # target_sources(Oai PRIVATE ${PACKS_DIR}/clippy.opk)
+    # target_sources(Seelie PRIVATE ${PACKS_DIR}/clippy.opk)
     #
     # foreach(pack ${CLIPPYJS_PACKS})
     #     set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
     #         MACOSX_PACKAGE_LOCATION "Resources/packs"
     #     )
-    #     target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
+    #     target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.opk)
     # endforeach()
 
     foreach(pack ${LIVE2D_PACKS})
         set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources/packs"
         )
-        target_sources(Oai PRIVATE ${PACKS_DIR}/${pack}.opk)
+        target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.opk)
     endforeach()
 
     # Copy essential runtime assets into the macOS bundle so deployed apps
     # can find them without relying on the compile-time source tree.
-    add_custom_command(TARGET Oai POST_BUILD
+    add_custom_command(TARGET Seelie POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets"
         COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_SOURCE_DIR}/assets/animations.json"
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/animations.json"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/animations.json"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/assets/fonts"
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/fonts"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/fonts"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/assets/i18n"
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/i18n"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/i18n"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/assets/lottie"
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/lottie"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/lottie"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/assets/packs"
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Resources/assets/packs"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Resources/assets/packs"
         COMMENT "Copying runtime assets into macOS bundle"
     )
 
-    add_custom_command(TARGET Oai POST_BUILD
+    add_custom_command(TARGET Seelie POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E env python3
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/hide_dock_icon.py"
-            "$<TARGET_BUNDLE_DIR:Oai>/Contents/Info.plist"
-        COMMENT "Hiding Oai from Dock (LSUIElement)"
+            "$<TARGET_BUNDLE_DIR:Seelie>/Contents/Info.plist"
+        COMMENT "Hiding Seelie from Dock (LSUIElement)"
     )
 endif()
 
 qt_generate_deploy_app_script(
-    TARGET Oai
+    TARGET Seelie
     OUTPUT_SCRIPT deploy_script
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
@@ -768,8 +768,8 @@ if(APPLE)
     install(CODE "
         message(STATUS \"Stripping code signatures before deployment...\")
         execute_process(
-            COMMAND find \"\${CMAKE_INSTALL_PREFIX}/Oai.app\" -type f \\( -name \"*.dylib\" -o -name \"*.framework\" \\) -exec codesign --remove-signature {} +
-            COMMAND find \"\${CMAKE_INSTALL_PREFIX}/Oai.app\" -type f -exec sh -c \"file \\\"\$1\\\" | grep -q 'Mach-O' && codesign --remove-signature \\\"\$1\\\"\" _ {} \\;
+            COMMAND find \"\${CMAKE_INSTALL_PREFIX}/Seelie.app\" -type f \\( -name \"*.dylib\" -o -name \"*.framework\" \\) -exec codesign --remove-signature {} +
+            COMMAND find \"\${CMAKE_INSTALL_PREFIX}/Seelie.app\" -type f -exec sh -c \"file \\\"\$1\\\" | grep -q 'Mach-O' && codesign --remove-signature \\\"\$1\\\"\" _ {} \\;
             OUTPUT_VARIABLE _STRIP_OUT
             ERROR_VARIABLE _STRIP_ERR
             RESULT_VARIABLE _STRIP_RES
@@ -787,7 +787,7 @@ if(APPLE)
     install(CODE "
         message(STATUS \"Re-signing deployed app bundle...\")
         execute_process(
-            COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/Oai.app\"
+            COMMAND codesign --force --deep --sign - \"\${CMAKE_INSTALL_PREFIX}/Seelie.app\"
             RESULT_VARIABLE _SIGN_RES
         )
         if(NOT _SIGN_RES EQUAL 0)
@@ -796,8 +796,8 @@ if(APPLE)
     ")
 endif()
 
-# --- Set Oai as default target for Qt Creator -----------------------------
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Oai)
+# --- Set Seelie as default target for Qt Creator -----------------------------
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Seelie)
 
 # --- Tests -------------------------------------------------------------------
 enable_testing()
@@ -816,7 +816,7 @@ add_subdirectory(tests)
 #   * qsTr() strings inside installscript.qs / LaunchCheckBoxForm.ui pick up
 #     compiled .qm files in the component's meta/ dir; we lrelease them
 #     from installer/translations/*.ts as part of this target.
-find_program(OAI_QTIFW_BINARYCREATOR
+find_program(SEELIE_QTIFW_BINARYCREATOR
     NAMES binarycreator
     HINTS
         $ENV{QTIFW_DIR}/bin
@@ -829,37 +829,37 @@ find_program(OAI_QTIFW_BINARYCREATOR
         "/opt/Qt/Tools/QtInstallerFramework/4.11/bin"
     DOC "Path to Qt Installer Framework binarycreator")
 
-if(OAI_QTIFW_BINARYCREATOR)
-    set(OAI_IFW_DIR        ${CMAKE_SOURCE_DIR}/installer)
-    set(OAI_IFW_PKG_ID     im.cheng.oai.desktop)
-    set(OAI_IFW_PKG_META   ${OAI_IFW_DIR}/packages/${OAI_IFW_PKG_ID}/meta)
-    set(OAI_IFW_PKG_DATA   ${OAI_IFW_DIR}/packages/${OAI_IFW_PKG_ID}/data)
-    set(OAI_IFW_STAGE_TS   ${CMAKE_BINARY_DIR}/installer_stage.stamp)
+if(SEELIE_QTIFW_BINARYCREATOR)
+    set(SEELIE_IFW_DIR        ${CMAKE_SOURCE_DIR}/installer)
+    set(SEELIE_IFW_PKG_ID     im.cheng.seelie.desktop)
+    set(SEELIE_IFW_PKG_META   ${SEELIE_IFW_DIR}/packages/${SEELIE_IFW_PKG_ID}/meta)
+    set(SEELIE_IFW_PKG_DATA   ${SEELIE_IFW_DIR}/packages/${SEELIE_IFW_PKG_ID}/data)
+    set(SEELIE_IFW_STAGE_TS   ${CMAKE_BINARY_DIR}/installer_stage.stamp)
 
-    # Single source of truth for installer version: project(Oai VERSION ...).
+    # Single source of truth for installer version: project(Seelie VERSION ...).
     # config.xml.in / package.xml.in carry @PROJECT_VERSION@ placeholders;
     # CMake renders them next to the templates so binarycreator's existing
     # paths (`-c installer/config.xml` etc.) still resolve. Generated copies
     # are gitignored — only the .in templates are tracked.
-    string(TIMESTAMP _OAI_BUILD_DATE "%Y-%m-%d" UTC)
-    set(OAI_RELEASE_DATE "${_OAI_BUILD_DATE}")
+    string(TIMESTAMP _SEELIE_BUILD_DATE "%Y-%m-%d" UTC)
+    set(SEELIE_RELEASE_DATE "${_SEELIE_BUILD_DATE}")
     # Qt IFW resolves @ApplicationsDir@ at runtime (C:\Program Files on
     # Windows, /Applications on macOS, /opt on Linux).  Must pass it
     # through CMake's configure_file as a literal — define it as a
     # CMake variable whose *value* is the IFW variable reference.
-    set(IFW_TARGET_DIR "@ApplicationsDir@/Oai")
+    set(IFW_TARGET_DIR "@ApplicationsDir@/Seelie")
     configure_file(
-        ${OAI_IFW_DIR}/config.xml.in
-        ${OAI_IFW_DIR}/config.xml
+        ${SEELIE_IFW_DIR}/config.xml.in
+        ${SEELIE_IFW_DIR}/config.xml
         @ONLY)
     configure_file(
-        ${OAI_IFW_PKG_META}/package.xml.in
-        ${OAI_IFW_PKG_META}/package.xml
+        ${SEELIE_IFW_PKG_META}/package.xml.in
+        ${SEELIE_IFW_PKG_META}/package.xml
         @ONLY)
 
     # Replacement qt.conf for the flat install layout.
     #
-    # windeployqt assumes Oai.exe lives in <root>/bin/ and writes
+    # windeployqt assumes Seelie.exe lives in <root>/bin/ and writes
     #   [Paths]
     #   Prefix = ..
     # so Qt walks up one level to find <root>/plugins/. Our staging step
@@ -877,19 +877,19 @@ if(OAI_QTIFW_BINARYCREATOR)
     # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
     # English is listed first so it serves as the fallback when the system
     # locale does not match any bundled translation.
-    set(OAI_IFW_TS_FILES
-        ${OAI_IFW_DIR}/translations/oai_installer_en.ts
-        ${OAI_IFW_DIR}/translations/oai_installer_zh_CN.ts)
+    set(SEELIE_IFW_TS_FILES
+        ${SEELIE_IFW_DIR}/translations/seelie_installer_en.ts
+        ${SEELIE_IFW_DIR}/translations/seelie_installer_zh_CN.ts)
 
-    set(OAI_IFW_QM_FILES "")
-    foreach(_ts ${OAI_IFW_TS_FILES})
-        get_filename_component(_base ${_ts} NAME_WE)            # oai_installer_zh_CN
-        string(REGEX REPLACE "^oai_installer_" "" _lang ${_base})  # zh_CN
+    set(SEELIE_IFW_QM_FILES "")
+    foreach(_ts ${SEELIE_IFW_TS_FILES})
+        get_filename_component(_base ${_ts} NAME_WE)            # seelie_installer_zh_CN
+        string(REGEX REPLACE "^seelie_installer_" "" _lang ${_base})  # zh_CN
         # Two outputs: one named for the locale (auto-loaded by IFW for
         # installscript.qs/UI translations) and one matching config.xml's
         # <Translation> entry so config-level lookups also resolve.
-        set(_qm_lang   ${OAI_IFW_PKG_META}/${_lang}.qm)
-        set(_qm_named  ${OAI_IFW_DIR}/oai_installer_${_lang}.qm)
+        set(_qm_lang   ${SEELIE_IFW_PKG_META}/${_lang}.qm)
+        set(_qm_named  ${SEELIE_IFW_DIR}/seelie_installer_${_lang}.qm)
         add_custom_command(
             OUTPUT  ${_qm_lang} ${_qm_named}
             COMMAND Qt6::lrelease ${_ts} -qm ${_qm_lang}
@@ -897,45 +897,45 @@ if(OAI_QTIFW_BINARYCREATOR)
             DEPENDS ${_ts}
             COMMENT "lrelease installer translation: ${_lang}"
             VERBATIM)
-        list(APPEND OAI_IFW_QM_FILES ${_qm_lang} ${_qm_named})
+        list(APPEND SEELIE_IFW_QM_FILES ${_qm_lang} ${_qm_named})
     endforeach()
-    add_custom_target(installer_translations DEPENDS ${OAI_IFW_QM_FILES})
+    add_custom_target(installer_translations DEPENDS ${SEELIE_IFW_QM_FILES})
 
     # Stage the deployed app into packages/<id>/data/ with a flat layout
-    # (Oai.exe at the root, packs/ next to it) — that matches @TargetDir@
+    # (Seelie.exe at the root, packs/ next to it) — that matches @TargetDir@
     # references in installscript.qs and feels native on Windows.
     add_custom_command(
-        OUTPUT ${OAI_IFW_STAGE_TS}
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${OAI_IFW_PKG_DATA}
+        OUTPUT ${SEELIE_IFW_STAGE_TS}
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_IFW_PKG_DATA}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SEELIE_IFW_PKG_DATA}
         COMMAND ${CMAKE_COMMAND}
                 --install ${CMAKE_BINARY_DIR}
-                --prefix  ${OAI_IFW_PKG_DATA}
+                --prefix  ${SEELIE_IFW_PKG_DATA}
                 --config  $<CONFIG>
-        # Flatten the GNUInstallDirs bin/ layer so Oai.exe sits at TargetDir root.
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${OAI_IFW_PKG_DATA}/bin ${OAI_IFW_PKG_DATA}
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/bin
+        # Flatten the GNUInstallDirs bin/ layer so Seelie.exe sits at TargetDir root.
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${SEELIE_IFW_PKG_DATA}/bin ${SEELIE_IFW_PKG_DATA}
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_IFW_PKG_DATA}/bin
         # Replace the bin/-relative qt.conf windeployqt wrote (Prefix=..)
         # with the flat-layout version (Prefix=.).
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${CMAKE_BINARY_DIR}/qt.conf.flat
-                ${OAI_IFW_PKG_DATA}/qt.conf
+                ${SEELIE_IFW_PKG_DATA}/qt.conf
         # Drop transitive install artifacts (rlottie headers, glew/.a stubs,
         # CMake configs, pkgconfig) — runtime install doesn't need them.
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${OAI_IFW_PKG_DATA}/include ${OAI_IFW_PKG_DATA}/lib
-        # Ship the portable Oai.ini template — ConfigManager reads it on
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_IFW_PKG_DATA}/include ${SEELIE_IFW_PKG_DATA}/lib
+        # Ship the portable Seelie.ini template — ConfigManager reads it on
         # startup as a default-values layer underneath user-scope settings,
         # so the installer can pre-set updateServerEndpoint / language /
         # ipcEndpoint per build flavor without forcing every user to edit
         # their roaming config.
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_BINARY_DIR}/Oai.ini
-                ${OAI_IFW_PKG_DATA}/Oai.ini
-        COMMAND ${CMAKE_COMMAND} -E touch ${OAI_IFW_STAGE_TS}
-        DEPENDS Oai ${ALL_PACK_OPKS}
-        COMMENT "Staging Oai for installer packaging"
+                ${CMAKE_BINARY_DIR}/Seelie.ini
+                ${SEELIE_IFW_PKG_DATA}/Seelie.ini
+        COMMAND ${CMAKE_COMMAND} -E touch ${SEELIE_IFW_STAGE_TS}
+        DEPENDS Seelie ${ALL_PACK_OPKS}
+        COMMENT "Staging Seelie for installer packaging"
         VERBATIM)
-    add_custom_target(installer_stage DEPENDS ${OAI_IFW_STAGE_TS})
+    add_custom_target(installer_stage DEPENDS ${SEELIE_IFW_STAGE_TS})
 
     # Final installer artifact name follows the project version.
     if(WIN32)
@@ -945,20 +945,20 @@ if(OAI_QTIFW_BINARYCREATOR)
     else()
         set(_installer_ext ".run")
     endif()
-    set(OAI_INSTALLER_OUTPUT
-        ${CMAKE_BINARY_DIR}/OaiInstaller-${PROJECT_VERSION}${_installer_ext})
+    set(SEELIE_INSTALLER_OUTPUT
+        ${CMAKE_BINARY_DIR}/SeelieInstaller-${PROJECT_VERSION}${_installer_ext})
 
     add_custom_target(package_installer
-        COMMAND ${OAI_QTIFW_BINARYCREATOR}
+        COMMAND ${SEELIE_QTIFW_BINARYCREATOR}
                 --offline-only
-                -c ${OAI_IFW_DIR}/config.xml
-                -p ${OAI_IFW_DIR}/packages
-                ${OAI_INSTALLER_OUTPUT}
+                -c ${SEELIE_IFW_DIR}/config.xml
+                -p ${SEELIE_IFW_DIR}/packages
+                ${SEELIE_INSTALLER_OUTPUT}
         DEPENDS installer_stage installer_translations
-        COMMENT "Building offline installer: ${OAI_INSTALLER_OUTPUT}"
+        COMMENT "Building offline installer: ${SEELIE_INSTALLER_OUTPUT}"
         VERBATIM)
 
-    message(STATUS "Qt IFW found: ${OAI_QTIFW_BINARYCREATOR}")
+    message(STATUS "Qt IFW found: ${SEELIE_QTIFW_BINARYCREATOR}")
     message(STATUS "  -> cmake --build . --target package_installer")
 else()
     message(STATUS

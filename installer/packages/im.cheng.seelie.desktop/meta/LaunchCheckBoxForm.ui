@@ -18,7 +18,7 @@
    <item>
     <widget class="QCheckBox" name="launchCheckBox">
      <property name="text">
-      <string>Launch Oai now</string>
+      <string>Launch Seelie now</string>
      </property>
      <property name="checked">
       <bool>true</bool>

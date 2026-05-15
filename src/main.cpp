@@ -4,7 +4,7 @@
 #include "EventRouter.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
 #include "LottieEffectOverlay.h"
@@ -53,7 +53,7 @@ static void dispatchAnimation(MainWindow &w, const QString &anim,
                               AnimationEngine::Priority priority = AnimationEngine::NormalPriority)
 {
     if (anim.isEmpty()) return;
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
         w.live2dEngine()->playAnimation(anim, priority);
         return;
@@ -75,7 +75,7 @@ static void dispatchAnimationChain(MainWindow &w, const QStringList &chain,
                                    AnimationEngine::Priority priority)
 {
     if (chain.isEmpty()) return;
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
         w.live2dEngine()->playAnimationChain(chain, priority);
         return;
@@ -92,9 +92,9 @@ static void dispatchAnimationChain(MainWindow &w, const QStringList &chain,
 
 static QString dataDir() {
     // AppLocalDataLocation is for user data (packs, logs), not config.
-    // macOS: ~/Library/Application Support/Oai/
-    // Linux: ~/.local/share/Oai/
-    // Windows: %LOCALAPPDATA%/Oai/
+    // macOS: ~/Library/Application Support/Seelie/
+    // Linux: ~/.local/share/Seelie/
+    // Windows: %LOCALAPPDATA%/Seelie/
     return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 }
 
@@ -109,7 +109,7 @@ static void fileMessageHandler(QtMsgType type, const QMessageLogContext &,
     // lifetime means the OS would also reclaim them. Cleaner ownership.
     static std::unique_ptr<QFile> logFile;
     static QMutex mtx;
-    static const QString LOG_NAME = QStringLiteral("oai_debug.log");
+    static const QString LOG_NAME = QStringLiteral("seelie_debug.log");
     static const qint64 MAX_SIZE = 5 * 1024 * 1024;
     static const int MAX_ARCHIVES = 10;
 
@@ -181,22 +181,22 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     qInstallMessageHandler(fileMessageHandler);  // after QApplication so applicationDirPath() is valid
-    a.setApplicationName("Oai");
+    a.setApplicationName("Seelie");
     // Intentionally not setOrganizationName — QStandardPaths::ConfigLocation
-    // is <APPDATA>/<Org>/<App> on Windows, so setting Org=App="Oai" produces
-    // a redundant Local/Oai/Oai/ nesting. With only the application name set,
-    // we get a clean Local/Oai/. QSettings paths are unaffected because
+    // is <APPDATA>/<Org>/<App> on Windows, so setting Org=App="Seelie" produces
+    // a redundant Local/Seelie/Seelie/ nesting. With only the application name set,
+    // we get a clean Local/Seelie/. QSettings paths are unaffected because
     // ConfigManager constructs QSettings with an explicit (org, app) tuple.
-    a.setWindowIcon(QIcon(":/icons/oai.png"));
+    a.setWindowIcon(QIcon(":/icons/seelie.png"));
     a.setQuitOnLastWindowClosed(false); // system tray keeps it alive
 
     // --- Single instance enforcement -----------------------------------------
     const QString lockDir = configDir();
     QDir().mkpath(lockDir);
-    QLockFile lockFile(lockDir + "/Oai.lock");
+    QLockFile lockFile(lockDir + "/Seelie.lock");
     lockFile.setStaleLockTime(30000); // 30s stale timeout
     if (!lockFile.tryLock(100)) {
-        qInfo() << "Oai is already running. Bringing existing instance to front.";
+        qInfo() << "Seelie is already running. Bringing existing instance to front.";
         return 0;
     }
 
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     // has localized text.
     TipsCatalog::instance().setLocale(lang.isEmpty() ? QStringLiteral("en") : lang);
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Oai_" + lang;
+        const QString baseName = "Seelie_" + lang;
         if (translator.load(":/i18n/" + baseName)) {
             a.installTranslator(&translator);
         }
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
         // No preference saved yet — fall back to system locale on first launch.
         const QStringList uiLanguages = QLocale::system().uiLanguages();
         for (const QString &locale : uiLanguages) {
-            const QString baseName = "Oai_" + QLocale(locale).name();
+            const QString baseName = "Seelie_" + QLocale(locale).name();
             if (translator.load(":/i18n/" + baseName)) {
                 a.installTranslator(&translator);
                 break;
@@ -256,10 +256,10 @@ int main(int argc, char *argv[])
             }
             if (!dir.cdUp()) break;
         }
-#ifdef OAI_SOURCE_DIR
+#ifdef SEELIE_SOURCE_DIR
         // Fallback: use the compile-time source directory (for IDE builds
         // whose build tree is far from the source tree).
-        QString sourceAssets = QStringLiteral(OAI_SOURCE_DIR) + "/assets";
+        QString sourceAssets = QStringLiteral(SEELIE_SOURCE_DIR) + "/assets";
         if (QFile::exists(sourceAssets + "/animations.json")) {
             return sourceAssets;
         }
@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
     // In ECG mode the MainWindow stays hidden — MainWindow's constructor
     // already started the ECG widget via onDisplayModeChanged().
 
-    qDebug() << "Oai started — window at" << w.pos() << "size" << w.size();
+    qDebug() << "Seelie started — window at" << w.pos() << "size" << w.size();
 
     return a.exec();
 }

@@ -2,10 +2,10 @@
 #include "GlobalShortcutManager.h"
 #include "SpriteAnimationEngine.h"
 #include "LottieAnimationEngine.h"
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
 #include "Live2DAnimationEngine.h"
 #endif
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
 #include "TTSEngine.h"
 #endif
 #include "CharacterPackManager.h"
@@ -69,7 +69,7 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     // Initialize subsystems
     m_engine = new SpriteAnimationEngine(this);
     m_lottieEngine = new LottieAnimationEngine(this);
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     m_live2dEngine = new Live2DAnimationEngine(this);
 #endif
 
@@ -82,7 +82,7 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     m_settingsPanel->setAnchorRect(petRect());
     m_settingsPanel->hide();
 
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     m_ttsEngine = new TTSEngine(m_config, this);
     m_ttsEngine->start();
 
@@ -150,7 +150,7 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             this, QOverload<>::of(&QWidget::update));
     connect(m_lottieEngine, &LottieAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     connect(m_live2dEngine, &Live2DAnimationEngine::frameChanged,
             this, QOverload<>::of(&QWidget::update));
 #endif
@@ -209,7 +209,7 @@ MainWindow::~MainWindow()
         delete m_settingsPanel;
         m_settingsPanel = nullptr;
     }
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     if (m_ttsEngine) {
         m_ttsEngine->stop();
         delete m_ttsEngine;
@@ -297,7 +297,7 @@ void MainWindow::paintEvent(QPaintEvent * /*event*/)
     // On Windows, Live2D's OpenGL context can be invalidated by DWM restart
     // or GPU power-state changes. Fall back through engines if the current
     // one fails to produce a frame.
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (m_live2dEngine && m_live2dEngine->isPlaying()) {
         if (m_live2dEngine->lastPaintSuccessful()) {
             m_live2dEngine->paint(&painter, pet);
@@ -344,7 +344,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     // Feed the Live2D drag manager so the head/eyes track the cursor.
     // Map pointer position inside petRect to normalized (-1..+1), Y-up
     // (Cubism convention). Skip for clicks that are starting a window drag.
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (m_live2dEngine && isInPetRect(event->pos())) {
         const QRect pet = petRect();
         // Defensive guard: a malformed manifest can set frameWidth /
@@ -379,7 +379,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 
 void MainWindow::leaveEvent(QEvent *event)
 {
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (m_live2dEngine) m_live2dEngine->setPointerTarget(0.0f, 0.0f);
 #endif
     if (m_stateMachine) {
@@ -390,7 +390,7 @@ void MainWindow::leaveEvent(QEvent *event)
 
 void MainWindow::enterEvent(QEnterEvent *event)
 {
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (m_live2dEngine) {
         const QRect pr = petRect();
         const QPointF center = pr.center();
@@ -694,11 +694,11 @@ void MainWindow::onActivePackChanged()
     // Live2D frame squished into the sprite pack's smaller petRect.
     m_engine->stop();
     m_lottieEngine->stop();
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     m_live2dEngine->stop();
 #endif
 
-#ifndef OAI_LIVE2D_SUPPORT
+#ifndef SEELIE_LIVE2D_SUPPORT
     // If Live2D support was not compiled in but the selected pack requires
     // it, warn and auto-skip to the first non-Live2D pack.  Without this
     // fallback the sprite engine fails silently and the pet window renders
@@ -729,7 +729,7 @@ void MainWindow::onActivePackChanged()
     }
 #endif
 
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     if (pack->characterConfig().engineType == CharacterPack::EngineType::Live2D) {
         m_live2dEngine->loadFromCharacterPack(pack);
     } else
@@ -740,7 +740,7 @@ void MainWindow::onActivePackChanged()
         m_engine->loadFromCharacterPack(pack);
     }
 
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
     // Crop the window to the character's actual silhouette once the Live2D
     // engine has produced a few frames (motion settles ~500ms after load).
     // Without this, Rice / Wanko / etc. render as a small character at the
@@ -792,7 +792,7 @@ void MainWindow::reloadTranslator(const QString &lang)
     app->removeTranslator(m_translator);
 
     if (!lang.isEmpty() && lang != "en") {
-        const QString baseName = "Oai_" + lang;
+        const QString baseName = "Seelie_" + lang;
         if (m_translator->load(":/i18n/" + baseName)) {
             app->installTranslator(m_translator);
         }

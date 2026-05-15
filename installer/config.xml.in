@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Installer>
-    <Name>Oai</Name>
+    <Name>Seelie</Name>
     <Version>@PROJECT_VERSION@</Version>
 
-    <Title>Oai Desktop Pet</Title>
+    <Title>Seelie Desktop Pet</Title>
     <Publisher>HUANG Cheng</Publisher>
-    <ProductUrl>https://github.com/eastlake-cheng/oai</ProductUrl>
+    <ProductUrl>https://github.com/huangcheng/Seelie</ProductUrl>
 
     <WizardStyle>Modern</WizardStyle>
 
-    <StartMenuDir>Oai</StartMenuDir>
-    <!-- Default install location. Resolves to C:\Program Files\Oai on
-         64-bit Windows, /Applications/Oai on macOS, /opt/Oai on Linux.
+    <StartMenuDir>Seelie</StartMenuDir>
+    <!-- Default install location. Resolves to C:\Program Files\Seelie on
+         64-bit Windows, /Applications/Seelie on macOS, /opt/Seelie on Linux.
          Users can change it via the wizard's folder picker page. -->
     <TargetDir>@IFW_TARGET_DIR@</TargetDir>
 
@@ -28,7 +28,7 @@
         English on a Chinese system (e.g., for testing or user preference).
     -->
     <Translations>
-        <Translation>oai_installer_en.qm</Translation>
-        <Translation>oai_installer_zh_CN.qm</Translation>
+        <Translation>seelie_installer_en.qm</Translation>
+        <Translation>seelie_installer_zh_CN.qm</Translation>
     </Translations>
 </Installer>

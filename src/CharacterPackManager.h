@@ -14,7 +14,7 @@ class CharacterPack;
  *
  * CharacterPackManager scans multiple directories for sprite packs:
  * - Built-in packs (app directory)
- * - User packs (~/.config/Oai/packs/)
+ * - User packs (~/.config/Seelie/packs/)
  *
  * Supports:
  * - Hot-reload via file system watching

@@ -13,21 +13,21 @@ QString ConfigManager::defaultEndpoint()
 
 QString ConfigManager::defaultUpdateEndpoint()
 {
-    // Default host:port comes from OAI_DEFAULT_UPDATE_ENDPOINT, baked in at
+    // Default host:port comes from SEELIE_DEFAULT_UPDATE_ENDPOINT, baked in at
     // CMake-configure time (see CMakeLists.txt). Override at runtime via the
     // `updateServerEndpoint` key in QSettings to point at a local server
     // during development without rebuilding.
-    return QStringLiteral(OAI_DEFAULT_UPDATE_ENDPOINT);
+    return QStringLiteral(SEELIE_DEFAULT_UPDATE_ENDPOINT);
 }
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
     , m_settings(QSettings::IniFormat, QSettings::UserScope,
                  QCoreApplication::organizationName().isEmpty()
-                     ? QStringLiteral("Oai")
+                     ? QStringLiteral("Seelie")
                      : QCoreApplication::organizationName(),
                  QCoreApplication::applicationName().isEmpty()
-                     ? QStringLiteral("Oai")
+                     ? QStringLiteral("Seelie")
                      : QCoreApplication::applicationName())
     , m_ipcEndpoint(defaultEndpoint())
     , m_updateServerEndpoint(defaultUpdateEndpoint())
@@ -40,14 +40,14 @@ ConfigManager::ConfigManager(QObject *parent)
     m_saveTimer.setInterval(500);
     connect(&m_saveTimer, &QTimer::timeout, this, &ConfigManager::flush);
     // Layer 1: in-memory defaults (above).
-    // Layer 2: portable Oai.ini next to the exe — shipped by the installer
+    // Layer 2: portable Seelie.ini next to the exe — shipped by the installer
     //          so a built distribution can pre-set updateServerEndpoint /
     //          ipcEndpoint / language without forcing every user to edit
     //          their roaming config. Read-only here; save() never writes
     //          to it (user changes always land in the user-scope file).
-    // Layer 3: user-scope ~/AppData/Roaming/Oai/Oai.ini — applied by load()
+    // Layer 3: user-scope ~/AppData/Roaming/Seelie/Seelie.ini — applied by load()
     //          after construction, wins over portable values.
-    const QString portablePath = QCoreApplication::applicationDirPath() + "/Oai.ini";
+    const QString portablePath = QCoreApplication::applicationDirPath() + "/Seelie.ini";
     if (QFile::exists(portablePath)) {
         QSettings portable(portablePath, QSettings::IniFormat);
         if (const auto v = portable.value("updateServerEndpoint").toString(); !v.isEmpty()) {

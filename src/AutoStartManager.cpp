@@ -27,10 +27,10 @@ void setEnabled(bool enabled)
     QSettings runKey(
         QStringLiteral(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)"),
         QSettings::NativeFormat);
-    static constexpr QLatin1String kRunValue("Oai");
+    static constexpr QLatin1String kRunValue("Seelie");
 
     if (enabled) {
-        // Quote the path: a default install lands in C:\Program Files\Oai\
+        // Quote the path: a default install lands in C:\Program Files\Seelie\
         // (space in the parent), and Windows shell parses the Run value as
         // a command line, splitting on unquoted whitespace.
         const QString exe = QDir::toNativeSeparators(
@@ -71,14 +71,14 @@ QString xmlEscape(const QString &s)
 
 void setEnabled(bool enabled)
 {
-    // launchd LaunchAgent at ~/Library/LaunchAgents/im.cheng.oai.plist.
+    // launchd LaunchAgent at ~/Library/LaunchAgents/im.cheng.seelie.plist.
     // Loaded automatically at next login because launchd scans that dir
     // when GUI session starts. To activate immediately on toggle one
     // would also `launchctl bootstrap gui/<uid> <plist>`, but launching
     // the app mid-toggle is jarring; we accept "next login" semantics
     // (matches Windows behaviour).
     const QString plistPath = QDir::homePath()
-        + QStringLiteral("/Library/LaunchAgents/im.cheng.oai.plist");
+        + QStringLiteral("/Library/LaunchAgents/im.cheng.seelie.plist");
 
     if (enabled) {
         // Point at the bundle's MacOS executable, NOT the .app dir —
@@ -94,7 +94,7 @@ void setEnabled(bool enabled)
                 << "<plist version=\"1.0\">\n"
                 << "<dict>\n"
                 << "    <key>Label</key>\n"
-                << "    <string>im.cheng.oai</string>\n"
+                << "    <string>im.cheng.seelie</string>\n"
                 << "    <key>ProgramArguments</key>\n"
                 << "    <array>\n"
                 << "        <string>" << xmlEscape(exe) << "</string>\n"
@@ -118,15 +118,15 @@ void setEnabled(bool enabled)
     // XDG autostart spec: ~/.config/autostart/<name>.desktop is sourced
     // by GNOME, KDE, XFCE, etc. when the user logs into a graphical
     // session. GenericConfigLocation gives ~/.config (the app-specific
-    // ConfigLocation would give ~/.config/Oai, which the spec doesn't
+    // ConfigLocation would give ~/.config/Seelie, which the spec doesn't
     // scan).
     const QString desktopPath = QStandardPaths::writableLocation(
         QStandardPaths::GenericConfigLocation)
-        + QStringLiteral("/autostart/oai.desktop");
+        + QStringLiteral("/autostart/seelie.desktop");
 
     if (enabled) {
         // For AppImage installs, applicationFilePath() returns a
-        // transient FUSE-mount path (/tmp/.mount_xxx/usr/bin/Oai) that
+        // transient FUSE-mount path (/tmp/.mount_xxx/usr/bin/Seelie) that
         // changes every run. The AppImage runtime sets $APPIMAGE to the
         // stable .AppImage path — prefer that when present.
         const QByteArray appImage = qgetenv("APPIMAGE");
@@ -140,9 +140,9 @@ void setEnabled(bool enabled)
             QTextStream out(&f);
             out << "[Desktop Entry]\n"
                 << "Type=Application\n"
-                << "Name=Oai\n"
+                << "Name=Seelie\n"
                 << "Exec=\"" << exe << "\"\n"
-                << "Icon=oai\n"
+                << "Icon=seelie\n"
                 << "Terminal=false\n"
                 << "X-GNOME-Autostart-enabled=true\n";
         } else {

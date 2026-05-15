@@ -1,8 +1,8 @@
 ## 1. Setup and Dependencies
 
-- [x] 1.1 Add Qt6::WebSockets to CMake find_package (conditional via `OAI_TTS_ENABLED`)
+- [x] 1.1 Add Qt6::WebSockets to CMake find_package (conditional via `SEELIE_TTS_ENABLED`)
 - [x] 1.2 Add Qt6::WebSockets to target_link_libraries when enabled
-- [ ] 1.3 Verify build passes with `OAI_TTS_ENABLED=ON` and `OFF`
+- [ ] 1.3 Verify build passes with `SEELIE_TTS_ENABLED=ON` and `OFF`
 
 ## 2. Config Layer
 
@@ -44,7 +44,7 @@
 ## 6. Internationalization and Polish
 
 - [ ] 6.1 Add English strings to source files with `tr()`
-- [ ] 6.2 Update Oai_zh_CN.ts with Chinese translations for new UI
+- [ ] 6.2 Update Seelie_zh_CN.ts with Chinese translations for new UI
 - [ ] 6.3 Add TTS connection status indicator in AI tab (optional)
 - [ ] 6.4 Test tab switching and settings persistence
 - [ ] 6.5 Test TTS with StepFun provider

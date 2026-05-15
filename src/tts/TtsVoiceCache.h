@@ -1,5 +1,5 @@
-#ifndef OAI_TTSVOICECACHE_H
-#define OAI_TTSVOICECACHE_H
+#ifndef SEELIE_TTSVOICECACHE_H
+#define SEELIE_TTSVOICECACHE_H
 
 #include "ITtsProvider.h"
 
@@ -7,7 +7,7 @@
 #include <QObject>
 #include <QString>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 class TtsVoiceCache : public QObject
 {
@@ -54,6 +54,6 @@ private:
     qint64 m_maxBytes = 100LL * 1024 * 1024;  // 100 MB
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
-#endif // OAI_TTSVOICECACHE_H
+#endif // SEELIE_TTSVOICECACHE_H

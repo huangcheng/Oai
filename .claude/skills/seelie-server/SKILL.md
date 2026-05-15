@@ -1,13 +1,13 @@
 ---
-name: oai-server
-description: Build, deploy and operate the Oai generic UDP server. Covers the binary datagram protocol, CHECK/ANNOUNCE version-check flow, rebar3 builds, systemd deployment, and Aliyun firewall configuration. Use when the user wants to deploy the server, modify the protocol, test version checking, or manage the running daemon.
+name: seelie-server
+description: Build, deploy and operate the Seelie generic UDP server. Covers the binary datagram protocol, CHECK/ANNOUNCE version-check flow, rebar3 builds, systemd deployment, and Aliyun firewall configuration. Use when the user wants to deploy the server, modify the protocol, test version checking, or manage the running daemon.
 license: MIT
 metadata:
-  author: oai
+  author: seelie
   version: "1.0"
 ---
 
-The Oai project includes a lightweight Erlang/OTP UDP server (`server/`). It currently handles version checking and can be extended for other UDP-based services. It lives on branch `feature/update-server` and is deployed to a public host at `updates.example.com:9340` (the real host:port is configured at build time via the `OAI_DEFAULT_UPDATE_ENDPOINT` CMake cache variable — see `CMakeLists.txt`).
+The Seelie project includes a lightweight Erlang/OTP UDP server (`server/`). It currently handles version checking and can be extended for other UDP-based services. It lives on branch `feature/update-server` and is deployed to a public host at `updates.example.com:9340` (the real host:port is configured at build time via the `SEELIE_DEFAULT_UPDATE_ENDPOINT` CMake cache variable — see `CMakeLists.txt`).
 
 ## When to use
 
@@ -30,7 +30,7 @@ client (Qt/C++)          UDP            server (Erlang/OTP)
 - **udp_server** — opens UDP socket, dispatches packets to spawned handlers
 - **protocol** — binary encode/decode + CRC16-CCITT validation
 - **update_handler** — reads `CMakeLists.txt` version, compares with client's current version
-- **systemd** — `oai-server.service` manages the release binary
+- **systemd** — `seelie-server.service` manages the release binary
 
 ## Protocol
 
@@ -57,7 +57,7 @@ All datagrams share a fixed header, variable payload, and trailing CRC16.
 
 | Field | Size | Value |
 |-------|------|-------|
-| Magic | 4 B | `<<"OAI", 1>>` |
+| Magic | 4 B | `<<"SEELIE", 1>>` |
 | Version | 1 B | `1` |
 | Command | 1 B | `1=CHECK`, `2=ANNOUNCE`, `3=PULL`, `4=PUSH`, `5=ACK` |
 | Seq | 2 B | uint16 big-endian, echo back in replies |
@@ -97,31 +97,31 @@ rebar3 as prod release  # production release under _build/prod/rel/server
 
 ## Deploy
 
-The production release is at `/opt/oai-server` on the Aliyun host.
+The production release is at `/opt/seelie-server` on the Aliyun host.
 
 ### Push changes and rebuild
 
 ```bash
-scp -r server/* aliyun:/opt/oai-server/
-ssh aliyun "cd /opt/oai-server && rebar3 as prod release && systemctl restart oai-server"
+scp -r server/* aliyun:/opt/seelie-server/
+ssh aliyun "cd /opt/seelie-server && rebar3 as prod release && systemctl restart seelie-server"
 ```
 
 ### systemd service
 
-File: `/etc/systemd/system/oai-server.service`
+File: `/etc/systemd/system/seelie-server.service`
 
 ```ini
 [Unit]
-Description=Oai Generic UDP Server
+Description=Seelie Generic UDP Server
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/oai-server/_build/prod/rel/server
+WorkingDirectory=/opt/seelie-server/_build/prod/rel/server
 Environment=HOME=/root
-ExecStart=/opt/oai-server/_build/prod/rel/server/bin/server foreground
-ExecStop=/opt/oai-server/_build/prod/rel/server/bin/server stop
+ExecStart=/opt/seelie-server/_build/prod/rel/server/bin/server foreground
+ExecStop=/opt/seelie-server/_build/prod/rel/server/bin/server stop
 Restart=on-failure
 RestartSec=5
 
@@ -131,22 +131,22 @@ WantedBy=multi-user.target
 
 Manage:
 ```bash
-systemctl status oai-server
-systemctl restart oai-server
-systemctl stop oai-server
-journalctl -u oai-server -f
+systemctl status seelie-server
+systemctl restart seelie-server
+systemctl stop seelie-server
+journalctl -u seelie-server -f
 ```
 
 ### Configuration
 
-`/opt/oai-server/config/sys.config` (rebuilt into the release):
+`/opt/seelie-server/config/sys.config` (rebuilt into the release):
 
 ```erlang
 [
     {server, [
         {udp_port, 9340},
         {udp_workers, 4},
-        {version_file, "/opt/oai-server/CMakeLists.txt"}
+        {version_file, "/opt/seelie-server/CMakeLists.txt"}
     ]}
 ].
 ```
@@ -167,7 +167,7 @@ Or manually with `ncat` / a small Python socket script:
 ```python
 import socket, struct, json
 
-MAGIC = b'OAI\x01'
+MAGIC = b'SEELIE\x01'
 def crc16(data):
     crc = 0xFFFF
     for b in data:
@@ -209,12 +209,12 @@ print(data)
 
 1. Edit `server/config/sys.config`
 2. Rebuild release: `rebar3 as prod release`
-3. Restart: `systemctl restart oai-server`
+3. Restart: `systemctl restart seelie-server`
 4. Open the new port in Aliyun security group (UDP inbound)
 
 ### Update the version source
 
-The server extracts `project(Oai VERSION X.Y.Z ...)` from `version_file`.
+The server extracts `project(Seelie VERSION X.Y.Z ...)` from `version_file`.
 If `CMakeLists.txt` moves, update the absolute path in `sys.config` and redeploy.
 
 ### Add a new platform

@@ -1,5 +1,5 @@
-#ifndef OAI_ANIMATIONENGINE_H
-#define OAI_ANIMATIONENGINE_H
+#ifndef SEELIE_ANIMATIONENGINE_H
+#define SEELIE_ANIMATIONENGINE_H
 
 #include <QObject>
 #include <QString>
@@ -56,4 +56,4 @@ public:
     virtual bool lastPaintSuccessful() const { return true; }
 };
 
-#endif // OAI_ANIMATIONENGINE_H
+#endif // SEELIE_ANIMATIONENGINE_H

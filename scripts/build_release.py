@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cross-platform release builder for Oai.
+Cross-platform release builder for Seelie.
 
 Auto-detects Qt, build tools, and platform-specific packagers:
   - Windows: Qt Installer Framework (binarycreator) -> .exe installer
@@ -329,7 +329,7 @@ def package_windows(build_dir, version, qt_prefix, cmake, config="Release"):
     if cache.exists():
         # Quick check: was binarycreator found during last configure?
         cache_text = cache.read_text(errors="ignore")
-        if "OAI_QTIFW_BINARYCREATOR-NOTFOUND" in cache_text or "OAI_QTIFW_BINARYCREATOR:FILEPATH=" not in cache_text:
+        if "SEELIE_QTIFW_BINARYCREATOR-NOTFOUND" in cache_text or "SEELIE_QTIFW_BINARYCREATOR:FILEPATH=" not in cache_text:
             print("  Re-configuring so CMake discovers binarycreator...")
             run([str(cmake), "-B", str(build_dir), "-S", str(PROJECT_ROOT),
                  "-DCMAKE_BUILD_TYPE=Release"], env=env)
@@ -350,7 +350,7 @@ def package_windows(build_dir, version, qt_prefix, cmake, config="Release"):
             run([str(cmake), "--build", str(build_dir), "--target", "installer_stage", "--config", config], env=env)
         else:
             # Manual staging
-            stage_dir = PROJECT_ROOT / "installer" / "packages" / "im.cheng.oai.desktop" / "data"
+            stage_dir = PROJECT_ROOT / "installer" / "packages" / "im.cheng.seelie.desktop" / "data"
             if stage_dir.exists():
                 shutil.rmtree(stage_dir)
             stage_dir.mkdir(parents=True, exist_ok=True)
@@ -371,11 +371,11 @@ def package_windows(build_dir, version, qt_prefix, cmake, config="Release"):
                 if p.exists():
                     shutil.rmtree(p)
             # Copy template ini
-            tpl = PROJECT_ROOT / "installer" / "oai.ini.template"
+            tpl = PROJECT_ROOT / "installer" / "seelie.ini.template"
             if tpl.exists():
-                shutil.copy2(tpl, stage_dir / "Oai.ini")
+                shutil.copy2(tpl, stage_dir / "Seelie.ini")
 
-        installer_out = build_dir / f"OaiInstaller-{version}.exe"
+        installer_out = build_dir / f"SeelieInstaller-{version}.exe"
         config_xml = PROJECT_ROOT / "installer" / "config.xml"
         if not config_xml.exists():
             print(f"ERROR: {config_xml} not found. Run cmake configure with binarycreator in PATH.")
@@ -389,7 +389,7 @@ def package_windows(build_dir, version, qt_prefix, cmake, config="Release"):
         ], env=env)
 
     # Report output
-    candidates = list(build_dir.glob(f"OaiInstaller-{version}*"))
+    candidates = list(build_dir.glob(f"SeelieInstaller-{version}*"))
     if candidates:
         print(f"\n[SUCCESS] Installer created: {candidates[0]}")
     else:
@@ -399,14 +399,14 @@ def package_windows(build_dir, version, qt_prefix, cmake, config="Release"):
 def package_macos(build_dir, version, qt_prefix):
     print("\n[macOS] Packaging DMG...")
 
-    app_bundle = build_dir / "Oai.app"
+    app_bundle = build_dir / "Seelie.app"
     if not app_bundle.exists():
         print(f"ERROR: {app_bundle} not found. Build may have failed.")
         sys.exit(1)
 
     macdeployqt = find_macdeployqt(qt_prefix)
-    main_bin = app_bundle / "Contents" / "MacOS" / "Oai"
-    bin_backup = build_dir / "Oai.unmangled"
+    main_bin = app_bundle / "Contents" / "MacOS" / "Seelie"
+    bin_backup = build_dir / "Seelie.unmangled"
     if main_bin.exists():
         # Save the freshly-linked binary. macdeployqt mangles it (deletes our
         # baked-in rpath, and partial install_name_tool ops corrupt segment
@@ -451,10 +451,10 @@ def package_macos(build_dir, version, qt_prefix):
     # Strip stray files in Contents/MacOS/ — anything besides the executable
     # there invalidates the bundle's codesignature ("code object is not signed
     # at all") and LaunchServices refuses to launch the .app. Common culprit:
-    # a dev-run wrote oai_debug.log next to the binary.
+    # a dev-run wrote seelie_debug.log next to the binary.
     macos_dir = app_bundle / "Contents" / "MacOS"
     for entry in macos_dir.iterdir():
-        if entry.name == "Oai":
+        if entry.name == "Seelie":
             continue
         print(f"  Removing stray bundle file: Contents/MacOS/{entry.name}")
         if entry.is_dir():
@@ -644,7 +644,7 @@ def package_macos(build_dir, version, qt_prefix):
                 if Path(f).is_file():
                     run([codesign, "--force", "--sign", "-", f], check=False)
         # Sign main binary then bundle
-        run([codesign, "--force", "--sign", "-", str(app_bundle / "Contents" / "MacOS" / "Oai")], check=False)
+        run([codesign, "--force", "--sign", "-", str(app_bundle / "Contents" / "MacOS" / "Seelie")], check=False)
         run([codesign, "--deep", "--force", "--sign", "-", str(app_bundle)], check=False)
 
     xattr = shutil.which("xattr")
@@ -656,13 +656,13 @@ def package_macos(build_dir, version, qt_prefix):
     if dmg_staging.exists():
         shutil.rmtree(dmg_staging)
     dmg_staging.mkdir()
-    shutil.copytree(app_bundle, dmg_staging / "Oai.app", symlinks=True)
+    shutil.copytree(app_bundle, dmg_staging / "Seelie.app", symlinks=True)
     (dmg_staging / "Applications").symlink_to("/Applications")
 
-    dmg_path = build_dir / f"Oai-{version}.dmg"
+    dmg_path = build_dir / f"Seelie-{version}.dmg"
     run([
         "hdiutil", "create",
-        "-volname", "Oai",
+        "-volname", "Seelie",
         "-srcfolder", str(dmg_staging),
         "-ov",
         "-format", "UDZO",
@@ -698,44 +698,44 @@ def package_linux(build_dir, version, cmake, config="Release"):
     # Create .desktop entry
     desktop_content = (
         "[Desktop Entry]\n"
-        "Name=Oai\n"
+        "Name=Seelie\n"
         "Comment=A native Qt6/C++ desktop pet\n"
-        "Exec=Oai\n"
-        "Icon=oai\n"
+        "Exec=Seelie\n"
+        "Icon=seelie\n"
         "Type=Application\n"
         "Categories=Utility;Qt;\n"
         "Terminal=false\n"
     )
-    desktop_file = appdir / "oai.desktop"
+    desktop_file = appdir / "seelie.desktop"
     desktop_file.write_text(desktop_content, encoding="utf-8")
     # Also install into FHS location
     apps_dir = usr / "share" / "applications"
     apps_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(desktop_file, apps_dir / "oai.desktop")
+    shutil.copy2(desktop_file, apps_dir / "seelie.desktop")
 
     # Install icon
-    icon_src = PROJECT_ROOT / "assets" / "icons" / "oai.png"
+    icon_src = PROJECT_ROOT / "assets" / "icons" / "seelie.png"
     if icon_src.exists():
         # AppDir root (appimagetool looks here)
-        shutil.copy2(icon_src, appdir / "oai.png")
+        shutil.copy2(icon_src, appdir / "seelie.png")
         # FHS location
         icons_dir = usr / "share" / "icons" / "hicolor" / "256x256" / "apps"
         icons_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(icon_src, icons_dir / "oai.png")
+        shutil.copy2(icon_src, icons_dir / "seelie.png")
     else:
-        print("  [WARNING] Icon not found at assets/icons/oai.png")
+        print("  [WARNING] Icon not found at assets/icons/seelie.png")
 
-    # AppRun symlink — cmake install always lands the binary at usr/bin/Oai
-    # via install(TARGETS Oai RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}).
-    exe = usr / "bin" / "Oai"
+    # AppRun symlink — cmake install always lands the binary at usr/bin/Seelie
+    # via install(TARGETS Seelie RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}).
+    exe = usr / "bin" / "Seelie"
     if not exe.exists():
         print(f"ERROR: Executable not found at {exe} after cmake install.")
         sys.exit(1)
     apprun = appdir / "AppRun"
-    os.symlink("usr/bin/Oai", apprun)
+    os.symlink("usr/bin/Seelie", apprun)
 
     arch = platform.machine().replace("_", "-")
-    appimage_name = f"Oai-{version}-{arch}.AppImage"
+    appimage_name = f"Seelie-{version}-{arch}.AppImage"
     appimage_path = build_dir / appimage_name
 
     if appimagetool:
@@ -807,7 +807,7 @@ def find_compiler_bin_for_qt(qt_prefix):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build and package Oai for the current platform.")
+    parser = argparse.ArgumentParser(description="Build and package Seelie for the current platform.")
     parser.add_argument("--build-dir", default="build", help="CMake build directory (default: build)")
     parser.add_argument("--config", default="Release", help="CMake build configuration (default: Release)")
     parser.add_argument("--qt-dir", default=None, help="Override Qt installation directory")

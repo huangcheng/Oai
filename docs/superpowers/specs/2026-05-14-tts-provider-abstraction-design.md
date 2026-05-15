@@ -257,7 +257,7 @@ A manual test (`tests/manual/test_tts_live.cpp`) gated behind an env var with re
 - The dedicated `QThread` model is preserved — the engine still lives on its own thread, callers reach it via queued connections.
 - The shared `QNetworkAccessManager` lives on the engine's thread. Adapters use it directly; engine does not proxy.
 - `RequestHandle` is a strong type wrapping `QNetworkReply*` (or an opaque token if an adapter ever needs a non-QNetworkReply transport). `cancel()` aborts the reply; the reply's `finished` slot must check `isRunning()` to avoid firing callbacks after cancellation.
-- Existing `OAI_TTS_ENABLED` CMake flag stays. QtWebSockets dependency can be removed since we no longer need it; that's a build-config cleanup item in the implementation plan.
+- Existing `SEELIE_TTS_ENABLED` CMake flag stays. QtWebSockets dependency can be removed since we no longer need it; that's a build-config cleanup item in the implementation plan.
 
 ## Files Affected
 
@@ -267,7 +267,7 @@ A manual test (`tests/manual/test_tts_live.cpp`) gated behind an env var with re
 - `src/ConfigManager.h`/`.cpp` — add provider-namespaced fields, migration, `activeProviderChanged` signal
 - `src/SettingsPanelWidget.h`/`.cpp` — replace flat TTS form with provider dropdown + `QStackedWidget`
 - `CMakeLists.txt` — drop `Qt6::WebSockets`, add new source files
-- `Oai_zh_CN.ts` — translations for new strings
+- `Seelie_zh_CN.ts` — translations for new strings
 
 **New:**
 
@@ -284,5 +284,5 @@ A manual test (`tests/manual/test_tts_live.cpp`) gated behind an env var with re
 ## Open Items for the Implementation Plan
 
 - Exact `QAudioDecoder` wiring for memory-buffered decode (it's natively file-oriented; needs a `QBuffer` adapter).
-- Whether to keep the existing `/tmp/oai_tts.log` file logging (StepFun-era debug aid) or migrate to `qDebug` with a `tts.engine` logging category.
+- Whether to keep the existing `/tmp/seelie_tts.log` file logging (StepFun-era debug aid) or migrate to `qDebug` with a `tts.engine` logging category.
 - Whether `tts/providers/<id>/*` should use `QSettings::beginGroup` block writes for atomicity when the user changes provider mid-edit.

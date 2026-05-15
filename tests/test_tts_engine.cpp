@@ -13,7 +13,7 @@
 #include "tts/ProviderConfig.h"
 #include "tts/TtsProviderRegistry.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 namespace {
 

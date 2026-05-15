@@ -75,24 +75,24 @@ The system SHALL listen for the `ttsCacheInvalidated` signal from `ConfigManager
 
 - **WHEN** user changes voice from `cixingnansheng` to `linjiajiejie` in settings
 - **THEN** `ConfigManager` emits `ttsCacheInvalidated`
-- **AND** all files in `~/.cache/Oai/tts_voice_cache/` are deleted
+- **AND** all files in `~/.cache/Seelie/tts_voice_cache/` are deleted
 - **AND** next `speak()` call repopulates cache with new voice
 
 #### Scenario: Provider switch invalidates cache
 
 - **WHEN** user switches TTS provider from `stepfun` to `minimax`
 - **THEN** `ConfigManager` emits `ttsCacheInvalidated`
-- **AND** all files in `~/.cache/Oai/tts_voice_cache/` are deleted
+- **AND** all files in `~/.cache/Seelie/tts_voice_cache/` are deleted
 
 #### Scenario: Model change invalidates cache
 
 - **WHEN** user changes model from `stepaudio-2.5-tts` to `stepaudio-3-tts`
 - **THEN** `ConfigManager` emits `ttsCacheInvalidated`
-- **AND** all files in `~/.cache/Oai/tts_voice_cache/` are deleted
+- **AND** all files in `~/.cache/Seelie/tts_voice_cache/` are deleted
 
 ### Requirement: Cache directory is created on first access
 
-The system SHALL create the cache directory (`~/.cache/Oai/tts_voice_cache/`) using `QStandardPaths::CacheLocation` if it does not already exist, before performing any cache read or write operations.
+The system SHALL create the cache directory (`~/.cache/Seelie/tts_voice_cache/`) using `QStandardPaths::CacheLocation` if it does not already exist, before performing any cache read or write operations.
 
 #### Scenario: First speak call creates cache directory
 

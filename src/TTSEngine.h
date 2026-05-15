@@ -31,7 +31,7 @@ public:
 
 public slots:
     void speak(const QString &text);
-    void speakWithOptions(const QString &text, oai::tts::SpeakOptions opts);
+    void speakWithOptions(const QString &text, seelie::tts::SpeakOptions opts);
     // Wipe the on-disk voice cache. Safe to call from any thread.
     void clearVoiceCache();
 
@@ -52,9 +52,9 @@ private slots:
 private:
     void initOnThread();           // runs on m_thread after start()
     void rebuildProvider();        // tear down, re-instantiate from current config
-    void doSynthesize(const QString &text, oai::tts::SpeakOptions opts);
-    void onSynthesisSuccess(oai::tts::SynthesisResult result);
-    void onSynthesisError(oai::tts::TtsError err);
+    void doSynthesize(const QString &text, seelie::tts::SpeakOptions opts);
+    void onSynthesisSuccess(seelie::tts::SynthesisResult result);
+    void onSynthesisError(seelie::tts::TtsError err);
     void scheduleRetry();
     void resetAudio();
     void startDecode(const QByteArray &audio, const QString &mimeType);
@@ -63,14 +63,14 @@ private:
     QThread *m_thread = nullptr;
 
     QNetworkAccessManager *m_nam = nullptr;
-    std::unique_ptr<oai::tts::ITtsProvider> m_provider;
-    std::unique_ptr<oai::tts::TtsVoiceCache> m_voiceCache;
+    std::unique_ptr<seelie::tts::ITtsProvider> m_provider;
+    std::unique_ptr<seelie::tts::TtsVoiceCache> m_voiceCache;
     QString m_currentProviderStableId;
 
     // Active request bookkeeping.
-    oai::tts::RequestHandle m_inFlight = 0;
+    seelie::tts::RequestHandle m_inFlight = 0;
     QString m_pendingText;
-    oai::tts::SpeakOptions m_pendingOptions;
+    seelie::tts::SpeakOptions m_pendingOptions;
     // Snapshot of the cache fingerprint at request time. Captured here so the
     // success path writes under the same key the lookup used, even if config
     // changes mid-flight (rebuildProvider() cancels in-flight requests, but

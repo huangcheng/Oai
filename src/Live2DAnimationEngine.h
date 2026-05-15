@@ -1,7 +1,7 @@
 #ifndef LIVE2DANIMATIONENGINE_H
 #define LIVE2DANIMATIONENGINE_H
 
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
 
 #include "AnimationEngine.h"
 
@@ -158,6 +158,6 @@ private:
     int m_idleTimeoutMs = 3000;
 };
 
-#endif // OAI_LIVE2D_SUPPORT
+#endif // SEELIE_LIVE2D_SUPPORT
 
 #endif // LIVE2DANIMATIONENGINE_H

@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/icons">
-        <file>icons/oai.png</file>
+        <file>icons/seelie.png</file>
     </qresource>
 </RCC>

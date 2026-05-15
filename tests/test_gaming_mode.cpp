@@ -62,7 +62,7 @@ private:
 void TestGamingMode::initTestCase()
 {
     // Redirect QSettings to a throw-away temp dir so tests don't pollute
-    // the developer's real Oai config file.
+    // the developer's real Seelie config file.
     QVERIFY(m_tmpDir.isValid());
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, m_tmpDir.path());
 }

@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://oai.cheng.im/schemas/character-pack-v1.json",
-  "title": "Oai Character Pack Manifest",
-  "description": "Manifest format for Oai character packs (.opk) — supports Lottie, sprite-sheet, and Live2D characters",
+  "$id": "https://seelie.cheng.im/schemas/character-pack-v1.json",
+  "title": "Seelie Character Pack Manifest",
+  "description": "Manifest format for Seelie character packs (.opk) — supports Lottie, sprite-sheet, and Live2D characters",
   "version": "1.0.0",
   "type": "object",
   "required": ["formatVersion", "id", "name", "author", "version", "character"],
@@ -77,7 +77,7 @@
     },
     "minAppVersion": {
       "type": "string",
-      "description": "Minimum Oai version required",
+      "description": "Minimum Seelie version required",
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
     "character": {

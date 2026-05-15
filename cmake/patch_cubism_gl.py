@@ -14,7 +14,7 @@ def main():
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    if 'OAI_GLEW_COPY_FROM_GLEW' in content:
+    if 'SEELIE_GLEW_COPY_FROM_GLEW' in content:
         print('Already patched, skipping.')
         return
 
@@ -32,7 +32,7 @@ def main():
             glew_name = '::__glew' + glname[2:]
         else:
             glew_name = '::__glew' + glname[0].upper() + glname[1:]
-        return f'{varname} = {glew_name}; /* OAI_GLEW_COPY */'
+        return f'{varname} = {glew_name}; /* SEELIE_GLEW_COPY */'
 
     pattern = r'(\w+) = \(\w+\)WinGlGetProcAddress\("(\w+)"\)'
     count = len(re.findall(pattern, content))
@@ -41,7 +41,7 @@ def main():
     # Mark as patched
     content = content.replace(
         's_isInitializeGlFunctionsSuccess = true; ',
-        's_isInitializeGlFunctionsSuccess = true; /* OAI_GLEW_COPY_FROM_GLEW */ ',
+        's_isInitializeGlFunctionsSuccess = true; /* SEELIE_GLEW_COPY_FROM_GLEW */ ',
         1
     )
 

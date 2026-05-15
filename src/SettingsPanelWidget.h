@@ -50,7 +50,7 @@ public:
 
 signals:
     void panelHidden();
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     // Emitted when the user clicks "Test" in the TTS tab. MainWindow wires
     // this to TTSEngine::speak so the test bypasses any tip flow.
     void testTtsRequested(const QString &text);
@@ -63,7 +63,7 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 public slots:
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     void showAuthFailedHint(const QString &providerStableId);
 #endif
 
@@ -77,7 +77,7 @@ private slots:
     void onShortcutChanged(const QKeySequence &sequence);
     void onGamingModeToggled(bool checked);
     void onTipBubblesToggled(bool checked);
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     void onTtsEnabledToggled(bool checked);
     void onTtsProviderChanged(int comboIndex);
     void onTtsProviderFieldEdited();        // shared slot for all field editors
@@ -85,7 +85,7 @@ private slots:
 
 private:
     void setupUi();
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     /// Builds the TTS tab content (Provider combo, per-provider field
     /// pages, Test + Clear voice cache action row). Extracted from
     /// setupUi() so the long sequence of widget construction lives
@@ -130,7 +130,7 @@ private:
     QWidget *m_generalTab = nullptr;
     QWidget *m_aiTab = nullptr;
 
-#ifdef OAI_TTS_ENABLED
+#ifdef SEELIE_TTS_ENABLED
     QLabel       *m_ttsEnabledLabel = nullptr;
     QCheckBox    *m_ttsEnabledCheck = nullptr;
     QLabel       *m_ttsProviderLabel = nullptr;

@@ -17,7 +17,7 @@
 **Files:**
 - Create: `src/PetStateMachine.h`
 - Modify: `CMakeLists.txt:318` (add `src/PetStateMachine.h` after `src/CharacterPackManager.h`)
-- Modify: `tests/CMakeLists.txt` (add `${CMAKE_SOURCE_DIR}/src/PetStateMachine.h` to `OAIPET_LIB_SOURCES`)
+- Modify: `tests/CMakeLists.txt` (add `${CMAKE_SOURCE_DIR}/src/PetStateMachine.h` to `SEELIEPET_LIB_SOURCES`)
 
 - [ ] **Step 1: Create `src/PetStateMachine.h` with the public surface**
 
@@ -133,7 +133,7 @@ Edit `CMakeLists.txt`. Find line 334 (`src/CharacterPackManager.h`) and add imme
 
 - [ ] **Step 3: Add the file to the test library sources**
 
-Edit `tests/CMakeLists.txt`. Find the `OAIPET_LIB_SOURCES` block (line 1). Add these two entries before the `${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c` line:
+Edit `tests/CMakeLists.txt`. Find the `SEELIEPET_LIB_SOURCES` block (line 1). Add these two entries before the `${CMAKE_SOURCE_DIR}/thirdparty/miniz/miniz.c` line:
 
 ```cmake
     ${CMAKE_SOURCE_DIR}/src/PetStateMachine.cpp
@@ -1512,7 +1512,7 @@ Replace the entire `--- Emotion engine ---` block (lines 380-397) with:
                      &w,
                      [&w](const QStringList &chain, int priority) {
         if (chain.isEmpty()) return;
-#ifdef OAI_LIVE2D_SUPPORT
+#ifdef SEELIE_LIVE2D_SUPPORT
         if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
             w.live2dEngine()->playAnimationChain(chain,
                 priority == PetStateMachine::HighPriority
@@ -1563,7 +1563,7 @@ src/EmotionEngine.h
 - [ ] **Step 5: Build the app**
 
 ```bash
-cd build && cmake --build . --target Oai 2>&1 | tail -20
+cd build && cmake --build . --target Seelie 2>&1 | tail -20
 ```
 
 Expected: clean build. If link errors mention `EmotionEngine`, check that no other file `#include`s it.
@@ -1876,12 +1876,12 @@ git commit -m "refactor(events): EventRouter is tip+validation only; FSM owns an
 - [ ] **Step 1: Build a release binary**
 
 ```bash
-cd build && cmake --build . --target Oai --config Release 2>&1 | tail -5
+cd build && cmake --build . --target Seelie --config Release 2>&1 | tail -5
 ```
 
 - [ ] **Step 2: Drop the Tiny CRT pet into the running app**
 
-Launch `build/Release/Oai.exe` (or `build/Oai.exe` for non-multi-config). Drag `C:/Users/huang/Downloads/tiny-crt.codex-pet.zip` (rename to `.codex-pet` first) onto the pet window.
+Launch `build/Release/Seelie.exe` (or `build/Seelie.exe` for non-multi-config). Drag `C:/Users/huang/Downloads/tiny-crt.codex-pet.zip` (rename to `.codex-pet` first) onto the pet window.
 
 Expected: the CRT pet replaces the current character, idles with subtle motion.
 
@@ -1890,24 +1890,24 @@ Expected: the CRT pet replaces the current character, idles with subtle motion.
 In a separate terminal:
 
 ```bash
-oai-gateway --source claude-code --event session.start
+seelie-gateway --source claude-code --event session.start
 # expect: pet plays the "waving" animation once, returns to idle
-oai-gateway --source claude-code --event tool.before
+seelie-gateway --source claude-code --event tool.before
 # expect: pet enters the "running" loop and stays there
-oai-gateway --source claude-code --event tool.failed
+seelie-gateway --source claude-code --event tool.failed
 # expect: brief "failed" overlay, then back to "running"
-oai-gateway --source claude-code --event session.idle
+seelie-gateway --source claude-code --event session.idle
 # expect: drops to idle within 100ms
 ```
 
 - [ ] **Step 4: Observe Working grace window**
 
 ```bash
-oai-gateway --source claude-code --event tool.before
+seelie-gateway --source claude-code --event tool.before
 # wait 1 second
-oai-gateway --source claude-code --event tool.after
+seelie-gateway --source claude-code --event tool.after
 # wait 1 second
-oai-gateway --source claude-code --event tool.before
+seelie-gateway --source claude-code --event tool.before
 # expect: pet stayed in "running" the whole time (no flicker to idle at 1.0s)
 ```
 

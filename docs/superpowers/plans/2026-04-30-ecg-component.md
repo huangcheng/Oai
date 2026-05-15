@@ -23,8 +23,8 @@
 - `src/SettingsPanelWidget.h` / `src/SettingsPanelWidget.cpp` — add an "ECG Monitor" row using the existing `CheckMarkBox` style, bump `PANEL_HEIGHT` from 210 → 250 to fit the new row, add label/checkbox members, retranslation hook.
 - `src/mainwindow.h` / `src/mainwindow.cpp` — own `EcgWidget *m_ecgWidget`, anchor it on `positionChanged`, hide it when the pet is hidden, show/hide on `ConfigManager::ecgEnabledChanged`, re-anchor in `onActivePackChanged` when the pet resizes for a new pack.
 - `CMakeLists.txt` — add `Qt6 Multimedia` to `find_package`, list `src/EcgWidget.cpp` / `src/EcgWidget.h` in `qt_add_executable`, link `Qt::Multimedia`.
-- `tests/CMakeLists.txt` — add `src/EcgWidget.cpp` / `src/EcgWidget.h` to `OAIPET_LIB_SOURCES`, append `test_ecg.cpp` to `TEST_SOURCES`, add `Qt::Multimedia` to test link list.
-- `Oai_zh_CN.ts` — add `<message>` entries for new English strings ("ECG Monitor" → "心电图").
+- `tests/CMakeLists.txt` — add `src/EcgWidget.cpp` / `src/EcgWidget.h` to `SEELIEPET_LIB_SOURCES`, append `test_ecg.cpp` to `TEST_SOURCES`, add `Qt::Multimedia` to test link list.
+- `Seelie_zh_CN.ts` — add `<message>` entries for new English strings ("ECG Monitor" → "心电图").
 
 ---
 
@@ -133,8 +133,8 @@ private slots:
 void TestEcg::initTestCase()
 {
     // Use an isolated config dir so we don't clobber the real user config.
-    QCoreApplication::setOrganizationName("OaiTests");
-    QCoreApplication::setApplicationName("OaiTests-Ecg");
+    QCoreApplication::setOrganizationName("SeelieTests");
+    QCoreApplication::setApplicationName("SeelieTests-Ecg");
     const QString cfgDir = QStandardPaths::writableLocation(
         QStandardPaths::AppConfigLocation);
     QDir(cfgDir).removeRecursively();
@@ -271,11 +271,11 @@ Replace with:
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia LinguistTools Test)
 ```
 
-- [ ] **Step 2: Link Qt::Multimedia in the Oai target**
+- [ ] **Step 2: Link Qt::Multimedia in the Seelie target**
 
-In the `target_link_libraries(Oai ...)` block (around line 367), add `Qt::Multimedia`:
+In the `target_link_libraries(Seelie ...)` block (around line 367), add `Qt::Multimedia`:
 ```cmake
-target_link_libraries(Oai
+target_link_libraries(Seelie
     PRIVATE
         Qt::Core
         Qt::Gui
@@ -305,7 +305,7 @@ Edit `tests/CMakeLists.txt`. In the `target_link_libraries(${test_name} ...)` bl
 - [ ] **Step 4: Reconfigure and verify the new dependency resolves**
 
 ```bash
-cd build && cmake .. && cmake --build . --target Oai test_ecg 2>&1 | tail -20
+cd build && cmake .. && cmake --build . --target Seelie test_ecg 2>&1 | tail -20
 ```
 Expected: clean build. `find_package` prints "Found Qt6Multimedia" during configure. If Multimedia is missing, install via `brew install qt@6` (already provides Multimedia) or the Qt online installer.
 
@@ -647,13 +647,13 @@ QByteArray EcgWidget::synthesizeBeepWav()
 
 - [ ] **Step 3: Register the new sources in CMake**
 
-Edit `CMakeLists.txt`. In the `qt_add_executable(Oai ...)` block (around line 289), add after the `src/SettingsPanelWidget.h` lines:
+Edit `CMakeLists.txt`. In the `qt_add_executable(Seelie ...)` block (around line 289), add after the `src/SettingsPanelWidget.h` lines:
 ```cmake
     src/EcgWidget.cpp
     src/EcgWidget.h
 ```
 
-Edit `tests/CMakeLists.txt`. In `OAIPET_LIB_SOURCES`, after the `SettingsPanelWidget` lines are *not* listed (note: SettingsPanelWidget is not in the test lib — it's app-only). Add the ECG widget after `${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h`:
+Edit `tests/CMakeLists.txt`. In `SEELIEPET_LIB_SOURCES`, after the `SettingsPanelWidget` lines are *not* listed (note: SettingsPanelWidget is not in the test lib — it's app-only). Add the ECG widget after `${CMAKE_SOURCE_DIR}/src/TipBubbleWidget.h`:
 ```cmake
     ${CMAKE_SOURCE_DIR}/src/EcgWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/EcgWidget.h
@@ -662,14 +662,14 @@ Edit `tests/CMakeLists.txt`. In `OAIPET_LIB_SOURCES`, after the `SettingsPanelWi
 - [ ] **Step 4: Build and confirm clean compile**
 
 ```bash
-cd build && cmake --build . --target Oai test_ecg 2>&1 | tail -10
+cd build && cmake --build . --target Seelie test_ecg 2>&1 | tail -10
 ```
 Expected: clean build, no warnings.
 
 - [ ] **Step 5: Smoke-run the app to see the placeholder frame**
 
 ```bash
-open build/Oai.app
+open build/Seelie.app
 ```
 Manually verify: nothing visibly broken (the EcgWidget is not yet shown anywhere — that lands in Task 8). The app runs, the pet appears, no crashes.
 
@@ -903,7 +903,7 @@ In `src/EcgWidget.cpp`, replace the placeholder `painter.fillRect(lcd, QColor(0x
 - [ ] **Step 7: Build, run, and visually verify the trace scrolls**
 
 ```bash
-cd build && cmake --build . && open Oai.app
+cd build && cmake --build . && open Seelie.app
 ```
 The widget is still not wired into MainWindow yet — to verify the visuals, temporarily add `EcgWidget *w = new EcgWidget; w->anchorTo(this); w->start();` in `MainWindow`'s constructor as a scratch line, build, observe, then revert. (Task 8 wires it properly.)
 
@@ -1031,7 +1031,7 @@ void EcgWidget::initAudio()
     if (m_beep) return;
 
     m_beepFile = new QTemporaryFile(
-        QDir::tempPath() + QStringLiteral("/oai_ecg_beep_XXXXXX.wav"));
+        QDir::tempPath() + QStringLiteral("/seelie_ecg_beep_XXXXXX.wav"));
     m_beepFile->setAutoRemove(true);
     if (!m_beepFile->open()) {
         delete m_beepFile;
@@ -1081,7 +1081,7 @@ In `onTick()`, after the phase wrap and before `update()`, add:
 - [ ] **Step 6: Build, run, and verify the beep**
 
 ```bash
-cd build && cmake --build . && open Oai.app
+cd build && cmake --build . && open Seelie.app
 ```
 Use the same scratch enable line from Task 5 Step 7 to instantiate `EcgWidget` and `start()` it. Listen for ~72 BPM beeps. Then revert the scratch line.
 
@@ -1192,7 +1192,7 @@ In `retranslateUi()`, add:
 - [ ] **Step 3: Build and verify the panel renders correctly**
 
 ```bash
-cd build && cmake --build . && open Oai.app
+cd build && cmake --build . && open Seelie.app
 ```
 Right-click the pet → Settings. The panel should now show 5 rows (Language, Launch at Login, ECG Monitor, Port, Model) with no clipping. Toggling the ECG checkbox should not yet produce any visible widget — wiring lands in Task 8.
 
@@ -1291,7 +1291,7 @@ Also at the top of `onActivePackChanged()`, after the window resize block where 
 - [ ] **Step 3: Build and run; toggle ECG via Settings**
 
 ```bash
-cd build && cmake --build . && open Oai.app
+cd build && cmake --build . && open Seelie.app
 ```
 Manual checks:
 - Right-click pet → Settings → check "ECG Monitor". The green LCD trace appears above the pet, beeping at ~72 BPM.
@@ -1320,20 +1320,20 @@ git commit -m "feat(ecg): wire EcgWidget into MainWindow with config-driven togg
 ## Task 9: Translations — Chinese strings
 
 **Files:**
-- Modify: `Oai_zh_CN.ts`
+- Modify: `Seelie_zh_CN.ts`
 
 - [ ] **Step 1: Run lupdate to add the new strings to the .ts file**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)" && \
-  /usr/bin/find . -path ./build -prune -o \( -name '*.cpp' -o -name '*.h' \) -print > /tmp/oai_sources.txt && \
-  $(brew --prefix qt@6)/bin/lupdate $(cat /tmp/oai_sources.txt) -ts Oai_zh_CN.ts
+  /usr/bin/find . -path ./build -prune -o \( -name '*.cpp' -o -name '*.h' \) -print > /tmp/seelie_sources.txt && \
+  $(brew --prefix qt@6)/bin/lupdate $(cat /tmp/seelie_sources.txt) -ts Seelie_zh_CN.ts
 ```
 Expected: lupdate prints "Found N source text(s)" and adds an unfinished `<message>` for `ECG Monitor` under the `SettingsPanelWidget` context.
 
 - [ ] **Step 2: Fill in the Chinese translation**
 
-Edit `Oai_zh_CN.ts`. Find the new entry inside the `SettingsPanelWidget` context:
+Edit `Seelie_zh_CN.ts`. Find the new entry inside the `SettingsPanelWidget` context:
 ```xml
         <message>
             <source>ECG Monitor</source>
@@ -1351,14 +1351,14 @@ Replace with:
 - [ ] **Step 3: Build (lrelease runs as part of Qt's translations target) and verify Chinese rendering**
 
 ```bash
-cd build && cmake --build . && open Oai.app
+cd build && cmake --build . && open Seelie.app
 ```
 In Settings, set Language → 简体中文. The new row label should read "心电图".
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Oai_zh_CN.ts
+git add Seelie_zh_CN.ts
 git commit -m "i18n(zh_CN): translate ECG Monitor toggle"
 ```
 
@@ -1377,7 +1377,7 @@ Expected: all tests pass.
 
 - [ ] **Step 2: Manual scenarios — golden path**
 
-Open the app on macOS (`open build/Oai.app`). For each scenario, verify the listed outcome.
+Open the app on macOS (`open build/Seelie.app`). For each scenario, verify the listed outcome.
 
 | Scenario | Expected |
 |---|---|
@@ -1385,7 +1385,7 @@ Open the app on macOS (`open build/Oai.app`). For each scenario, verify the list
 | Settings → check "ECG Monitor" | Green LCD ECG appears above pet, beeping ~72 BPM. |
 | Drag pet across screen | ECG follows continuously. |
 | Pet drag near top of screen | ECG clamps to screen top, doesn't disappear off-screen. |
-| Send a tip via gateway (`oai-gateway --source claude-code --event session.start`) | Tip bubble appears above the ECG, briefly occluding it. ECG keeps tracing. |
+| Send a tip via gateway (`seelie-gateway --source claude-code --event session.start`) | Tip bubble appears above the ECG, briefly occluding it. ECG keeps tracing. |
 | Switch pack via tray Pet menu | ECG repositions for the new pet size. |
 | Toggle pet hide/show | ECG hides with the pet, reappears on show. |
 | Settings → uncheck "ECG Monitor" | ECG hides; no more beeps. |
@@ -1418,4 +1418,4 @@ If no fixes were needed, skip this step.
 - **Spec coverage check:** the four user requirements map as: snap to pet top → Task 3 + Task 8; optional via settings → Task 1 + Task 7 + Task 8; same border/frame as tip bubble & settings → Task 3 (uses identical SHADOW_BLUR/CORNER_RADIUS/BORDER_WIDTH/SKEW_PX values and orange stripe); LCD retro screen → Task 5 (phosphor-green palette, grid, scrolling polyline); real ECG sound → Task 6 (synthesized 880 Hz beep on R-peak).
 - **Type consistency:** `start()` / `stop()` / `anchorTo()` / `setAnchorRect()` are the only public verbs; same names used in `EcgWidget.h`, `mainwindow.cpp`, and the test file.
 - **No placeholders:** every step has either exact code, an exact command, or a concrete user-facing scenario.
-- **Worktree note:** the writing-plans skill prefers running in a worktree spawned by brainstorming. This plan was authored on the main branch by direct user request; if isolation is desired, run `git worktree add ../Oai-ecg ecg-feature` before Task 1 and discard at the end via `superpowers:finishing-a-development-branch`.
+- **Worktree note:** the writing-plans skill prefers running in a worktree spawned by brainstorming. This plan was authored on the main branch by direct user request; if isolation is desired, run `git worktree add ../Seelie-ecg ecg-feature` before Task 1 and discard at the end via `superpowers:finishing-a-development-branch`.

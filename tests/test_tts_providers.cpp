@@ -22,7 +22,7 @@
 #include "tts/AzureSpeechProvider.h"
 #include "tts/OpenAiTtsProvider.h"
 
-using namespace oai::tts;
+using namespace seelie::tts;
 
 class TestTtsProviders : public QObject
 {

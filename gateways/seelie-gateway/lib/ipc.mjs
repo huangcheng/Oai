@@ -1,5 +1,5 @@
 /**
- * ipc.mjs — IPC transport for Oai desktop pet.
+ * ipc.mjs — IPC transport for Seelie desktop pet.
  *
  * Uses UDP localhost (127.0.0.1:52847) for zero-overhead fire-and-forget.
  */
@@ -28,7 +28,7 @@ function parseEndpoint(endpoint) {
 
 // ── Send a message ─────────────────────────────────────────────────────────
 
-export function sendToOai(message, opts = {}) {
+export function sendToSeelie(message, opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const { host, port } = parseEndpoint(endpoint);
 
@@ -49,7 +49,7 @@ export function sendToOai(message, opts = {}) {
 
 // ── Ping / health check ────────────────────────────────────────────────────
 
-export function pingOai(opts = {}) {
+export function pingSeelie(opts = {}) {
   const endpoint = getEndpoint(opts.endpoint);
   const { host, port } = parseEndpoint(endpoint);
   const timeout = opts.timeout ?? 2000;

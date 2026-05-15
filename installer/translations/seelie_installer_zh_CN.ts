@@ -4,19 +4,19 @@
 <context>
     <name>LaunchCheckBoxForm</name>
     <message>
-        <source>Launch Oai now</source>
-        <translation>立即启动 Oai</translation>
+        <source>Launch Seelie now</source>
+        <translation>立即启动 Seelie</translation>
     </message>
 </context>
 <context>
     <name>installscript</name>
     <message>
-        <source>Oai Desktop Pet</source>
-        <translation>Oai 桌面宠物</translation>
+        <source>Seelie Desktop Pet</source>
+        <translation>Seelie 桌面宠物</translation>
     </message>
     <message>
-        <source>Uninstall Oai</source>
-        <translation>卸载 Oai</translation>
+        <source>Uninstall Seelie</source>
+        <translation>卸载 Seelie</translation>
     </message>
 </context>
 </TS>

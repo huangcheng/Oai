@@ -31,7 +31,7 @@
     {"title": "你好！",     "body": "代码原力与你同在。"}
   ],
   "messages": {
-    "about":               {"title": "关于",       "body": "Oai 桌面宠物\nv{version}\n© 2026 HUANG Cheng"},
+    "about":               {"title": "关于",       "body": "Seelie 桌面宠物\nv{version}\n© 2026 HUANG Cheng"},
     "pack.installed":      {"title": "安装成功",   "body": "角色包安装成功！"},
     "pack.install_failed": {"title": "安装失败",   "body": "角色包安装失败。"}
   }

@@ -1,10 +1,10 @@
-#ifndef OAI_TTS_PROVIDERCONFIG_H
-#define OAI_TTS_PROVIDERCONFIG_H
+#ifndef SEELIE_TTS_PROVIDERCONFIG_H
+#define SEELIE_TTS_PROVIDERCONFIG_H
 
 #include <QHash>
 #include <QString>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 // Free-form per-provider settings. The keys understood by each adapter are
 // listed in its corresponding ProviderDescriptor::requiredFields/optionalFields.
@@ -20,6 +20,6 @@ struct ProviderConfig {
     bool has(const QString& key) const { return values.contains(key); }
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Gaming Mode setting in config
-The system SHALL expose `gamingModeEnabled` as a boolean property on `ConfigManager`, persisted as the `gamingMode` key in `~/.config/Oai/config.json`, with a default value of `false`.
+The system SHALL expose `gamingModeEnabled` as a boolean property on `ConfigManager`, persisted as the `gamingMode` key in `~/.config/Seelie/config.json`, with a default value of `false`.
 
 #### Scenario: Read default value
 - **WHEN** the config file does not contain a `gamingMode` key

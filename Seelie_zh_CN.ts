@@ -390,8 +390,8 @@ Path: %2</source>
         <translation>测试</translation>
     </message>
     <message>
-        <source>Hello. This is a TTS test from Oai.</source>
-        <translation>你好。这是 Oai 的语音合成测试。</translation>
+        <source>Hello. This is a TTS test from Seelie.</source>
+        <translation>你好。这是 Seelie 的语音合成测试。</translation>
     </message>
     <message>
         <source>Clear voice cache</source>
@@ -496,8 +496,8 @@ Path: %2</source>
     <message>
         <location filename="src/SystemTray.cpp" line="26"/>
         <location filename="src/SystemTray.cpp" line="323"/>
-        <source>Oai Desktop Pet</source>
-        <translation>Oai 桌面宠物</translation>
+        <source>Seelie Desktop Pet</source>
+        <translation>Seelie 桌面宠物</translation>
     </message>
     <message>
         <location filename="src/SystemTray.cpp" line="93"/>

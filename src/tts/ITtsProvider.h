@@ -1,5 +1,5 @@
-#ifndef OAI_ITTSPROVIDER_H
-#define OAI_ITTSPROVIDER_H
+#ifndef SEELIE_ITTSPROVIDER_H
+#define SEELIE_ITTSPROVIDER_H
 
 #include <QByteArray>
 #include <QString>
@@ -7,7 +7,7 @@
 #include <memory>
 #include <optional>
 
-namespace oai::tts {
+namespace seelie::tts {
 
 enum class Emotion {
     Neutral,
@@ -69,6 +69,6 @@ public:
     virtual void cancel(RequestHandle handle) = 0;
 };
 
-} // namespace oai::tts
+} // namespace seelie::tts
 
 #endif
