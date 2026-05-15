@@ -384,6 +384,17 @@ private:
             qWarning() << "Live2D: Cannot load texture:" << path;
             return 0;
         }
+        // Reject pathological dimensions before allocating GPU memory.
+        // A 30000x30000 PNG would OOM during decode or crash the driver
+        // inside glTexImage2D. 4096 is below the conservative max-tex
+        // limit on every GPU we target.
+        static constexpr int kMaxTexDim = 4096;
+        if (img.width() <= 0 || img.height() <= 0 ||
+            img.width() > kMaxTexDim || img.height() > kMaxTexDim) {
+            qWarning() << "Live2D: Refusing texture with out-of-range dimensions"
+                       << img.size() << "from" << path;
+            return 0;
+        }
         img = img.convertToFormat(QImage::Format_RGBA8888);
 
         GLuint tex = 0;
@@ -549,9 +560,15 @@ bool Live2DAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
     if (!pack || !pack->isValid()) return false;
     if (pack->characterConfig().engineType != CharacterPack::EngineType::Live2D) return false;
 
-    // Set render dimensions from pack
-    m_renderWidth = pack->characterConfig().frameWidth;
-    m_renderHeight = pack->characterConfig().frameHeight;
+    // Set render dimensions from pack. Clamp to a reasonable range:
+    // a manifest claiming 0 or a negative size crashes inside the GPU
+    // driver during FBO creation; a manifest claiming 30000x30000
+    // exhausts GPU memory. 4096 is the conservative floor across modern
+    // GPU max-texture limits.
+    static constexpr int kMinDim = 1;
+    static constexpr int kMaxDim = 4096;
+    m_renderWidth  = qBound(kMinDim, pack->characterConfig().frameWidth,  kMaxDim);
+    m_renderHeight = qBound(kMinDim, pack->characterConfig().frameHeight, kMaxDim);
 
     // Initialize OpenGL
     qDebug() << "Live2D: initOpenGL()...";
