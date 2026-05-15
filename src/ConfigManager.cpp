@@ -34,6 +34,13 @@ ConfigManager::ConfigManager(QObject *parent)
     , m_ipcEndpoint(defaultEndpoint())
     , m_updateServerEndpoint(defaultUpdateEndpoint())
 {
+    // Save debounce: a window drag fires positionChanged on every pixel,
+    // which previously meant a full QSettings::sync() per frame. 500 ms is
+    // imperceptible to the user but collapses ~60 writes/sec into one. The
+    // destructor calls flush() so a pending save lands before exit. M9.
+    m_saveTimer.setSingleShot(true);
+    m_saveTimer.setInterval(500);
+    connect(&m_saveTimer, &QTimer::timeout, this, &ConfigManager::flush);
     // Layer 1: in-memory defaults (above).
     // Layer 2: portable Oai.ini next to the exe — shipped by the installer
     //          so a built distribution can pre-set updateServerEndpoint /
@@ -179,6 +186,13 @@ void ConfigManager::load()
 
 void ConfigManager::save()
 {
+    // Schedule; coalesces bursts of setters into one disk write.
+    m_saveTimer.start();
+}
+
+void ConfigManager::flush()
+{
+    m_saveTimer.stop();
     m_settings.setValue("windowX", m_windowPosition.x());
     m_settings.setValue("windowY", m_windowPosition.y());
     m_settings.setValue("language", m_language);
@@ -208,6 +222,13 @@ void ConfigManager::save()
         m_settings.endGroup();
     }
     m_settings.sync();
+}
+
+ConfigManager::~ConfigManager()
+{
+    // Guarantee any pending debounced write lands before the QSettings is
+    // destroyed.
+    if (m_saveTimer.isActive()) flush();
 }
 
 void ConfigManager::setWindowPosition(const QPoint &pos)

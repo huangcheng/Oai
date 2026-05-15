@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QString>
 #include <QSettings>
+#include <QTimer>
 
 class ConfigManager : public QObject
 {
@@ -15,9 +16,18 @@ public:
     enum class DisplayMode { Character, Ecg };
 
     explicit ConfigManager(QObject *parent = nullptr);
+    ~ConfigManager() override;
 
     void load();
+    /**
+     * Schedule a write to disk. Called from every setter — debounced via
+     * a 500 ms timer so a window drag (positionChanged on every pixel)
+     * causes one disk write instead of hundreds. Use `flush()` to force
+     * an immediate sync (e.g. on shutdown).
+     */
     void save();
+    /** Force any pending debounced save() to flush immediately. */
+    void flush();
 
     QPoint windowPosition() const { return m_windowPosition; }
     void setWindowPosition(const QPoint &pos);
@@ -120,6 +130,7 @@ signals:
 
 private:
     QSettings m_settings;
+    QTimer m_saveTimer;  // debounces save() into flush()
 
     QPoint m_windowPosition;
     QString m_language = "en";
