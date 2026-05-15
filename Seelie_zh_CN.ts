@@ -130,13 +130,13 @@
     </message>
     <message>
         <location filename="src/PackManagerWidget.cpp" line="430"/>
-        <source>Pack files (*.opk *.codex-pet)</source>
-        <translation>模型文件 (*.opk *.codex-pet)</translation>
+        <source>Pack files (*.spk *.codex-pet)</source>
+        <translation>模型文件 (*.spk *.codex-pet)</translation>
     </message>
     <message>
         <location filename="src/PackManagerWidget.cpp" line="431"/>
-        <source>OPK files (*.opk)</source>
-        <translation>OPK 文件 (*.opk)</translation>
+        <source>SPK files (*.spk)</source>
+        <translation>SPK 文件 (*.spk)</translation>
     </message>
     <message>
         <location filename="src/PackManagerWidget.cpp" line="432"/>

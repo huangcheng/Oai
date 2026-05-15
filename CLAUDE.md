@@ -40,7 +40,7 @@ The app follows a pipeline: **IPC → EventRouter → Animation/Effects/Tips →
 - **LottieAnimationEngine** — Primary animation engine using rlottie to play Lottie JSON character animations from sprite packs.
 - **SpriteAnimationEngine** — Legacy fallback: plays frame-based animations from sprite sheets using definitions in `animations.json`.
 - **LottieEffectOverlay** — Renders visual effects (sparkles, confetti, alert-pulse, etc.) from `assets/lottie/effects/` with offset positioning above the character.
-- **SpritePack / SpritePackManager** — Pack data structure with manifest parsing; discovers, loads, and switches between `.opk` sprite packs.
+- **SpritePack / SpritePackManager** — Pack data structure with manifest parsing; discovers, loads, and switches between `.spk` sprite packs.
 - **TipBubbleWidget** — Win98-style speech bubble with asymmetric tail, fade animations, auto-dismiss (6s status / 12s tips).
 - **TipsEngine** — Pattern matcher on a 30-second event window. Detects behaviors (repeated errors, rapid edits, idle, permission denials) and suggests contextual tips. 5-minute cooldown per tip type.
 - **ConfigManager** — Persists to `~/.config/Seelie/config.json` (window position, language, auto-start, IPC endpoint).

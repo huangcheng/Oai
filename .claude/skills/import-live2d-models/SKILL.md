@@ -90,17 +90,17 @@ for cat, n in sorted(counts.items()): print(f'  {cat:24s} {n:3d}')
 
 Expect a row per category with non-zero counts. `<none>` rows mean a manifest is missing the `category` field — backfill via the import script (re-running over existing dirs is a no-op except for re-stamping fields).
 
-### 5. Build the .opk archives
+### 5. Build the .spk archives
 
 ```bash
 cmake --build build --target generate_packs
 ```
 
-`CMakeLists.txt` auto-discovers any directory under `assets/packs/` with a `manifest.json` via `file(GLOB ... CONFIGURE_DEPENDS)`. New packs get a `.opk` automatically; no list to maintain.
+`CMakeLists.txt` auto-discovers any directory under `assets/packs/` with a `manifest.json` via `file(GLOB ... CONFIGURE_DEPENDS)`. New packs get a `.spk` automatically; no list to maintain.
 
 ### 6. Smoke-test in the running app
 
-The app installs `.opk`s from `build/.../packs/` into `<APPDATA_LOCAL>/Seelie/packs/<id>/` on first launch. To force a fresh extraction of a specific pack:
+The app installs `.spk`s from `build/.../packs/` into `<APPDATA_LOCAL>/Seelie/packs/<id>/` on first launch. To force a fresh extraction of a specific pack:
 
 ```bash
 rm -rf "$LOCALAPPDATA/Seelie/packs/im.cheng.seelie.<id>"   # bash
@@ -121,7 +121,7 @@ If a pack crashes, the log will end at `Live2D: loading motion 0 :` of a specifi
 ## Things to tell the user about
 
 - **Imports are gitignored.** A new pack lives only on this machine until they explicitly track it, which they shouldn't — the canonical source is the submodule + script. Don't `git add` imported packs.
-- **Repo size discipline.** A normal full import is ~700 MB raw / ~400 MB compressed in .opks. Both stay local. `installer/packages/.../data/` is also gitignored.
+- **Repo size discipline.** A normal full import is ~700 MB raw / ~400 MB compressed in .spks. Both stay local. `installer/packages/.../data/` is also gitignored.
 - **Menu structure.** New categories appear automatically in tray + settings. Display labels for new categories need entries in `kCategoryOrder[]` (mirrored in `src/SystemTray.cpp` and `src/SettingsPanelWidget.cpp`) — otherwise the raw category id shows up as the menu label. Translations go in `Seelie_zh_CN.ts` for both contexts.
 - **NSFW / oversize categories** are deliberately omitted from `LOCAL_CATEGORIES`: 少女咖啡枪 (1.1 GB moc3 only), `galgame live2d` (NSFW), `sin 七大罪`, `凍京Nerco`, `イモコネー`, `Sacred Sword princesses`, `アンノウンブライド`. Don't add them without explicit user consent.
 

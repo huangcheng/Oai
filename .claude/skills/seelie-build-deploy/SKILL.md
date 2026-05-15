@@ -26,7 +26,7 @@ Skip when the question is about runtime behaviour (event routing, IPC, character
 F:/Seelie/  (or wherever the repo is)
 ├── src/                        # C++ sources (Qt 6, OpenGL via GLEW)
 ├── assets/
-│   ├── packs/                  # Live2D character packs (.opk source dirs)
+│   ├── packs/                  # Live2D character packs (.spk source dirs)
 │   └── packs-disabled/         # sprite packs not currently shipped
 ├── thirdparty/
 │   ├── CubismNativeFramework/  # SUBMODULE — Live2D wrapper (open source)
@@ -38,11 +38,11 @@ F:/Seelie/  (or wherever the repo is)
 │   └── packages/im.cheng.seelie.desktop/
 ├── scripts/
 │   ├── build_release.py        # one-shot build + package driver
-│   └── import_live2d.py        # bake .opks from upstream archive
+│   └── import_live2d.py        # bake .spks from upstream archive
 └── CMakeLists.txt              # entry point for both build flavours
 ```
 
-Three things ship in the installer: the `Seelie.exe` binary, ~116 Live2D `.opk` packs, and `Live2DCubismCore.dll` (or platform equivalent) next to the executable.
+Three things ship in the installer: the `Seelie.exe` binary, ~116 Live2D `.spk` packs, and `Live2DCubismCore.dll` (or platform equivalent) next to the executable.
 
 ## Prerequisites
 
@@ -161,7 +161,7 @@ python scripts/build_release.py --skip-package
 
 ### 4. Stale installer staging — "ships old packs even after re-import"
 
-The `installer_stage` CMake target depends on `Seelie` and `${ALL_PACK_OPKS}`. If you somehow regenerate packs without touching either (rare — manual file edits inside the staging dir, partial cleanups), the installer can ship a stale data dir.
+The `installer_stage` CMake target depends on `Seelie` and `${ALL_PACK_SPKS}`. If you somehow regenerate packs without touching either (rare — manual file edits inside the staging dir, partial cleanups), the installer can ship a stale data dir.
 
 Fix:
 ```bash
@@ -257,7 +257,7 @@ After applying:
 
 ```bash
 # Wipe stale install staging — installer_stage's DEPENDS doesn't track
-# new install() rules, only Seelie + ${ALL_PACK_OPKS}.
+# new install() rules, only Seelie + ${ALL_PACK_SPKS}.
 rm -rf installer/packages/im.cheng.seelie.desktop/data build/installer_stage.stamp
 python scripts/build_release.py
 ```
@@ -308,7 +308,7 @@ cat installer/packages/im.cheng.seelie.desktop/data/qt.conf
 # Prefix = .
 ```
 
-If it ever regresses to `Prefix = ..`, the copy step in the staging custom_command was reordered to run *before* the windeployqt-driven `cmake --install`. Move it back to fire after the bin/-flatten. The two related staging fixes (`installer_stage` depending on `${ALL_PACK_OPKS}`, `qt.conf.flat` copy after flatten) both target the same custom_command — keep them grouped.
+If it ever regresses to `Prefix = ..`, the copy step in the staging custom_command was reordered to run *before* the windeployqt-driven `cmake --install`. Move it back to fire after the bin/-flatten. The two related staging fixes (`installer_stage` depending on `${ALL_PACK_SPKS}`, `qt.conf.flat` copy after flatten) both target the same custom_command — keep them grouped.
 
 This pitfall is closely related to #4 and #10: every "ships and crashes immediately" bug we've hit on Windows ultimately came from the bin/-flatten step interacting badly with something cmake-install or windeployqt produced. If you're debugging a *new* runtime-load crash on Windows, your first stop is `installer/packages/.../data/` — diff its contents (especially `qt.conf` and the DLL set) against the bin/-flat layout you'd expect at `<install-dir>/`.
 
@@ -501,7 +501,7 @@ Key points:
 
 | Platform | Built artefact | Bundles | Auto-discovered tooling |
 |----------|----------------|---------|-------------------------|
-| Windows | `SeelieInstaller-<v>.exe` | Seelie.exe, all .opks, Live2DCubismCore.dll, Qt DLLs (via windeployqt), 32 locale .qm files | `binarycreator`, `windeployqt`, MinGW from Qt Tools |
+| Windows | `SeelieInstaller-<v>.exe` | Seelie.exe, all .spks, Live2DCubismCore.dll, Qt DLLs (via windeployqt), 32 locale .qm files | `binarycreator`, `windeployqt`, MinGW from Qt Tools |
 | macOS | `Seelie-<v>.dmg` | Seelie.app (with packs in `Contents/Resources/packs/`, Cubism Core lib statically linked, Qt frameworks via macdeployqt, ad-hoc codesigned) | `macdeployqt`, `codesign`, `xattr`, `hdiutil` |
 | Linux | `Seelie-<v>-<arch>.AppImage` | usr/bin/Seelie, usr/lib/, usr/share/applications/seelie.desktop, usr/share/icons/.../seelie.png | `appimagetool` *or* `linuxdeploy` (whichever is on PATH) |
 
@@ -531,7 +531,7 @@ If the Windows installer comes out under ~250 MB, packs were not staged — eith
 
 ## Adjacent skills
 
-- `import-live2d-models` — bake more `.opk` files from the Eikanya archive into `assets/packs/`.
+- `import-live2d-models` — bake more `.spk` files from the Eikanya archive into `assets/packs/`.
 - `seelie-server` — the Aliyun-hosted UDP update server that the built binary phones home to.
 
 If you find yourself wanting to ship a build flavour without Cubism (e.g. an embedded sprite-only build), don't — change the asset story first by enabling sprite packs from `assets/packs-disabled/`. Live2D is currently a hard requirement of the build (commit `0520516`).

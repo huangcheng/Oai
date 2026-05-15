@@ -410,8 +410,8 @@ void PackManagerWidget::onAddClicked()
     if (!m_packManager) return;
 
     QStringList filters;
-    filters << tr("Pack files (*.opk *.codex-pet)")
-            << tr("OPK files (*.opk)")
+    filters << tr("Pack files (*.spk *.codex-pet)")
+            << tr("SPK files (*.spk)")
             << tr("Codex Pet files (*.codex-pet)")
             << tr("All files (*)");
 

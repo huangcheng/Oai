@@ -78,10 +78,10 @@ bool isValidCodexPet(const QString &archivePath)
     return valid;
 }
 
-QString readOpkPackId(const QString &opkPath)
+QString readSpkPackId(const QString &spkPath)
 {
     const QJsonObject obj = readJsonEntryFromArchive(
-        opkPath, QStringLiteral("manifest.json"), "CharacterPackLoader::readOpkPackId");
+        spkPath, QStringLiteral("manifest.json"), "CharacterPackLoader::readSpkPackId");
     return obj.value("id").toString();
 }
 

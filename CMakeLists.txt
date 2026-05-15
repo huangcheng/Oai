@@ -547,7 +547,7 @@ install(TARGETS Seelie
 )
 
 # --- Generate official packs -------------------------------------------------
-# Generate .opk packs from pack directories during build
+# Generate .spk packs from pack directories during build
 set(PACKS_DIR ${CMAKE_BINARY_DIR}/packs)
 file(MAKE_DIRECTORY ${PACKS_DIR})
 
@@ -559,8 +559,8 @@ file(MAKE_DIRECTORY ${PACKS_DIR})
 #
 # # Clippy pack (has external animations.json definitions file)
 # add_custom_command(
-#     OUTPUT ${PACKS_DIR}/clippy.opk
-#     COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/clippy.opk --format=zip --
+#     OUTPUT ${PACKS_DIR}/clippy.spk
+#     COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/clippy.spk --format=zip --
 #         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/manifest.json
 #         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
 #         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
@@ -570,7 +570,7 @@ file(MAKE_DIRECTORY ${PACKS_DIR})
 #         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/preview.png
 #         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/map.png
 #         ${CMAKE_SOURCE_DIR}/assets/packs/clippy/sprites/animations.json
-#     COMMENT "Generating clippy.opk"
+#     COMMENT "Generating clippy.spk"
 #     WORKING_DIRECTORY ${PACKS_DIR}
 # )
 #
@@ -579,8 +579,8 @@ file(MAKE_DIRECTORY ${PACKS_DIR})
 #
 # foreach(pack ${CLIPPYJS_PACKS})
 #     add_custom_command(
-#         OUTPUT ${PACKS_DIR}/${pack}.opk
-#         COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.opk --format=zip --
+#         OUTPUT ${PACKS_DIR}/${pack}.spk
+#         COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.spk --format=zip --
 #             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
 #             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
 #             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
@@ -588,13 +588,13 @@ file(MAKE_DIRECTORY ${PACKS_DIR})
 #             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/manifest.json
 #             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/preview.png
 #             ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/sprites/map.png
-#         COMMENT "Generating ${pack}.opk"
+#         COMMENT "Generating ${pack}.spk"
 #         WORKING_DIRECTORY ${PACKS_DIR}
 #     )
-#     list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
+#     list(APPEND ALL_PACK_SPKS ${PACKS_DIR}/${pack}.spk)
 # endforeach()
 
-set(ALL_PACK_OPKS "")
+set(ALL_PACK_SPKS "")
 
 # --- Optional: bulk-import packs from the upstream submodule ---------------
 # The 21 first-party packs in assets/packs/ are tracked in git. Everything
@@ -603,11 +603,11 @@ set(ALL_PACK_OPKS "")
 #
 #   git submodule update --init thirdparty/upstream-live2d
 #   cmake --build build --target import_packs
-#   cmake --build build --target generate_packs   # then build .opks
+#   cmake --build build --target generate_packs   # then build .spks
 #
 # `import_packs` is a manual target — it is NOT part of the default build,
 # so a fresh clone without the submodule still builds Seelie.exe + the 21
-# original .opks fine.
+# original .spks fine.
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/thirdparty/upstream-live2d/.git)
     add_custom_target(import_packs
@@ -647,16 +647,16 @@ foreach(pack ${LIVE2D_PACKS})
         list(APPEND _${pack}_DEPS ${CMAKE_SOURCE_DIR}/assets/packs/${pack}/${f})
     endforeach()
     add_custom_command(
-        OUTPUT ${PACKS_DIR}/${pack}.opk
-        COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.opk --format=zip -- ${_${pack}_FILES}
+        OUTPUT ${PACKS_DIR}/${pack}.spk
+        COMMAND ${CMAKE_COMMAND} -E tar "cf" ${PACKS_DIR}/${pack}.spk --format=zip -- ${_${pack}_FILES}
         DEPENDS ${_${pack}_DEPS}
-        COMMENT "Generating ${pack}.opk"
+        COMMENT "Generating ${pack}.spk"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/assets/packs/${pack}
     )
-    list(APPEND ALL_PACK_OPKS ${PACKS_DIR}/${pack}.opk)
+    list(APPEND ALL_PACK_SPKS ${PACKS_DIR}/${pack}.spk)
 endforeach()
 
-add_custom_target(generate_packs ALL DEPENDS ${ALL_PACK_OPKS})
+add_custom_target(generate_packs ALL DEPENDS ${ALL_PACK_SPKS})
 add_dependencies(Seelie generate_packs)
 
 # Install the generated packs
@@ -703,23 +703,23 @@ if(APPLE)
     # Include packs in the macOS bundle Resources.
     # Sprite packs disabled — see the generation block above. Re-enable both
     # together.
-    # set_source_files_properties(${PACKS_DIR}/clippy.opk PROPERTIES
+    # set_source_files_properties(${PACKS_DIR}/clippy.spk PROPERTIES
     #     MACOSX_PACKAGE_LOCATION "Resources/packs"
     # )
-    # target_sources(Seelie PRIVATE ${PACKS_DIR}/clippy.opk)
+    # target_sources(Seelie PRIVATE ${PACKS_DIR}/clippy.spk)
     #
     # foreach(pack ${CLIPPYJS_PACKS})
-    #     set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
+    #     set_source_files_properties(${PACKS_DIR}/${pack}.spk PROPERTIES
     #         MACOSX_PACKAGE_LOCATION "Resources/packs"
     #     )
-    #     target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.opk)
+    #     target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.spk)
     # endforeach()
 
     foreach(pack ${LIVE2D_PACKS})
-        set_source_files_properties(${PACKS_DIR}/${pack}.opk PROPERTIES
+        set_source_files_properties(${PACKS_DIR}/${pack}.spk PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources/packs"
         )
-        target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.opk)
+        target_sources(Seelie PRIVATE ${PACKS_DIR}/${pack}.spk)
     endforeach()
 
     # Copy essential runtime assets into the macOS bundle so deployed apps
@@ -932,7 +932,7 @@ if(SEELIE_QTIFW_BINARYCREATOR)
                 ${CMAKE_BINARY_DIR}/Seelie.ini
                 ${SEELIE_IFW_PKG_DATA}/Seelie.ini
         COMMAND ${CMAKE_COMMAND} -E touch ${SEELIE_IFW_STAGE_TS}
-        DEPENDS Seelie ${ALL_PACK_OPKS}
+        DEPENDS Seelie ${ALL_PACK_SPKS}
         COMMENT "Staging Seelie for installer packaging"
         VERBATIM)
     add_custom_target(installer_stage DEPENDS ${SEELIE_IFW_STAGE_TS})

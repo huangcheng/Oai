@@ -21,7 +21,7 @@
  *
  * Packs can be loaded from:
  * - Directory (for development/hot-reload)
- * - .opk archive (for distribution)
+ * - .spk archive (for distribution)
  */
 class CharacterPack
 {

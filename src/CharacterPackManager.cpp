@@ -36,7 +36,7 @@ bool zipEntryFitsManifestCap(mz_zip_archive *zip, int index, size_t *outSize)
 }
 
 // Reject ZIP entry names that would escape the staging directory. The
-// archive is untrusted user input (drag-and-drop, downloaded .opk); a
+// archive is untrusted user input (drag-and-drop, downloaded .spk); a
 // malicious entry like "../../Library/LaunchAgents/evil.plist" must NOT
 // be allowed to overwrite files outside the install root.
 //
@@ -483,10 +483,10 @@ void CharacterPackManager::discoverPacks()
     emit packListChanged();
 }
 
-QString CharacterPackManager::extractPackIdFromOpk(const QString &opkPath)
+QString CharacterPackManager::extractPackIdFromSpk(const QString &spkPath)
 {
     // Shared archive-probe helper, lives in CharacterPackLoader.h. H18.
-    return CharacterPackLoader::readOpkPackId(opkPath);
+    return CharacterPackLoader::readSpkPackId(spkPath);
 }
 
 void CharacterPackManager::loadPackFromDirectory(const QString &packDir, PackSource source)

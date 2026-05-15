@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://seelie.cheng.im/schemas/character-pack-v1.json",
   "title": "Seelie Character Pack Manifest",
-  "description": "Manifest format for Seelie character packs (.opk) — supports Lottie, sprite-sheet, and Live2D characters",
+  "description": "Manifest format for Seelie character packs (.spk) — supports Lottie, sprite-sheet, and Live2D characters",
   "version": "1.0.0",
   "type": "object",
   "required": ["formatVersion", "id", "name", "author", "version", "character"],

@@ -40,9 +40,9 @@ QJsonObject readJsonEntryFromArchive(const QString &archivePath,
 /// parses cleanly with non-empty id and displayName.
 bool isValidCodexPet(const QString &archivePath);
 
-/// Read the `id` field from an .opk archive's manifest.json.
+/// Read the `id` field from an .spk archive's manifest.json.
 /// Returns empty string on failure.
-QString readOpkPackId(const QString &opkPath);
+QString readSpkPackId(const QString &spkPath);
 
 } // namespace CharacterPackLoader
 

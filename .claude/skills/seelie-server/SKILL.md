@@ -57,7 +57,7 @@ All datagrams share a fixed header, variable payload, and trailing CRC16.
 
 | Field | Size | Value |
 |-------|------|-------|
-| Magic | 4 B | `<<"SEELIE", 1>>` |
+| Magic | 4 B | `<<"HCH", 1>>` |
 | Version | 1 B | `1` |
 | Command | 1 B | `1=CHECK`, `2=ANNOUNCE`, `3=PULL`, `4=PUSH`, `5=ACK` |
 | Seq | 2 B | uint16 big-endian, echo back in replies |
@@ -167,7 +167,7 @@ Or manually with `ncat` / a small Python socket script:
 ```python
 import socket, struct, json
 
-MAGIC = b'SEELIE\x01'
+MAGIC = b'HCH\x01'
 def crc16(data):
     crc = 0xFFFF
     for b in data:

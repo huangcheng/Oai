@@ -7,7 +7,7 @@ A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight
 ## Features
 
 - **Transparent, frameless, always-on-top** window with character animations
-- **Sprite pack engine** — load custom characters via `.opk` packs
+- **Sprite pack engine** — load custom characters via `.spk` packs
 - **Lottie animations** via Samsung's rlottie library — smooth 60fps playback
 - **Windows 98-style speech bubble** with auto-dismiss tips
 - **Multi-provider TTS** — StepFun, MiniMax, Azure Speech, OpenAI; hot-swap between providers without restart
@@ -18,7 +18,7 @@ A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight
 
 ## Sprite Packs
 
-Seelie supports customizable characters through sprite packs (`.opk` files) and Codex pets (`.codex-pet` files). Each pack contains:
+Seelie supports customizable characters through sprite packs (`.spk` files) and Codex pets (`.codex-pet` files). Each pack contains:
 - Sprite sheet or Lottie animations
 - Animation definitions
 - Event-to-animation mappings
@@ -26,7 +26,7 @@ Seelie supports customizable characters through sprite packs (`.opk` files) and 
 
 ### Installing Packs
 
-1. **Drag-and-drop**: Drop `.opk` or `.codex-pet` file onto the pet window
+1. **Drag-and-drop**: Drop `.spk` or `.codex-pet` file onto the pet window
 2. **Manual**: Copy the file to `~/.config/Seelie/packs/`
 3. **Built-in**: Official packs are generated during build
 
@@ -49,7 +49,7 @@ git clone https://github.com/Eikanya/Live2d-model thirdparty/upstream-live2d --d
 # Run the import (curated PICKS + bulk per-category, ~50 per category)
 cmake --build build --target import_packs
 
-# Generate the .opk archives from the imported source dirs
+# Generate the .spk archives from the imported source dirs
 cmake --build build --target generate_packs
 ```
 
@@ -393,7 +393,7 @@ seelie/
 └── thirdparty/
     ├── CubismNativeFramework/  # Submodule — Live2D Cubism SDK
     ├── CubismNativeSamples/    # Submodule — Cubism samples (build-time only)
-    └── miniz/                  # Vendored zip library (.opk archive support)
+    └── miniz/                  # Vendored zip library (.spk archive support)
 ```
 
 ## Configuration

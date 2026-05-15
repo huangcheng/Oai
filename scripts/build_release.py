@@ -442,11 +442,11 @@ def package_macos(build_dir, version, qt_prefix):
     packs_dst = app_bundle / "Contents" / "Resources" / "packs"
     if packs_src.exists():
         packs_dst.mkdir(parents=True, exist_ok=True)
-        for opk in packs_src.glob("*.opk"):
-            dst = packs_dst / opk.name
+        for spk in packs_src.glob("*.spk"):
+            dst = packs_dst / spk.name
             if not dst.exists():
-                shutil.copy2(opk, dst)
-                print(f"  Copied pack: {opk.name}")
+                shutil.copy2(spk, dst)
+                print(f"  Copied pack: {spk.name}")
 
     # Strip stray files in Contents/MacOS/ — anything besides the executable
     # there invalidates the bundle's codesignature ("code object is not signed

@@ -101,8 +101,8 @@ public:
     bool switchPack(const QString &packId);
 
     /**
-     * @brief Install a pack from .opk archive
-     * @param archivePath Path to .opk file
+     * @brief Install a pack from .spk archive
+     * @param archivePath Path to .spk file
      * @return true if installation was successful
      */
     bool installPack(const QString &archivePath);
@@ -185,7 +185,7 @@ private:
     void setupFileWatcher();
     void cleanupFileWatcher();
 
-    QString extractPackIdFromOpk(const QString &opkPath);
+    QString extractPackIdFromSpk(const QString &spkPath);
     bool extractCodexPetInfo(const QString &archivePath, PackInfo &outInfo);
 
     QString m_builtInDir;

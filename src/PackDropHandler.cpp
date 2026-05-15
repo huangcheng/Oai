@@ -31,7 +31,7 @@ void handleDragEnter(QDragEnterEvent *event)
     }
     for (const QUrl &url : event->mimeData()->urls()) {
         const QString path = url.toLocalFile();
-        if (path.endsWith(".opk", Qt::CaseInsensitive)) {
+        if (path.endsWith(".spk", Qt::CaseInsensitive)) {
             event->acceptProposedAction();
             return;
         }
@@ -48,7 +48,7 @@ void handleDragEnter(QDragEnterEvent *event)
 
 namespace {
 
-void handleOpkDrop(const QString &filePath,
+void handleSpkDrop(const QString &filePath,
                    CharacterPackManager *packManager,
                    TipWidget *tipWidget)
 {
@@ -58,7 +58,7 @@ void handleOpkDrop(const QString &filePath,
                               : QStringLiteral("pack.install_failed");
     const auto t = TipsCatalog::instance().message(msgId);
     tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
-    qDebug() << "PackDropHandler: .opk install" << (installed ? "succeeded" : "failed");
+    qDebug() << "PackDropHandler: .spk install" << (installed ? "succeeded" : "failed");
 }
 
 void handleCodexPetDrop(const QString &filePath,
@@ -126,8 +126,8 @@ void handleDrop(QDropEvent *event,
         const QString filePath = url.toLocalFile();
         qDebug() << "PackDropHandler: dropped file:" << filePath;
 
-        if (filePath.endsWith(".opk", Qt::CaseInsensitive)) {
-            handleOpkDrop(filePath, packManager, tipWidget);
+        if (filePath.endsWith(".spk", Qt::CaseInsensitive)) {
+            handleSpkDrop(filePath, packManager, tipWidget);
         } else if ((filePath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
                     filePath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) &&
                    isValidCodexPet(filePath)) {

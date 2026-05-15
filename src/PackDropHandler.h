@@ -9,7 +9,7 @@ class QDragEnterEvent;
 class QDropEvent;
 
 /**
- * Drag-and-drop install handling for .opk and .codex-pet archives.
+ * Drag-and-drop install handling for .spk and .codex-pet archives.
  *
  * Extracted from MainWindow (~150 lines) per audit H2 so the drop logic
  * — which doesn't depend on any MainWindow private state beyond the
@@ -26,7 +26,7 @@ class QDropEvent;
  */
 namespace PackDropHandler {
 
-/// Returns true if `filePath` is a .opk OR a .codex-pet whose pet.json
+/// Returns true if `filePath` is a .spk OR a .codex-pet whose pet.json
 /// parses cleanly with non-empty id+displayName. Used by both
 /// dragEnterEvent (to decide whether to accept the hover) and dropEvent
 /// (as a sanity check before the copy).
@@ -37,7 +37,7 @@ bool isValidCodexPet(const QString &filePath);
 /// event->ignore().
 void handleDragEnter(QDragEnterEvent *event);
 
-/// Process a drop event. Walks the URL list, installs .opk files via
+/// Process a drop event. Walks the URL list, installs .spk files via
 /// the manager, copies .codex-pet files into userDir/, and surfaces
 /// success/failure through the tip widget.
 ///

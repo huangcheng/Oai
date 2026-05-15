@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pack a sprite pack directory into a .opk file (ZIP archive).
+Pack a sprite pack directory into a .spk file (ZIP archive).
 """
 
 import zipfile
@@ -10,7 +10,7 @@ from pathlib import Path
 
 def pack_sprite_pack(pack_dir: str, output_path: str):
     """
-    Pack a sprite pack directory into a .opk file.
+    Pack a sprite pack directory into a .spk file.
     """
     pack_path = Path(pack_dir)
     if not pack_path.exists():
@@ -42,8 +42,8 @@ def pack_sprite_pack(pack_dir: str, output_path: str):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: pack_opk.py <pack_directory> [output.opk]")
-        print("Example: pack_opk.py assets/packs/clippy clippy.opk")
+        print("Usage: pack_spk.py <pack_directory> [output.spk]")
+        print("Example: pack_spk.py assets/packs/clippy clippy.spk")
         sys.exit(1)
     
     pack_dir = sys.argv[1]
@@ -52,7 +52,7 @@ def main():
     # Default output name from pack directory
     if not output_path:
         pack_name = Path(pack_dir).name
-        output_path = f"{pack_name}.opk"
+        output_path = f"{pack_name}.spk"
     
     pack_sprite_pack(pack_dir, output_path)
 
