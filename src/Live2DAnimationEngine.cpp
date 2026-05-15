@@ -362,6 +362,12 @@ public:
         m_idParamBodyAngleX = nullptr;
         m_idParamEyeBallX = m_idParamEyeBallY = nullptr;
         m_modelLoaded = false;
+        // NOTE: do NOT call any base-class destructor manually here — the
+        // ~CubismModel() destructor chains into ~CubismUserModel(), which
+        // already deletes _model, _renderer, _motionManager, _eyeBlink,
+        // _breath, _physics, _pose. Audit C4 claimed this leaked; it does
+        // not, as long as release() is reached via destruction (which is
+        // the only call path today).
     }
 
 private:
@@ -464,6 +470,15 @@ bool Live2DAnimationEngine::initOpenGL()
 {
     if (m_glContext) return true;
 
+    // Any failure below must release everything allocated so far; otherwise
+    // a partial init (e.g. driver returns OK but makeCurrent fails) leaks
+    // m_surface + m_glContext on every retry. Audit C5.
+    auto bail = [this](const char *msg) {
+        qWarning() << "Live2D:" << msg;
+        releaseOpenGL();
+        return false;
+    };
+
     m_surface = new QOffscreenSurface(nullptr);
     QSurfaceFormat fmt;
     fmt.setRenderableType(QSurfaceFormat::OpenGL);
@@ -477,20 +492,17 @@ bool Live2DAnimationEngine::initOpenGL()
 
     m_glContext = new QOpenGLContext(this);
     m_glContext->setFormat(fmt);
-    if (!m_glContext->create()) {
-        qWarning() << "Live2D: Failed to create OpenGL context";
-        return false;
-    }
-    if (!m_glContext->makeCurrent(m_surface)) {
-        qWarning() << "Live2D: Failed to make context current";
-        return false;
-    }
+    if (!m_glContext->create())
+        return bail("Failed to create OpenGL context");
+    if (!m_glContext->makeCurrent(m_surface))
+        return bail("Failed to make context current");
 
     // Initialize GLEW (must be called after context is current)
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
         qWarning() << "Live2D: GLEW init failed:" << reinterpret_cast<const char *>(glewGetErrorString(err));
+        releaseOpenGL();
         return false;
     }
     qDebug() << "Live2D: GLEW initialized OK, GL version:"
@@ -499,10 +511,8 @@ bool Live2DAnimationEngine::initOpenGL()
     // Create FBO
     m_fbo = new QOpenGLFramebufferObject(m_renderWidth, m_renderHeight,
                                           QOpenGLFramebufferObject::CombinedDepthStencil);
-    if (!m_fbo->isValid()) {
-        qWarning() << "Live2D: FBO creation failed";
-        return false;
-    }
+    if (!m_fbo->isValid())
+        return bail("FBO creation failed");
     return true;
 }
 
@@ -520,6 +530,15 @@ bool Live2DAnimationEngine::recoverOpenGL()
 {
     QString savedMotion = m_currentMotion;
     bool wasPlaying = m_playing;
+
+    // Drop the existing renderer before we tear down its GL context.
+    // setupRenderer() below calls CreateRenderer() which overwrites the
+    // base-class _renderer pointer; without an explicit Delete the old
+    // one leaks on every recovery (GPU power-state change, DWM restart).
+    // Audit C6.
+    if (m_cubismModel) {
+        m_cubismModel->DeleteRenderer();
+    }
 
     releaseOpenGL();
 
