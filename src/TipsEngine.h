@@ -7,7 +7,6 @@
 #include <QMap>
 #include <QJsonObject>
 
-class SpriteAnimationEngine;
 class TipWidget;
 
 class TipsEngine : public QObject
@@ -17,12 +16,19 @@ class TipsEngine : public QObject
 public:
     explicit TipsEngine(QObject *parent = nullptr);
 
-    void setAnimationEngine(SpriteAnimationEngine *engine) { m_engine = engine; }
     void setTipWidget(TipWidget *bubble) { m_tipWidget = bubble; }
 
 public slots:
     void processEvent(const QString &eventName, const QJsonObject &eventData);
     void retranslateUi();
+
+signals:
+    /// Emitted when a matched pattern wants to play a named animation.
+    /// MainWindow fans this out across Live2D / Lottie / Sprite engines —
+    /// TipsEngine itself stays engine-agnostic. Was previously a direct
+    /// call into SpriteAnimationEngine which silently no-op'd for Lottie
+    /// and Live2D packs (audit H1).
+    void animationRequested(const QString &animationName);
 
 private:
     struct PatternMatcher {
@@ -51,7 +57,6 @@ private:
 
     QVector<PatternMatcher> m_matchers;
 
-    SpriteAnimationEngine *m_engine = nullptr;
     TipWidget *m_tipWidget = nullptr;
 };
 

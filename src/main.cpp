@@ -338,8 +338,30 @@ int main(int argc, char *argv[])
 
     // --- Tips engine ---------------------------------------------------------
     TipsEngine tipsEngine;
-    tipsEngine.setAnimationEngine(w.animationEngine());
     tipsEngine.setTipWidget(w.tipWidget());
+
+    // TipsEngine is engine-agnostic — it asks for an animation by name and
+    // we fan out across the active engines in the same Live2D > Lottie >
+    // Sprite priority chain EventRouter / PetStateMachine use. Previously
+    // TipsEngine called directly into SpriteAnimationEngine, so tip-driven
+    // animations silently dropped for Lottie / Live2D packs (audit H1).
+    QObject::connect(&tipsEngine, &TipsEngine::animationRequested,
+                     &w, [&w](const QString &anim) {
+        if (anim.isEmpty()) return;
+#ifdef OAI_LIVE2D_SUPPORT
+        if (w.live2dEngine() && w.live2dEngine()->hasAnimations()) {
+            w.live2dEngine()->playAnimation(anim, Live2DAnimationEngine::NormalPriority);
+            return;
+        }
+#endif
+        if (w.lottieEngine() && w.lottieEngine()->hasAnimations()) {
+            w.lottieEngine()->playAnimation(anim, LottieAnimationEngine::NormalPriority);
+            return;
+        }
+        if (w.animationEngine() && w.animationEngine()->hasAnimations()) {
+            w.animationEngine()->playAnimation(anim, SpriteAnimationEngine::NormalPriority);
+        }
+    });
 
     // --- Event router --------------------------------------------------------
     EventRouter eventRouter;

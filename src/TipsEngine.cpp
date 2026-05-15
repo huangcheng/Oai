@@ -1,5 +1,4 @@
 #include "TipsEngine.h"
-#include "SpriteAnimationEngine.h"
 #include "TipWidget.h"
 
 #include <QJsonObject>
@@ -51,11 +50,13 @@ void TipsEngine::processEvent(const QString &eventName, const QJsonObject &event
                 m_tipWidget->showBubble(matcher.tipTitle, matcher.tipBody,
                                         TipWidget::TipBubble);
             }
-            if (m_engine && m_engine->hasAnimations() && !matcher.animation.isEmpty()) {
-                // TipsEngine ships sprite-era animation names (wave, explain,
-                // getattentionyawn …); only fire when a sprite pack is loaded.
-                m_engine->playAnimation(matcher.animation,
-                                        SpriteAnimationEngine::NormalPriority);
+            if (!matcher.animation.isEmpty()) {
+                // Engine-agnostic dispatch: MainWindow listens and routes
+                // through the same Live2D > Lottie > Sprite priority chain
+                // EventRouter uses. Previously this called directly into
+                // SpriteAnimationEngine, which meant tip animations were
+                // silently dropped for Lottie and Live2D packs (audit H1).
+                emit animationRequested(matcher.animation);
             }
 
             qDebug() << "TipsEngine: Pattern matched:" << matcher.name;
