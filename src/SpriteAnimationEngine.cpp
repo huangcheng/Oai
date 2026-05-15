@@ -9,6 +9,7 @@
 #include <QRandomGenerator>
 #include <QDebug>
 #include <QColor>
+#include <limits>
 
 SpriteAnimationEngine::SpriteAnimationEngine(QObject *parent)
     : QObject(parent)
@@ -276,20 +277,50 @@ bool SpriteAnimationEngine::loadFromCharacterPack(const CharacterPack *pack)
         def.sound = animDef.sound;
 
         // Convert pack frames to engine frames
+        const QRect sheetRect(0, 0, m_spriteSheet.width(), m_spriteSheet.height());
         for (const auto &packFrame : animDef.frames) {
             FrameDef frame;
             frame.durationMs = packFrame.durationMs;
 
             if (packFrame.isGridMode()) {
-                // Grid mode: use col/row with frame dimensions
-                frame.sourceRect = QRect(packFrame.col * m_frameWidth,
-                                         packFrame.row * m_frameHeight,
+                // Grid mode: use col/row with frame dimensions. Widen to
+                // qint64 before multiplication so a manifest with col=2^16
+                // doesn't overflow signed int and produce a negative QRect
+                // origin. Audit H9.
+                const qint64 x64 = qint64(packFrame.col) * m_frameWidth;
+                const qint64 y64 = qint64(packFrame.row) * m_frameHeight;
+                if (x64 < 0 || y64 < 0 ||
+                    x64 > std::numeric_limits<int>::max() ||
+                    y64 > std::numeric_limits<int>::max()) {
+                    qWarning() << "SpriteAnimationEngine: rejecting frame with"
+                                  " out-of-range grid coords col=" << packFrame.col
+                               << "row=" << packFrame.row;
+                    continue;
+                }
+                frame.sourceRect = QRect(int(x64), int(y64),
                                          m_frameWidth, m_frameHeight);
             } else {
                 // Atlas mode: use explicit x/y/w/h
                 frame.sourceRect = QRect(packFrame.x, packFrame.y,
                                          packFrame.w, packFrame.h);
             }
+
+            // Reject frames that lie wholly outside the sheet, or that have
+            // a non-positive width/height. Clip overlapping rects to the
+            // sheet so a manifest off-by-one doesn't crash the painter.
+            // Audit M14.
+            if (frame.sourceRect.width() <= 0 || frame.sourceRect.height() <= 0) {
+                qWarning() << "SpriteAnimationEngine: rejecting empty frame rect"
+                           << frame.sourceRect;
+                continue;
+            }
+            const QRect clipped = frame.sourceRect.intersected(sheetRect);
+            if (clipped.isEmpty()) {
+                qWarning() << "SpriteAnimationEngine: rejecting frame outside sheet"
+                           << frame.sourceRect << "sheet=" << sheetRect;
+                continue;
+            }
+            frame.sourceRect = clipped;
 
             def.frames.append(frame);
             def.totalDurationMs += frame.durationMs;
