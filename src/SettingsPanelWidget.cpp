@@ -695,8 +695,13 @@ void SettingsPanelWidget::setupUi()
                 edit->setPlaceholderText(tr("Enter voice ID"));
             connect(edit, &QLineEdit::editingFinished,
                     this, &SettingsPanelWidget::onTtsProviderFieldEdited);
-            m_ttsFieldEdits.append({desc.stableId, field, edit});
-            form->addRow(labelForField(field), edit);
+            // Build the label widget explicitly so retranslateUi() can refresh
+            // it. QFormLayout::addRow(QString, ...) constructs an internal
+            // QLabel we'd have no handle on.
+            QLabel *rowLabel = new QLabel(labelForField(field), page);
+            rowLabel->setFont(harmonyFont(10));
+            m_ttsFieldEdits.append({desc.stableId, field, edit, rowLabel});
+            form->addRow(rowLabel, edit);
         }
         m_ttsProviderStack->addWidget(page);
     }
@@ -1189,6 +1194,7 @@ void SettingsPanelWidget::retranslateUi()
     if (m_gamingModeLabel) m_gamingModeLabel->setText(tr("Gaming Mode"));
     if (m_tipBubblesLabel) m_tipBubblesLabel->setText(tr("Event Tips"));
     m_packLabel->setText(tr("Model"));
+    if (m_generalTabBtn) m_generalTabBtn->setText(tr("General"));
 #ifdef OAI_TTS_ENABLED
     if (m_aiTabBtn) m_aiTabBtn->setText(tr("TTS"));
     if (m_ttsEnabledLabel) m_ttsEnabledLabel->setText(tr("Enable TTS"));
@@ -1197,6 +1203,14 @@ void SettingsPanelWidget::retranslateUi()
     if (m_ttsClearCacheButton) {
         m_ttsClearCacheButton->setText(tr("Clear voice cache"));
         m_ttsClearCacheButton->setToolTip(tr("Delete cached audio so the next utterance is freshly synthesised."));
+    }
+    // Refresh provider-field labels and the voice placeholder. These are
+    // built dynamically per-provider in setupUi() and otherwise wouldn't
+    // follow a runtime language switch.
+    for (const TtsFieldEdit &f : m_ttsFieldEdits) {
+        if (f.rowLabel) f.rowLabel->setText(labelForField(f.fieldName));
+        if (f.edit && f.fieldName == QLatin1String("voice"))
+            f.edit->setPlaceholderText(tr("Enter voice ID"));
     }
 #endif
     // Pack labels can switch between English/Chinese on locale change.
