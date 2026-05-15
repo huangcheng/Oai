@@ -165,17 +165,8 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
     // treatment so they don't disappear while the pet stays visible.
     m_dwmRefreshTimer = new QTimer(this);
     m_dwmRefreshTimer->setInterval(30000);
-    connect(m_dwmRefreshTimer, &QTimer::timeout, this, [this]() {
-        PlatformWindow::applyDwmFramelessAttributes(this);
-        // Re-apply the Qt attribute that suppresses the system background
-        // paint — DWM restart can silently drop it, leaving a white rect.
-        setAttribute(Qt::WA_NoSystemBackground, true);
-        PlatformWindow::refreshComposition(this);
-
-        // Keep the floating widgets in sync — they have their own native
-        // windows and their DWM attributes can degrade independently.
-        if (m_tipWidget) m_tipWidget->refreshDwmAttributes();
-    });
+    connect(m_dwmRefreshTimer, &QTimer::timeout,
+            this, &MainWindow::refreshAllDwmAttributes);
     m_dwmRefreshTimer->start();
 #endif
 
@@ -276,13 +267,23 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr
             // connect/disconnect, RDP session).  DWM may have restarted, so
             // re-apply attributes immediately instead of waiting for the
             // 30-second timer.
-            PlatformWindow::applyDwmFramelessAttributes(this);
-            setAttribute(Qt::WA_NoSystemBackground, true);
-            PlatformWindow::refreshComposition(this);
-            if (m_tipWidget) m_tipWidget->refreshDwmAttributes();
+            refreshAllDwmAttributes();
         }
     }
     return QWidget::nativeEvent(eventType, message, result);
+}
+
+void MainWindow::refreshAllDwmAttributes()
+{
+    PlatformWindow::applyDwmFramelessAttributes(this);
+    // Re-apply the Qt attribute that suppresses the system background
+    // paint — DWM restart can silently drop it, leaving a white rect.
+    setAttribute(Qt::WA_NoSystemBackground, true);
+    PlatformWindow::refreshComposition(this);
+
+    // Keep the floating widgets in sync — they have their own native
+    // windows and their DWM attributes can degrade independently.
+    if (m_tipWidget) m_tipWidget->refreshDwmAttributes();
 }
 #endif
 

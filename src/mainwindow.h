@@ -68,6 +68,14 @@ protected:
     void dropEvent(QDropEvent *event) override;
 #ifdef Q_OS_WIN
     bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+    /// Re-apply DWM frameless attributes + WA_NoSystemBackground + composition
+    /// refresh for this window AND any sibling top-level widgets (tip
+    /// bubble) whose attributes can degrade independently. Called from a
+    /// 30s timer and from WM_DISPLAYCHANGE. The audit (H2) wanted this
+    /// extracted into a DwmRefreshManager class; a single private method
+    /// gets the same readability win without the lifetime/ownership noise
+    /// of yet another QObject child.
+    void refreshAllDwmAttributes();
 #endif
 
 public slots:
