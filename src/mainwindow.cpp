@@ -400,9 +400,14 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 #ifdef OAI_LIVE2D_SUPPORT
     if (m_live2dEngine && isInPetRect(event->pos())) {
         const QRect pet = petRect();
-        const float nx = 2.0f * (event->pos().x() - pet.x()) / float(pet.width())  - 1.0f;
-        const float ny = 1.0f - 2.0f * (event->pos().y() - pet.y()) / float(pet.height());
-        m_live2dEngine->setPointerTarget(nx, ny);
+        // Defensive guard: a malformed manifest can set frameWidth /
+        // frameHeight to 0, which would propagate through petRect() as a
+        // zero-size rect and divide-by-zero on the next two lines.
+        if (pet.width() > 0 && pet.height() > 0) {
+            const float nx = 2.0f * (event->pos().x() - pet.x()) / float(pet.width())  - 1.0f;
+            const float ny = 1.0f - 2.0f * (event->pos().y() - pet.y()) / float(pet.height());
+            m_live2dEngine->setPointerTarget(nx, ny);
+        }
     }
 #endif
 
