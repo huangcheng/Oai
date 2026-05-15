@@ -117,8 +117,14 @@ void StepFunHttpProvider::cancel(RequestHandle handle)
 {
     auto it = m_inFlight.find(handle);
     if (it == m_inFlight.end()) return;
-    if (it.value().reply) it.value().reply->abort();
-    m_inFlight.erase(it);   // drops callbacks; finished() lookup will miss
+    QNetworkReply *reply = it.value().reply;
+    // Erase BEFORE abort. QNetworkReply::abort() can emit finished()
+    // synchronously, re-entering the lambda above; if the entry is still
+    // in m_inFlight when the lambda runs, the lambda erases it and our
+    // post-abort erase below triggers a use-after-free on the iterator.
+    // After erase, the lambda's m_inFlight.find() misses and bails. H8.
+    m_inFlight.erase(it);
+    if (reply) reply->abort();
 }
 
 } // namespace oai::tts

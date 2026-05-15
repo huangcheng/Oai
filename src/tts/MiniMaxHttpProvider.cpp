@@ -127,8 +127,10 @@ void MiniMaxHttpProvider::cancel(RequestHandle handle)
 {
     auto it = m_inFlight.find(handle);
     if (it == m_inFlight.end()) return;
-    if (it.value().reply) it.value().reply->abort();
+    QNetworkReply *reply = it.value().reply;
+    // Erase before abort: see StepFunHttpProvider::cancel for rationale (H8).
     m_inFlight.erase(it);
+    if (reply) reply->abort();
 }
 
 } // namespace oai::tts

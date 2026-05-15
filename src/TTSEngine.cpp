@@ -121,7 +121,16 @@ void TTSEngine::rebuildProvider()
         m_provider->cancel(m_inFlight);
         m_inFlight = 0;
     }
-    m_provider.reset();
+    // Defer destruction of the old provider until after any synchronous
+    // finished() lambda triggered by the cancel above has unwound. The
+    // cancel path already erases the in-flight entry before calling
+    // abort(), but the std::function callbacks captured via SynthesisRequest
+    // can hold references that briefly outlive the cancel call. Move the
+    // unique_ptr into a local — it destructs at scope exit, after all
+    // synchronous work is complete. Audit H8.
+    std::unique_ptr<oai::tts::ITtsProvider> oldProvider = std::move(m_provider);
+    (void)oldProvider;  // RAII: destructs at end of this function
+
     m_currentProviderStableId.clear();
 
     const QString stableId = m_config->ttsActiveProvider();
