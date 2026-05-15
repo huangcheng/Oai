@@ -10,9 +10,10 @@
 
 class SpriteAnimationEngine;
 class LottieAnimationEngine;
-#ifdef OAI_LIVE2D_SUPPORT
-class Live2DAnimationEngine;
-#endif
+class Live2DAnimationEngine;  // forward-declared even when OAI_LIVE2D_SUPPORT
+                              // is off so the m_live2dEngine pointer-member
+                              // stays declared and accessor short-circuits
+                              // resolve to nullptr without #ifdef noise. M17.
 #ifdef OAI_TTS_ENABLED
 class TTSEngine;
 #endif
@@ -38,9 +39,9 @@ public:
 
     SpriteAnimationEngine *animationEngine() const { return m_engine; }
     LottieAnimationEngine *lottieEngine() const { return m_lottieEngine; }
-#ifdef OAI_LIVE2D_SUPPORT
+    /// Returns nullptr when the build is configured without OAI_LIVE2D_SUPPORT.
+    /// Callers should null-check (most already do via `if (e && e->...)`).
     Live2DAnimationEngine *live2dEngine() const { return m_live2dEngine; }
-#endif
     TipWidget *tipWidget() const { return m_tipWidget; }
     EcgWidget *ecgWidget() const { return m_ecgWidget; }
 
@@ -93,9 +94,8 @@ private:
 
     SpriteAnimationEngine *m_engine;
     LottieAnimationEngine *m_lottieEngine;
-#ifdef OAI_LIVE2D_SUPPORT
-    Live2DAnimationEngine *m_live2dEngine = nullptr;
-#endif
+    Live2DAnimationEngine *m_live2dEngine = nullptr;  // always null when
+                                                      // OAI_LIVE2D_SUPPORT off
 #ifdef OAI_TTS_ENABLED
     TTSEngine *m_ttsEngine = nullptr;
 #endif
