@@ -147,15 +147,6 @@ private:
     QString m_ttsActiveProvider = QStringLiteral("stepfun");
     QHash<QString, QHash<QString, QString>> m_ttsProviders;  // providerId -> field -> value
 
-    /**
-     * Reflect m_autoStart into the OS's per-user "launch at login" facility:
-     *   - Windows: HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Oai
-     *   - macOS:   ~/Library/LaunchAgents/im.cheng.oai.plist (launchd)
-     *   - Linux:   ~/.config/autostart/oai.desktop (XDG autostart)
-     * On AppImage builds the Linux path uses $APPIMAGE rather than the
-     * transient FUSE-mount path returned by applicationFilePath().
-     */
-    void applyAutoStartToOS(bool enabled);
 };
 
 #endif // CONFIGMANAGER_H
