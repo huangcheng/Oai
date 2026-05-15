@@ -392,11 +392,18 @@ void TTSEngine::startDecode(const QByteArray &audio, const QString &mimeType)
 void TTSEngine::resetAudio()
 {
     if (m_decoder) {
+        // Disconnect first: deleteLater() defers destruction past the next
+        // event-loop iteration, and any queued bufferReady/finished signals
+        // already in the queue would fire on the soon-to-be-stale instance.
+        // After disconnect they're dropped, even if Qt has already routed
+        // them. Audit H6.
+        m_decoder->disconnect(this);
         m_decoder->stop();
         m_decoder->deleteLater();
         m_decoder = nullptr;
     }
     if (m_audioSink) {
+        m_audioSink->disconnect(this);
         m_audioSink->stop();
         m_audioSink->deleteLater();
         m_audioSink = nullptr;
