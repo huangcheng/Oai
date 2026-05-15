@@ -72,6 +72,10 @@ RequestHandle StepFunHttpProvider::synthesize(
     qreq.setRawHeader("Authorization",
                       "Bearer " + m_cfg.get("token").trimmed().toUtf8());
     qreq.setRawHeader("Content-Type", "application/json");
+    // Without a transfer timeout the engine debounces all subsequent
+    // utterances behind a single hung TLS handshake. 30s is generous —
+    // a real synthesis usually replies in under 2s.
+    qreq.setTransferTimeout(30000);
 
     QNetworkReply* reply =
         m_nam->post(qreq, QJsonDocument(body).toJson(QJsonDocument::Compact));

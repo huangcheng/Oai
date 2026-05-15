@@ -99,6 +99,7 @@ RequestHandle AzureSpeechProvider::synthesize(
     qreq.setRawHeader("Content-Type", "application/ssml+xml");
     qreq.setRawHeader("X-Microsoft-OutputFormat", "audio-24khz-48kbitrate-mono-mp3");
     qreq.setRawHeader("User-Agent", "Oai");
+    qreq.setTransferTimeout(30000);
 
     QNetworkReply* reply = m_nam->post(qreq, ssml.toUtf8());
     const RequestHandle handle = m_nextHandle++;

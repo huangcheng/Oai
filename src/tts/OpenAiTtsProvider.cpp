@@ -50,6 +50,7 @@ RequestHandle OpenAiTtsProvider::synthesize(
     qreq.setRawHeader("Authorization",
                       "Bearer " + m_cfg.get("token").trimmed().toUtf8());
     qreq.setRawHeader("Content-Type", "application/json");
+    qreq.setTransferTimeout(30000);
 
     QNetworkReply* reply =
         m_nam->post(qreq, QJsonDocument(body).toJson(QJsonDocument::Compact));
