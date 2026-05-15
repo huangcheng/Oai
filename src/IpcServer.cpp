@@ -52,9 +52,14 @@ bool IpcServer::start(const QString &endpoint)
 void IpcServer::stop()
 {
     if (m_thread) {
-        // Invoke stop() on the worker's thread to avoid touching the socket
-        // from the main thread (QSocketNotifier is thread-affine).
-        QMetaObject::invokeMethod(m_worker, "stop", Qt::BlockingQueuedConnection);
+        // Queue stop() on the worker's thread (the socket is thread-affine —
+        // QSocketNotifier must close on the same thread it was created on).
+        // Use QueuedConnection rather than BlockingQueuedConnection: if the
+        // worker thread is wedged for any reason, a blocking invoke from the
+        // main thread waits forever on QLatch and the GUI hangs at quit.
+        // Queued FIFO ordering ensures stop() runs before the event loop
+        // exits via quit().
+        QMetaObject::invokeMethod(m_worker, "stop", Qt::QueuedConnection);
         m_thread->quit();
         // Bound the wait so a wedged worker can't freeze the main thread on
         // shutdown. 5s is generous — UDP socket close is normally instant.
