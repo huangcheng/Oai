@@ -105,3 +105,7 @@ Testing/
 .claude/settings.local.json
 .claude/local/
 compile_commands.json
+
+# Local IDE / session state (tmux-ide sidecar, machine-specific yml)
+.tmux-ide/
+ide.yml
