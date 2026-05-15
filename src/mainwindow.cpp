@@ -10,6 +10,7 @@
 #endif
 #include "CharacterPackManager.h"
 #include "CharacterPack.h"
+#include "PackDropHandler.h"
 #include "ConfigManager.h"
 #include "TipWidget.h"
 #include "SettingsPanelWidget.h"
@@ -39,8 +40,6 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <algorithm>
-
-#include "../thirdparty/miniz/miniz.h"
 
 #ifdef Q_OS_WIN
 // windows.h stays because we handle WM_DISPLAYCHANGE in nativeEvent() and
@@ -504,148 +503,14 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
     menu.exec(globalPos);
 }
 
-bool MainWindow::isValidCodexPet(const QString &filePath) const
-{
-    mz_zip_archive zip{};
-    if (!mz_zip_reader_init_file(&zip, filePath.toUtf8().constData(), 0)) {
-        qWarning() << "MainWindow: isValidCodexPet — cannot open ZIP:" << filePath;
-        return false;
-    }
-
-    int petJsonIdx = mz_zip_reader_locate_file(&zip, "pet.json", nullptr, 0);
-    if (petJsonIdx < 0) {
-        qWarning() << "MainWindow: isValidCodexPet — no pet.json in:" << filePath;
-        mz_zip_reader_end(&zip);
-        return false;
-    }
-
-    size_t petJsonSize = 0;
-    void *petJsonData = mz_zip_reader_extract_to_heap(&zip, petJsonIdx, &petJsonSize, 0);
-    mz_zip_reader_end(&zip);
-
-    if (!petJsonData) {
-        qWarning() << "MainWindow: isValidCodexPet — failed to extract pet.json from:" << filePath;
-        return false;
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(
-        QByteArray(static_cast<const char *>(petJsonData), static_cast<int>(petJsonSize)));
-    mz_free(petJsonData);
-
-    if (!doc.isObject()) {
-        qWarning() << "MainWindow: isValidCodexPet — invalid JSON in pet.json:" << filePath;
-        return false;
-    }
-
-    const QJsonObject obj = doc.object();
-    QString id = obj.value("id").toString();
-    QString displayName = obj.value("displayName").toString();
-
-    bool valid = !id.isEmpty() && !displayName.isEmpty();
-    if (!valid) {
-        qWarning() << "MainWindow: isValidCodexPet — missing id or displayName in:" << filePath;
-    }
-    return valid;
-}
-
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    qDebug() << "MainWindow: dragEnterEvent";
-    if (event->mimeData()->hasUrls()) {
-        for (const QUrl &url : event->mimeData()->urls()) {
-            QString path = url.toLocalFile();
-            qDebug() << "MainWindow: checking drag path:" << path;
-            if (path.endsWith(".opk", Qt::CaseInsensitive)) {
-                qDebug() << "MainWindow: accepting .opk drag";
-                event->acceptProposedAction();
-                return;
-            }
-            if (path.endsWith(".codex-pet", Qt::CaseInsensitive) ||
-                path.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) {
-                bool valid = isValidCodexPet(path);
-                qDebug() << "MainWindow: .codex-pet valid =" << valid;
-                if (valid) {
-                    event->acceptProposedAction();
-                    return;
-                }
-            }
-        }
-    }
-    qDebug() << "MainWindow: dragEnterEvent ignored";
-    event->ignore();
+    PackDropHandler::handleDragEnter(event);
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
 {
-    if (!m_packManager) {
-        qWarning() << "MainWindow: dropEvent ignored — no pack manager";
-        event->ignore();
-        return;
-    }
-
-    const QList<QUrl> urls = event->mimeData()->urls();
-    qDebug() << "MainWindow: dropEvent with" << urls.size() << "URLs";
-
-    for (const QUrl &url : urls) {
-        const QString filePath = url.toLocalFile();
-        qDebug() << "MainWindow: dropped file:" << filePath;
-
-        if (filePath.endsWith(".opk", Qt::CaseInsensitive)) {
-            const bool installed = m_packManager->installPack(filePath);
-            const QString msgId = installed
-                                      ? QStringLiteral("pack.installed")
-                                      : QStringLiteral("pack.install_failed");
-            const auto t = TipsCatalog::instance().message(msgId);
-            m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
-            qDebug() << "MainWindow: .opk install" << (installed ? "succeeded" : "failed");
-        } else if ((filePath.endsWith(".codex-pet", Qt::CaseInsensitive) ||
-                    filePath.endsWith(".codex-pet.zip", Qt::CaseInsensitive)) &&
-                   isValidCodexPet(filePath)) {
-            QFileInfo fi(filePath);
-            QString userPacksDir = m_packManager->userDir();
-            if (userPacksDir.isEmpty()) {
-                userPacksDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/packs";
-                qWarning() << "MainWindow: userDir empty, falling back to" << userPacksDir;
-            }
-            QDir().mkpath(userPacksDir);
-            // fi.fileName() is attacker-controllable via a crafted file:// URL
-            // (e.g. "../../Library/LaunchAgents/evil.plist") or a filename that
-            // crosses a path separator. Reduce to the base name and reject any
-            // residual separator so the destination always stays inside
-            // userPacksDir.
-            const QString safeName = QFileInfo(fi.fileName()).fileName();
-            if (safeName.isEmpty() ||
-                safeName.contains('/') || safeName.contains('\\') ||
-                safeName == QStringLiteral(".") ||
-                safeName == QStringLiteral("..")) {
-                qWarning() << "MainWindow: rejecting drop with unsafe filename:" << fi.fileName();
-                continue;
-            }
-            QString destFile = userPacksDir + "/" + safeName;
-
-            bool ok = false;
-            if (QFile::exists(destFile)) {
-                QFile::remove(destFile);
-            }
-            ok = QFile::copy(filePath, destFile);
-            qDebug() << "MainWindow: copied .codex-pet to" << destFile << "=" << ok;
-
-            if (ok) {
-                QString builtInDir = m_packManager->builtInDir();
-                QString currentPackId = m_packManager->activePackId();
-                m_packManager->initialize(builtInDir, userPacksDir, currentPackId);
-                const auto t = TipsCatalog::instance().message(QStringLiteral("pack.installed"));
-                m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
-            } else {
-                const auto t = TipsCatalog::instance().message(QStringLiteral("pack.install_failed"));
-                m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble, "", true);
-            }
-        } else {
-            qDebug() << "MainWindow: dropped file ignored (not .opk or valid .codex-pet):" << filePath;
-        }
-    }
-
-    event->acceptProposedAction();
+    PackDropHandler::handleDrop(event, m_packManager, m_tipWidget);
 }
 
 void MainWindow::onDisplayModeChanged(ConfigManager::DisplayMode mode)

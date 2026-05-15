@@ -372,6 +372,9 @@ qt_add_executable(Oai
     src/AutoStartManager.cpp
     src/AutoStartManager.h
     src/CanonicalEvents.h
+    src/PackDropHandler.cpp
+    src/PackDropHandler.h
+    src/AnimationEngine.h
     thirdparty/miniz/miniz.c
     thirdparty/miniz/miniz.h
     src/GlobalShortcutManager.cpp

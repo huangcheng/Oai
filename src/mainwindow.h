@@ -98,7 +98,6 @@ private:
 
     QRect petRect() const;
     bool isInPetRect(const QPoint &pos) const;
-    bool isValidCodexPet(const QString &filePath) const;
 
     SpriteAnimationEngine *m_engine;
     LottieAnimationEngine *m_lottieEngine;
