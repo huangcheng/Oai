@@ -76,6 +76,7 @@ static QString labelForField(const QString &field)
     if (field == QLatin1String("groupId")) return QObject::tr("GroupId");
     if (field == QLatin1String("key"))     return QObject::tr("Key");
     if (field == QLatin1String("region"))  return QObject::tr("Region");
+    if (field == QLatin1String("voice"))   return QObject::tr("Voice");
     // Fallback for unknown fields: capitalize first letter
     return field.left(1).toUpper() + field.mid(1);
 }
