@@ -1,3 +1,26 @@
+> **STATUS: SUPERSEDED — 2026-05-15**
+>
+> Every functional outcome of this change has shipped, but in a different
+> shape than originally proposed. Replacing this change rather than completing
+> the remaining tasks because doing so verbatim would *regress* the design.
+>
+> | Section | Originally proposed | What actually shipped |
+> |---|---|---|
+> | TTS protocol | QtWebSockets streaming | HTTP per-provider (`m_nam->post()`, no streaming) — simpler, doesn't need a new Qt module, gives clean per-request error handling |
+> | Provider count | StepFun + MiniMax | StepFun + MiniMax + Azure Speech + OpenAI (4 backends), pluggable via `ITtsProvider` interface |
+> | Config schema | Flat `ttsBaseUrl/ttsToken/ttsModel` | Multi-provider: `tts/activeProvider` + `tts/providers/<id>/<field>` so adding a 5th backend doesn't rename keys |
+> | UI | Left-side tabs (General + AI) | Shipped as designed (General + TTS), plus a hot-swap provider combo, voice ID free-text field, **Test** button, **Clear voice cache** action |
+> | Voice cache | (not in original scope) | Bonus: on-disk cache keyed by `(provider, voice, model, options, normalized text)` with 100 MB LRU bound |
+>
+> Capability specs for the shipped form live in `openspec/specs/tts-voice-cache/`.
+> Settings-UI capability is documented in `openspec/specs/settings-ui/`.
+>
+> **Do not implement the remaining `[ ]` tasks below** — they describe an
+> earlier design that is no longer current. The boxes are left unchecked
+> only as a record of what was originally planned.
+
+---
+
 ## Why
 
 The pet currently communicates through visual tips only. Adding Text-to-Speech (TTS) capabilities will make the pet more interactive and engaging by allowing it to speak tips, greetings, and status messages aloud. This requires refactoring the settings panel to accommodate new AI-related configuration options in a clean, extensible way.
