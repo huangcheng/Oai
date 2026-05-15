@@ -18,6 +18,7 @@ class QToolButton;
 class QAction;
 class QKeySequenceEdit;
 class QStackedWidget;
+class QVBoxLayout;
 
 class SettingsPanelWidget : public QWidget
 {
@@ -84,6 +85,14 @@ private slots:
 
 private:
     void setupUi();
+#ifdef OAI_TTS_ENABLED
+    /// Builds the TTS tab content (Provider combo, per-provider field
+    /// pages, Test + Clear voice cache action row). Extracted from
+    /// setupUi() so the long sequence of widget construction lives
+    /// next to its retranslate / event-handling slots rather than
+    /// halfway down a 580-line setupUi. Audit H11.
+    void setupTtsTabContents(QVBoxLayout *aiLayout, const QString &comboStyleSheet);
+#endif
     void positionRelativeTo(const QWidget *pet);
     void refreshPackList();
     void updatePackButtonLabel();
