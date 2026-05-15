@@ -650,7 +650,17 @@ void SettingsPanelWidget::setupUi()
     // (Enable TTS toggle lives on the General tab — see above.)
 
     m_ttsProviderLabel = new QLabel(tr("Provider"), m_aiTab);
+    m_ttsProviderLabel->setFont(harmonyFont(10));
+    m_ttsProviderLabel->setStyleSheet("color: black; background: transparent;");
     m_ttsProviderCombo = new QComboBox(m_aiTab);
+    // Install a QListView with the harmony font so the dropdown popup matches
+    // the General-tab combos. Without this, the popup falls back to the
+    // platform native list view (system fonts, default styling).
+    {
+        auto *providerListView = new QListView(m_ttsProviderCombo);
+        providerListView->setFont(harmonyFont(10));
+        m_ttsProviderCombo->setView(providerListView);
+    }
     m_ttsProviderCombo->setFont(harmonyFont(10));
     m_ttsProviderCombo->setFixedHeight(24);
     m_ttsProviderCombo->setStyleSheet(comboStyleSheet);
@@ -697,9 +707,11 @@ void SettingsPanelWidget::setupUi()
                     this, &SettingsPanelWidget::onTtsProviderFieldEdited);
             // Build the label widget explicitly so retranslateUi() can refresh
             // it. QFormLayout::addRow(QString, ...) constructs an internal
-            // QLabel we'd have no handle on.
+            // QLabel we'd have no handle on. Match the styling used elsewhere
+            // on the panel for visual consistency.
             QLabel *rowLabel = new QLabel(labelForField(field), page);
             rowLabel->setFont(harmonyFont(10));
+            rowLabel->setStyleSheet("color: black; background: transparent;");
             m_ttsFieldEdits.append({desc.stableId, field, edit, rowLabel});
             form->addRow(rowLabel, edit);
         }

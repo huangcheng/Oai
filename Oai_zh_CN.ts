@@ -281,6 +281,10 @@ Path: %2</source>
         <source>Region</source>
         <translation>区域</translation>
     </message>
+    <message>
+        <source>Voice</source>
+        <translation>音色</translation>
+    </message>
 </context>
 <context>
     <name>SettingsPanelWidget</name>
