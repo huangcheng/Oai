@@ -584,19 +584,38 @@ void SettingsPanelWidget::setupUi()
     formGrid->addWidget(m_ttsEnabledCheck, 8, 1, Qt::AlignLeft | Qt::AlignVCenter);
 #endif
 
-    // Tab buttons (left side)
+    // Tab buttons (left side). The active-vs-inactive stylesheet is
+    // applied by onTabChanged() at the end of setupUi, but the buttons
+    // need *some* padded stylesheet at construction time so their
+    // sizeHint includes the padding — otherwise the QVBoxLayout below
+    // sizes them to bare text and the 8 px spacing disappears between
+    // adjacent tightly-sized buttons. The placeholder here gets
+    // overwritten by onTabChanged(0) two lines after the layout
+    // settles, with no visible flicker.
+    const QString tabBtnPlaceholderStyle = R"(
+        QPushButton {
+            background: white;
+            border: 2px solid #888;
+            border-radius: 3px;
+            padding: 6px 8px;
+            text-align: left;
+        }
+    )";
+
     m_generalTabBtn = new QPushButton(tr("General"), m_contentWidget);
     m_generalTabBtn->setFont(harmonyFont(10, QFont::Bold));
     m_generalTabBtn->setFixedWidth(70);
     m_generalTabBtn->setCursor(Qt::PointingHandCursor);
     m_generalTabBtn->setCheckable(true);
     m_generalTabBtn->setChecked(true);
+    m_generalTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
 
     m_aiTabBtn = new QPushButton(tr("TTS"), m_contentWidget);
     m_aiTabBtn->setFont(harmonyFont(10, QFont::Bold));
     m_aiTabBtn->setFixedWidth(70);
     m_aiTabBtn->setCursor(Qt::PointingHandCursor);
     m_aiTabBtn->setCheckable(true);
+    m_aiTabBtn->setStyleSheet(tabBtnPlaceholderStyle);
 
     QVBoxLayout *tabBtnLayout = new QVBoxLayout();
     tabBtnLayout->setSpacing(8);
@@ -1123,6 +1142,19 @@ void SettingsPanelWidget::setupTtsTabContents(QVBoxLayout *aiLayout,
         QFormLayout *form = new QFormLayout(page);
         form->setContentsMargins(0, 0, 0, 0);
         form->setSpacing(8);
+        // Match the General tab's left-aligned labels. QFormLayout's default
+        // on macOS is right-aligned, which lined up oddly against the
+        // grid-laid Settings rows above.
+        form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        // Keep the same horizontal spacing between label column and field
+        // column the General tab's QGridLayout uses (10 px).
+        form->setHorizontalSpacing(10);
+        // Don't let the rows wrap onto two lines on narrow widths — the
+        // panel is fixed-width anyway.
+        form->setRowWrapPolicy(QFormLayout::DontWrapRows);
+        // Stretch the field column so QLineEdits fill available width like
+        // QGridLayout's column-1 stretch does.
+        form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
         // Render every required + optional field as a QLineEdit. Voice is
         // a plain free-text field — users paste the provider's voice ID
