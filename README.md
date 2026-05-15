@@ -434,6 +434,8 @@ Oai can speak tips aloud through any of four cloud providers. The TTS engine run
 
 The voice field is free-text — paste any voice ID your provider supports (system, cloned, or beta voices). All credentials are trimmed automatically; pasting with leading/trailing whitespace is safe.
 
+Synthesised audio is cached on disk under `~/.cache/Oai/tts_voice_cache/`, keyed by the active provider/voice/model fingerprint plus the (whitespace-normalised) text. Repeat tips replay instantly; the cache is bounded at 100 MB with LRU eviction and auto-invalidates when you change voice or model. Use **Clear voice cache** in the TTS tab to wipe it manually.
+
 ### Adding a new provider
 
 The provider abstraction is small enough that adding a fifth backend (say ElevenLabs) is ~150 LOC of pure protocol:

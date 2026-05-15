@@ -4,11 +4,49 @@ All notable changes to Oai are recorded here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [1.2.6] — 2026-05-15
+
+Stability + security pass driven by an end-to-end audit, plus a TTS voice cache and the related UI polish.
+
 ### Added
-- TTS voice cache — synthesised audio is cached on disk under `~/.cache/Oai/tts_voice_cache/`, keyed by SHA-256 of `(provider, voice, model, options, normalized text)`. Cache hits replay instantly without a network round-trip. Bounded at 100 MB with LRU eviction. Cleared automatically when voice/model/active provider changes; users can also click **Clear voice cache** in the TTS settings tab.
+- **TTS voice cache** — synthesised audio is cached on disk under `~/.cache/Oai/tts_voice_cache/`, keyed by SHA-256 of `(provider, voice, model, options, normalized text)`. Cache hits replay instantly without a network round-trip. Bounded at 100 MB with LRU eviction. Cleared automatically when voice/model/active provider changes; users can also click **Clear voice cache** in the TTS settings tab.
+- **Project `.clang-format`** matching the existing house style: 4-space indent, Allman-for-functions / K&R-for-control-flow braces, right-aligned pointers, 100-col limit. Editors auto-pick it up; existing files were intentionally not mass-reformatted.
 
 ### Fixed
-- Daily log rotation now uses a `yyyy-MM-dd_HH-mm-ss` suffix, so a chatty crash loop on the same day no longer overwrites earlier archives. Archive cap is enforced strictly above the limit instead of at-or-above.
+- **TTS engine no longer hangs the GUI on quit.** Cleanup is queued onto the engine thread instead of a `BlockingQueuedConnection`, and the engine moves itself back to the main thread before destruction so its `QObject` children are deleted on the right thread. The 2 s shutdown wait now logs and intentionally leaks if CoreAudio wedges, rather than `terminate()`-ing a thread that may be holding audio device locks.
+- **`IpcServer` shutdown** uses the same queued-cleanup pattern for the same reason.
+- **TTS HTTP requests time out at 30 s** on every provider (StepFun / MiniMax / Azure / OpenAI). A hung TLS handshake no longer wedges the engine; the existing retry/backoff handles the timeout cleanly.
+- **TTS provider cancel race** — `cancel()` now erases the in-flight bookkeeping *before* `reply->abort()` to avoid a use-after-free when `abort()` synchronously re-enters the `finished()` lambda.
+- **TTS decoder/sink signals are disconnected** before `deleteLater()` so queued events from a stale decoder cannot fire on the new instance during rapid `speak()` calls.
+- **Audio decode is bounded at 50 MB** of accumulated PCM. A malformed or hostile audio header that claims an extreme duration aborts decode rather than OOMing the process.
+- **Pack-install ZIP path traversal** — entries with `../`, absolute paths, or Windows drive prefixes are rejected before extraction; defends against `.opk` archives that target `~/Library/LaunchAgents/`.
+- **Manifest-relative asset paths** are validated to live under the pack root before `assetPath()` returns them.
+- **Drag-and-drop pack filenames** are reduced to base name and rejected if they contain path separators.
+- **Manifest / `pet.json` size cap of 10 MB** before allocating from the archive's central directory.
+- **Live2D dimension clamping** — `frameWidth` / `frameHeight` from the manifest are clamped to `[1, 4096]` before FBO creation; texture images outside the same range are rejected before `glTexImage2D`.
+- **Live2D context-loss recovery** runs on every platform now (was Windows-only). macOS triggers context loss on display sleep / lid close / GPU switch.
+- **Live2D `initOpenGL`** routes every failure path through `releaseOpenGL()` so partial init doesn't leak the offscreen surface or context. `recoverOpenGL()` releases the previous renderer before `setupRenderer()` rebuilds it.
+- **Sprite-sheet frame coordinates** are widened to `qint64` for the multiply, then intersected with the sheet rect; out-of-bounds frames are rejected, partial overlaps clipped.
+- **Pet-rect divide-by-zero guard** in `mouseMoveEvent` for Live2D pointer tracking.
+- **UDP datagrams are capped at 65 535 bytes** in both `UdpWorker` and `UpdateChecker`; oversized packets are drained instead of resized.
+- **Async DNS** in `UpdateChecker` (was a blocking `QHostInfo::fromName` on the GUI thread).
+- **`ConfigManager::save()` is now debounced** at 500 ms — window drags collapse from one disk write per pixel into one per drag. The destructor flushes any pending write.
+- **`ipcPort()` validates the parsed port** is in `[1, 65535]` rather than silently truncating via `quint16`.
+- **Codex-pet temp dir is removed** in `~CharacterPack` (was leaking ~3 MB to `/tmp` per reload).
+- **i18n live-switch** now refreshes the General tab button and the TTS provider field labels (Provider / Token / Voice / Model / BaseUrl) — they were frozen at the language active when the panel was constructed.
+- **Daily log rotation** uses a `yyyy-MM-dd_HH-mm-ss` suffix so a chatty crash loop on the same day no longer overwrites earlier archives.
+- **TTS settings UI** — Test and Clear voice cache share one row; the Provider combo's dropdown matches the General-tab combos; the Voice label is translated (音色) and the Clear voice cache button is fully localised.
+- Plenty of smaller cleanups: `static QFile *` logger → `unique_ptr`, About-dialog `WA_DeleteOnClose`, EcgWidget `flush()` checks, plist XML escape (was HTML escape), TipsCatalog 1 MB read cap, removal of the unused `loadFromArchive` stub, combo-arrow pixmap moved out of `/tmp` into AppLocalData.
+
+### Security
+
+- ZIP path traversal in `installPack` (audit C7).
+- Manifest-relative path traversal in `assetPath` (C8).
+- Drag-and-drop filename sanitization (H13).
+- Pack-archive size caps before allocation (C10).
+- Live2D FBO/texture dimension clamping (C13/C14).
+- UDP datagram size cap (H15).
+- Plist XML-escape correctness (L9).
 
 ## [1.2.5] — 2026-05-10
 
