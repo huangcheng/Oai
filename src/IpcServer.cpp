@@ -64,18 +64,30 @@ void IpcServer::stop()
         // Bound the wait so a wedged worker can't freeze the main thread on
         // shutdown. 5s is generous — UDP socket close is normally instant.
         bool finishedCleanly = m_thread->wait(5000);
-        if (!finishedCleanly) {
-            qWarning() << "IPC: worker thread did not stop within 5s; forcing termination";
-            m_thread->terminate();
-            m_thread->wait(1000);
-            // Normal path uses the deleteLater connected to QThread::finished.
-            // After terminate() the event loop is dead, so deleteLater never
-            // runs and m_worker leaks. Free it explicitly here.
-            delete m_worker;
+        if (finishedCleanly) {
+            // Worker stopped via deleteLater on QThread::finished. The
+            // thread itself is now safe to delete from the main thread.
+            delete m_thread;
+            m_thread = nullptr;
+            m_worker = nullptr;
+        } else {
+            // Do NOT terminate(). UdpWorker has worker-thread affinity and
+            // owns a QUdpSocket / QSocketNotifier; killing the thread mid-
+            // syscall leaks the OS file descriptor and can leave the port
+            // bound until the process exits. Cross-thread delete from the
+            // main thread is just as bad — it destroys the socket on the
+            // wrong thread and triggers UB on Qt's socket-notifier cleanup.
+            //
+            // Instead: detach and intentionally leak the thread + worker.
+            // We are on the shutdown path; the OS reclaims everything at
+            // process exit. Better a deterministic exit than a flaky crash.
+            qWarning() << "IPC: worker thread did not stop within 5s; "
+                          "leaking rather than terminating to keep socket "
+                          "and Qt object cleanup on the right thread";
+            m_thread->setParent(nullptr);
+            m_thread = nullptr;
+            m_worker = nullptr;
         }
-        delete m_thread;
-        m_thread = nullptr;
-        m_worker = nullptr;
     }
 }
 

@@ -30,7 +30,16 @@ TTSEngine::TTSEngine(ConfigManager *config, QObject *parent)
     }
 }
 
-TTSEngine::~TTSEngine() { stop(); }
+TTSEngine::~TTSEngine()
+{
+    // Engine has worker-thread affinity (moveToThread in the ctor). If we
+    // reach the destructor without stop() having returned the engine to the
+    // main thread, fall back to a best-effort stop here. After stop()
+    // returns, this object's affinity is the main thread, so ~QObject and
+    // ~unique_ptr<TtsVoiceCache> destroying their children on the main
+    // thread is correct.
+    stop();
+}
 
 void TTSEngine::start()
 {
@@ -52,18 +61,32 @@ void TTSEngine::stop()
     // backend wedges inside m_audioSink->stop() — observed on Qt 6.11.1 /
     // macOS during shutdown while playback is active — a blocking invoke
     // hangs the GUI thread indefinitely (see spindump, 62s+ at QLatch::wait
-    // on app exit). The bounded wait below caps shutdown latency at 2s and
-    // falls back to terminate() so quit always finishes.
+    // on app exit).
     QMetaObject::invokeMethod(this, [this]() {
         resetAudio();
         m_provider.reset();
     }, Qt::QueuedConnection);
 
     m_thread->quit();
-    if (!m_thread->wait(2000)) {
-        qCWarning(lcTts) << "TTS thread did not finish in 2s; terminating";
-        m_thread->terminate();
-        m_thread->wait(500);
+    if (m_thread->wait(2000)) {
+        // Worker stopped cleanly. Move the engine (and m_voiceCache, which
+        // is a child via QObject parent) back to the main thread so the
+        // forthcoming destructor — running on the main thread — destroys
+        // children on the right thread instead of UB cross-thread delete.
+        moveToThread(QThread::currentThread());
+        if (m_voiceCache) m_voiceCache->moveToThread(QThread::currentThread());
+    } else {
+        // Do NOT call terminate(). Killing a thread that may be inside a
+        // CoreAudio render callback leaves OS audio locks held and can
+        // wedge subsequent processes that try to open the device.
+        // Instead, intentionally leak: the OS reclaims everything at
+        // process exit (we are on the shutdown path), and the user sees
+        // the app close cleanly rather than freeze indefinitely.
+        qCWarning(lcTts) << "TTS thread did not finish in 2s; leaking thread "
+                            "rather than terminate() to avoid leaving CoreAudio locks held";
+        // Detach m_thread so the destructor doesn't try to wait on it again.
+        m_thread->setParent(nullptr);
+        m_thread = nullptr;
     }
 }
 
