@@ -76,24 +76,52 @@ cmake --build build --target generate_packs
 
 ### macOS
 
+**推荐使用构建脚本**（自动处理打包、签名和 DMG 创建）：
+
 ```bash
 # 通过 Homebrew 安装 Qt
 brew install qt@6
 
-# 构建
+# 完整构建 + 打包（生成 Seelie-1.0.0.dmg）
+python3 scripts/build_release.py
+
+# 或者分步执行：
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
-cmake --build .
-
-# 创建 .app 包
-macdeployqt Seelie.app
-
-# 运行
-open Seelie.app
+cmake --build . --parallel 2
 ```
 
-### Windows（MSVC）
+安装或复制到 `/Applications/` 后：
 
+```bash
+# 测试应用
+open /Applications/Seelie.app
+```
+
+> **macOS Gatekeeper**：如果看到 "Seelie.app 无法打开，因为开发者无法验证"，前往 **系统设置 → 隐私与安全性**，向下滚动到 **安全性** 部分，点击 Seelie 被拦截消息旁边的 **仍然打开**。只需执行一次——系统会记住你对该应用的选择。
+
+> **安装后"无法打开"的故障排除**：如果点击"仍然打开"后应用仍无法启动，二进制文件可能是增量构建时损坏了。症状：进程立即以代码 137（SIGKILL）退出，或 `open` 显示通用启动失败。诊断方法：
+> ```bash
+> ./Seelie.app/Contents/MacOS/Seelie
+> echo $?   # 137 = 被内核杀死，不是 Gatekeeper 问题
+> ```
+> 如果看到退出码 137，执行清理重建：
+> ```bash
+> rm -rf build && python3 scripts/build_release.py
+> ```
+
+### Windows
+
+**推荐使用构建脚本**（自动处理 Qt DLL 打包、安装程序创建和签名）：
+
+```powershell
+# 完整构建 + 打包（生成 SeelieInstaller-<version>.exe）
+python scripts/build_release.py
+```
+
+或手动构建：
+
+**MSVC：**
 ```powershell
 # 通过 Qt Installer 或 vcpkg 安装 Qt
 # vcpkg：vcpkg install qt6-base qt6-tools
@@ -111,8 +139,7 @@ windeployqt Release\Seelie.exe
 Release\Seelie.exe
 ```
 
-### Windows（MinGW）
-
+**MinGW：**
 ```powershell
 # 通过 Qt Installer 安装 Qt（选择 MinGW 套件）
 
@@ -131,6 +158,15 @@ Seelie.exe
 
 ### Linux
 
+**推荐使用构建脚本**（自动处理 AppImage 创建）：
+
+```bash
+# 完整构建 + 打包（生成 Seelie-<version>-<arch>.AppImage）
+python3 scripts/build_release.py
+```
+
+或手动构建：
+
 ```bash
 # 安装 Qt 开发包
 # Ubuntu/Debian：
@@ -142,7 +178,7 @@ sudo dnf install qt6-qtbase-devel qt6-qttools-devel cmake gcc-c++
 # 构建
 mkdir build && cd build
 cmake ..
-cmake --build .
+cmake --build . --parallel 2
 
 # 运行
 ./Seelie

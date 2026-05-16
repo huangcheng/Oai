@@ -76,24 +76,52 @@ See `schemas/character-pack-v1.schema.json` for the pack format specification.
 
 ### macOS
 
+**Recommended: use the build script** (handles bundling, signing, and DMG creation automatically):
+
 ```bash
 # Install Qt via Homebrew
 brew install qt@6
 
-# Build
+# Full build + package (produces Seelie-1.0.0.dmg)
+python3 scripts/build_release.py
+
+# Or step by step:
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
-cmake --build .
-
-# Create .app bundle
-macdeployqt Seelie.app
-
-# Run
-open Seelie.app
+cmake --build . --parallel 2
 ```
 
-### Windows (MSVC)
+After installation or copying to `/Applications/`:
 
+```bash
+# Test the app
+open /Applications/Seelie.app
+```
+
+> **macOS Gatekeeper**: If you see "Seelie.app can't be opened because the developer cannot be verified", go to **System Settings → Privacy & Security**, scroll down to the **Security** section, and click **Open Anyway** next to the message about Seelie being blocked. You will only need to do this once — the OS will remember your choice for this app.
+
+> **Troubleshooting "can't be opened" after installation**: If the app still fails to launch after clicking "Open Anyway", the binary may be corrupted from an incremental build. Symptoms: process exits immediately with code 137 (SIGKILL), or `open` shows a generic launch failure. To diagnose:
+> ```bash
+> ./Seelie.app/Contents/MacOS/Seelie
+> echo $?   # 137 = killed by kernel, not a Gatekeeper issue
+> ```
+> If you see exit 137, do a clean rebuild:
+> ```bash
+> rm -rf build && python3 scripts/build_release.py
+> ```
+
+### Windows
+
+**Recommended: use the build script** (handles Qt DLL bundling, installer creation, and signing automatically):
+
+```powershell
+# Full build + package (produces SeelieInstaller-<version>.exe)
+python scripts/build_release.py
+```
+
+Or build manually:
+
+**MSVC:**
 ```powershell
 # Install Qt via the Qt installer or vcpkg
 # vcpkg: vcpkg install qt6-base qt6-tools
@@ -111,8 +139,7 @@ windeployqt Release\Seelie.exe
 Release\Seelie.exe
 ```
 
-### Windows (MinGW)
-
+**MinGW:**
 ```powershell
 # Install Qt via the Qt installer (select MinGW)
 
@@ -131,6 +158,15 @@ Seelie.exe
 
 ### Linux
 
+**Recommended: use the build script** (handles AppImage creation automatically):
+
+```bash
+# Full build + package (produces Seelie-<version>-<arch>.AppImage)
+python3 scripts/build_release.py
+```
+
+Or build manually:
+
 ```bash
 # Install Qt development packages
 # Ubuntu/Debian:
@@ -142,7 +178,7 @@ sudo dnf install qt6-qtbase-devel qt6-qttools-devel cmake gcc-c++
 # Build
 mkdir build && cd build
 cmake ..
-cmake --build .
+cmake --build . --parallel 2
 
 # Run
 ./Seelie

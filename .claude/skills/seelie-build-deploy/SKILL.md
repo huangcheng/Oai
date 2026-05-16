@@ -472,30 +472,74 @@ error=Error Domain=RBSRequestErrorDomain Code=5 "Launch failed."
 NSPOSIXErrorDomain Code=153 "Launchd job spawn failed"
 ```
 
-The binary runs fine via `./Seelie.app/Contents/MacOS/Seelie` but `open Seelie.app` (and Finder double-click) fail. Cause: `macdeployqt` bundles QML frameworks (QtQml, QtQmlModels, QtQmlWorkerScript, QtQuick) and the `platforminputcontexts/libqtvirtualkeyboardplugin.dylib` plugin even though Seelie is a pure Widgets app. These frameworks have malformed Mach-O headers (`install_name_tool` reports "malformed object") and the virtual keyboard plugin has no `LC_ID_DYLIB`. LaunchServices validates signatures on all embedded binaries before launch — the malformed ones cause a blanket rejection even though the main binary is fine.
+This is a **generic LaunchServices symptom** with multiple possible root causes. The error text is misleading — it usually means the kernel killed the process during early launch, not that Gatekeeper blocked it.
 
-Fix (already part of the packaging flow):
+#### Root cause A: Stale/incremental build producing malformed Mach-O (most common)
 
+After iterative development builds (`cmake --build` without clean), the main binary or a bundled Qt framework can become **corrupted** in a way that the kernel's Mach-O loader rejects it immediately. This produces `SIGKILL` (exit code 137) before the app even initializes. LaunchServices then reports the generic "can't be opened" error.
+
+**Diagnosis:**
 ```bash
-# After macdeployqt, remove what Seelie doesn't need:
+# Direct exec shows exit 137 (SIGKILL)
+./Seelie.app/Contents/MacOS/Seelie
+echo $?   # → 137
+
+# lldb reveals the real error
+lldb ./Seelie.app/Contents/MacOS/Seelie
+(lldb) run
+error: Malformed Mach-o file
+```
+
+**Fix:** Clean rebuild from scratch:
+```bash
+rm -rf build
+mkdir build && cd build
+cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
+cmake --build . --parallel 2
+python3 scripts/build_release.py --skip-build   # repackage from clean build
+```
+
+Key: do **not** trust incremental builds after seeing this error. The corrupted artifact may survive `make clean` if it only removes object files — wipe the entire build directory.
+
+#### Root cause B: QML frameworks bundled by macdeployqt (legacy, pre-2025)
+
+`macdeployqt` used to bundle QML frameworks (QtQml, QtQuick, etc.) and `platforminputcontexts/libqtvirtualkeyboardplugin.dylib` even for pure Widgets apps. Some Homebrew Qt builds had malformed headers in these frameworks. LaunchServices validates all embedded binaries, and one malformed framework caused blanket rejection.
+
+**Fix** (if this specific cause applies — check with `otool -h` on frameworks):
+```bash
 rm -rf Seelie.app/Contents/PlugIns/platforminputcontexts
 rm -rf Seelie.app/Contents/Frameworks/QtQml*.framework
-rm -rf Seelie.app/Contents/Frameworks/QtQmlWorkerScript.framework
 rm -rf Seelie.app/Contents/Frameworks/QtQuick.framework
+```
 
-# Sign bottom-up: frameworks/dylibs first, then the main binary, then the bundle
+#### Distinguishing the causes
+
+| Check | Stale build (Cause A) | QML frameworks (Cause B) |
+|-------|----------------------|--------------------------|
+| `lldb` shows | `Malformed Mach-o file` on **main binary** | `Malformed Mach-o file` on **QtQml.framework** |
+| `otool -h` on main binary | fails / shows corruption | clean |
+| Clean rebuild fixes it? | **yes** | no (need to strip QML) |
+| Seelie uses QML? | no (never) | irrelevant to root cause |
+
+#### Post-fix: codesign and quarantine
+
+After either fix, re-sign bottom-up and clear quarantine:
+```bash
 find Seelie.app/Contents/Frameworks -type f \( -name "*.dylib" -o -path "*/Versions/A/*" \) \
   -exec codesign --force --sign - {} \;
 find Seelie.app/Contents/PlugIns -name "*.dylib" \
   -exec codesign --force --sign - {} \;
 codesign --force --sign - Seelie.app/Contents/MacOS/Seelie
 codesign --deep --force --sign - Seelie.app
+xattr -cr Seelie.app
 ```
 
 Key points:
-- `--deep` alone is not reliable — it doesn't always re-sign nested components whose existing signature is "valid but ad-hoc". Sign leaf binaries explicitly first.
-- The quarantine attribute (`com.apple.quarantine`) is a separate issue: `xattr -r -d com.apple.quarantine Seelie.app` removes it, but that alone won't help if signatures are broken.
-- If distributing to other machines without a Developer ID certificate, users will always need the `xattr` step after downloading.
+- `--deep` alone is not reliable — sign leaf binaries explicitly first.
+- `com.apple.provenance` xattr is re-applied by macOS automatically; `com.apple.quarantine` is the one to clear.
+- If distributing without Developer ID, users will always need the Privacy & Security → "Open Anyway" step.
+
+**Reference:** This pitfall was rewritten after a real incident where a clean rebuild (not QML stripping) fixed the issue. The corrupted binary was produced by normal incremental development builds, not by any packaging script bug.
 
 ## Cross-platform packaging summary
 
