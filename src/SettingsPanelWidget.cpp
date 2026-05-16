@@ -1028,7 +1028,12 @@ void SettingsPanelWidget::refreshPackList()
             const QString packId = pack.id;
             connect(action, &QAction::triggered, this, [this, packId]() {
                 qDebug() << "[MENU] Action triggered for packId:" << packId;
-                if (m_packManager) m_packManager->switchPack(packId);
+                if (!m_packManager) return;
+                if (!m_packManager->switchPack(packId)) {
+                    // QActionGroup already moved the radio to the failed
+                    // pack; rebuild the menu so it reflects truth.
+                    refreshPackList();
+                }
             });
         }
     };

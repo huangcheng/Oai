@@ -393,41 +393,49 @@ cp -R build/Seelie.app /Applications/Seelie.app
 open /Applications/Seelie.app
 ```
 
-### 15. macOS: WEBP plugin corrupted by macdeployqt — Codex pets fail to load
+### 15. macOS: macdeployqt corrupts imageformats plugins and support dylibs
 
+Symptoms in `~/Library/Application Support/Seelie/seelie_debug.log`:
 ```
 [WARN] WEBP image format: NOT supported. Codex pets will fail to load.
+[DEBUG] Failed to find metadata in lib .../libqwebp.dylib: '...' is not a valid Mach-O binary (invalid magic cefaedfe)
+[DEBUG] libqwebp.dylib cannot load: dlopen(...): Library not loaded: @rpath/libwebpdemux.2.dylib
+  Reason: tried: '.../Frameworks/libwebpdemux.2.dylib' (MH_DYLIB is missing LC_ID_DYLIB)
 ```
 
-All Codex pets (dario, cheddar, fengge, taobao) use `.webp` sprite atlases. Qt 6.11 (Homebrew) ships `libqwebp.dylib` in a **separate formula** (`qtimageformats`), and `macdeployqt` copies it into the bundle but then corrupts it by stripping `LC_ID_DYLIB`. Additionally, `macdeployqt` misses copying `libsharpyuv.0.dylib` (a dependency of `libwebp.7.dylib`).
+`macdeployqt` on Qt 6.11 (Homebrew arm64) corrupts the bundle in two independent ways:
 
-Symptoms:
-- WEBP format shows "NOT supported" in logs
-- Codex pets fail to load with `createAndLoadPack returned nullptr`
-- The pet window may be invisible if no fallback pack is available
+**(a) Plugin Mach-O headers.** Every plugin under `Contents/PlugIns/imageformats/` (and `iconengines/`, `styles/`) gets rewritten with a malformed header — magic byte 0 flipped from `cf` (`MH_MAGIC_64`, 64-bit) to `ce` (`MH_MAGIC`, 32-bit), filetype changed from `BUNDLE` (0x8) to `DYLIB` (0x6), file truncated to roughly half its source size. Qt's own `QMachOParser` then refuses to load them: `invalid magic cefaedfe`. JPEG/PNG appear to keep working only because Qt has built-in raster decoders for those; WEBP has no fallback, so Codex pets are the first visible casualty.
 
-Fix (already integrated into `scripts/build_release.py`):
+**(b) Support dylib install IDs.** Every bundled `Contents/Frameworks/*.dylib` (libwebp, libjpeg, libpng, libtiff, libsharpyuv, libmng, libjasper, etc.) gets its `LC_ID_DYLIB` stripped. Even after (a) is fixed, plugins now fail at `dlopen` because dyld rejects the support dylibs they link against.
 
-```python
-# After macdeployqt, recopy the plugin from the qtimageformats formula
-# and rewrite its library paths to @rpath:
-# 1. Copy libqwebp.dylib from /opt/homebrew/Cellar/qtimageformats/6.11.0/...
-# 2. Set its install name to @rpath/PlugIns/imageformats/libqwebp.dylib
-# 3. Rewrite Qt deps to @rpath/QtGui.framework/...
-# 4. Rewrite webp deps to @rpath/libwebp.7.dylib, etc.
-# 5. Add rpath: @loader_path/../../Frameworks
-# 6. Copy libsharpyuv.0.dylib to Contents/Frameworks/ and fix its paths
-```
+`libsharpyuv.0.dylib` is *also* not copied at all on some Qt versions — it's a transitive dep of libwebp that macdeployqt misses.
 
-The build script now handles this automatically. If you're debugging a custom build pipeline, verify:
+**Fix** (already in `scripts/build_release.py`, ~line 425): post-macdeployqt, recopy every `imageformats/*.dylib` from the Qt source plugin dirs and every `Frameworks/*.dylib` from `/opt/homebrew/lib/`. For plugins, rewrite absolute deps to `@rpath` via `install_name_tool -change` and **never** call `install_name_tool -id` on them (which is what corrupts `MH_BUNDLE` files in the first place). For support dylibs, use `-id @rpath/<basename>` because their install IDs were stripped. Re-sign bottom-up.
+
+**Verify after a build:**
 ```bash
-# WEBP plugin should have @rpath deps, not /opt/homebrew/...
-otool -L Seelie.app/Contents/PlugIns/imageformats/libqwebp.dylib | grep webp
-# Expected: @rpath/libwebp.7.dylib, @rpath/libsharpyuv.0.dylib, etc.
+# Plugin should be MH_BUNDLE arm64 with magic cffaedfe, not MH_MAGIC + DYLIB.
+xxd Seelie.app/Contents/PlugIns/imageformats/libqwebp.dylib | head -1
+# Expected first 4 bytes: cffa edfe (NOT cefa edfe)
+file Seelie.app/Contents/PlugIns/imageformats/libqwebp.dylib
+# Expected: Mach-O 64-bit bundle arm64
 
-# sharpyuv must exist in Frameworks/
-ls Seelie.app/Contents/Frameworks/libsharpyuv.0.dylib
+# Support dylibs must have an install ID.
+otool -D Seelie.app/Contents/Frameworks/libwebp.7.dylib
+# Expected: @rpath/libwebp.7.dylib  (not empty)
+
+# Final smoke test — runtime check via the app's own log.
+pkill -f Seelie; open /Applications/Seelie.app && sleep 5
+grep "WEBP image format" ~/Library/Application\ Support/Seelie/seelie_debug.log | tail -1
+# Expected: [DEBUG] WEBP image format: supported (required for Codex pets)
 ```
+
+**When investigating a new "Codex pet won't load" report:** always grep the user's `seelie_debug.log` for `WEBP image format:` first. The log is at `~/Library/Application Support/Seelie/seelie_debug.log` and `qInstallMessageHandler` writes everything there — stdout/stderr from the launched app will be empty.
+
+**UX coupling.** A failed `switchPack()` used to silently fail because `QSystemTrayIcon`'s exclusive `QActionGroup` flips the radio indicator on click *before* the slot runs, so the menu lies about the active pack. `SystemTray::onPackActionTriggered` and `SettingsPanelWidget`'s pack-button menu now call `refreshPackMenu` / `refreshPackList` on switchPack failure so the radio reverts to truth. If you add a new pack-switch entry point, mirror that pattern.
+
+**Why Windows isn't affected.** `windeployqt` on Windows just copies plugin DLLs verbatim — the PE format doesn't embed absolute install paths, so there's no `install_name_tool` equivalent and no rewriting step to get wrong. The whole class of "the deploy tool damaged the binary" bugs only exists on macOS because Mach-O binaries must be patched to be relocatable. Expect every macOS deploy regression to look like this one: a fresh build runs fine from `build/Seelie.app` via `open`, then a feature that touches an additional plugin (image format, icon engine, style, multimedia codec) fails silently because the post-macdeployqt redeploy pass didn't cover that file type.
 
 ### 16. macOS: Invisible pet window — broken pack loading
 
@@ -464,7 +472,7 @@ ls /Applications/Seelie.app/Contents/Resources/assets/animations.json
 ls /Applications/Seelie.app/Contents/Resources/assets/packs/
 ```
 
-### 13. macOS: "The application can't be opened" / LaunchServices error 153
+### 17. macOS: "The application can't be opened" / LaunchServices error 153
 
 ```
 The application cannot be opened for an unexpected reason,

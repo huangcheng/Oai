@@ -422,29 +422,107 @@ def package_macos(build_dir, version, qt_prefix):
             check=False)
         _rewrite_to_rpath(cocoa)
 
-    # Fix WEBP imageformat plugin — macdeployqt corrupts it (strips LC_ID_DYLIB)
-    # and misses copying libsharpyuv.0.dylib. Codex pets need WEBP to load.
-    webp_plugin = app_bundle / "Contents" / "PlugIns" / "imageformats" / "libqwebp.dylib"
-    if webp_plugin.exists():
-        # Find source in qtimageformats (separate Homebrew formula)
-        src_webp = None
-        for plug_root in [Path(qt_prefix) / "share" / "qt" / "plugins",
-                          Path(qt_prefix) / "share" / "qt6" / "plugins",
-                          Path("/opt/homebrew/Cellar/qtimageformats/6.11.0/share/qt/plugins")]:
-            candidate = plug_root / "imageformats" / "libqwebp.dylib"
+    # Fix imageformats plugins — macdeployqt on Qt 6.11 (Homebrew arm64)
+    # writes truncated/byte-mangled Mach-O headers for every plugin in
+    # PlugIns/imageformats/, and the same Qt's plugin loader then refuses
+    # them with "invalid magic cefaedfe". PNG / JPEG only "appear to work"
+    # because Qt has built-in fallbacks; WEBP has none, so Codex pets fail.
+    # Recopy each plugin from the Qt source tree, rewrite its absolute
+    # /opt/homebrew/... deps to @rpath, and add a Frameworks rpath.
+    # Skip `install_name_tool -id` — plugins don't need an install ID, and
+    # -id fails on MH_BUNDLE files (which is what qtimageformats ships).
+    plug_roots = [Path(qt_prefix) / "share" / "qt" / "plugins",
+                  Path(qt_prefix) / "share" / "qt6" / "plugins",
+                  Path("/opt/homebrew/Cellar/qtimageformats/6.11.0/share/qt/plugins"),
+                  Path("/opt/homebrew/Cellar/qtbase/6.11.0/share/qt/plugins")]
+
+    def _find_source_plugin(rel_path):
+        for root in plug_roots:
+            candidate = root / rel_path
             if candidate.exists():
-                src_webp = candidate
-                break
-        if src_webp and install_name_tool:
-            os.chmod(webp_plugin, 0o644)
-            shutil.copy2(src_webp, webp_plugin)
-            if codesign_path:
-                run([codesign_path, "--remove-signature", str(webp_plugin)], check=False)
-            run([install_name_tool, "-id",
-                 "@rpath/PlugIns/imageformats/libqwebp.dylib", str(webp_plugin)],
+                return candidate
+        return None
+
+    def _redeploy_plugin(plugin_path, rel_under_plugins):
+        if not (install_name_tool and otool_path):
+            return False
+        src = _find_source_plugin(rel_under_plugins)
+        if not src:
+            return False
+        os.chmod(plugin_path, 0o644)
+        shutil.copy2(src, plugin_path)
+        if codesign_path:
+            run([codesign_path, "--remove-signature", str(plugin_path)], check=False)
+        deps = subprocess.run([otool_path, "-L", str(plugin_path)],
+                              capture_output=True, text=True, check=False).stdout
+        for line in deps.splitlines()[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            dep = line.split(" (")[0]
+            if not (dep.startswith("/opt/homebrew/") or dep.startswith("/usr/local/")):
+                continue
+            if "Qt" in dep:
+                idx = dep.rfind("/Qt")
+                while idx != -1 and ".framework" not in dep[idx:idx+50]:
+                    idx = dep.rfind("/Qt", 0, idx)
+                if idx == -1:
+                    continue
+                new_dep = "@rpath" + dep[idx:]
+            else:
+                # Bundled non-Qt deps (libwebp, libsharpyuv, libtiff, libpng,
+                # libjpeg, ...) live in Contents/Frameworks via macdeployqt.
+                libname = dep.split("/")[-1]
+                new_dep = f"@rpath/{libname}"
+            run([install_name_tool, "-change", dep, new_dep, str(plugin_path)],
                 check=False)
-            # Rewrite deps to @rpath
-            deps = subprocess.run([otool_path, "-L", str(webp_plugin)],
+        run([install_name_tool, "-add_rpath",
+             "@loader_path/../../Frameworks", str(plugin_path)],
+            check=False)
+        return True
+
+    imageformats_dir = app_bundle / "Contents" / "PlugIns" / "imageformats"
+    if imageformats_dir.exists():
+        for plugin_path in sorted(imageformats_dir.glob("*.dylib")):
+            _redeploy_plugin(plugin_path, Path("imageformats") / plugin_path.name)
+
+        # WEBP needs libsharpyuv.0.dylib which macdeployqt misses (it tracks
+        # libwebp* but not its transitive sharpyuv dependency).
+        sharpyuv_dst = bundle_fw / "libsharpyuv.0.dylib"
+        if not sharpyuv_dst.exists():
+            for sharpyuv_src in [Path("/opt/homebrew/opt/webp/lib/libsharpyuv.0.dylib")]:
+                if sharpyuv_src.exists():
+                    shutil.copy2(sharpyuv_src, sharpyuv_dst)
+                    if codesign_path:
+                        run([codesign_path, "--remove-signature", str(sharpyuv_dst)], check=False)
+                    if install_name_tool:
+                        run([install_name_tool, "-id", "@rpath/libsharpyuv.0.dylib",
+                             str(sharpyuv_dst)], check=False)
+                        run([install_name_tool, "-add_rpath", "@loader_path/.",
+                             str(sharpyuv_dst)], check=False)
+                    break
+
+    # macdeployqt also corrupts the bundled support dylibs in Contents/Frameworks
+    # (libjpeg, libpng, libwebp, libtiff, ...) — it strips LC_ID_DYLIB so dyld
+    # rejects them with "MH_DYLIB is missing LC_ID_DYLIB", which in turn makes
+    # the imageformats plugins fail to load even when the plugins themselves
+    # are healthy. Recopy each support dylib from Homebrew (which has proper
+    # install names) and rewrite its dep paths to @rpath.
+    homebrew_lib = Path("/opt/homebrew/lib")
+    if install_name_tool and otool_path and homebrew_lib.exists():
+        for dylib_path in sorted(bundle_fw.glob("*.dylib")):
+            src = homebrew_lib / dylib_path.name
+            if not src.exists():
+                # No Homebrew counterpart (e.g. one of our own bundled deps);
+                # skip and hope macdeployqt got that one right.
+                continue
+            os.chmod(dylib_path, 0o644)
+            shutil.copy2(src, dylib_path)
+            if codesign_path:
+                run([codesign_path, "--remove-signature", str(dylib_path)], check=False)
+            run([install_name_tool, "-id", f"@rpath/{dylib_path.name}", str(dylib_path)],
+                check=False)
+            deps = subprocess.run([otool_path, "-L", str(dylib_path)],
                                   capture_output=True, text=True, check=False).stdout
             for line in deps.splitlines()[1:]:
                 line = line.strip()
@@ -453,36 +531,11 @@ def package_macos(build_dir, version, qt_prefix):
                 dep = line.split(" (")[0]
                 if not (dep.startswith("/opt/homebrew/") or dep.startswith("/usr/local/")):
                     continue
-                if "Qt" in dep:
-                    idx = dep.rfind("/Qt")
-                    while idx != -1 and ".framework" not in dep[idx:idx+50]:
-                        idx = dep.rfind("/Qt", 0, idx)
-                    if idx == -1:
-                        continue
-                    new_dep = "@rpath" + dep[idx:]
-                elif "libwebp" in dep or "libsharpyuv" in dep:
-                    libname = dep.split("/")[-1]
-                    new_dep = f"@rpath/{libname}"
-                else:
-                    continue
-                run([install_name_tool, "-change", dep, new_dep, str(webp_plugin)],
+                new_dep = f"@rpath/{dep.split('/')[-1]}"
+                if new_dep == f"@rpath/{dylib_path.name}":
+                    continue  # self-reference; already covered by -id
+                run([install_name_tool, "-change", dep, new_dep, str(dylib_path)],
                     check=False)
-            run([install_name_tool, "-add_rpath",
-                 "@loader_path/../../Frameworks", str(webp_plugin)],
-                check=False)
-            # Ensure libsharpyuv.0.dylib is bundled
-            sharpyuv_dst = bundle_fw / "libsharpyuv.0.dylib"
-            if not sharpyuv_dst.exists():
-                for sharpyuv_src in [Path("/opt/homebrew/opt/webp/lib/libsharpyuv.0.dylib")]:
-                    if sharpyuv_src.exists():
-                        shutil.copy2(sharpyuv_src, sharpyuv_dst)
-                        if codesign_path:
-                            run([codesign_path, "--remove-signature", str(sharpyuv_dst)], check=False)
-                        run([install_name_tool, "-id", "@rpath/libsharpyuv.0.dylib",
-                             str(sharpyuv_dst)], check=False)
-                        run([install_name_tool, "-add_rpath", "@loader_path/.",
-                             str(sharpyuv_dst)], check=False)
-                        break
 
     # Ad-hoc sign bottom-up (allows running on modern macOS without notarization).
     # --deep alone is unreliable; sign leaf binaries explicitly first.

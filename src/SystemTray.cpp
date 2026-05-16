@@ -263,8 +263,15 @@ void SystemTray::onPackActionTriggered()
     }
 
     QString packId = action->data().toString();
-    if (!packId.isEmpty()) {
-        m_packManager->switchPack(packId);
+    if (packId.isEmpty()) {
+        return;
+    }
+    // QActionGroup flips the radio indicator on click before the slot runs,
+    // so a failed switchPack() leaves the menu lying about which pack is
+    // active. Repaint from the manager's truth so the user sees the
+    // revert (and gets a chance to notice the failure in the log).
+    if (!m_packManager->switchPack(packId)) {
+        refreshPackMenu();
     }
 }
 
