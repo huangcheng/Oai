@@ -317,6 +317,24 @@ int main(int argc, char *argv[])
         }
     }
 
+    // --- Global stylesheet (Persona 5 design system) -------------------------
+    // Applied to qApp so QMenu / QToolTip / QPushButton / QLineEdit /
+    // QCheckBox / QComboBox inherit cartoon styling everywhere — most
+    // importantly the tray menu and pet context menu, which previously
+    // looked Windows-native. Widgets with their own setStyleSheet still
+    // override this (Qt QSS specificity rule).
+    {
+        QFile qss(QStringLiteral(":/styles/styles/seelie.qss"));
+        if (qss.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            qApp->setStyleSheet(QString::fromUtf8(qss.readAll()));
+            qDebug() << "Global stylesheet loaded:" << qss.fileName()
+                     << "(" << qss.size() << "bytes )";
+        } else {
+            qWarning() << "Could not load global stylesheet" << qss.fileName()
+                       << "—" << qss.errorString();
+        }
+    }
+
     // --- Main window ---------------------------------------------------------
     MainWindow w(&config, &translator);
 

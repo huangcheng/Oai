@@ -1,0 +1,223 @@
+/* Seelie global stylesheet — Persona 5 design system.
+ *
+ * Loaded by main.cpp via qApp->setStyleSheet() after font setup. Provides
+ * the cartoon-Persona-5 look (sharp 3-4px corners, 2-3px black borders,
+ * white backgrounds, orange accent on hover) for widgets that don't carry
+ * their own setStyleSheet — most importantly the tray menu and pet
+ * context menu, which were inheriting Windows-native styling and looked
+ * out of place against TipWidget / SettingsPanel / PackManager.
+ *
+ * Per-widget setStyleSheet calls (~48 across SettingsPanelWidget /
+ * StyledAlertWidget / PackManagerWidget) override these — Qt's QSS
+ * specificity rule. The plan is to migrate those over time and have
+ * each widget set objectName instead. This file only changes widgets
+ * that had no style before.
+ *
+ * Design tokens (cross-referenced with TipWidget.cpp paintEvent and
+ * SettingsPanelWidget.cpp inline QSS so we stay visually consistent):
+ *   Corner radius   3-4px (sharp)
+ *   Border          2-3px solid black
+ *   Background      white #ffffff
+ *   Text primary    near-black #1a1a1a
+ *   Text secondary  gray #888888
+ *   Accent          Persona orange #F36F1A
+ *   Accent pressed  darker orange #C85A12
+ *   Disabled bg     #f5f5f5
+ *   Disabled text   #b0b0b0
+ */
+
+/* ── QMenu (tray menu, pet context menu, pack submenus) ───────────────── */
+
+QMenu {
+    background: white;
+    border: 2px solid black;
+    border-radius: 4px;
+    padding: 4px 0px;
+    color: #1a1a1a;
+}
+
+QMenu::item {
+    background: transparent;
+    padding: 6px 18px 6px 24px;
+    border: none;
+    color: #1a1a1a;
+}
+
+QMenu::item:selected {
+    background: #F36F1A;
+    color: white;
+}
+
+QMenu::item:disabled {
+    color: #b0b0b0;
+}
+
+QMenu::separator {
+    height: 2px;
+    background: black;
+    margin: 4px 8px;
+}
+
+QMenu::indicator {
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+}
+
+QMenu::indicator:checked {
+    background: #F36F1A;
+    border: 2px solid black;
+    border-radius: 3px;
+}
+
+QMenu::indicator:unchecked {
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+}
+
+QMenu::right-arrow {
+    /* Persona-style chevron pointing into a submenu. Qt draws this from
+     * a pixmap or fallback unicode; styling here keeps the spacing right
+     * without forcing us to ship an icon asset. */
+    width: 8px;
+    margin-right: 6px;
+}
+
+/* ── QToolTip ─────────────────────────────────────────────────────────── */
+
+QToolTip {
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+    color: #1a1a1a;
+    padding: 4px 8px;
+}
+
+/* ── QPushButton (default style; per-button overrides still win) ──────── */
+
+QPushButton {
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+    color: #1a1a1a;
+    padding: 4px 12px;
+    min-height: 18px;
+}
+
+QPushButton:hover {
+    background: #F36F1A;
+    color: white;
+}
+
+QPushButton:pressed {
+    background: #C85A12;
+    color: white;
+}
+
+QPushButton:disabled {
+    background: #f5f5f5;
+    color: #b0b0b0;
+    border-color: #d0d0d0;
+}
+
+/* ── QLineEdit ────────────────────────────────────────────────────────── */
+
+QLineEdit {
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+    color: #1a1a1a;
+    padding: 3px 6px;
+    selection-background-color: #F36F1A;
+    selection-color: white;
+}
+
+QLineEdit:focus {
+    border-color: #F36F1A;
+}
+
+QLineEdit:disabled {
+    background: #f5f5f5;
+    color: #b0b0b0;
+    border-color: #d0d0d0;
+}
+
+/* ── QCheckBox ────────────────────────────────────────────────────────── */
+
+QCheckBox {
+    color: #1a1a1a;
+    spacing: 6px;
+}
+
+QCheckBox::indicator {
+    width: 14px;
+    height: 14px;
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+}
+
+QCheckBox::indicator:checked {
+    background: #F36F1A;
+    border-color: #F36F1A;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #F36F1A;
+}
+
+QCheckBox::indicator:disabled {
+    background: #f5f5f5;
+    border-color: #d0d0d0;
+}
+
+/* ── QComboBox ────────────────────────────────────────────────────────── */
+
+QComboBox {
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+    color: #1a1a1a;
+    padding: 3px 24px 3px 8px;
+    min-height: 18px;
+}
+
+QComboBox:hover {
+    border-color: #F36F1A;
+}
+
+QComboBox:on {
+    /* "Open" state — when the dropdown is showing. */
+    border-color: #F36F1A;
+}
+
+QComboBox:disabled {
+    background: #f5f5f5;
+    color: #b0b0b0;
+    border-color: #d0d0d0;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 18px;
+    border: none;
+    background: transparent;
+}
+
+QComboBox QAbstractItemView {
+    /* Dropdown list popup. */
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+    color: #1a1a1a;
+    selection-background-color: #F36F1A;
+    selection-color: white;
+    outline: none;
+    padding: 2px;
+}
+
+/* ── QSystemTrayIcon balloon — note: NOT styleable via QSS on Windows.
+ *    The tray balloon is drawn by the OS notification subsystem, not Qt.
+ *    We've moved update-check feedback onto TipWidget for that reason. */

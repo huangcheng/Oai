@@ -457,6 +457,19 @@ qt_add_resources(Seelie "tips_i18n"
         assets/i18n/tips.zh_CN.json
 )
 
+# Global stylesheet (Persona 5 design system). Loaded by main.cpp via
+# qApp->setStyleSheet on startup. Styles widgets that don't carry their
+# own setStyleSheet — most importantly the tray menu and pet context
+# menu, which were inheriting OS-native styling. Per-widget inline QSS
+# still wins over this (Qt specificity rule), so the existing 48-odd
+# inline setStyleSheet calls are unaffected.
+qt_add_resources(Seelie "styles"
+    PREFIX "/styles"
+    BASE "assets"
+    FILES
+        assets/styles/seelie.qss
+)
+
 # --- Translations ------------------------------------------------------------
 qt_add_translations(
     TARGETS Seelie
