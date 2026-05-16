@@ -1,6 +1,7 @@
 #include "PackManagerWidget.h"
 #include "CharacterPackManager.h"
 #include "StyledAlertWidget.h"
+#include "StyleUtils.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -77,19 +78,7 @@ void PackManagerWidget::setupUi()
     m_closeButton->setFont(harmonyFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
-    m_closeButton->setStyleSheet(R"(
-        QPushButton {
-            background: transparent;
-            border: none;
-            border-radius: 3px;
-            color: #888;
-            padding: 0px;
-        }
-        QPushButton:hover {
-            background: #F36F1A;
-            color: white;
-        }
-    )");
+    StyleUtils::setVariant(m_closeButton, "icon-only");
     connect(m_closeButton, &QPushButton::clicked, this, &PackManagerWidget::onCloseClicked);
 
     titleRow->addWidget(m_titleLabel, 1);
@@ -98,54 +87,9 @@ void PackManagerWidget::setupUi()
     m_listWidget = new QListWidget(m_contentWidget);
     m_listWidget->setFont(harmonyFont(10));
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_listWidget->setStyleSheet(R"(
-        QListWidget {
-            background: white;
-            border: 2px solid black;
-            border-radius: 3px;
-            color: #2C2C2E;
-            padding: 4px;
-            outline: none;
-        }
-        QListWidget::item {
-            padding: 6px 8px;
-            border-radius: 2px;
-            color: #2C2C2E;
-        }
-        QListWidget::item:selected {
-            background: #F36F1A;
-            color: white;
-        }
-        QListWidget::item:hover {
-            background: #FFF0E6;
-        }
-        QListWidget::item:selected:hover {
-            background: #F36F1A;
-            color: white;
-        }
-        QScrollBar:vertical {
-            background: #f5f5f5;
-            width: 8px;
-            border-radius: 4px;
-            border: none;
-        }
-        QScrollBar::handle:vertical {
-            background: #888;
-            border-radius: 4px;
-            min-height: 24px;
-        }
-        QScrollBar::handle:vertical:hover {
-            background: #F36F1A;
-        }
-        QScrollBar::add-line:vertical,
-        QScrollBar::sub-line:vertical {
-            height: 0px;
-        }
-        QScrollBar::add-page:vertical,
-        QScrollBar::sub-page:vertical {
-            background: none;
-        }
-    )");
+    // QListWidget styling lives in the global stylesheet
+    // (:/styles/styles/seelie.qss) — sharp 3px corners, 2px black border,
+    // Persona orange selection, light-orange hover, minimal scrollbar.
 
     QHBoxLayout *buttonRow = new QHBoxLayout();
     buttonRow->setSpacing(8);
@@ -153,58 +97,17 @@ void PackManagerWidget::setupUi()
     m_addButton = new QPushButton(tr("Add"), m_contentWidget);
     m_addButton->setFont(harmonyFont(10));
     m_addButton->setFixedHeight(28);
+    m_addButton->setMinimumWidth(60);
     m_addButton->setCursor(Qt::PointingHandCursor);
-    m_addButton->setStyleSheet(R"(
-        QPushButton {
-            background: white;
-            border: 2px solid black;
-            border-radius: 3px;
-            padding: 2px 16px;
-            color: #2C2C2E;
-            min-width: 60px;
-            outline: none;
-        }
-        QPushButton:hover {
-            background: #F36F1A;
-            color: white;
-            border-color: #F36F1A;
-        }
-        QPushButton:pressed {
-            background: #E06516;
-            border-color: #E06516;
-        }
-    )");
+    // Default global QPushButton style — no variant needed.
     connect(m_addButton, &QPushButton::clicked, this, &PackManagerWidget::onAddClicked);
 
     m_deleteButton = new QPushButton(tr("Delete"), m_contentWidget);
     m_deleteButton->setFont(harmonyFont(10));
     m_deleteButton->setFixedHeight(28);
+    m_deleteButton->setMinimumWidth(60);
     m_deleteButton->setCursor(Qt::PointingHandCursor);
-    m_deleteButton->setStyleSheet(R"(
-        QPushButton {
-            background: white;
-            border: 2px solid black;
-            border-radius: 3px;
-            padding: 2px 16px;
-            color: #2C2C2E;
-            min-width: 60px;
-            outline: none;
-        }
-        QPushButton:hover {
-            background: #F36F1A;
-            color: white;
-            border-color: #F36F1A;
-        }
-        QPushButton:pressed {
-            background: #E06516;
-            border-color: #E06516;
-        }
-        QPushButton:disabled {
-            background: #f0f0f0;
-            color: #999;
-            border-color: #ccc;
-        }
-    )");
+    // Default global QPushButton style — :disabled handled there too.
     connect(m_deleteButton, &QPushButton::clicked, this, &PackManagerWidget::onDeleteClicked);
 
     buttonRow->addStretch(1);

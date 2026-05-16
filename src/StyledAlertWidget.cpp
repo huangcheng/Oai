@@ -11,10 +11,10 @@
 #include <QScreen>
 #include <QShowEvent>
 #include <QEventLoop>
-#include <QStyle>
 #include <QWindow>
 
 #include "PlatformWindow.h"
+#include "StyleUtils.h"
 
 static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
 {
@@ -22,17 +22,6 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
     f.setStyleStrategy(QFont::PreferAntialias);
     f.setHintingPreference(QFont::PreferNoHinting);
     return f;
-}
-
-// Apply a [variant=...] tag and re-polish so the global stylesheet's
-// QPushButton[variant="..."] selectors take effect. Without the polish/
-// unpolish, Qt won't re-evaluate the QSS for a property set after the
-// widget is constructed.
-static void setButtonVariant(QPushButton *btn, const char *variant)
-{
-    btn->setProperty("variant", variant);
-    btn->style()->unpolish(btn);
-    btn->style()->polish(btn);
 }
 
 StyledAlertWidget::StyledAlertWidget(QWidget *parent)
@@ -77,7 +66,7 @@ void StyledAlertWidget::setupUi()
     m_closeButton->setFont(harmonyFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
-    setButtonVariant(m_closeButton, "icon-only");
+    StyleUtils::setVariant(m_closeButton, "icon-only");
     connect(m_closeButton, &QPushButton::clicked, this, &StyledAlertWidget::onCloseClicked);
 
     titleRow->addWidget(m_titleLabel, 1);
@@ -107,7 +96,7 @@ void StyledAlertWidget::setupUi()
     m_cancelButton->setFixedHeight(28);
     m_cancelButton->setMinimumWidth(60);
     m_cancelButton->setCursor(Qt::PointingHandCursor);
-    setButtonVariant(m_cancelButton, "secondary");
+    StyleUtils::setVariant(m_cancelButton, "secondary");
     connect(m_cancelButton, &QPushButton::clicked, this, &StyledAlertWidget::onCancelClicked);
     m_cancelButton->hide();
 

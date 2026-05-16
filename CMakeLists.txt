@@ -380,6 +380,8 @@ qt_add_executable(Seelie
     $<$<PLATFORM_ID:Darwin>:src/MacFocusFix.mm>
     src/PlatformWindow.cpp
     src/PlatformWindow.h
+    src/StyleUtils.cpp
+    src/StyleUtils.h
     src/AutoStartManager.cpp
     src/AutoStartManager.h
     src/CanonicalEvents.h

@@ -265,3 +265,83 @@ QComboBox QAbstractItemView {
 /* ── QSystemTrayIcon balloon — note: NOT styleable via QSS on Windows.
  *    The tray balloon is drawn by the OS notification subsystem, not Qt.
  *    We've moved update-check feedback onto TipWidget for that reason. */
+
+/* ── QListWidget / QListView ──────────────────────────────────────────── */
+
+QListWidget,
+QListView {
+    background: white;
+    border: 2px solid black;
+    border-radius: 3px;
+    color: #1a1a1a;
+    padding: 4px;
+    outline: none;  /* Drop the default focus rectangle — we use the orange selection bg instead. */
+}
+
+QListWidget::item,
+QListView::item {
+    padding: 6px 8px;
+    border-radius: 2px;
+    color: #1a1a1a;
+}
+
+/* Hover-only (no selection): light orange tint to telegraph "this is clickable". */
+QListWidget::item:hover,
+QListView::item:hover {
+    background: #fff0e6;
+}
+
+/* Selected: full Persona orange. Selected+hover stays selected — no visual swap. */
+QListWidget::item:selected,
+QListView::item:selected,
+QListWidget::item:selected:hover,
+QListView::item:selected:hover {
+    background: #F36F1A;
+    color: white;
+}
+
+QListWidget:disabled,
+QListView:disabled {
+    background: #f5f5f5;
+    color: #b0b0b0;
+    border-color: #d0d0d0;
+}
+
+/* ── QScrollBar (vertical only — horizontal styling can be added later) ── */
+
+QScrollBar:vertical {
+    background: #f5f5f5;
+    width: 8px;
+    border-radius: 4px;
+    border: none;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #888888;
+    border-radius: 4px;
+    min-height: 24px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #F36F1A;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #C85A12;
+}
+
+/* Hide the up/down arrow buttons and the page-track gutters — leaves a
+ * clean handle-only minimal scrollbar that matches modern macOS / mobile
+ * idioms more than Win32's chunky default. */
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+    border: none;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
