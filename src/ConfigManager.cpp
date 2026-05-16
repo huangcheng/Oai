@@ -59,9 +59,9 @@ ConfigManager::ConfigManager(QObject *parent)
         if (const auto v = portable.value("language").toString(); !v.isEmpty()) {
             m_language = v;
         }
-        if (portable.contains("autoStart")) {
-            m_autoStart = portable.value("autoStart").toBool();
-        }
+        // autoStart intentionally NOT read from portable INI — the OS owns
+        // that state (HKCU\...\Run / launchd plist / XDG .desktop). See
+        // AutoStartManager.h and ConfigManager::load().
         qDebug() << "ConfigManager: portable defaults loaded from" << portablePath;
     }
 }
@@ -80,13 +80,25 @@ void ConfigManager::load()
     // Language
     m_language = m_settings.value("language", "en").toString();
 
-    // Auto-start
-    m_autoStart = m_settings.value("autoStart", false).toBool();
-    // Re-apply to the OS on every startup so the registry stays in sync
-    // with the INI even after a reinstall to a different path, a manual
-    // `reg delete`, or a settings sync from another machine. The call is
-    // idempotent — sets/removes the same value either way.
-    AutoStartManager::setEnabled(m_autoStart);
+    // Auto-start: the OS owns the source of truth (HKCU\...\Run on Windows,
+    // ~/Library/LaunchAgents on macOS, ~/.config/autostart on Linux). We
+    // used to shadow it in this INI under "autoStart", but that produced a
+    // silent disagreement with the Inno installer's "Launch at startup"
+    // task — both surfaces wrote the same registry key, but ConfigManager
+    // rewrote it from a stale INI on every load. Now we just ask the OS.
+    //
+    // One-shot migration: if a legacy autoStart=true is present in the INI
+    // and the OS state is NOT yet set (e.g. fresh upgrade, registry key
+    // cleared somehow), seed the OS state from the INI then drop the key.
+    m_autoStart = AutoStartManager::isEnabled();
+    if (m_settings.contains("autoStart")) {
+        const bool legacy = m_settings.value("autoStart", false).toBool();
+        if (legacy && !m_autoStart) {
+            AutoStartManager::setEnabled(true);
+            m_autoStart = true;
+        }
+        m_settings.remove("autoStart");
+    }
 
     // IPC endpoint
     QString endpoint = m_settings.value("ipcEndpoint").toString();
@@ -194,7 +206,8 @@ void ConfigManager::flush()
     m_settings.setValue("windowX", m_windowPosition.x());
     m_settings.setValue("windowY", m_windowPosition.y());
     m_settings.setValue("language", m_language);
-    m_settings.setValue("autoStart", m_autoStart);
+    // autoStart is NOT persisted to QSettings — the OS owns that state.
+    // See setAutoStart() / load() and AutoStartManager.
     m_settings.setValue("ipcEndpoint", m_ipcEndpoint);
     m_settings.setValue("updateServerEndpoint", m_updateServerEndpoint);
     m_settings.setValue("activePackId", m_activePackId);
@@ -250,7 +263,9 @@ void ConfigManager::setAutoStart(bool enabled)
 {
     if (m_autoStart != enabled) {
         m_autoStart = enabled;
-        save();
+        // No save() — autoStart lives in the OS, not QSettings. The setter
+        // here exists so the in-memory mirror stays consistent for the
+        // settings panel and any signal listeners.
         AutoStartManager::setEnabled(enabled);
     }
 }

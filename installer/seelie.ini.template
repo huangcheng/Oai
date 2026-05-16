@@ -29,6 +29,7 @@ updateServerEndpoint=@SEELIE_DEFAULT_UPDATE_ENDPOINT@
 ; to system locale detection.
 ; language=en
 
-; Whether the app launches at user login. Has no effect at first run unless
-; the per-platform autostart hook is installed.
-; autoStart=false
+; Note: "launch at user login" is NOT controlled from this file. The OS
+; (HKCU\...\Run on Windows, ~/Library/LaunchAgents on macOS,
+; ~/.config/autostart on Linux) is the source of truth. Toggle it from
+; the in-app Settings panel or the installer's "Launch at startup" task.

@@ -42,6 +42,14 @@ void setEnabled(bool enabled)
     runKey.sync();
 }
 
+bool isEnabled()
+{
+    QSettings runKey(
+        QStringLiteral(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)"),
+        QSettings::NativeFormat);
+    return runKey.contains(QStringLiteral("Seelie"));
+}
+
 #elif defined(Q_OS_MAC)
 
 namespace {
@@ -111,6 +119,13 @@ void setEnabled(bool enabled)
     }
 }
 
+bool isEnabled()
+{
+    const QString plistPath = QDir::homePath()
+        + QStringLiteral("/Library/LaunchAgents/im.cheng.seelie.plist");
+    return QFile::exists(plistPath);
+}
+
 #elif defined(Q_OS_LINUX)
 
 void setEnabled(bool enabled)
@@ -153,11 +168,24 @@ void setEnabled(bool enabled)
     }
 }
 
+bool isEnabled()
+{
+    const QString desktopPath = QStandardPaths::writableLocation(
+        QStandardPaths::GenericConfigLocation)
+        + QStringLiteral("/autostart/seelie.desktop");
+    return QFile::exists(desktopPath);
+}
+
 #else
 
 void setEnabled(bool /*enabled*/)
 {
     // Other Unix variants (BSD, Haiku, ...) — no auto-start handling.
+}
+
+bool isEnabled()
+{
+    return false;
 }
 
 #endif

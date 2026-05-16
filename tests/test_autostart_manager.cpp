@@ -40,9 +40,13 @@ void TestAutoStartManager::macOsPlistRoundTrip()
     // don't want to assert against stale state.
     QFile::remove(plistPath);
     QVERIFY(!QFile::exists(plistPath));
+    QVERIFY2(!AutoStartManager::isEnabled(),
+             "isEnabled() must return false when plist absent");
 
     AutoStartManager::setEnabled(true);
     QVERIFY2(QFile::exists(plistPath), "setEnabled(true) must create the plist");
+    QVERIFY2(AutoStartManager::isEnabled(),
+             "isEnabled() must return true after setEnabled(true)");
 
     QFile f(plistPath);
     QVERIFY(f.open(QIODevice::ReadOnly));
@@ -55,6 +59,8 @@ void TestAutoStartManager::macOsPlistRoundTrip()
 
     AutoStartManager::setEnabled(false);
     QVERIFY2(!QFile::exists(plistPath), "setEnabled(false) must remove the plist");
+    QVERIFY2(!AutoStartManager::isEnabled(),
+             "isEnabled() must return false after setEnabled(false)");
 }
 #endif
 
@@ -66,9 +72,13 @@ void TestAutoStartManager::linuxDesktopFileRoundTrip()
         + QStringLiteral("/autostart/seelie.desktop");
     QFile::remove(desktopPath);
     QVERIFY(!QFile::exists(desktopPath));
+    QVERIFY2(!AutoStartManager::isEnabled(),
+             "isEnabled() must return false when .desktop absent");
 
     AutoStartManager::setEnabled(true);
     QVERIFY2(QFile::exists(desktopPath), "setEnabled(true) must create the desktop file");
+    QVERIFY2(AutoStartManager::isEnabled(),
+             "isEnabled() must return true after setEnabled(true)");
 
     QFile f(desktopPath);
     QVERIFY(f.open(QIODevice::ReadOnly));
@@ -80,6 +90,8 @@ void TestAutoStartManager::linuxDesktopFileRoundTrip()
 
     AutoStartManager::setEnabled(false);
     QVERIFY2(!QFile::exists(desktopPath), "setEnabled(false) must remove the desktop file");
+    QVERIFY2(!AutoStartManager::isEnabled(),
+             "isEnabled() must return false after setEnabled(false)");
 }
 #endif
 
