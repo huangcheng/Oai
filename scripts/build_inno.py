@@ -24,7 +24,12 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 ISS = PROJECT_ROOT / "installer" / "inno" / "seelie.iss"
-STAGE_DIR = PROJECT_ROOT / "installer" / "packages" / "im.cheng.seelie.desktop" / "data"
+# Staging dir: where windeployqt + the cmake install rules drop a flat
+# tree of Seelie.exe + Qt DLLs + assets/ + packs/. ISCC reads from here.
+# Lives under build/ because it's gitignored generated output, regenerated
+# every run by the inno_stage CMake target.
+def stage_dir(build_dir: Path) -> Path:
+    return build_dir / "staging"
 
 
 def run(cmd, **kwargs):
@@ -88,22 +93,22 @@ def find_cmake() -> Path:
 
 
 def ensure_staged(build_dir: Path, include_nsfw: bool) -> None:
-    """Run installer_stage so STAGE_DIR is populated with the bundled payload."""
-    if not (PROJECT_ROOT / "build" / "CMakeCache.txt").exists():
+    """Run inno_stage so build/staging/ is populated with the bundled payload."""
+    if not (build_dir / "CMakeCache.txt").exists():
         sys.exit(
             f"ERROR: {build_dir} hasn't been configured yet.\n"
             "Run `python scripts/build_release.py` first to do the full Qt build,\n"
             "or run cmake configure manually."
         )
     cmake = find_cmake()
-    print(f"\n[Stage] Populating {STAGE_DIR.relative_to(PROJECT_ROOT)} ...")
+    print(f"\n[Stage] Populating {stage_dir(build_dir).relative_to(PROJECT_ROOT)} ...")
     # Always pin SEELIE_INCLUDE_NSFW so a prior --include-nsfw run doesn't leak
     # into a SFW package, mirroring build_release.py's same-day fix.
     nsfw = "ON" if include_nsfw else "OFF"
     run([str(cmake), "-B", str(build_dir), "-S", str(PROJECT_ROOT),
          f"-DSEELIE_INCLUDE_NSFW={nsfw}"])
     run([str(cmake), "--build", str(build_dir),
-         "--target", "installer_stage", "--config", "Release"])
+         "--target", "inno_stage", "--config", "Release"])
 
 
 def main():
@@ -112,21 +117,22 @@ def main():
     parser.add_argument("--include-nsfw", action="store_true",
                         help="Bundle NSFW pack categories. Default: store-safe lineup only.")
     parser.add_argument("--skip-stage", action="store_true",
-                        help="Skip cmake installer_stage; use existing staging dir as-is.")
+                        help="Skip cmake inno_stage; use existing staging dir as-is.")
     args = parser.parse_args()
 
     build_dir = PROJECT_ROOT / args.build_dir
+    staging = stage_dir(build_dir)
     version = get_project_version()
     print(f"Seelie Inno Setup builder")
     print(f"  version:   {version}")
     print(f"  build dir: {build_dir}")
-    print(f"  staging:   {STAGE_DIR}")
+    print(f"  staging:   {staging}")
     print(f"  iss:       {ISS}")
 
     if not args.skip_stage:
         ensure_staged(build_dir, args.include_nsfw)
-    elif not (STAGE_DIR / "Seelie.exe").exists():
-        sys.exit(f"ERROR: --skip-stage but {STAGE_DIR / 'Seelie.exe'} doesn't exist.")
+    elif not (staging / "Seelie.exe").exists():
+        sys.exit(f"ERROR: --skip-stage but {staging / 'Seelie.exe'} doesn't exist.")
 
     iscc = find_iscc()
     print(f"\n[Compile] {iscc}")
@@ -136,7 +142,7 @@ def main():
     # works correctly via cmd.exe directly.
     cmd = (
         f'"{iscc}" '
-        f'/DSrcDir="{STAGE_DIR}" '
+        f'/DSrcDir="{staging}" '
         f'/DProjectRoot="{PROJECT_ROOT}" '
         f'/DAppVersion={version} '
         f'"{ISS}"'

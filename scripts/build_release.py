@@ -3,7 +3,7 @@
 Cross-platform release builder for Seelie.
 
 Auto-detects Qt, build tools, and platform-specific packagers:
-  - Windows: Qt Installer Framework (binarycreator) -> .exe installer
+  - Windows: Inno Setup (ISCC) -> .exe installer via scripts/build_inno.py
   - macOS:   macdeployqt + hdiutil -> .dmg
   - Linux:   cmake install + appimagetool -> .AppImage
 
@@ -168,53 +168,6 @@ def find_qt_prefix(cached_prefix=None):
     return None
 
 
-def find_binarycreator(qt_prefix=None):
-    """Find Qt Installer Framework's binarycreator executable."""
-    name = "binarycreator.exe" if sys.platform == "win32" else "binarycreator"
-
-    # PATH
-    path = shutil.which(name)
-    if path:
-        return Path(path)
-
-    # QTIFW_DIR env
-    qtifw = os.environ.get("QTIFW_DIR")
-    if qtifw:
-        p = Path(qtifw) / "bin" / name
-        if p.exists():
-            return p
-
-    # Relative to Qt prefix: <qt>/../../Tools/QtInstallerFramework/*/bin
-    if qt_prefix:
-        qt_root = qt_prefix
-        # If prefix is like /opt/Qt/6.8.0/gcc_64, go up two levels
-        for _ in range(2):
-            qt_root = qt_root.parent
-        tools = qt_root / "Tools" / "QtInstallerFramework"
-        if tools.exists():
-            for ver in sorted(tools.iterdir(), key=lambda d: d.name, reverse=True):
-                p = ver / "bin" / name
-                if p.exists():
-                    return p
-
-    # Hard-coded common paths (only used as fallback when auto-detection fails)
-    common = []
-    if sys.platform == "win32":
-        common = [Path(r"C:\Qt\Tools\QtInstallerFramework")]
-    elif sys.platform == "darwin":
-        common = [Path("/Applications/Qt/Tools/QtInstallerFramework"), Path.home() / "Qt/Tools/QtInstallerFramework"]
-    else:
-        common = [Path("/opt/Qt/Tools/QtInstallerFramework"), Path.home() / "Qt/Tools/QtInstallerFramework"]
-
-    for base in common:
-        if base.exists():
-            for ver in sorted(base.iterdir(), key=lambda d: d.name, reverse=True):
-                p = ver / "bin" / name
-                if p.exists():
-                    return p
-    return None
-
-
 def find_cmake(qt_prefix=None):
     """Find cmake, preferring Qt-bundled copies."""
     # PATH
@@ -278,28 +231,7 @@ def find_linuxdeploy():
     return shutil.which("linuxdeploy")
 
 
-def cmake_has_target(cmake, build_dir, target):
-    """Check if a target exists in the generated build system.
 
-    Returns False only when the build system was queried successfully and
-    `target` wasn't listed. If cmake itself fails (build dir not configured,
-    cmake missing, etc.) we raise so the caller doesn't silently fall through
-    to a manual-staging path that masks the real problem.
-    """
-    result = subprocess.run(
-        [str(cmake), "--build", str(build_dir), "--target", "help"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"cmake --build --target help failed (exit {result.returncode}):\n"
-            f"{result.stderr.strip() or result.stdout.strip()}"
-        )
-    # Match target name as a whole word at the start of a line (works for
-    # Ninja "target: type", Make "target:", and VS target listings)
-    pattern = re.compile(rf"^{re.escape(target)}\b", re.MULTILINE)
-    return bool(pattern.search(result.stdout))
 
 
 # ---------------------------------------------------------------------------
@@ -307,93 +239,16 @@ def cmake_has_target(cmake, build_dir, target):
 # ---------------------------------------------------------------------------
 
 def package_windows(build_dir, version, qt_prefix, cmake, config="Release"):
-    print("\n[Windows] Packaging with Qt Installer Framework...")
-
-    binarycreator = find_binarycreator(qt_prefix)
-    if not binarycreator:
-        print(
-            "ERROR: binarycreator not found.\n"
-            "Install Qt Installer Framework from the Qt Maintenance Tool\n"
-            "(it's under Qt -> Tools -> Qt Installer Framework)\n"
-            "or set QTIFW_DIR environment variable."
-        )
-        sys.exit(1)
-    print(f"  [OK] binarycreator: {binarycreator}")
-
-    # Ensure binarycreator is on PATH so cmake configure finds it
-    env = os.environ.copy()
-    env["PATH"] = str(binarycreator.parent) + os.pathsep + env.get("PATH", "")
-
-    # If already configured but without binarycreator, re-configure
-    cache = build_dir / "CMakeCache.txt"
-    if cache.exists():
-        # Quick check: was binarycreator found during last configure?
-        cache_text = cache.read_text(errors="ignore")
-        if "SEELIE_QTIFW_BINARYCREATOR-NOTFOUND" in cache_text or "SEELIE_QTIFW_BINARYCREATOR:FILEPATH=" not in cache_text:
-            print("  Re-configuring so CMake discovers binarycreator...")
-            run([str(cmake), "-B", str(build_dir), "-S", str(PROJECT_ROOT),
-                 "-DCMAKE_BUILD_TYPE=Release"], env=env)
-        else:
-            # Just re-run configure to be safe (fast when nothing changed)
-            run([str(cmake), "-B", str(build_dir), "-S", str(PROJECT_ROOT)], env=env)
-    else:
-        run([str(cmake), "-B", str(build_dir), "-S", str(PROJECT_ROOT),
-             "-DCMAKE_BUILD_TYPE=Release"], env=env)
-
-    if cmake_has_target(cmake, build_dir, "package_installer"):
-        print("  Building package_installer target...")
-        run([str(cmake), "--build", str(build_dir), "--target", "package_installer", "--config", config], env=env)
-    else:
-        print("  WARNING: package_installer target not found. Falling back to manual invocation...")
-        # Stage manually using the existing installer target if available
-        if cmake_has_target(cmake, build_dir, "installer_stage"):
-            run([str(cmake), "--build", str(build_dir), "--target", "installer_stage", "--config", config], env=env)
-        else:
-            # Manual staging
-            stage_dir = PROJECT_ROOT / "installer" / "packages" / "im.cheng.seelie.desktop" / "data"
-            if stage_dir.exists():
-                shutil.rmtree(stage_dir)
-            stage_dir.mkdir(parents=True, exist_ok=True)
-            run([str(cmake), "--install", str(build_dir), "--prefix", str(stage_dir), "--config", config], env=env)
-            # Flatten bin/
-            bin_dir = stage_dir / "bin"
-            if bin_dir.exists():
-                for f in bin_dir.iterdir():
-                    dest = stage_dir / f.name
-                    if f.is_dir():
-                        shutil.copytree(f, dest, dirs_exist_ok=True)
-                    else:
-                        shutil.copy2(f, dest)
-                shutil.rmtree(bin_dir)
-            # Clean unrelated artifacts
-            for unwanted in ("include", "lib"):
-                p = stage_dir / unwanted
-                if p.exists():
-                    shutil.rmtree(p)
-            # Copy template ini
-            tpl = PROJECT_ROOT / "installer" / "seelie.ini.template"
-            if tpl.exists():
-                shutil.copy2(tpl, stage_dir / "Seelie.ini")
-
-        installer_out = build_dir / f"SeelieInstaller-{version}.exe"
-        config_xml = PROJECT_ROOT / "installer" / "config.xml"
-        if not config_xml.exists():
-            print(f"ERROR: {config_xml} not found. Run cmake configure with binarycreator in PATH.")
-            sys.exit(1)
-        run([
-            str(binarycreator),
-            "--offline-only",
-            "-c", str(config_xml),
-            "-p", str(PROJECT_ROOT / "installer" / "packages"),
-            str(installer_out),
-        ], env=env)
-
-    # Report output
-    candidates = list(build_dir.glob(f"SeelieInstaller-{version}*"))
-    if candidates:
-        print(f"\n[SUCCESS] Installer created: {candidates[0]}")
-    else:
-        print(f"\n[WARNING] Could not locate installer in {build_dir}")
+    """Delegate to scripts/build_inno.py — Windows uses Inno Setup."""
+    print("\n[Windows] Packaging with Inno Setup...")
+    inno_script = SCRIPT_DIR / "build_inno.py"
+    cmd = [sys.executable, str(inno_script), "--build-dir", str(build_dir.relative_to(PROJECT_ROOT))]
+    # Forward --include-nsfw if it was on the parent's command line. Args
+    # already parsed in main(); read from sys.argv here so we don't have
+    # to thread it through.
+    if "--include-nsfw" in sys.argv:
+        cmd.append("--include-nsfw")
+    run(cmd)
 
 
 def package_macos(build_dir, version, qt_prefix):
@@ -883,14 +738,8 @@ def main():
     if sys.platform.startswith("linux"):
         configure_cmd.append("-DCMAKE_INSTALL_RPATH=$ORIGIN/../lib")
 
-    # On Windows, ensure QtIFW binarycreator directory is on PATH so CMake finds it
     env = os.environ.copy()
     if sys.platform == "win32":
-        bc = find_binarycreator(qt_prefix)
-        if bc:
-            env["PATH"] = str(bc.parent) + os.pathsep + env.get("PATH", "")
-            print(f"  Prepending QtIFW to PATH: {bc.parent}")
-
         # For MinGW/LLVM-MinGW Qt, the matching compiler must be on PATH
         compiler_bin = find_compiler_bin_for_qt(qt_prefix)
         if compiler_bin:

@@ -33,18 +33,14 @@ Thumbs.db
 *.res
 *.rc
 
-# Installer staging — populated by `cmake --build . --target package_installer`
-# (qt deploy + opks). Build output, not source.
-installer/packages/*/data/
+# Inno Setup staging — populated by `cmake --build . --target inno_stage`
+# (qt deploy + .spk packs + assets/ + Seelie.ini). Build output, not source.
+# Lives under build/, which is already gitignored via /build*/ below.
 
 # Upstream Live2D community archive (~16 GB). Not a submodule — opt-in clone:
 #   git clone https://github.com/Eikanya/Live2d-model thirdparty/upstream-live2d --depth=1
 # See CONTRIBUTING.md for the full import workflow.
 /thirdparty/upstream-live2d/
-
-# Generated from .in templates by configure_file; track only the templates.
-installer/config.xml
-installer/packages/*/meta/package.xml
 
 # Imported character packs are tracked in-tree (mirrors upstream Eikanya/Live2d-model).
 # Re-importable locally via:

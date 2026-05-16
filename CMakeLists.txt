@@ -897,163 +897,64 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT S
 enable_testing()
 add_subdirectory(tests)
 
-# --- Qt Installer Framework packaging ---------------------------------------
-# Produces an offline, multilingual installer using QtIFW's binarycreator.
-# Build with:  cmake --build . --target package_installer
+# --- Inno Setup staging ------------------------------------------------------
+# Stages the deployed Seelie + bundled assets into ${CMAKE_BINARY_DIR}/staging/
+# in the flat layout that ISCC packs into the final installer.
 #
-# Locale handling:
-#   * Qt IFW's bundled chrome translations (Next/Cancel/...) auto-load from
-#     the user's system locale — no work needed for those.
-#   * Localized package metadata (DisplayName/Description/License/Title) is
-#     declared inline via xml:lang attributes in installer/config.xml and
-#     installer/packages/<id>/meta/package.xml.
-#   * qsTr() strings inside installscript.qs / LaunchCheckBoxForm.ui pick up
-#     compiled .qm files in the component's meta/ dir; we lrelease them
-#     from installer/translations/*.ts as part of this target.
-find_program(SEELIE_QTIFW_BINARYCREATOR
-    NAMES binarycreator
-    HINTS
-        $ENV{QTIFW_DIR}/bin
-        "C:/Qt/Tools/QtInstallerFramework/4.11/bin"
-        "C:/Qt/Tools/QtInstallerFramework/4.10/bin"
-        "C:/Qt/Tools/QtInstallerFramework/4.9/bin"
-        "$ENV{HOME}/Qt/Tools/QtInstallerFramework/4.11/bin"
-        "$ENV{HOME}/Qt/Tools/QtInstallerFramework/4.10/bin"
-        "/Applications/Qt/Tools/QtInstallerFramework/4.11/bin"
-        "/opt/Qt/Tools/QtInstallerFramework/4.11/bin"
-    DOC "Path to Qt Installer Framework binarycreator")
+# Build with:  cmake --build . --target inno_stage
+# Then run:    python scripts/build_inno.py --skip-stage
+#
+# The QtIFW (binarycreator) pipeline that used to live here was removed when
+# we switched to Inno Setup — it had no working language picker, and Qt IFW
+# 4.11 doesn't ship a zh_CN chrome translation. Inno does both natively.
+set(SEELIE_STAGE_DIR  ${CMAKE_BINARY_DIR}/staging)
+set(SEELIE_STAGE_TS   ${CMAKE_BINARY_DIR}/inno_stage.stamp)
 
-if(SEELIE_QTIFW_BINARYCREATOR)
-    set(SEELIE_IFW_DIR        ${CMAKE_SOURCE_DIR}/installer)
-    set(SEELIE_IFW_PKG_ID     im.cheng.seelie.desktop)
-    set(SEELIE_IFW_PKG_META   ${SEELIE_IFW_DIR}/packages/${SEELIE_IFW_PKG_ID}/meta)
-    set(SEELIE_IFW_PKG_DATA   ${SEELIE_IFW_DIR}/packages/${SEELIE_IFW_PKG_ID}/data)
-    set(SEELIE_IFW_STAGE_TS   ${CMAKE_BINARY_DIR}/installer_stage.stamp)
+# windeployqt assumes Seelie.exe lives in <root>/bin/ and writes
+#   [Paths]
+#   Prefix = ..
+# so Qt walks up one level to find <root>/plugins/. We flatten bin/ into
+# the staging root (Windows installers conventionally don't have a bin/
+# subdir under TargetDir), which leaves `Prefix = ..` pointing at the
+# *parent* of the install dir — Qt then can't find qwindows.dll and aborts
+# with "no Qt platform plugin could be initialized." Overwrite qt.conf
+# with a flat-layout version that points Prefix at the install dir itself.
+file(WRITE ${CMAKE_BINARY_DIR}/qt.conf.flat "[Paths]\nPrefix = .\n")
 
-    # Single source of truth for installer version: project(Seelie VERSION ...).
-    # config.xml.in / package.xml.in carry @PROJECT_VERSION@ placeholders;
-    # CMake renders them next to the templates so binarycreator's existing
-    # paths (`-c installer/config.xml` etc.) still resolve. Generated copies
-    # are gitignored — only the .in templates are tracked.
-    string(TIMESTAMP _SEELIE_BUILD_DATE "%Y-%m-%d" UTC)
-    set(SEELIE_RELEASE_DATE "${_SEELIE_BUILD_DATE}")
-    # Qt IFW resolves @ApplicationsDir@ at runtime (C:\Program Files on
-    # Windows, /Applications on macOS, /opt on Linux).  Must pass it
-    # through CMake's configure_file as a literal — define it as a
-    # CMake variable whose *value* is the IFW variable reference.
-    set(IFW_TARGET_DIR "@ApplicationsDir@/Seelie")
-    configure_file(
-        ${SEELIE_IFW_DIR}/config.xml.in
-        ${SEELIE_IFW_DIR}/config.xml
-        @ONLY)
-    configure_file(
-        ${SEELIE_IFW_PKG_META}/package.xml.in
-        ${SEELIE_IFW_PKG_META}/package.xml
-        @ONLY)
+add_custom_command(
+    OUTPUT ${SEELIE_STAGE_TS}
+    # Wipe + recreate so a previous-build's leftovers can't sneak into the
+    # installer. cmake --install populates from scratch.
+    COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_STAGE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${SEELIE_STAGE_DIR}
+    COMMAND ${CMAKE_COMMAND}
+            --install ${CMAKE_BINARY_DIR}
+            --prefix  ${SEELIE_STAGE_DIR}
+            --config  $<CONFIG>
+    # Flatten the GNUInstallDirs bin/ layer so Seelie.exe sits at the
+    # staging root.
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SEELIE_STAGE_DIR}/bin ${SEELIE_STAGE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_STAGE_DIR}/bin
+    # Replace the bin/-relative qt.conf windeployqt wrote (Prefix=..)
+    # with the flat-layout version (Prefix=.).
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_BINARY_DIR}/qt.conf.flat
+            ${SEELIE_STAGE_DIR}/qt.conf
+    # Drop transitive install artifacts (rlottie headers, glew/.a stubs,
+    # CMake configs, pkgconfig) — runtime install doesn't need them.
+    COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_STAGE_DIR}/include ${SEELIE_STAGE_DIR}/lib
+    # Ship the portable Seelie.ini template — ConfigManager reads it on
+    # startup as a default-values layer underneath user-scope settings,
+    # so the installer can pre-set updateServerEndpoint / language /
+    # ipcEndpoint per build flavor without forcing every user to edit
+    # their roaming config.
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_BINARY_DIR}/Seelie.ini
+            ${SEELIE_STAGE_DIR}/Seelie.ini
+    COMMAND ${CMAKE_COMMAND} -E touch ${SEELIE_STAGE_TS}
+    DEPENDS Seelie ${ALL_PACK_SPKS}
+    COMMENT "Staging Seelie for Inno Setup packaging in ${SEELIE_STAGE_DIR}"
+    VERBATIM)
+add_custom_target(inno_stage DEPENDS ${SEELIE_STAGE_TS})
 
-    # Replacement qt.conf for the flat install layout.
-    #
-    # windeployqt assumes Seelie.exe lives in <root>/bin/ and writes
-    #   [Paths]
-    #   Prefix = ..
-    # so Qt walks up one level to find <root>/plugins/. Our staging step
-    # below flattens bin/ into the data root (Windows installers conventionally
-    # don't have a bin/ subdir under TargetDir), which leaves
-    # `Prefix = ..` pointing at the *parent* of the install dir — Qt then
-    # can't find qwindows.dll and aborts with
-    #   "This application failed to start because no Qt platform plugin
-    #    could be initialized."
-    # Overwrite qt.conf with a flat-layout version that points Prefix at
-    # the install dir itself.
-    file(WRITE ${CMAKE_BINARY_DIR}/qt.conf.flat "[Paths]\nPrefix = .\n")
-
-    # Compile installer-specific translations into meta/<basename>.qm.
-    # Filename matters: Qt IFW auto-loads <lang>.qm based on system locale.
-    # English-only for v1.0.0 — see installer/config.xml.in for rationale.
-    set(SEELIE_IFW_TS_FILES
-        ${SEELIE_IFW_DIR}/translations/seelie_installer_en.ts)
-
-    set(SEELIE_IFW_QM_FILES "")
-    foreach(_ts ${SEELIE_IFW_TS_FILES})
-        get_filename_component(_base ${_ts} NAME_WE)            # seelie_installer_zh_CN
-        string(REGEX REPLACE "^seelie_installer_" "" _lang ${_base})  # zh_CN
-        # Two outputs: one named for the locale (auto-loaded by IFW for
-        # installscript.qs/UI translations) and one matching config.xml's
-        # <Translation> entry so config-level lookups also resolve.
-        set(_qm_lang   ${SEELIE_IFW_PKG_META}/${_lang}.qm)
-        set(_qm_named  ${SEELIE_IFW_DIR}/seelie_installer_${_lang}.qm)
-        add_custom_command(
-            OUTPUT  ${_qm_lang} ${_qm_named}
-            COMMAND Qt6::lrelease ${_ts} -qm ${_qm_lang}
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_qm_lang} ${_qm_named}
-            DEPENDS ${_ts}
-            COMMENT "lrelease installer translation: ${_lang}"
-            VERBATIM)
-        list(APPEND SEELIE_IFW_QM_FILES ${_qm_lang} ${_qm_named})
-    endforeach()
-    add_custom_target(installer_translations DEPENDS ${SEELIE_IFW_QM_FILES})
-
-    # Stage the deployed app into packages/<id>/data/ with a flat layout
-    # (Seelie.exe at the root, packs/ next to it) — that matches @TargetDir@
-    # references in installscript.qs and feels native on Windows.
-    add_custom_command(
-        OUTPUT ${SEELIE_IFW_STAGE_TS}
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_IFW_PKG_DATA}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${SEELIE_IFW_PKG_DATA}
-        COMMAND ${CMAKE_COMMAND}
-                --install ${CMAKE_BINARY_DIR}
-                --prefix  ${SEELIE_IFW_PKG_DATA}
-                --config  $<CONFIG>
-        # Flatten the GNUInstallDirs bin/ layer so Seelie.exe sits at TargetDir root.
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${SEELIE_IFW_PKG_DATA}/bin ${SEELIE_IFW_PKG_DATA}
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_IFW_PKG_DATA}/bin
-        # Replace the bin/-relative qt.conf windeployqt wrote (Prefix=..)
-        # with the flat-layout version (Prefix=.).
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_BINARY_DIR}/qt.conf.flat
-                ${SEELIE_IFW_PKG_DATA}/qt.conf
-        # Drop transitive install artifacts (rlottie headers, glew/.a stubs,
-        # CMake configs, pkgconfig) — runtime install doesn't need them.
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${SEELIE_IFW_PKG_DATA}/include ${SEELIE_IFW_PKG_DATA}/lib
-        # Ship the portable Seelie.ini template — ConfigManager reads it on
-        # startup as a default-values layer underneath user-scope settings,
-        # so the installer can pre-set updateServerEndpoint / language /
-        # ipcEndpoint per build flavor without forcing every user to edit
-        # their roaming config.
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_BINARY_DIR}/Seelie.ini
-                ${SEELIE_IFW_PKG_DATA}/Seelie.ini
-        COMMAND ${CMAKE_COMMAND} -E touch ${SEELIE_IFW_STAGE_TS}
-        DEPENDS Seelie ${ALL_PACK_SPKS}
-        COMMENT "Staging Seelie for installer packaging"
-        VERBATIM)
-    add_custom_target(installer_stage DEPENDS ${SEELIE_IFW_STAGE_TS})
-
-    # Final installer artifact name follows the project version.
-    if(WIN32)
-        set(_installer_ext ".exe")
-    elseif(APPLE)
-        set(_installer_ext ".app")
-    else()
-        set(_installer_ext ".run")
-    endif()
-    set(SEELIE_INSTALLER_OUTPUT
-        ${CMAKE_BINARY_DIR}/SeelieInstaller-${PROJECT_VERSION}${_installer_ext})
-
-    add_custom_target(package_installer
-        COMMAND ${SEELIE_QTIFW_BINARYCREATOR}
-                --offline-only
-                -c ${SEELIE_IFW_DIR}/config.xml
-                -p ${SEELIE_IFW_DIR}/packages
-                ${SEELIE_INSTALLER_OUTPUT}
-        DEPENDS installer_stage installer_translations
-        COMMENT "Building offline installer: ${SEELIE_INSTALLER_OUTPUT}"
-        VERBATIM)
-
-    message(STATUS "Qt IFW found: ${SEELIE_QTIFW_BINARYCREATOR}")
-    message(STATUS "  -> cmake --build . --target package_installer")
-else()
-    message(STATUS
-        "Qt Installer Framework not found — `package_installer` target unavailable. "
-        "Install QtIFW from the Qt online installer or set QTIFW_DIR.")
-endif()
+message(STATUS "Inno Setup staging: cmake --build . --target inno_stage  ->  ${SEELIE_STAGE_DIR}")
