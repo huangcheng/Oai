@@ -95,7 +95,57 @@ def find_qt_prefix(cached_prefix=None):
                 print(f"  [OK] Qt prefix from {env}: {p}")
                 return p
 
-    # 2. Query tools in PATH
+    # 2. Filesystem locations (preferred over PATH because the official Qt
+    # installer at /opt/Qt or C:\Qt ships a more complete plugin set than
+    # Homebrew/apt bottles — notably libffmpegmediaplugin.dylib, which is
+    # the only multimedia backend that can decode raw MP3 via QAudioDecoder
+    # on macOS. PATH-resolved `qmake` is Homebrew/apt by default and would
+    # silently win otherwise, breaking TTS in production builds.
+    home = Path.home()
+    candidates = []
+    if sys.platform == "win32":
+        candidates = [Path(r"C:\Qt"), home / "Qt"]
+    elif sys.platform == "darwin":
+        candidates = [Path("/opt/Qt"), Path("/Applications/Qt"), home / "Qt"]
+    else:
+        candidates = [Path("/opt/Qt"), home / "Qt"]
+
+    if sys.platform == "win32":
+        host_prefixes = ("mingw", "llvm-mingw", "msvc")
+    elif sys.platform == "darwin":
+        host_prefixes = ("macos", "clang_64")
+    else:
+        host_prefixes = ("gcc_64", "linux")
+
+    def _kit_rank(d):
+        name = d.name.lower()
+        for i, pref in enumerate(host_prefixes):
+            if name.startswith(pref):
+                return (0, i, name)
+        return (1, 0, name)
+
+    for base in candidates:
+        if not base.exists():
+            continue
+        versions = sorted(
+            (d for d in base.iterdir() if d.is_dir() and d.name.startswith("6.")),
+            key=lambda d: d.name,
+            reverse=True,
+        )
+        for v in versions:
+            kits = sorted((d for d in v.iterdir() if d.is_dir()), key=_kit_rank)
+            for sub in kits:
+                bin_dir = sub / "bin"
+                if sys.platform == "win32":
+                    names = ("qtpaths6.exe", "qtpaths.exe", "qmake6.exe", "qmake.exe")
+                else:
+                    names = ("qtpaths6", "qtpaths", "qmake6", "qmake")
+                if any((bin_dir / name).exists() for name in names):
+                    print(f"  [OK] Qt prefix from filesystem search: {sub}")
+                    return sub
+
+    # 3. Query tools in PATH (last resort; on macOS this finds Homebrew Qt,
+    # which lacks the ffmpeg multimedia backend — see comment on step 2).
     for tool in ("qtpaths6", "qtpaths", "qmake6", "qmake"):
         exe = shutil.which(tool)
         if not exe:
@@ -117,55 +167,63 @@ def find_qt_prefix(cached_prefix=None):
         except Exception:
             continue
 
-    # 3. Common filesystem locations (last resort)
-    home = Path.home()
-    candidates = []
-    if sys.platform == "win32":
-        candidates = [Path(r"C:\Qt")]
-    elif sys.platform == "darwin":
-        candidates = [Path("/Applications/Qt"), home / "Qt"]
+    # 4. Interactive prompt — last resort before giving up. Auto-discovery
+    # failed entirely; ask the user where Qt lives rather than continue
+    # with a broken state.
+    return _prompt_for_qt_prefix()
+
+
+def _prompt_for_qt_prefix():
+    """Interactively ask the user where Qt is installed.
+
+    Triggered when none of the standard discovery paths worked. We want
+    this to be loud and explicit — a silent fallback to "no Qt found"
+    leads to confusing CMake errors several screens later.
+    """
+    print()
+    print("=" * 70)
+    print("  Qt 6 installation could not be auto-discovered.")
+    print("=" * 70)
+    print("  Checked: $QT_DIR / $Qt6_DIR env vars, conventional install roots,")
+    print("           qmake/qtpaths on PATH.")
+    print()
+    print("  Paste the path to the Qt kit you want to build against. The kit")
+    print("  is the directory that *contains* the bin/ folder (i.e. the one")
+    print("  with bin/qmake under it). Conventional locations from the Qt")
+    print("  Online Installer / Maintenance Tool:")
+    if sys.platform == "darwin":
+        print("    <Qt-install-root>/<version>/macos")
+    elif sys.platform == "win32":
+        print(r"    <Qt-install-root>\<version>\mingw_64")
+        print(r"    <Qt-install-root>\<version>\msvc2022_64")
     else:
-        candidates = [Path("/opt/Qt"), home / "Qt"]
-
-    for base in candidates:
-        if not base.exists():
-            continue
-        # Look for 6.x directories, newest first
-        versions = sorted(
-            (d for d in base.iterdir() if d.is_dir() and d.name.startswith("6.")),
-            key=lambda d: d.name,
-            reverse=True,
-        )
-        # Prefer host kits over cross-compile kits when scanning a 6.x dir.
-        # On Windows a single Qt install often ships android_*, wasm_*, and
-        # mingw_64/msvc2022_64 side by side; alphabetic order would pick the
-        # Android kit first.
-        if sys.platform == "win32":
-            host_prefixes = ("mingw", "llvm-mingw", "msvc")
-        elif sys.platform == "darwin":
-            host_prefixes = ("macos", "clang_64")
-        else:
-            host_prefixes = ("gcc_64", "linux")
-
-        def _kit_rank(d):
-            name = d.name.lower()
-            for i, pref in enumerate(host_prefixes):
-                if name.startswith(pref):
-                    return (0, i, name)
-            return (1, 0, name)  # cross / unknown kits sort last
-
-        for v in versions:
-            kits = sorted((d for d in v.iterdir() if d.is_dir()), key=_kit_rank)
-            for sub in kits:
-                bin_dir = sub / "bin"
-                if sys.platform == "win32":
-                    names = ("qtpaths6.exe", "qtpaths.exe", "qmake6.exe", "qmake.exe")
-                else:
-                    names = ("qtpaths6", "qtpaths", "qmake6", "qmake")
-                if any((bin_dir / name).exists() for name in names):
-                    print(f"  [OK] Qt prefix from filesystem search: {sub}")
-                    return sub
-    return None
+        print("    <Qt-install-root>/<version>/gcc_64")
+    print()
+    print("  Leave blank to abort.")
+    print("=" * 70)
+    try:
+        answer = input("  Qt prefix: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return None
+    if not answer:
+        return None
+    p = Path(answer).expanduser()
+    if not p.exists():
+        print(f"  [ERROR] Path does not exist: {p}")
+        return None
+    # Sanity-check: prefix must contain a qmake/qtpaths binary.
+    bin_dir = p / "bin"
+    if sys.platform == "win32":
+        names = ("qtpaths6.exe", "qtpaths.exe", "qmake6.exe", "qmake.exe")
+    else:
+        names = ("qtpaths6", "qtpaths", "qmake6", "qmake")
+    if not any((bin_dir / name).exists() for name in names):
+        print(f"  [ERROR] {p} does not look like a Qt prefix — no qmake/qtpaths under bin/")
+        print(f"          The prefix should be the directory that *contains* the bin/ folder.")
+        return None
+    print(f"  [OK] Qt prefix from user input: {p}")
+    return p
 
 
 def find_cmake(qt_prefix=None):
@@ -275,7 +333,20 @@ def package_macos(build_dir, version, qt_prefix):
         # macdeployqt aborts on malformed QtQml/virtualkeyboard frameworks
         # but copies all frameworks into the bundle before failing — that's
         # all we need from it.
-        run([str(macdeployqt), str(app_bundle)], check=False)
+        #
+        # CRITICAL: macdeployqt internally shells out to `qmake -query` to
+        # discover plugin/lib paths. If Homebrew's qmake is on PATH, it wins
+        # over our chosen Qt prefix and macdeployqt copies plugins from a
+        # *different* Qt version into the bundle (e.g. Homebrew 6.11.0
+        # arm64-only plugins next to /opt/Qt 6.11.1 universal frameworks).
+        # The Qt plugin loader then rejects them on minor-version mismatch
+        # — symptom: WEBP/SVG fail at runtime even though the .dylib exists.
+        # Pin PATH so the qmake adjacent to our macdeployqt wins.
+        deploy_env = os.environ.copy()
+        qt_bin = str(Path(qt_prefix) / "bin") if qt_prefix else None
+        if qt_bin:
+            deploy_env["PATH"] = qt_bin + os.pathsep + deploy_env.get("PATH", "")
+        run([str(macdeployqt), str(app_bundle)], check=False, env=deploy_env)
     else:
         print("  [WARNING] macdeployqt not found – relying on cmake install deploy script.")
 
@@ -431,10 +502,9 @@ def package_macos(build_dir, version, qt_prefix):
     # /opt/homebrew/... deps to @rpath, and add a Frameworks rpath.
     # Skip `install_name_tool -id` — plugins don't need an install ID, and
     # -id fails on MH_BUNDLE files (which is what qtimageformats ships).
-    plug_roots = [Path(qt_prefix) / "share" / "qt" / "plugins",
-                  Path(qt_prefix) / "share" / "qt6" / "plugins",
-                  Path("/opt/homebrew/Cellar/qtimageformats/6.11.0/share/qt/plugins"),
-                  Path("/opt/homebrew/Cellar/qtbase/6.11.0/share/qt/plugins")]
+    plug_roots = [Path(qt_prefix) / "plugins",
+                  Path(qt_prefix) / "share" / "qt" / "plugins",
+                  Path(qt_prefix) / "share" / "qt6" / "plugins"]
 
     def _find_source_plugin(rel_path):
         for root in plug_roots:
@@ -481,16 +551,67 @@ def package_macos(build_dir, version, qt_prefix):
             check=False)
         return True
 
-    imageformats_dir = app_bundle / "Contents" / "PlugIns" / "imageformats"
-    if imageformats_dir.exists():
-        for plugin_path in sorted(imageformats_dir.glob("*.dylib")):
-            _redeploy_plugin(plugin_path, Path("imageformats") / plugin_path.name)
+    # macdeployqt on Qt 6.11 also leaves absolute /opt/homebrew/... deps in
+    # several other plugin dirs. Most go unnoticed because Qt falls back to
+    # built-in implementations (qsvgicon, qglib networkinformation), but
+    # multimedia has no fallback — when libdarwinmediaplugin fails to load,
+    # QAudioDecoder silently refuses to decode MP3 and TTS is mute. Apply
+    # the same redeploy pass to every plugin dir we ship.
+    plugin_dirs_to_repair = (
+        "imageformats",
+        "multimedia",
+        "networkinformation",
+        "iconengines",
+        "tls",
+    )
+    for sub in plugin_dirs_to_repair:
+        sub_dir = app_bundle / "Contents" / "PlugIns" / sub
+        if not sub_dir.exists():
+            continue
+        for plugin_path in sorted(sub_dir.glob("*.dylib")):
+            _redeploy_plugin(plugin_path, Path(sub) / plugin_path.name)
 
+    # The two blocks below repair damage that macdeployqt does specifically
+    # when the bundled Qt is the *Homebrew* qtbase/qtimageformats — it
+    # strips LC_ID_DYLIB from support dylibs and misses libsharpyuv. The
+    # official Qt Online Installer doesn't ship these support dylibs as
+    # separate Frameworks files (its image plugins link against system
+    # libs or static-link), so when qt_prefix points at the official Qt
+    # install we can skip both blocks entirely. We detect this via the
+    # presence of a `share/qt/plugins` layout or a path component that
+    # looks like Homebrew/MacPorts.
+    qt_prefix_str = str(qt_prefix) if qt_prefix else ""
+    homebrew_qt = (
+        qt_prefix_str.startswith("/opt/homebrew/")
+        or qt_prefix_str.startswith("/usr/local/")
+        or "/Cellar/" in qt_prefix_str
+    )
+    # Probe the system library prefix that the bundled Qt was linked against.
+    # On Homebrew that's /opt/homebrew/lib (Apple Silicon) or /usr/local/lib
+    # (Intel); on the official installer there's no comparable system-libs
+    # location so we leave it empty and skip the dylib repair entirely.
+    sys_lib_dirs = []
+    if homebrew_qt:
+        for candidate in (Path("/opt/homebrew/lib"), Path("/usr/local/lib")):
+            if candidate.exists():
+                sys_lib_dirs.append(candidate)
+
+    imageformats_dir = app_bundle / "Contents" / "PlugIns" / "imageformats"
+    if homebrew_qt and imageformats_dir.exists():
         # WEBP needs libsharpyuv.0.dylib which macdeployqt misses (it tracks
-        # libwebp* but not its transitive sharpyuv dependency).
+        # libwebp* but not its transitive sharpyuv dependency). Locate it
+        # next to libwebp.7.dylib in the same Homebrew prefix.
         sharpyuv_dst = bundle_fw / "libsharpyuv.0.dylib"
         if not sharpyuv_dst.exists():
-            for sharpyuv_src in [Path("/opt/homebrew/opt/webp/lib/libsharpyuv.0.dylib")]:
+            sharpyuv_candidates = []
+            for sys_lib in sys_lib_dirs:
+                # libsharpyuv ships as part of the webp keg; look both
+                # directly under <prefix>/lib and one level up under opt/.
+                sharpyuv_candidates.append(sys_lib / "libsharpyuv.0.dylib")
+                sharpyuv_candidates.append(
+                    sys_lib.parent / "opt" / "webp" / "lib" / "libsharpyuv.0.dylib"
+                )
+            for sharpyuv_src in sharpyuv_candidates:
                 if sharpyuv_src.exists():
                     shutil.copy2(sharpyuv_src, sharpyuv_dst)
                     if codesign_path:
@@ -502,18 +623,23 @@ def package_macos(build_dir, version, qt_prefix):
                              str(sharpyuv_dst)], check=False)
                     break
 
-    # macdeployqt also corrupts the bundled support dylibs in Contents/Frameworks
+    # macdeployqt corrupts the bundled support dylibs in Contents/Frameworks
     # (libjpeg, libpng, libwebp, libtiff, ...) — it strips LC_ID_DYLIB so dyld
     # rejects them with "MH_DYLIB is missing LC_ID_DYLIB", which in turn makes
     # the imageformats plugins fail to load even when the plugins themselves
-    # are healthy. Recopy each support dylib from Homebrew (which has proper
-    # install names) and rewrite its dep paths to @rpath.
-    homebrew_lib = Path("/opt/homebrew/lib")
-    if install_name_tool and otool_path and homebrew_lib.exists():
+    # are healthy. Recopy each support dylib from the system library prefix
+    # the bundled Qt links against (Homebrew only — the official Qt installer
+    # doesn't ship these as separate dylibs).
+    if homebrew_qt and install_name_tool and otool_path and sys_lib_dirs:
         for dylib_path in sorted(bundle_fw.glob("*.dylib")):
-            src = homebrew_lib / dylib_path.name
-            if not src.exists():
-                # No Homebrew counterpart (e.g. one of our own bundled deps);
+            src = None
+            for sys_lib in sys_lib_dirs:
+                candidate = sys_lib / dylib_path.name
+                if candidate.exists():
+                    src = candidate
+                    break
+            if src is None:
+                # No system-lib counterpart (e.g. one of our own bundled deps);
                 # skip and hope macdeployqt got that one right.
                 continue
             os.chmod(dylib_path, 0o644)
@@ -529,7 +655,9 @@ def package_macos(build_dir, version, qt_prefix):
                 if not line:
                     continue
                 dep = line.split(" (")[0]
-                if not (dep.startswith("/opt/homebrew/") or dep.startswith("/usr/local/")):
+                if not any(dep.startswith(str(d) + "/") for d in sys_lib_dirs) \
+                   and not dep.startswith("/opt/homebrew/") \
+                   and not dep.startswith("/usr/local/"):
                     continue
                 new_dep = f"@rpath/{dep.split('/')[-1]}"
                 if new_dep == f"@rpath/{dylib_path.name}":

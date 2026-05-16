@@ -48,7 +48,7 @@ Three things ship in the installer: the `Seelie.exe` binary, ~116 Live2D `.spk` 
 
 | Tool | Min version | Notes |
 |------|-------------|-------|
-| Qt 6 | 6.5+ | 6.11 known-working. Install via the official online installer; pick the kit that matches your toolchain (mingw_64 on Windows, clang_64 on macOS, gcc_64 on Linux). |
+| Qt 6 | 6.5+ | 6.11 known-working. **Install via the official Qt Online Installer or Maintenance Tool** — `brew install qt` is not sufficient on macOS (the Homebrew bottle omits the FFmpeg multimedia backend, breaking TTS — see pitfall #19). Pick the kit that matches your toolchain (mingw_64 on Windows, clang_64/macos on macOS, gcc_64 on Linux). Install location: `/opt/Qt` (recommended), `C:\Qt`, or `~/Qt`. |
 | CMake | 3.19 | Bundled in Qt's Tools/CMake_64; the build script auto-discovers it. |
 | Ninja | any | Bundled in Qt's Tools/Ninja; preferred over Make. |
 | Compiler | matching Qt kit | Windows: `Qt/Tools/mingw1310_64`. macOS: Xcode CLT. Linux: distro gcc/clang. |
@@ -103,12 +103,12 @@ python scripts/build_release.py
 
 That's it. The script:
 
-1. Auto-detects Qt prefix, cmake, ninja, the compiler matching the Qt kit, and QtIFW's `binarycreator`.
+1. Auto-detects Qt prefix, cmake, ninja, the compiler matching the Qt kit, and QtIFW's `binarycreator`. **Qt selection prefers official-installer locations** (`/opt/Qt`, `/Applications/Qt`, `~/Qt`, `C:\Qt`) over `qmake`-on-PATH, since PATH-resolved tools are typically Homebrew/apt and miss components like the FFmpeg multimedia backend (see pitfalls #18 / #19). If everything fails, the script asks you for the kit path interactively rather than guessing.
 2. Configures the build into `build/` (or `--build-dir` arg).
-3. Runs `cmake --build` with `--parallel`.
+3. Runs `cmake --build` with `--parallel`. To build serially (low-memory machines), set `CMAKE_BUILD_PARALLEL_LEVEL=1`.
 4. Hands off to the platform packager:
    - **Windows** → `cmake --target package_installer` (which stages files via QtIFW's data dir, runs `windeployqt`, then `binarycreator --offline-only`). Output: `build/SeelieInstaller-<version>.exe` (~2 GB with all 116 packs).
-   - **macOS** → `macdeployqt` on `Seelie.app`, ad-hoc `codesign`, then `hdiutil create ... -format UDZO`. Output: `build/Seelie-<version>.dmg`.
+   - **macOS** → `macdeployqt` on `Seelie.app` (with `<qt_prefix>/bin` forced to the front of `PATH` so its internal `qmake` doesn't drift to a different Qt), ad-hoc `codesign`, then `hdiutil create ... -format UDZO`. Output: `build/Seelie-<version>.dmg`.
    - **Linux** → `cmake --install` to `build/AppDir/usr/`, write a `.desktop` file, copy the icon to `hicolor/256x256/apps/`, then `appimagetool` (or `linuxdeploy --output appimage`). Output: `build/Seelie-<version>-<arch>.AppImage`.
 
 Useful flags:
@@ -202,14 +202,21 @@ Fix already committed (`ecc27a5`): route through a CMake variable `IFW_TARGET_DI
 
 ### 8. CMake picks the wrong Qt kit
 
-On Windows it's common to have `C:\Qt\6.11.0\` containing `android_armv7/`, `mingw_64/`, `msvc2022_64/`, `wasm_singlethread/`, etc. side by side. The build script's filesystem fallback now sorts host kits first (`mingw`, `llvm-mingw`, `msvc` on Win), but `qtpaths` on `PATH` may still resolve to whichever Qt happens to be there.
+On Windows it's common to have `C:\Qt\6.11.0\` containing `android_armv7/`, `mingw_64/`, `msvc2022_64/`, `wasm_singlethread/`, etc. side by side. `scripts/build_release.py` resolves Qt in this order, **stopping at the first hit**:
 
-Override:
+1. `$QT_DIR` / `$QT6_DIR` / `$Qt6_DIR` / `$QT_ROOT` / `$QT_INSTALL_PREFIX` env vars.
+2. Filesystem candidates — `/opt/Qt`, `/Applications/Qt`, `~/Qt` on macOS; `/opt/Qt`, `~/Qt` on Linux; `C:\Qt`, `~/Qt` on Windows. Inside each, picks the highest 6.x version, then prefers host kits (macOS: `macos`/`clang_64`; Windows: `mingw`/`llvm-mingw`/`msvc`; Linux: `gcc_64`/`linux`) over cross-compile kits.
+3. `qmake` / `qtpaths` on `$PATH` — last-resort, intentionally last because PATH-resolved tools are typically Homebrew/apt and lack the FFmpeg multimedia backend on macOS (see pitfall #19).
+4. **Interactive prompt** — if all of the above fail, the script asks the user to paste a kit path rather than silently continue with a broken state.
+
+Override explicitly when needed:
 ```bash
-python scripts/build_release.py --qt-dir C:/Qt/6.11.0/mingw_64
-# or
-export QT_DIR=C:/Qt/6.11.0/mingw_64
+QT_DIR=/opt/Qt/6.11.1/macos python scripts/build_release.py
+# Windows
+QT_DIR=C:/Qt/6.11.1/mingw_64 python scripts/build_release.py
 ```
+
+The active selection prints at the top of every run as `[OK] Qt prefix from <source>: <path>` — check it before assuming a build failure is your code.
 
 ### 9. Submodule registration drift
 
@@ -411,7 +418,7 @@ Symptoms in `~/Library/Application Support/Seelie/seelie_debug.log`:
 
 `libsharpyuv.0.dylib` is *also* not copied at all on some Qt versions — it's a transitive dep of libwebp that macdeployqt misses.
 
-**Fix** (already in `scripts/build_release.py`, ~line 425): post-macdeployqt, recopy every `imageformats/*.dylib` from the Qt source plugin dirs and every `Frameworks/*.dylib` from `/opt/homebrew/lib/`. For plugins, rewrite absolute deps to `@rpath` via `install_name_tool -change` and **never** call `install_name_tool -id` on them (which is what corrupts `MH_BUNDLE` files in the first place). For support dylibs, use `-id @rpath/<basename>` because their install IDs were stripped. Re-sign bottom-up.
+**Fix** (already in `scripts/build_release.py`, ~line 484, list `plugin_dirs_to_repair`): post-macdeployqt, recopy every `*.dylib` under each plugin dir we ship — currently `imageformats`, `multimedia`, `networkinformation`, `iconengines`, `tls` — from the Qt source plugin dirs, plus every `Frameworks/*.dylib` from `/opt/homebrew/lib/`. For plugins, rewrite absolute deps to `@rpath` via `install_name_tool -change` and **never** call `install_name_tool -id` on them (which is what corrupts `MH_BUNDLE` files in the first place). For support dylibs, use `-id @rpath/<basename>` because their install IDs were stripped. Re-sign bottom-up. **When you start shipping a new plugin dir (e.g. `platforminputcontexts/`, `imageformats/`, a new media backend), add it to `plugin_dirs_to_repair` — see pitfall #18.**
 
 **Verify after a build:**
 ```bash
@@ -548,6 +555,177 @@ Key points:
 - If distributing without Developer ID, users will always need the Privacy & Security → "Open Anyway" step.
 
 **Reference:** This pitfall was rewritten after a real incident where a clean rebuild (not QML stripping) fixed the issue. The corrupted binary was produced by normal incremental development builds, not by any packaging script bug.
+
+### 18. macOS: TTS silent in production build — multimedia plugin pinned to Homebrew
+
+Symptoms: TTS works perfectly on the dev machine (`./build/Seelie.app/Contents/MacOS/Seelie` or `open build/Seelie.app`), but the **installed** `Seelie-<v>.dmg` is silent. No errors in the UI; the engine fetches MP3 bytes from the provider, then nothing plays. On a fresh Mac without Homebrew Qt at `/opt/homebrew/opt/qtbase/...`, `seelie_debug.log` shows:
+```
+[WARN] QAudioDecoder error: Cannot find media backend
+```
+or `QAudioDecoder` silently emits zero buffers.
+
+**Why this isn't caught on the dev machine.** The same machine that built the DMG also has Homebrew Qt at the exact absolute path the plugin was pinned to. dyld happily resolves the absolute deps from the Homebrew tree, the plugin loads, MP3 decoding works. The bug only surfaces on a clean machine — or after `brew uninstall qt`.
+
+**Root cause.** Same class as pitfall #15: `macdeployqt` on Qt 6.11 leaves absolute `/opt/homebrew/opt/qtbase/lib/Qt*.framework/...` and `/opt/homebrew/opt/glib/...` references in plugin dylibs. The fix in #15 originally redeployed only `PlugIns/imageformats/`. `multimedia/libdarwinmediaplugin.dylib`, `networkinformation/libqglib.dylib`, and `iconengines/libqsvgicon.dylib` were silently broken too — but unlike imageformats, the only one Seelie *needs* at runtime is multimedia (for `QAudioDecoder` + `QAudioSink` in `TTSEngine`). Qt has no built-in fallback for media decoding, so TTS just stops working with no obvious error.
+
+**Diagnostic** — one command tells you whether any bundled plugin still references Homebrew absolute paths:
+```bash
+find Seelie.app/Contents/PlugIns -name "*.dylib" -exec sh -c '
+  bad=$(otool -L "$1" 2>/dev/null | grep -E "/opt/(homebrew|local)")
+  [ -n "$bad" ] && { echo "=== $1 ==="; echo "$bad"; }
+' _ {} \;
+```
+Expected output: nothing. Any line printed is a plugin that will fail on a clean machine.
+
+**Fix** — already merged into `scripts/build_release.py` as the list `plugin_dirs_to_repair` (`imageformats`, `multimedia`, `networkinformation`, `iconengines`). The general rule, captured here so the next plugin regression is a 1-line change instead of a multi-hour debug session:
+
+> **When you add a new Qt module / plugin to the build** (e.g. add `Qt::Multimedia` → ship `multimedia/`, add `Qt::TextToSpeech` → ship `texttospeech/`, add a new image format → no action needed, already covered), append the plugin subdir name to `plugin_dirs_to_repair` in `scripts/build_release.py`. Do this in the same commit as the CMake `find_package(... COMPONENTS X)` change.
+
+The Qt module → plugin subdir mapping you'll most likely need:
+
+| Qt component | Plugin subdir under `PlugIns/` |
+|---|---|
+| `Qt::Multimedia` | `multimedia/` |
+| `Qt::Network` (TLS) | `tls/` (already correct via `@rpath` — no repair needed) |
+| `Qt::TextToSpeech` | `texttospeech/` |
+| `Qt::Sql` | `sqldrivers/` |
+| `Qt::PrintSupport` | `printsupport/` |
+| `Qt::WebEngineCore` | `webengine/` |
+| Anything using SVG icons | `iconengines/` |
+| Anything using `QNetworkInformation` | `networkinformation/` |
+
+**Smoke test the DMG on a Homebrew-free path.** The cheapest way to catch this without a clean VM is:
+```bash
+# Move Homebrew Qt out of the way, mount the DMG, run the installed app.
+sudo mv /opt/homebrew/opt/qtbase /opt/homebrew/opt/qtbase.bak
+sudo mv /opt/homebrew/opt/qt    /opt/homebrew/opt/qt.bak
+hdiutil attach build/Seelie-<v>.dmg
+open "/Volumes/Seelie/Seelie.app"
+# Test TTS in the AI tab. If silent → a plugin is still pinned to Homebrew.
+hdiutil detach "/Volumes/Seelie"
+sudo mv /opt/homebrew/opt/qtbase.bak /opt/homebrew/opt/qtbase
+sudo mv /opt/homebrew/opt/qt.bak    /opt/homebrew/opt/qt
+```
+Slightly destructive — only do this on a dev machine and only if you can't easily test on a clean Mac.
+
+**Reference:** Discovered 2026-05-16 while debugging "TTS isn't worked in production build". The `_redeploy_plugin` infrastructure already existed (pitfall #15) and was working perfectly — it just wasn't pointed at the dir that mattered. Pitfall #15 even predicted this regression: *"a feature that touches an additional plugin (image format, icon engine, style, multimedia codec) fails silently because the post-macdeployqt redeploy pass didn't cover that file type."*
+
+**Follow-up correction (same day).** Adding `multimedia/` to `plugin_dirs_to_repair` didn't actually fix TTS — the symptom shifted but the user still got no voice. The real error in `seelie_debug.log` was:
+```
+[WARN] No functional TLS backend was found
+[WARN] QSslSocket::connectToHostEncrypted: TLS initialization failed
+[WARN] synthesis error kind=0 http=0 msg="TLS initialization failed"
+```
+Network synthesis was failing before audio playback ever started. `Contents/PlugIns/tls/libqopensslbackend.dylib` was pinned to `/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib` and `/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib`. The bundled `libssl.3.dylib`/`libcrypto.3.dylib` in `Contents/Frameworks/` were healthy, just unreachable. `securetransport` and `certonly` backends also failed, so Qt declared "no TLS backend" and refused to do HTTPS. Adding `tls` to `plugin_dirs_to_repair` finally fixed it.
+
+**The bigger lesson.** Pitfall #15 told you to look at *Qt frameworks* deps in plugins. That misled future-me into a too-narrow `otool -L | grep Qt` filter. **Plugins also depend on non-Qt Homebrew libraries** — openssl@3 in this case, glib in `networkinformation`. The diagnostic in this pitfall (`find ... -exec otool -L ... | grep "/opt/"`) catches both. Always use the broad `/opt/` filter, never just `/opt/.*Qt`.
+
+### 19. macOS: TTS silent because build picked Homebrew Qt instead of the official installer
+
+Symptoms identical to pitfall #18 — `seelie_debug.log` shows:
+```
+[DEBUG] decoder start, audio bytes= 57130 mime hint= "audio/mpeg"
+[WARN] QAudioDecoder error QAudioDecoder::FormatError "Could not load media source's tracks"
+```
+The bytes arrive, `QAudioDecoder` refuses to decode them. Fixing the multimedia *plugin paths* (pitfall #18) doesn't help — the plugin loads, it just can't decode raw MP3 from a `QBuffer`.
+
+**Root cause: the build picked the wrong Qt.** On macOS, `QAudioDecoder` can decode MP3 only when the **FFmpeg multimedia backend** (`libffmpegmediaplugin.dylib`) is loaded. The AVFoundation backend (`libdarwinmediaplugin.dylib`) requires real container metadata and cannot decode the raw MP3 byte stream the TTS providers return.
+
+- **Homebrew's `qtmultimedia` bottle ships only `libdarwinmediaplugin.dylib`** — no FFmpeg backend, no MP3 over `QAudioDecoder`. This is silent: the framework loads fine, the plugin loads fine, decoding just fails per-call.
+- **The official Qt Online Installer (`/opt/Qt/6.11.1/macos/plugins/multimedia/`) ships both** `libdarwinmediaplugin.dylib` *and* `libffmpegmediaplugin.dylib` plus the bundled `libavformat.*`, `libavcodec.*`, `libswresample.*`, `libswscale.*`, `libavutil.*` dylibs. With FFmpeg present, MP3 decode works.
+
+**The trap.** `scripts/build_release.py`'s auto-discovery used to query `qmake` on `$PATH` *before* scanning filesystem candidates. Homebrew puts its Qt's `qmake` on PATH by default, so Homebrew Qt always won — even when the user had the official installer at `/opt/Qt` and was using Qt Creator + the Maintenance Tool for everything else. The first hint that anything was wrong was "TTS used to work, now it doesn't," which is misleading because the code didn't change — the build environment did, on the first build after Homebrew Qt landed on PATH.
+
+**Fix already applied** in `scripts/build_release.py`'s `find_qt_prefix()`:
+
+1. **Filesystem scan runs before PATH scan.** macOS candidates are `/opt/Qt`, `/Applications/Qt`, `~/Qt` — the official-installer locations. Whichever exists wins, regardless of what's on PATH.
+2. **Interactive fallback if everything fails.** Rather than silently fall through to a broken state, prompt the user for the Qt kit path. Useful when the user installed Qt somewhere unusual.
+
+The macOS `plugin_dirs_to_repair` list already covers `multimedia/`, so the FFmpeg plugin's absolute deps to `/opt/Qt/.../lib/...` are rewritten to `@rpath` automatically. No extra script work needed for `ffmpeg`-backed builds.
+
+**Verify after a build** — these two are the smoking-gun checks:
+```bash
+# 1. Which Qt did CMake actually link against?
+grep Qt6Multimedia_DIR build/CMakeCache.txt
+# Expected: /opt/Qt/6.11.1/macos/lib/cmake/Qt6Multimedia
+# Bad:      /opt/homebrew/opt/qt/lib/cmake/Qt6Multimedia
+
+# 2. Is the FFmpeg backend in the bundle?
+ls build/Seelie.app/Contents/PlugIns/multimedia/
+# Expected: libdarwinmediaplugin.dylib  libffmpegmediaplugin.dylib
+# Bad:      libdarwinmediaplugin.dylib  (only)
+
+# 3. Are the ffmpeg dylibs bundled?
+ls build/Seelie.app/Contents/Frameworks/ | grep -E "libav|libsw"
+# Expected: libavcodec, libavformat, libavutil, libswresample, libswscale (all present)
+```
+
+If you ever see Homebrew Qt in the cache after a `build_release.py` run, it means either (a) you have a stale `CMakeCache.txt` from a previous Homebrew build (wipe `build/` and rerun — the old generator/Qt mix produces "generator does not match" errors at the rlottie FetchContent step), or (b) your `/opt/Qt` install is missing or broken (verify `/opt/Qt/<version>/macos/bin/qmake -query QT_VERSION`).
+
+**Why the rebuild has to be from a clean `build/` dir.** Switching Qt prefixes mid-stream is a recipe for stale-cache pain. The old `CMakeCache.txt` records the old Qt6_DIR; the new run overrides it via `-DCMAKE_PREFIX_PATH=...` but the FetchContent subdirs (`build/_deps/rlottie-subbuild/`, `qhotkey-subbuild/`) were generated with the old generator and now fight the new one. Symptom: `Error: generator : Ninja Does not match the generator used previously: Unix Makefiles`. Fix: `rm -rf build && mkdir build` before rerunning.
+
+**Reference:** Discovered 2026-05-16 in the same debugging session as #15/#18. After fixing the plugin paths in #18, TTS was still mute. The decoder error was identical to a "plugin not loaded" error, but the plugin *was* loaded — just the wrong one. `find / -name "libffmpegmediaplugin*"` revealed `/opt/Qt/6.11.1/macos/plugins/multimedia/libffmpegmediaplugin.dylib` existed but wasn't being used. The build script was happily finding Homebrew Qt via `qmake` on PATH before ever checking `/opt/Qt`.
+
+**Follow-up trap (same incident).** Picking the right Qt at the *CMake* layer is necessary but not sufficient. macdeployqt itself shells out to `qmake -query QT_INSTALL_PLUGINS` to find plugins, and **honors `$PATH` order** even when invoked via absolute path. So:
+
+```
+[OK] macdeployqt: /opt/Qt/6.11.1/macos/bin/macdeployqt   ← correct
+qmake on PATH: /opt/homebrew/bin/qmake                    ← Homebrew wins
+```
+
+→ macdeployqt copies Homebrew's 6.11.0 arm64-only plugins into a bundle whose Qt frameworks come from the official installer (6.11.1 universal). The plugin loader then rejects them at runtime on minor-version mismatch:
+```
+[WARN] WEBP image format: NOT supported. Codex pets will fail to load.
+[DEBUG] Failed to find metadata in lib .../libqwebp.dylib
+```
+WEBP is the loud failure because Codex pets need it; SVG/JPEG silently fall back to Qt's built-in raster decoders. Symptom looks like pitfall #15 (corrupted plugins) but the magic bytes are fine — the file is just from the wrong Qt minor version.
+
+**Fix already applied** to `scripts/build_release.py`:
+
+```python
+deploy_env = os.environ.copy()
+deploy_env["PATH"] = str(Path(qt_prefix) / "bin") + os.pathsep + deploy_env["PATH"]
+run([str(macdeployqt), str(app_bundle)], env=deploy_env)
+```
+
+Plus `plug_roots` (used by the post-macdeployqt redeploy pass) now lists `<qt_prefix>/plugins` (official-installer layout) before `<qt_prefix>/share/qt/plugins` (Homebrew/Linux layout). The previously-hardcoded `/opt/homebrew/Cellar/...` fallback was removed — it was the *source* of the wrong-version plugins, not a useful fallback.
+
+The Homebrew-only support-dylib repair (recopy `Frameworks/lib*.dylib` to fix stripped `LC_ID_DYLIB`, hunt down `libsharpyuv` next to libwebp) is now gated on `qt_prefix` actually pointing at a Homebrew install. Building against the official Qt installer skips that block entirely — those dylibs aren't even bundled.
+
+**Verify the bundled plugin matches the bundled Qt minor version:**
+```bash
+# The plugin's LC_LOAD_DYLIB compatibility version + the plugin's metadata
+# must match the bundled QtCore / QtGui current version.
+otool -l build/Seelie.app/Contents/PlugIns/imageformats/libqwebp.dylib | grep -A 4 QtGui
+file build/Seelie.app/Contents/Frameworks/QtGui.framework/Versions/A/QtGui
+# Both should report the same Qt version (e.g. "current version 6.11.1").
+# A mismatch (e.g. plugin 6.11.0 vs framework 6.11.1) means macdeployqt's
+# qmake shell-out picked the wrong Qt — see PATH override above.
+```
+
+### 20. macOS / Linux: build hangs the machine — terminal "freezes"
+
+Symptom: `python scripts/build_release.py` is invoked, the terminal stops responding, cursor moves at 1 fps, Activity Monitor / `top` shows load average over 100. Hitting Ctrl-C eventually works after 30+ seconds.
+
+**Not a build error.** The system is thrashing. The default `cmake --build --parallel` spawns one job per CPU core (8 on M-series Macs), and each clang process compiling a Qt-heavy translation unit peaks at 0.5–2 GB resident — so 8 concurrent compiles can demand 8–16 GB of RAM on top of whatever else is running (browsers, Lark, multiple `claude` sessions, etc.). Once macOS exhausts physical RAM and starts compressing/swapping, every keystroke waits behind page faults and the UI looks frozen.
+
+**Diagnostic** (from another terminal or via SSH):
+```
+top -l 1 -n 0 | head -6
+# Load Avg over CPU count + Pages free near zero + heavy swapins/swapouts → thrashing
+```
+
+**Fix during the build:** kill the build, then re-run with parallelism capped:
+```bash
+pkill -INT -f "cmake --build"; pkill clang
+CMAKE_BUILD_PARALLEL_LEVEL=1 python scripts/build_release.py
+```
+
+`CMAKE_BUILD_PARALLEL_LEVEL=1` forces serial compilation. Build takes 25–35 min instead of 5–10, but the machine stays usable. `=2` is a sweet spot on machines with ≥ 16 GB RAM and few other apps open. Anything ≥ `=4` will thrash on a 16 GB Mac with a normal app load.
+
+**Why a "lower" `-j` can still hang the machine:** the signal isn't whether parallelism is "low" — it's whether `top` shows `Pages free` collapsing into the thousands and `Pages compressed` rising. If that happens, drop further. Don't trust core count.
+
+**Reference:** Encountered 2026-05-16 while doing back-to-back rebuilds. The default `--parallel` had been fine on previous builds because fewer apps were open. Default-document `CMAKE_BUILD_PARALLEL_LEVEL=1` for any "how to rebuild" instructions targeting unknown hardware; recover speed only when you've measured headroom.
 
 ## Cross-platform packaging summary
 
