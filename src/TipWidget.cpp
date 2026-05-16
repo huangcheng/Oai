@@ -334,11 +334,17 @@ void TipWidget::positionRelativeTo(const QWidget *pet)
     // bubble is wide or near a screen edge. Clamp the tail X so it stays
     // visually inside the bubble's body (with a margin for the curved
     // corners) — pointing past the edge looks broken.
+    //
+    // Guard against tiny bubbles where 2*margin > body width (would make
+    // qBound's min > max and assert). Falls back to body center, which
+    // is fine for a bubble that small.
     const int localAnchor = petCenterX - bubbleX;
     const int margin = TAIL_WIDTH / 2 + CORNER_RADIUS;
-    m_tailAnchorX = qBound(SHADOW_BLUR + margin,
-                           localAnchor,
-                           SHADOW_BLUR + m_bubbleRect.width() - margin);
+    const int minX = SHADOW_BLUR + margin;
+    const int maxX = SHADOW_BLUR + m_bubbleRect.width() - margin;
+    m_tailAnchorX = (maxX >= minX)
+                        ? qBound(minX, localAnchor, maxX)
+                        : SHADOW_BLUR + m_bubbleRect.width() / 2;
     update();
 }
 
