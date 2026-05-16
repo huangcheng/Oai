@@ -64,16 +64,34 @@ QMenu::indicator {
     margin-left: 4px;
 }
 
-QMenu::indicator:checked {
+/* Non-exclusive (independent checkable QAction): square checkbox.
+ * Use case: "Gaming Mode" — a toggle, multi-select wouldn't be wrong if
+ * we had several. */
+QMenu::indicator:non-exclusive:checked {
     background: #F36F1A;
     border: 2px solid black;
     border-radius: 3px;
 }
 
-QMenu::indicator:unchecked {
+QMenu::indicator:non-exclusive:unchecked {
     background: white;
     border: 2px solid black;
     border-radius: 3px;
+}
+
+/* Exclusive (QAction inside an exclusive QActionGroup): radio circle.
+ * Use case: pack picker submenu — picking one deselects the others.
+ * border-radius == width/2 makes it perfectly round. */
+QMenu::indicator:exclusive:checked {
+    background: #F36F1A;
+    border: 2px solid black;
+    border-radius: 7px;
+}
+
+QMenu::indicator:exclusive:unchecked {
+    background: white;
+    border: 2px solid black;
+    border-radius: 7px;
 }
 
 QMenu::right-arrow {

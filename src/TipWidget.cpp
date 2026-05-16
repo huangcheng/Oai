@@ -187,7 +187,11 @@ void TipWidget::paintEvent(QPaintEvent *event)
     bubblePath.quadTo(body.left() + sk, body.top(), body.left() + sk + r, body.top());
     bubblePath.closeSubpath();
 
-    int tailBaseX = body.center().x();
+    // Tail X: prefer the pet-anchored value computed by positionRelativeTo
+    // (so the tail still points at the pet after the bubble is horizontally
+    // clamped to the screen). Fall back to bubble center if no anchor was
+    // ever set (e.g. unanchored center-of-screen mode).
+    int tailBaseX = (m_tailAnchorX >= 0) ? m_tailAnchorX : int(body.center().x());
     QPainterPath tailPath;
     if (m_tailDown) {
         tailPath.moveTo(tailBaseX - TAIL_WIDTH / 2.0, body.bottom());
@@ -322,6 +326,20 @@ void TipWidget::positionRelativeTo(const QWidget *pet)
 
     m_targetPos = QPoint(bubbleX, bubbleY);
     move(m_targetPos);
+
+    // Anchor the tail to the pet's horizontal center, in widget-local
+    // coordinates. If the bubble was clamped to a screen edge, the tail
+    // still points at the pet — without this, paintEvent draws the tail
+    // at the bubble center, which can drift far from the pet when the
+    // bubble is wide or near a screen edge. Clamp the tail X so it stays
+    // visually inside the bubble's body (with a margin for the curved
+    // corners) — pointing past the edge looks broken.
+    const int localAnchor = petCenterX - bubbleX;
+    const int margin = TAIL_WIDTH / 2 + CORNER_RADIUS;
+    m_tailAnchorX = qBound(SHADOW_BLUR + margin,
+                           localAnchor,
+                           SHADOW_BLUR + m_bubbleRect.width() - margin);
+    update();
 }
 
 void TipWidget::startEnterAnimation()

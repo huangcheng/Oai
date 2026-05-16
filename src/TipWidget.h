@@ -100,6 +100,13 @@ private:
     QRect m_sourceRect;       // Where source label is drawn
     bool m_tailDown = true;   // true = tail points down (bubble above pet)
 
+    // X-coordinate (in this widget's local coords) where the tail's tip
+    // should land. Set by positionRelativeTo() to the pet center; if the
+    // bubble was clamped horizontally to fit on screen, this stays
+    // anchored to the pet so the tail still points at it. -1 == "no
+    // anchor known yet, fall back to bubble center".
+    int m_tailAnchorX = -1;
+
     // Animation
     qreal m_opacity = 1.0;
     qreal m_slideOffset = 0.0;   // vertical slide offset in pixels
