@@ -11,6 +11,7 @@
 #include <QScreen>
 #include <QShowEvent>
 #include <QEventLoop>
+#include <QStyle>
 #include <QWindow>
 
 #include "PlatformWindow.h"
@@ -21,6 +22,17 @@ static QFont harmonyFont(int pointSize, QFont::Weight weight = QFont::Normal)
     f.setStyleStrategy(QFont::PreferAntialias);
     f.setHintingPreference(QFont::PreferNoHinting);
     return f;
+}
+
+// Apply a [variant=...] tag and re-polish so the global stylesheet's
+// QPushButton[variant="..."] selectors take effect. Without the polish/
+// unpolish, Qt won't re-evaluate the QSS for a property set after the
+// widget is constructed.
+static void setButtonVariant(QPushButton *btn, const char *variant)
+{
+    btn->setProperty("variant", variant);
+    btn->style()->unpolish(btn);
+    btn->style()->polish(btn);
 }
 
 StyledAlertWidget::StyledAlertWidget(QWidget *parent)
@@ -65,19 +77,7 @@ void StyledAlertWidget::setupUi()
     m_closeButton->setFont(harmonyFont(12, QFont::Bold));
     m_closeButton->setFixedSize(22, 22);
     m_closeButton->setCursor(Qt::PointingHandCursor);
-    m_closeButton->setStyleSheet(R"(
-        QPushButton {
-            background: transparent;
-            border: none;
-            border-radius: 3px;
-            color: #888;
-            padding: 0px;
-        }
-        QPushButton:hover {
-            background: #F36F1A;
-            color: white;
-        }
-    )");
+    setButtonVariant(m_closeButton, "icon-only");
     connect(m_closeButton, &QPushButton::clicked, this, &StyledAlertWidget::onCloseClicked);
 
     titleRow->addWidget(m_titleLabel, 1);
@@ -95,53 +95,19 @@ void StyledAlertWidget::setupUi()
     m_okButton = new QPushButton(tr("OK"), m_contentWidget);
     m_okButton->setFont(harmonyFont(10));
     m_okButton->setFixedHeight(28);
+    m_okButton->setMinimumWidth(60);
     m_okButton->setCursor(Qt::PointingHandCursor);
-    m_okButton->setStyleSheet(R"(
-        QPushButton {
-            background: white;
-            border: 2px solid black;
-            border-radius: 3px;
-            padding: 2px 16px;
-            color: #2C2C2E;
-            min-width: 60px;
-            outline: none;
-        }
-        QPushButton:hover {
-            background: #F36F1A;
-            color: white;
-            border-color: #F36F1A;
-        }
-        QPushButton:pressed {
-            background: #E06516;
-            border-color: #E06516;
-        }
-    )");
+    // OK button uses the default global QPushButton style (white BG, 2px
+    // black border, Persona-orange hover). No per-widget setStyleSheet —
+    // the global stylesheet at :/styles/styles/seelie.qss owns it.
     connect(m_okButton, &QPushButton::clicked, this, &StyledAlertWidget::onOkClicked);
 
     m_cancelButton = new QPushButton(tr("Cancel"), m_contentWidget);
     m_cancelButton->setFont(harmonyFont(10));
     m_cancelButton->setFixedHeight(28);
+    m_cancelButton->setMinimumWidth(60);
     m_cancelButton->setCursor(Qt::PointingHandCursor);
-    m_cancelButton->setStyleSheet(R"(
-        QPushButton {
-            background: white;
-            border: 2px solid #888;
-            border-radius: 3px;
-            padding: 2px 16px;
-            color: #666;
-            min-width: 60px;
-            outline: none;
-        }
-        QPushButton:hover {
-            background: #F36F1A;
-            color: white;
-            border-color: #F36F1A;
-        }
-        QPushButton:pressed {
-            background: #E06516;
-            border-color: #E06516;
-        }
-    )");
+    setButtonVariant(m_cancelButton, "secondary");
     connect(m_cancelButton, &QPushButton::clicked, this, &StyledAlertWidget::onCancelClicked);
     m_cancelButton->hide();
 

@@ -121,6 +121,50 @@ QPushButton:disabled {
     border-color: #d0d0d0;
 }
 
+/* Secondary / cancel button variant. Apply via:
+ *     btn->setProperty("variant", "secondary");
+ *     btn->style()->unpolish(btn); btn->style()->polish(btn);  // re-evaluate
+ * Use for negative-action buttons (Cancel, Dismiss, No) so they read as
+ * less prominent than the primary action button next to them. Hover still
+ * lands in Persona orange so the affordance is consistent. */
+QPushButton[variant="secondary"] {
+    border-color: #888888;
+    color: #666666;
+}
+
+QPushButton[variant="secondary"]:hover {
+    background: #F36F1A;
+    color: white;
+    border-color: #F36F1A;
+}
+
+QPushButton[variant="secondary"]:pressed {
+    background: #C85A12;
+    color: white;
+    border-color: #C85A12;
+}
+
+/* Borderless / icon-only button variant — the × close button on dialogs.
+ * No border, transparent background, gray glyph that flips to orange-on-
+ * white-glyph on hover. Square hit area for touch. */
+QPushButton[variant="icon-only"] {
+    background: transparent;
+    border: none;
+    color: #888888;
+    padding: 0px;
+    min-height: 0px;
+}
+
+QPushButton[variant="icon-only"]:hover {
+    background: #F36F1A;
+    color: white;
+}
+
+QPushButton[variant="icon-only"]:pressed {
+    background: #C85A12;
+    color: white;
+}
+
 /* ── QLineEdit ────────────────────────────────────────────────────────── */
 
 QLineEdit {
