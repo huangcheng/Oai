@@ -1,0 +1,6 @@
+# mmx output. The .bmp files are the actual shipped assets; the source JPEGs
+# are just the upstream copy that gets resized + reformatted with ImageMagick.
+# Regenerate with the commands documented in installer/inno/README.md if needed.
+*.jpg
+*.jpeg
+*.png
