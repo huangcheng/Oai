@@ -452,6 +452,7 @@ int main(int argc, char *argv[])
 
     // --- System tray ---------------------------------------------------------
     SystemTray tray(&w, &config);
+    tray.setTipWidget(w.tipWidget());  // route update-check results through the bubble
     tray.show();
     w.setSystemTray(&tray);
 

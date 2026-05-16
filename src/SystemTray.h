@@ -14,6 +14,7 @@ class CharacterPackManager;
 class UpdateChecker;
 class ConfigManager;
 class PackManagerWidget;
+class TipWidget;
 
 class SystemTray : public QObject
 {
@@ -31,6 +32,14 @@ public:
 
     // Set update checker
     void setUpdateChecker(UpdateChecker *checker);
+
+    // Set tip widget used for surfacing update-check results.
+    // Routing through the tip bubble (rather than the OS tray balloon)
+    // is more reliable across Windows configs (Focus Assist, missing
+    // app-user-model-id, notification permission revoked, etc.) and
+    // hooks into the existing TTS readback automatically — MainWindow
+    // already wires TipWidget::bubbleRequested into TTSEngine::speak.
+    void setTipWidget(TipWidget *tipWidget);
 
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
@@ -57,6 +66,7 @@ private:
     CharacterPackManager *m_packManager = nullptr;
     UpdateChecker *m_updateChecker = nullptr;
     ConfigManager *m_config = nullptr;
+    TipWidget *m_tipWidget = nullptr;
     QPointer<PackManagerWidget> m_packManagerDialog;
 };
 

@@ -33,6 +33,9 @@
   "messages": {
     "about":               {"title": "关于",       "body": "Seelie 桌面宠物\nv{version}\n© 2026 HUANG Cheng"},
     "pack.installed":      {"title": "安装成功",   "body": "角色包安装成功！"},
-    "pack.install_failed": {"title": "安装失败",   "body": "角色包安装失败。"}
+    "pack.install_failed": {"title": "安装失败",   "body": "角色包安装失败。"},
+    "update.available":    {"title": "有新版本",   "body": "Seelie {latest} 已发布，当前版本是 {current}。"},
+    "update.none":         {"title": "已是最新",   "body": "Seelie {current} 已经是最新版本。"},
+    "update.failed":       {"title": "检查更新失败", "body": "无法检查更新：{error}"}
   }
 }

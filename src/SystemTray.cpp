@@ -5,6 +5,8 @@
 #include "UpdateChecker.h"
 #include "ConfigManager.h"
 #include "PackManagerWidget.h"
+#include "TipWidget.h"
+#include "TipsCatalog.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -182,39 +184,53 @@ void SystemTray::setUpdateChecker(UpdateChecker *checker)
     }
 }
 
+void SystemTray::setTipWidget(TipWidget *tipWidget)
+{
+    m_tipWidget = tipWidget;
+}
+
 void SystemTray::onUpdateAvailable(const QString &current, const QString &latest, const QString &url)
 {
     Q_UNUSED(url);
-    // Always notify on update-available — the whole point of the auto
-    // check is to surface this. Manual checks also report it.
-    m_trayIcon->showMessage(
-        tr("Update Available"),
-        tr("Version %1 is available (current: %2)").arg(latest, current),
-        QSystemTrayIcon::Information,
-        5000
-    );
+    // Always surface — auto + manual both deserve it. Route via the tip
+    // bubble (and let it cascade into TTS via MainWindow's bubbleRequested
+    // wiring) instead of the OS tray balloon, which is unreliable on
+    // Windows when Focus Assist is on / notification permission is
+    // missing. bypassUserSuppression=true so users who muted tip bubbles
+    // still see the update notice — it's important system feedback, not
+    // chatter.
+    if (!m_tipWidget) {
+        qWarning() << "UpdateChecker: update available but no TipWidget wired";
+        return;
+    }
+    const auto t = TipsCatalog::instance().message(QStringLiteral("update.available"));
+    const QString body = t.body.isEmpty()
+        ? tr("Version %1 is available (current: %2)").arg(latest, current)
+        : QString(t.body).replace(QStringLiteral("{latest}"), latest)
+                         .replace(QStringLiteral("{current}"), current);
+    m_tipWidget->showBubble(t.title.isEmpty() ? tr("Update Available") : t.title,
+                            body, TipWidget::TipBubble, QString(), /*bypassUserSuppression=*/true);
 }
 
 void SystemTray::onNoUpdateAvailable(const QString &current)
 {
     // Only feedback the user if THEY asked. The 5s post-launch auto check
-    // stays silent on the happy path so we don't pop a balloon every time
-    // the app starts up on the latest version.
+    // stays silent on the happy path so the user doesn't get a tip every
+    // single startup confirming they're up to date.
     if (!m_updateChecker || !m_updateChecker->wasUserTriggered()) {
         qDebug() << "UpdateChecker: no-update silent (auto check), current=" << current;
         return;
     }
-    qDebug() << "UpdateChecker: no-update notification firing for manual check,"
-             << "current=" << current
-             << "trayAvailable=" << QSystemTrayIcon::isSystemTrayAvailable()
-             << "supportsMessages=" << QSystemTrayIcon::supportsMessages()
-             << "iconVisible=" << m_trayIcon->isVisible();
-    m_trayIcon->showMessage(
-        tr("No Updates"),
-        tr("You are running the latest version (%1)").arg(current),
-        QSystemTrayIcon::Information,
-        3000
-    );
+    if (!m_tipWidget) {
+        qWarning() << "UpdateChecker: manual no-update result but no TipWidget wired";
+        return;
+    }
+    const auto t = TipsCatalog::instance().message(QStringLiteral("update.none"));
+    const QString body = t.body.isEmpty()
+        ? tr("You are running the latest version (%1)").arg(current)
+        : QString(t.body).replace(QStringLiteral("{current}"), current);
+    m_tipWidget->showBubble(t.title.isEmpty() ? tr("You're up to date") : t.title,
+                            body, TipWidget::TipBubble, QString(), /*bypassUserSuppression=*/true);
 }
 
 void SystemTray::onUpdateCheckFailed(const QString &error)
@@ -227,12 +243,16 @@ void SystemTray::onUpdateCheckFailed(const QString &error)
         qDebug() << "UpdateChecker: silent failure (auto check):" << error;
         return;
     }
-    m_trayIcon->showMessage(
-        tr("Update Check Failed"),
-        tr("Could not check for updates: %1").arg(error),
-        QSystemTrayIcon::Warning,
-        5000
-    );
+    if (!m_tipWidget) {
+        qWarning() << "UpdateChecker: manual check failed but no TipWidget wired:" << error;
+        return;
+    }
+    const auto t = TipsCatalog::instance().message(QStringLiteral("update.failed"));
+    const QString body = t.body.isEmpty()
+        ? tr("Could not check for updates: %1").arg(error)
+        : QString(t.body).replace(QStringLiteral("{error}"), error);
+    m_tipWidget->showBubble(t.title.isEmpty() ? tr("Update Check Failed") : t.title,
+                            body, TipWidget::TipBubble, QString(), /*bypassUserSuppression=*/true);
 }
 
 void SystemTray::onPackActionTriggered()
