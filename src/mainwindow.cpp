@@ -480,21 +480,19 @@ void MainWindow::showContextMenu(const QPoint &globalPos)
     QAction *aboutAction = menu.addAction(tr("About"));
     connect(aboutAction, &QAction::triggered, this, [this]() {
         const auto t = TipsCatalog::instance().message(QStringLiteral("about"));
-        // In Character mode the tip bubble is the natural surface; in ECG
-        // mode it's suppressed, so showBubble() would silently no-op. Fall
-        // back to a modal dialog there so the About action works in both.
-        if (m_tipWidget && !m_tipWidget->isSuppressed()) {
-            m_tipWidget->showBubble(t.title, t.body, TipWidget::TipBubble);
-        } else {
-            StyledAlertWidget *dialog = new StyledAlertWidget(nullptr);
-            // Belt-and-suspenders cleanup. dismissed → deleteLater handles
-            // the click-to-close path; WA_DeleteOnClose handles every other
-            // way the widget can disappear (close event, parent quit). L11.
-            dialog->setAttribute(Qt::WA_DeleteOnClose);
-            dialog->setPetWindow(this);
-            connect(dialog, &StyledAlertWidget::dismissed, dialog, &QObject::deleteLater);
-            dialog->showAlert(t.title, t.body);
-        }
+        // Always use the styled modal — the About body contains HTML <a>
+        // links which the TipBubble's QPainter::drawText path can't render
+        // (links would appear as literal markup). The dialog uses a QLabel
+        // with rich-text + setOpenExternalLinks(true), so https:// and
+        // mailto: hand off to the OS.
+        StyledAlertWidget *dialog = new StyledAlertWidget(nullptr);
+        // Belt-and-suspenders cleanup. dismissed → deleteLater handles
+        // the click-to-close path; WA_DeleteOnClose handles every other
+        // way the widget can disappear (close event, parent quit). L11.
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setPetWindow(this);
+        connect(dialog, &StyledAlertWidget::dismissed, dialog, &QObject::deleteLater);
+        dialog->showAlert(t.title, t.body);
     });
 
     menu.addSeparator();

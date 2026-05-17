@@ -46,8 +46,16 @@ StyledAlertWidget::StyledAlertWidget(QWidget *parent)
 void StyledAlertWidget::setupUi()
 {
     m_contentWidget = new QWidget(this);
+    m_contentWidget->setObjectName(QStringLiteral("styledAlertContent"));
     m_contentWidget->setGeometry(SHADOW_BLUR, SHADOW_BLUR, PANEL_WIDTH, PANEL_HEIGHT);
-    m_contentWidget->setStyleSheet("background: transparent;");
+    // Scope this rule to the content widget only. An unscoped "background:
+    // transparent" cascades to every child via Qt's widget-stylesheet
+    // inheritance and silently defeats the global QPushButton:hover
+    // background swap — buttons would change text color on hover but stay
+    // white. The #styledAlertContent selector pins the rule to this one
+    // widget so children keep their app-level styling.
+    m_contentWidget->setStyleSheet(QStringLiteral(
+        "QWidget#styledAlertContent { background: transparent; }"));
 
     QVBoxLayout *mainLayout = new QVBoxLayout(m_contentWidget);
     mainLayout->setContentsMargins(PADDING, PADDING, PADDING, PADDING);
@@ -57,14 +65,14 @@ void StyledAlertWidget::setupUi()
     titleRow->setSpacing(4);
 
     m_titleLabel = new QLabel(m_contentWidget);
-    m_titleLabel->setFont(harmonyFont(10, QFont::Bold));
+    m_titleLabel->setFont(harmonyFont(13, QFont::Bold));
     m_titleLabel->setStyleSheet("color: black; background: transparent;");
     m_titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_titleLabel->setWordWrap(true);
 
     m_closeButton = new QPushButton(QStringLiteral("\u00D7"), m_contentWidget);
-    m_closeButton->setFont(harmonyFont(12, QFont::Bold));
-    m_closeButton->setFixedSize(22, 22);
+    m_closeButton->setFont(harmonyFont(14, QFont::Bold));
+    m_closeButton->setFixedSize(24, 24);
     m_closeButton->setCursor(Qt::PointingHandCursor);
     StyleUtils::setVariant(m_closeButton, "icon-only");
     connect(m_closeButton, &QPushButton::clicked, this, &StyledAlertWidget::onCloseClicked);
@@ -73,18 +81,24 @@ void StyledAlertWidget::setupUi()
     titleRow->addWidget(m_closeButton);
 
     m_bodyLabel = new QLabel(m_contentWidget);
-    m_bodyLabel->setFont(harmonyFont(10));
+    m_bodyLabel->setFont(harmonyFont(12));
     m_bodyLabel->setStyleSheet("color: #2C2C2E; background: transparent;");
     m_bodyLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     m_bodyLabel->setWordWrap(true);
+    // Rich-text body + clickable links. About dialog uses <a href> for
+    // website / mailto; mode is AutoText so plain-string callers still
+    // render plainly (Qt detects the absence of HTML markup).
+    m_bodyLabel->setTextFormat(Qt::AutoText);
+    m_bodyLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    m_bodyLabel->setOpenExternalLinks(true);
 
     QHBoxLayout *buttonRow = new QHBoxLayout();
     buttonRow->setSpacing(8);
 
     m_okButton = new QPushButton(tr("OK"), m_contentWidget);
-    m_okButton->setFont(harmonyFont(10));
-    m_okButton->setFixedHeight(28);
-    m_okButton->setMinimumWidth(60);
+    m_okButton->setFont(harmonyFont(12));
+    m_okButton->setFixedHeight(30);
+    m_okButton->setMinimumWidth(68);
     m_okButton->setCursor(Qt::PointingHandCursor);
     // OK button uses the default global QPushButton style (white BG, 2px
     // black border, Persona-orange hover). No per-widget setStyleSheet —
@@ -92,9 +106,9 @@ void StyledAlertWidget::setupUi()
     connect(m_okButton, &QPushButton::clicked, this, &StyledAlertWidget::onOkClicked);
 
     m_cancelButton = new QPushButton(tr("Cancel"), m_contentWidget);
-    m_cancelButton->setFont(harmonyFont(10));
-    m_cancelButton->setFixedHeight(28);
-    m_cancelButton->setMinimumWidth(60);
+    m_cancelButton->setFont(harmonyFont(12));
+    m_cancelButton->setFixedHeight(30);
+    m_cancelButton->setMinimumWidth(68);
     m_cancelButton->setCursor(Qt::PointingHandCursor);
     StyleUtils::setVariant(m_cancelButton, "secondary");
     connect(m_cancelButton, &QPushButton::clicked, this, &StyledAlertWidget::onCancelClicked);

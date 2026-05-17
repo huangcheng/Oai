@@ -31,7 +31,7 @@
     {"title": "Greetings!",  "body": "The code is strong with this one."}
   ],
   "messages": {
-    "about":               {"title": "About",                "body": "Seelie Desktop Pet\nv{version}\n© 2026 HUANG Cheng"},
+    "about":               {"title": "About",                "body": "<a href=\"https://seelie.cheng.im\" style=\"color:#F36F1A; text-decoration:none;\">Seelie Desktop Pet</a><br>v{version}<br>© 2026 <a href=\"mailto:cheng@duck.com\" style=\"color:#F36F1A; text-decoration:none;\">HUANG Cheng</a>"},
     "pack.installed":      {"title": "Pack Installed",       "body": "Sprite pack installed successfully!"},
     "pack.install_failed": {"title": "Installation Failed",  "body": "Failed to install sprite pack."},
     "update.available":    {"title": "Update Available",     "body": "Seelie {latest} is available. You're on {current}."},
