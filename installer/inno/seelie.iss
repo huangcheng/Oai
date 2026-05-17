@@ -25,6 +25,8 @@
 #define AppURL "https://github.com/huangcheng/Seelie"
 #define AppExeName "Seelie.exe"
 #define AppId "{{E3F8C7B4-9A2D-4E5F-B1C8-3D7F2A8E9C4B}"
+#define AppCopyright "Copyright (C) 2026 HUANG Cheng"
+#define AppDescription "Seelie Desktop Pet"
 
 [Setup]
 AppId={#AppId}
@@ -35,6 +37,17 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}/issues
 AppUpdatesURL={#AppURL}/releases
+AppCopyright={#AppCopyright}
+; SetupSeelie.exe (the installer itself) gets these fields embedded in its
+; own VERSIONINFO block, so right-clicking it in Explorer shows real metadata
+; instead of generic "Setup". Mirrors what assets/seelie.rc.in writes into
+; the application Seelie.exe.
+VersionInfoVersion={#AppVersion}
+VersionInfoCompany={#AppPublisher}
+VersionInfoCopyright={#AppCopyright}
+VersionInfoDescription={#AppDescription} Setup
+VersionInfoProductName={#AppDescription}
+VersionInfoProductVersion={#AppVersion}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes

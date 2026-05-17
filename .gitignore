@@ -105,3 +105,4 @@ compile_commands.json
 # Local IDE / session state (tmux-ide sidecar, machine-specific yml)
 .tmux-ide/
 ide.yml
+/codex-pet-runs/

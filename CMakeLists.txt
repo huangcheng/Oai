@@ -784,8 +784,11 @@ if(APPLE)
     set_target_properties(Seelie PROPERTIES
         MACOSX_BUNDLE_ICON_FILE "seelie.icns"
         MACOSX_BUNDLE_GUI_IDENTIFIER "im.cheng.seelie"
+        MACOSX_BUNDLE_BUNDLE_NAME "Seelie"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2026 HUANG Cheng. All rights reserved."
+        MACOSX_BUNDLE_INFO_STRING "Seelie ${PROJECT_VERSION} — Copyright (C) 2026 HUANG Cheng"
     )
     set_source_files_properties(assets/seelie.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
