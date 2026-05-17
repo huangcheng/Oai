@@ -110,13 +110,20 @@ void CharacterPackManager::initialize(const QString &builtInDir, const QString &
     setupFileWatcher();
 
     // Load default pack: preferred ID from config (if still installed),
-    // otherwise fall back to the alphabetically-first available pack.
+    // then the built-in Seelie mascot (the project's signature pack — the
+    // initial default for first-launch users, before they pick anything),
+    // then the alphabetically-first available pack as a final fallback.
     // If the preferred pack fails to load, keep trying others until one
     // succeeds — without this a broken user pack leaves the pet invisible.
+    static constexpr const char *kSignaturePackId = "im.cheng.seelie.seelie";
     if (!m_packs.isEmpty()) {
         QStringList candidates;
         if (!preferredId.isEmpty() && m_packs.contains(preferredId)) {
             candidates.append(preferredId);
+        }
+        if (m_packs.contains(QString::fromLatin1(kSignaturePackId))
+            && !candidates.contains(QString::fromLatin1(kSignaturePackId))) {
+            candidates.append(QString::fromLatin1(kSignaturePackId));
         }
         for (const QString &id : m_packs.keys()) {
             if (!candidates.contains(id)) {
