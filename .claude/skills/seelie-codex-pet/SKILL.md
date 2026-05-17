@@ -1,6 +1,6 @@
 ---
 name: seelie-codex-pet
-description: Build a Codex animated pet for the Seelie persona (or any other character) and prepare it for distribution on codex-pets.net. Wraps OpenAI's `hatch-pet` skill, runs it via the local `codex` CLI, and enforces the rule that only `pet.json` + `spritesheet.webp` ship in the distributable bundle — QA artifacts stay local under `codex-pet-runs/`. Use when the user says "make a Codex pet", "hatch a pet for Seelie", "build the codex pet", "upload to codex-pets.net", "regenerate the seelie codex pet", or anything else about distributing a Codex-compatible pet asset.
+description: Build a Codex animated pet for the Seelie persona (or any other character) and prepare it for distribution on codex-pets.net. Wraps OpenAI's `hatch-pet` skill, runs it via the local `codex` CLI, and enforces the rule that only `pet.json` + `spritesheet.webp` ship in the distributable bundle — QA artifacts stay local under `codex-pet-runs/` (gitignored) while the durable upload bundle lives at `codex-pet/<id>/` (tracked). Use when the user says "make a Codex pet", "hatch a pet for Seelie", "build the codex pet", "upload to codex-pets.net", "regenerate the seelie codex pet", or anything else about distributing a Codex-compatible pet asset.
 ---
 
 # Seelie Codex Pet
@@ -32,7 +32,7 @@ Triggers:
 | `~/.codex/skills/hatch-pet/` | The skill that scaffolds the run, generates rows, assembles the atlas, validates, and packages | Installed with Codex CLI |
 | `~/.codex/skills/.system/imagegen/` | Image generation backend the hatch-pet skill delegates to | Installed with Codex CLI |
 | OpenAI API key | Codex CLI auth — `codex auth status` should report `api-key` source | `codex login` |
-| Reference image (recommended) | A canonical front-facing portrait of the character. Hatch-pet uses it to lock identity across all 9 rows. Without one, the base job runs prompt-only and identity drifts more. | For Seelie: use `minimax-output/seelie-avatar_001.jpg` (the MiniMax-generated mascot) |
+| Reference image (recommended) | A canonical front-facing portrait of the character. Hatch-pet uses it to lock identity across all 9 rows. Without one, the base job runs prompt-only and identity drifts more. | For Seelie: use `artworks/mascot/seelie-avatar_001.jpg` (the MiniMax-generated mascot, tracked in the repo) |
 
 Verify Codex install + auth before starting:
 
@@ -153,25 +153,48 @@ Do NOT include in the upload:
 - The hatch-pet run dir (`codex-pet-runs/<id>/`) — contains prompts, decoded row strips, frame extracts, intermediate PNGs, the manifest schema, layout-guide pixels, validation JSON, contact sheets, preview GIFs. All of this is local-only diagnostic content.
 - `pet_request.json` — input config for the run, not for end users
 - `qa/` artifacts — useful for debugging but irrelevant once the pet works
-- Source reference images (e.g. `minimax-output/seelie-avatar_001.jpg`) — separate IP question; don't bundle without thinking
+- Source reference images (e.g. `artworks/mascot/seelie-avatar_001.jpg`) — separate IP question; don't bundle without thinking
 - The `.codex-plugin` or `agents/openai.yaml` files from hatch-pet — those belong to the skill, not the pet
 
-Standard zip command (from project root, after a successful run):
+Standard stash + zip command (from project root, after a successful run):
 
 ```bash
 ID=<id>     # e.g. seelie
-cd ~/.codex/pets
-zip -j "<ABSOLUTE PATH to codex-pet-runs/$ID-for-upload.zip>" \
-       "$ID/pet.json" "$ID/spritesheet.webp"
-```
 
-The `-j` flag strips the parent directory so the zip's root is the two files directly — many pet-registry sites expect that layout. If codex-pets.net wants a folder inside the zip, drop `-j` and recurse from `$ID/`.
+# 1. Stash the upload bundle in the tracked, durable location.
+#    codex-pet/<id>/ is committed to the repo; codex-pet-runs/ is gitignored
+#    and will be wiped by `git clean -fd`. The two files here ARE the
+#    bundle codex-pets.net expects — see the table below for why this
+#    dir exists.
+mkdir -p codex-pet/$ID
+cp ~/.codex/pets/$ID/pet.json         codex-pet/$ID/pet.json
+cp ~/.codex/pets/$ID/spritesheet.webp codex-pet/$ID/spritesheet.webp
+
+# 2. Optionally produce a ready-to-upload zip. -j flattens the zip so the
+#    two files sit at the archive root — pet registries usually expect
+#    that layout. Drop -j if codex-pets.net wants a folder inside the
+#    zip instead.
+cd codex-pet/$ID
+zip -j ../$ID-codex-pet.zip pet.json spritesheet.webp
+cd -
+```
 
 Confirm the zip contains exactly two entries:
 ```bash
-unzip -l <ABSOLUTE PATH to .zip>
+unzip -l codex-pet/$ID-codex-pet.zip
 # expected: 2 files (pet.json + spritesheet.webp), <2 MB total
 ```
+
+## Tracked deliverable vs throwaway run dir
+
+Two top-level dirs hold codex-pet content. They serve different purposes:
+
+| Path | Tracked? | Contents | Lifetime |
+|---|---|---|---|
+| `codex-pet/<id>/` | **Yes** (committed) | `pet.json` + `spritesheet.webp` only — the exact two files codex-pets.net expects. README in `codex-pet/README.md` documents the relationship to the in-app `assets/packs/<id>/` pack. | Permanent. Survives `git clean`. |
+| `codex-pet-runs/<id>/` | **No** (`.gitignore:108`) | Hatch-pet's per-run intermediates: prompts, decoded row strips, frame extracts, `outputs/`, `decoded/`, `qa/`, `imagegen-jobs.json`, layout-guide pixels. | Throwaway. Useful only for debugging or resuming a partial run. |
+
+When the user asks "where is my codex pet?" the answer is **`codex-pet/<id>/`** — that's the durable deliverable. The run dir is incidental. Always stash to `codex-pet/<id>/` before the user closes the shell; a `git clean -fd` between sessions would otherwise erase the upload bundle.
 
 ## Run-dir layout (`codex-pet-runs/<id>/`)
 
@@ -256,15 +279,16 @@ The single most common visual QA failure mode is one row's character looking sub
 
 The pet under `~/.codex/pets/seelie/` was built 2026-05-17 from:
 
-- Reference: `minimax-output/seelie-avatar_001.jpg` (MiniMax `image-01` generation, twintail anime mascot fusion of Hatsune Miku + Bilibili 233娘 + fae spirit cues)
+- Reference: `artworks/mascot/seelie-avatar_001.jpg` (MiniMax `image-01` generation, twintail anime mascot fusion of Hatsune Miku + Bilibili 233娘 + fae spirit cues)
 - Style preset: `auto`
 - 10 image jobs total: 1 base + 8 first-pass rows + 1 repair on `running` (glow smear → clean)
 - Final atlas: 1536×1872 WebP, 1.7 MB, no validation errors
 - Persona description: *"A small fae-spirit virtual mascot girl who reacts to AI coding tool events. Pale cyan-to-lavender twintail hair, large warm cyan eyes, subtly pointed elf ears, gentle half-smile, oversized white hoodie with lavender trim, glowing cyan crystal pendant. Personality: warm, encouraging, briefly playful when you ship, quietly concerned when you go idle, gently honest when tests fail."*
 
-Stashed for codex-pets.net upload at:
-- `codex-pet-runs/seelie-for-upload/{pet.json, spritesheet.webp}` (loose files)
-- `codex-pet-runs/seelie-codex-pet.zip` (1.7 MB, both files at zip root, ready to upload)
+Lives in the repo at:
+- **`codex-pet/seelie/pet.json`** + **`codex-pet/seelie/spritesheet.webp`** — the upload-ready bundle, tracked. This is what gets sent to codex-pets.net.
+- `assets/packs/seelie/spritesheet.webp` — byte-identical copy of the same atlas, but wrapped in Seelie's own pack manifest (`manifest.json`) for the in-app sprite engine. The atlas is shared by design so the desktop pet and the Codex pet are visually the same character.
+- `codex-pet/README.md` documents the relationship between the two paths and the regenerate workflow.
 
 ## Adjacent skills
 
