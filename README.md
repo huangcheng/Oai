@@ -2,6 +2,10 @@
 
 # Seelie Desktop Pet
 
+<p align="center">
+  <img src="artworks/mascot/seelie-avatar_001.jpg" alt="Seelie — the project's built-in mascot" width="240">
+</p>
+
 A native Qt6/C++ desktop pet that reacts to AI coding tool events. A lightweight (<10MB RAM) native application with a sprite pack engine for customizable characters.
 
 ## Features

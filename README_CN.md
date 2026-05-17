@@ -2,6 +2,10 @@
 
 # Seelie 桌面宠物
 
+<p align="center">
+  <img src="artworks/mascot/seelie-avatar_001.jpg" alt="Seelie —— 项目自带的吉祥物" width="240">
+</p>
+
 一款基于 Qt6/C++ 的原生桌面宠物，能够对 AI 编码工具的事件做出反应。轻量级（空闲时 < 10MB 内存）原生应用，搭载可扩展的 sprite pack 引擎，支持自定义角色。
 
 ## 特性
