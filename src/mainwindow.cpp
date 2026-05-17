@@ -100,8 +100,10 @@ MainWindow::MainWindow(ConfigManager *config, QTranslator *translator, QWidget *
             m_settingsPanel, &SettingsPanelWidget::showAuthFailedHint);
 
     // Test button works in any mode — the user explicitly asked for it.
+    // Use testSpeak() (not speak()) so the provider HTTP layer is exercised
+    // even when the canned test phrase is already in the voice cache.
     connect(m_settingsPanel, &SettingsPanelWidget::testTtsRequested,
-            m_ttsEngine, &TTSEngine::speak);
+            m_ttsEngine, &TTSEngine::testSpeak);
     connect(m_settingsPanel, &SettingsPanelWidget::clearVoiceCacheRequested,
             m_ttsEngine, &TTSEngine::clearVoiceCache);
 #endif

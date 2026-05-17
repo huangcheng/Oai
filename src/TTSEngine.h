@@ -32,6 +32,12 @@ public:
 public slots:
     void speak(const QString &text);
     void speakWithOptions(const QString &text, seelie::tts::SpeakOptions opts);
+    // Same as speak() but bypasses the voice-cache lookup so the provider
+    // HTTP layer is always exercised. Used by Settings → AI → "Test" — a
+    // cache hit on the canned test phrase would falsely indicate provider
+    // success when in fact only playback was tested. Cache write still
+    // happens so the test result serves any later tip with the same text.
+    void testSpeak(const QString &text);
     // Wipe the on-disk voice cache. Safe to call from any thread.
     void clearVoiceCache();
 
@@ -52,7 +58,8 @@ private slots:
 private:
     void initOnThread();           // runs on m_thread after start()
     void rebuildProvider();        // tear down, re-instantiate from current config
-    void doSynthesize(const QString &text, seelie::tts::SpeakOptions opts);
+    void doSynthesize(const QString &text, seelie::tts::SpeakOptions opts,
+                      bool bypassCacheRead = false);
     void onSynthesisSuccess(seelie::tts::SynthesisResult result);
     void onSynthesisError(seelie::tts::TtsError err);
     void scheduleRetry();

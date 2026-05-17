@@ -172,6 +172,31 @@ void TTSEngine::speak(const QString &text)
     speakWithOptions(text, SpeakOptions{});
 }
 
+void TTSEngine::testSpeak(const QString &text)
+{
+    if (!m_config || !m_config->ttsEnabled() || text.isEmpty()) {
+        qCDebug(lcTts) << "testSpeak() ignored — enabled="
+                       << (m_config && m_config->ttsEnabled())
+                       << "textEmpty=" << text.isEmpty();
+        return;
+    }
+
+    QMetaObject::invokeMethod(this, [this, text]() {
+        if (m_speaking || m_inFlight) {
+            qCDebug(lcTts) << "testSpeak() dropped — busy (speaking=" << m_speaking
+                           << " inFlight=" << m_inFlight << ")";
+            return;
+        }
+        qCInfo(lcTts) << "testSpeak: bypassing voice cache, hitting provider —"
+                      << text.left(60);
+        m_retryTimer->stop();
+        m_retryCount = 0;
+        m_pendingText = text;
+        m_pendingOptions = SpeakOptions{};
+        doSynthesize(text, m_pendingOptions, /*bypassCacheRead=*/true);
+    }, Qt::QueuedConnection);
+}
+
 void TTSEngine::clearVoiceCache()
 {
     // Hop to the engine thread; m_voiceCache is constructed there in
@@ -208,7 +233,8 @@ void TTSEngine::speakWithOptions(const QString &text, SpeakOptions opts)
     }, Qt::QueuedConnection);
 }
 
-void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
+void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts,
+                              bool bypassCacheRead)
 {
     if (!m_provider) {
         qCWarning(lcTts) << "doSynthesize: no provider";
@@ -246,7 +272,7 @@ void TTSEngine::doSynthesize(const QString &text, SpeakOptions opts)
         m_pendingCacheKey = seelie::tts::TtsVoiceCache::cacheKey(
             providerId, voiceId, modelId, opts, text);
 
-        if (m_voiceCache->hasCachedAudio(m_pendingCacheKey)) {
+        if (!bypassCacheRead && m_voiceCache->hasCachedAudio(m_pendingCacheKey)) {
             QByteArray cachedAudio = m_voiceCache->getCachedAudio(m_pendingCacheKey);
             if (!cachedAudio.isEmpty()) {
                 qCInfo(lcTts) << "cache hit, returning cached audio for key:"
